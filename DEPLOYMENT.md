@@ -2,7 +2,7 @@
 
 Your portfolio is ready to deploy! Follow these steps to get it live on Vercel.
 
-## Pre-Deployment Checklist ✓
+## Pre-deployment checklist
 
 - [x] Build tested successfully (`npm run build`)
 - [x] No errors or warnings in the codebase
@@ -10,9 +10,9 @@ Your portfolio is ready to deploy! Follow these steps to get it live on Vercel.
 - [x] vercel.json configuration created
 - [x] Documentation cleaned up
 
-## Quick Deploy to Vercel
+## Quick deploy to Vercel
 
-### Option 1: Deploy via Vercel CLI (Recommended)
+### Option 1: Deploy via Vercel CLI (recommended)
 
 1. Install Vercel CLI if you haven't:
    ```bash
@@ -39,7 +39,7 @@ Your portfolio is ready to deploy! Follow these steps to get it live on Vercel.
 
 5. Your site will be deployed! Vercel will provide a URL.
 
-### Option 2: Deploy via Vercel Dashboard
+### Option 2: Deploy via Vercel dashboard
 
 1. Go to [vercel.com](https://vercel.com) and sign in
 2. Click "Add New Project"
@@ -51,7 +51,7 @@ Your portfolio is ready to deploy! Follow these steps to get it live on Vercel.
    - **Install Command**: `npm install`
 5. Click "Deploy"
 
-## Environment Configuration
+## Environment configuration
 
 Vercel will automatically detect your Vite project and configure:
 - Build Command: `npm run build`
@@ -59,18 +59,18 @@ Vercel will automatically detect your Vite project and configure:
 - Install Command: `npm install`
 - Node Version: 18.x (auto-detected)
 
-## Post-Deployment
+## Post-deployment
 
-### Add Custom Domain (Optional)
+### Add custom domain (optional)
 1. Go to your project settings on Vercel
 2. Navigate to "Domains"
 3. Add your custom domain
 4. Update your DNS settings as instructed
 
-### Environment Variables
+### Environment variables
 No environment variables are required for this project currently.
 
-### Before You Go Live
+### Before you go live
 
 Make sure to update these placeholder items:
 
@@ -82,7 +82,7 @@ Make sure to update these placeholder items:
 
 ## Troubleshooting
 
-### Build Fails
+### Build fails
 ```bash
 # Clear cache and rebuild
 rm -rf node_modules dist
@@ -90,15 +90,15 @@ npm install
 npm run build
 ```
 
-### Routing Issues
+### Routing issues
 The `vercel.json` file is already configured to handle client-side routing.
 
-### Images Not Loading
+### Images not loading
 - Ensure all image paths start with `/` for absolute paths
 - Place images in `/public` folder
 - Reference as `/image-name.jpg` in your components
 
-## Performance Optimization
+## Performance optimization
 
 After deployment, check your site with:
 - [Lighthouse](https://developers.google.com/web/tools/lighthouse)
@@ -110,11 +110,11 @@ Target scores:
 - Best Practices: >95
 - SEO: >90
 
-## Need Help?
+## Need help?
 
 - [Vercel Documentation](https://vercel.com/docs)
 - [Vite Deployment Guide](https://vitejs.dev/guide/static-deploy.html)
 
 ---
 
-**Ready to deploy!** 🚀
+Ready to deploy.
