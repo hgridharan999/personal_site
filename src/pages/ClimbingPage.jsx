@@ -11,7 +11,7 @@ const hikesData = [
     elevation: "14,065 ft",
     distance: "7.0 mi",
     difficulty: "Moderate",
-    photos: ["bierstadt-1.jpg", "bierstadt-2.jpg", "bierstadt-3.jpg", "bierstadt-4.jpg"],
+    photos: ["/bierstadt-1.jpg", "/bierstadt-2.jpg", "/bierstadt-3.jpg"],
     review: "My first fourteener summit. Started at 5 AM under headlamp, watching the sky slowly lighten. The trail is straightforward but relentless - just keeps climbing. Hit the willows section which was muddy and annoying, then broke above treeline. The final push to the summit had me gasping in the thin air. But standing on top at 14,065 feet, looking across at the Sawtooth, I finally got it. This is just the beginning.",
     highlights: ["First 14er summit", "Alpine start", "Above treeline views", "Sawtooth ridge perspective"],
     rotation: 1.5,
@@ -24,7 +24,7 @@ const hikesData = [
     elevation: "10,900 ft",
     distance: "9.0 mi",
     difficulty: "Strenuous",
-    photos: ["skypond-1.jpg", "skypond-2.jpg", "skypond-3.jpg"],
+    photos: ["/skypond-1.jpg", "/skypond-2.jpg", "/skypond-3.jpg", "/skypond-4.jpg"],
     review: "The boulder scramble up to Sky Pond was unlike anything I'd done before - hands and feet finding holds on massive rocks, pulling myself up through narrow gaps. Lake of Glass appeared first, perfectly still and reflecting the cliffs. Then Sky Pond itself, tucked into this dramatic cirque with waterfalls cascading down sheer walls. The water was absolutely freezing but crystal clear. Worth every challenging step.",
     highlights: ["Boulder field scramble", "Lake of Glass", "Waterfall climbs", "Alpine lake swimming"],
     rotation: -1.5,
@@ -37,7 +37,7 @@ const hikesData = [
     elevation: "10,700 ft",
     distance: "8.2 mi",
     difficulty: "Moderate",
-    photos: ["lostlake-1.jpg", "lostlake-2.jpg", "lostlake-3.jpg", "lostlake-4.jpg"],
+    photos: ["/lostlake-1.jpg", "/lostlake-2.jpg", "/lostlake-3.jpg", "/lostlake-4.jpg"],
     review: "Late season hike with fresh snow dusting the peaks. The trail wound through golden aspen groves before climbing into evergreen forest. Lost Lake sits in this perfect basin surrounded by jagged peaks. The reflection was insane - mountains mirrored perfectly in the still water. Hardly saw another soul. Found a rock to sit on and just absorbed the silence. This is why I hike.",
     highlights: ["Fall colors", "Peak reflections", "Solitude", "Fresh snow on peaks"],
     rotation: 2,
@@ -50,7 +50,7 @@ const hikesData = [
     elevation: "400 ft",
     distance: "3.8 mi",
     difficulty: "Easy",
-    photos: ["escondido-1.jpg", "escondido-2.jpg", "escondido-3.jpg"],
+    photos: ["/escondido-1.jpg", "/escondido-2.jpg", "/escondido-3.jpg", "/escondido-4.jpg"],
     review: "Coastal hike with an ocean breeze and the sound of waves in the background. The trail took us through a creek and up to this stunning 150-foot waterfall hidden in a canyon. Winter rains had it flowing strong. Upper falls required a bit of scrambling over slippery rocks, but the payoff was worth it. A perfect California adventure mixing beach vibes with waterfall magic.",
     highlights: ["Coastal trail", "Hidden waterfall", "Creek crossing", "Ocean views"],
     rotation: -1.8,
@@ -63,7 +63,7 @@ const hikesData = [
     elevation: "7,200 ft",
     distance: "2.4 mi",
     difficulty: "Easy-Moderate",
-    photos: ["sevenfalls-1.jpg", "sevenfalls-2.jpg", "sevenfalls-3.jpg"],
+    photos: [],
     review: "Winter hike with ice formations everywhere. The seven cascading waterfalls were partially frozen, creating these incredible ice sculptures. Climbed the 224 metal steps alongside the falls - legs were burning by the top. The canyon walls narrow dramatically, and you can hear the water echoing. Short hike but the frozen waterfalls made it special. Perfect winter adventure close to town.",
     highlights: ["224 steps climb", "Frozen waterfalls", "Narrow canyon", "Ice formations"],
     rotation: -2,
@@ -123,9 +123,17 @@ const ImageGallery = ({ hike, onClose }) => {
 
         {/* Main image */}
         <div className="aspect-[16/10] bg-gradient-to-br from-line to-paper relative overflow-hidden mb-4">
-          <div className="absolute inset-0 flex items-center justify-center text-fade font-handwritten text-center p-6">
-            <div className="text-2xl">[Photo {currentIndex + 1}: {hike.photos[currentIndex]}]</div>
-          </div>
+          {hike.photos.length > 0 ? (
+            <img
+              src={hike.photos[currentIndex]}
+              alt={`${hike.name} - Photo ${currentIndex + 1}`}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-fade font-handwritten text-2xl">
+              Photos coming soon
+            </div>
+          )}
 
           {/* Date stamp */}
           <div className="absolute top-3 right-3 bg-paper/95 px-4 py-2 font-handwritten text-base text-fade shadow-tape border border-line">
@@ -134,21 +142,25 @@ const ImageGallery = ({ hike, onClose }) => {
         </div>
 
         {/* Thumbnail grid */}
+        {hike.photos.length > 0 && (
         <div className="grid grid-cols-4 gap-3 mb-6">
           {hike.photos.map((photo, index) => (
             <button
               key={index}
               onClick={() => setCurrentIndex(index)}
-              className={`aspect-[4/3] bg-gradient-to-br from-line to-paper transition-all ${
+              className={`aspect-[4/3] bg-gradient-to-br from-line to-paper transition-all overflow-hidden ${
                 currentIndex === index ? 'ring-4 ring-highlight scale-105' : 'hover:scale-105'
               }`}
             >
-              <div className="w-full h-full flex items-center justify-center text-xs font-notes text-fade">
-                {index + 1}
-              </div>
+              <img
+                src={photo}
+                alt={`${hike.name} thumbnail ${index + 1}`}
+                className="w-full h-full object-cover"
+              />
             </button>
           ))}
         </div>
+        )}
 
         {/* Review */}
         <blockquote className="font-body text-base text-ink leading-relaxed border-l-4 border-highlight pl-4 italic mb-4">
@@ -267,12 +279,17 @@ const HikeCard = ({ hike, index, onClick }) => {
       >
         {/* Photo */}
         <div className="aspect-[4/3] bg-gradient-to-br from-line to-paper relative overflow-hidden mb-5">
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-fade font-handwritten text-center p-6">
-            <div className="text-3xl mb-2">{hike.name}</div>
-            <div className="text-lg">{hike.location}</div>
-            <div className="text-sm mt-4">[Main: {hike.photos[0]}]</div>
-            <div className="text-xs mt-2 opacity-60">Click to view {hike.photos.length} photos</div>
-          </div>
+          {hike.photos.length > 0 ? (
+            <img
+              src={hike.photos[0]}
+              alt={hike.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-fade font-handwritten text-xl">
+              Photos coming soon
+            </div>
+          )}
 
           {/* Date stamp */}
           <div

@@ -218,11 +218,13 @@ const Hero = () => {
           >
             {/* Polaroid frame */}
             <div className="relative bg-white p-4 pb-16 shadow-photo -rotate-3 hover:rotate-0 transition-transform duration-300">
-              {/* Photo placeholder - replace with actual photo */}
+              {/* Profile photo */}
               <div className="aspect-square bg-gradient-to-br from-line to-paper relative overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-center text-fade font-handwritten text-2xl">
-                  [Your Photo Here]
-                </div>
+                <img
+                  src="/profile.jpg"
+                  alt="Hari"
+                  className="w-full h-full object-cover"
+                />
               </div>
 
               {/* Date stamp on polaroid */}
