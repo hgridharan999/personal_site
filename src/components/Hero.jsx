@@ -50,7 +50,7 @@ const Hero = () => {
               transition={{ duration: 0.8, delay: 1.5, ease: "easeOut" }}
             >
               <p className="text-2xl md:text-3xl font-handwritten text-ink-accent">
-                Cornell '29 • Dyson AEM • AI Minor
+                Cornell Dyson '29 • ML/Data Enthusiast
               </p>
             </motion.div>
 

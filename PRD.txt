@@ -1,0 +1,1716 @@
+PRD
+
+TrailSense: Complete Product Requirements Document
+Technical Implementation Guide for Claude Code
+
+1. Project Overview
+Product Name: TrailSense
+Description: A personal hiking decision support system that assesses trail feasibility and recommends hikes based on weather conditions, trail characteristics, and user capability.
+Key Constraints:
+
+Zero cost infrastructure (free tier services only)
+Minimal external API costs (use free APIs where possible)
+Personal project initially, designed to scale
+Must integrate seamlessly with existing personal website
+
+
+2. Core Features Specification
+2.1 User Profile Management
+Initial Setup (One-Time):
+Simple onboarding form collecting:
+
+Fitness Metrics:
+
+"How many hours can you comfortably hike?" (slider: 1-12 hours, default: 4)
+"What's the most elevation gain you've done recently?" (slider: 0-8000 ft, default: 2000)
+"How would you describe your hiking pace on flat terrain?" (dropdown: Slow / Moderate / Fast)
+"Years of hiking experience" (input: 0-50)
+
+
+Technical Ability:
+
+"Are you comfortable with basic scrambling (using hands)?" (Yes/No)
+"How comfortable are you with exposure (steep dropoffs)?" (slider: 1-5, labels: "Not at all" to "Very comfortable")
+"Can you navigate off-trail or with minimal markers?" (Yes/No/Sometimes)
+
+
+Personal Factors:
+
+"What elevation do you live at?" (input in feet, for informational purposes only - do NOT use for acclimation penalties)
+"How do you handle cold weather?" (slider: 1-5, "Prefer warm" to "Love the cold")
+"Risk tolerance" (Conservative / Moderate / Aggressive)
+
+
+Location:
+
+City, State (for drive time calculations)
+Or: Allow geolocation permission
+
+
+
+User Profile Data Model:
+json{
+  "user_id": "uuid",
+  "fitness": {
+    "max_hours": 6,
+    "max_elevation_gain": 3000,
+    "pace": "moderate",
+    "experience_years": 5
+  },
+  "technical": {
+    "scrambling_comfort": true,
+    "exposure_comfort": 3,
+    "navigation_skill": "sometimes"
+  },
+  "personal": {
+    "home_elevation": 5000,
+    "cold_tolerance": 4,
+    "risk_tolerance": "moderate"
+  },
+  "location": {
+    "city": "Denver",
+    "state": "CO",
+    "lat": 39.7392,
+    "lon": -104.9903
+  },
+  "gear_inventory": [],
+  "current_fatigue": 0.0,
+  "recent_hikes": [],
+  "created_at": "timestamp",
+  "updated_at": "timestamp"
+}
+```
+
+**Adaptive Learning (Post-Hike Logging):**
+
+After each hike, user fills out simple form:
+- Trail name (auto-selected from their assessments or manual entry)
+- Date hiked
+- "Did you complete it?" (Yes/No)
+- "How hard was it?" (1-5 stars: Too Easy / Easier than expected / As expected / Harder than expected / Too Hard)
+- "Actual time taken" (hours)
+- Optional notes
+
+System uses this data to:
+- Update `current_fatigue` (recent activity reduces capacity temporarily)
+- Refine fitness estimates using Bayesian updating
+- Improve future confidence scores by comparing predicted vs actual difficulty
+
+**Gear Inventory:**
+
+Checkbox list of owned gear:
+- [ ] Trekking poles
+- [ ] Microspikes/Yaktrax
+- [ ] Crampons
+- [ ] Ice axe
+- [ ] GPS device/InReach
+- [ ] Emergency bivy/shelter
+- [ ] Insulated jacket (down/synthetic)
+- [ ] Rain jacket
+- [ ] Rain pants
+- [ ] Headlamp
+- [ ] First aid kit
+- [ ] Bear spray (for certain regions)
+
+User can edit anytime in profile settings.
+
+---
+
+### 2.2 Trail Feasibility Assessment
+
+**User Flow:**
+
+1. User browses/searches for a trail
+2. Clicks "Assess this hike"
+3. Small modal appears:
+   - Date picker (defaults to upcoming Saturday)
+   - "What gear are you bringing?" (checkboxes pre-filled from inventory, user can modify)
+   - "Assess" button
+4. System calculates confidence score
+5. Results displayed inline (expanded card, not separate page)
+
+**Assessment Output (Displayed Inline):**
+```
+┌─────────────────────────────────────────────┐
+│   ASSESSMENT RESULTS                        │
+│                                             │
+│   Confidence Score: 73%                     │
+│   Recommendation: GO WITH CAUTION           │
+│                                             │
+│   📊 Breakdown:                             │
+│   ✓ Your Capability: Strong match          │
+│   ⚠ Weather: Thunderstorms likely after 2pm│
+│   ✓ Trail Conditions: Clear, dry           │
+│   ⚠ Gear: Consider microspikes for summit  │
+│                                             │
+│   🚨 Key Concerns:                          │
+│   • Start before 9am to avoid afternoon     │
+│     thunderstorms on exposed ridge          │
+│   • Snow reported above 12,000 ft - bring   │
+│     microspikes                             │
+│   • 10 mile round trip, 3,500 ft gain -     │
+│     expect 5-6 hours                        │
+│                                             │
+│   🌤 Weather Forecast:                      │
+│   Trailhead: 45°F, Sunny → 52°F            │
+│   Summit: 28°F, Partly Cloudy → 35°F       │
+│   Precip: 40% after 2pm                    │
+│   Wind: 15-20 mph at summit                │
+│                                             │
+│   🥾 Trail Details:                         │
+│   Distance: 10 miles (out-and-back)        │
+│   Elevation Gain: 3,500 ft                 │
+│   Difficulty: Moderate-Hard                │
+│   Estimated Time: 5-6 hours                │
+│   Last Condition Report: 3 days ago        │
+│                                             │
+│   💬 Recent Trip Reports:                   │
+│   • 3 days ago: "Snow above tree line,     │
+│     microspikes helpful" - Positive        │
+│   • 1 week ago: "Muddy lower section,      │
+│     clear above" - Positive                │
+│                                             │
+│   [Close] [Save to My Hikes]               │
+└─────────────────────────────────────────────┘
+```
+
+**Recommendation Categories:**
+- **GO** (80-100%): All systems green
+- **GO WITH CAUTION** (60-79%): Some concerns, but manageable
+- **RECONSIDER** (40-59%): Multiple risk factors
+- **DON'T GO** (0-39%): High risk or missing critical requirements
+
+**Factors Analyzed:**
+
+1. **User Capability:**
+   - Is distance within `max_hours` capacity? (Use Naismith's rule: 3 mph + 1 hour per 2000 ft gain)
+   - Is elevation gain within recent experience?
+   - Does technical difficulty match user's skill?
+   - Exposure level vs user comfort
+   - Recent fatigue factor (hiked in last 3 days? Reduce capacity by 15%)
+
+2. **Weather Conditions:**
+   - Temperature range (trailhead vs summit)
+   - Precipitation probability
+   - Lightning risk (if >40% thunderstorms + exposed trail → major penalty)
+   - Wind speed at elevation
+   - Visibility (fog concerns for navigation)
+
+3. **Trail Conditions:**
+   - Recent trip reports (within 7 days = high confidence, 8-14 days = medium, 15-30 days = low)
+   - Snow depth (from SNOTEL or reports)
+   - Trail status (closures, hazards)
+   - Water crossing levels (if applicable)
+
+4. **Gear Match:**
+   - Compare required gear (from trail database + current conditions) vs user's selected gear
+   - Missing critical gear (e.g., microspikes when icy) = major penalty
+   - Missing nice-to-have gear (e.g., trekking poles) = minor penalty
+
+---
+
+### 2.3 Hike Recommendation Engine
+
+**User Input:**
+
+Single form page with constraints:
+
+- **When?** Date picker (defaults to upcoming Saturday)
+- **How far?** "Max distance" slider (0-30 miles, default: 15)
+- **How much climbing?** "Max elevation gain" slider (0-8000 ft, default: 3500)
+- **Max drive time?** Slider (0-360 minutes / 6 hours, default: 120 min)
+- **What kind of terrain?** Multi-select checkboxes:
+  - [ ] Alpine/Above treeline
+  - [ ] Forest
+  - [ ] Desert
+  - [ ] Coastal
+  - [ ] Canyon/Gorge
+  - [ ] Lake/Water features
+  - [ ] Summit/Peak
+- **What features do you want?** Multi-select:
+  - [ ] Lake
+  - [ ] Waterfall
+  - [ ] Summit views
+  - [ ] Hot springs
+  - [ ] Wildlife viewing
+  - [ ] Fall colors (seasonal)
+  - [ ] Wildflowers (seasonal)
+- **Avoid:** Multi-select:
+  - [ ] Crowds (high traffic trails)
+  - [ ] Fees/Permits required
+  - [ ] Dogs must be leashed
+- **Difficulty preference:** Dropdown (Any / Easy / Moderate / Hard)
+
+**Output:**
+
+**Ranked list of exactly 5 hikes** displayed as expandable cards:
+```
+┌─────────────────────────────────────────────┐
+│  1. Lake Agnes Trail                    78% │
+│     10 mi · 2,800 ft gain · 3h drive       │
+│     🏔 Alpine, Lake · ⛅ Great weather      │
+│                                             │
+│     Why: Perfect weather, alpine lake,      │
+│     within your fitness range               │
+│                                             │
+│     [▼ Show Full Assessment]                │
+└─────────────────────────────────────────────┘
+│  (Expanded assessment appears here when     │
+│   user clicks - same format as 2.2)         │
+└─────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────┐
+│  2. Mount Bierstadt                     72% │
+│     7 mi · 2,700 ft gain · 1.5h drive      │
+│     🏔 Summit, Alpine · ⚠ Afternoon storms │
+│                                             │
+│     Why: Classic 14er, great views,         │
+│     start early to avoid storms             │
+│                                             │
+│     [▼ Show Full Assessment]                │
+└─────────────────────────────────────────────┘
+
+... (3 more hikes)
+Ranking Algorithm:
+
+Filter:
+
+Eliminate trails outside hard constraints (distance, elevation, drive time)
+Only include trails with confidence score ≥50%
+
+
+Score each trail:
+
+Base score = confidence score (0-100)
+Terrain match: +10 points if matches all selected terrains
+Feature match: +5 points per matched feature
+Avoid penalty: -15 points if trail has avoided characteristics
+Weather quality: +10 if perfect weather, +5 if good, 0 if OK, -5 if marginal
+
+
+Normalize & diversify:
+
+Sort by composite score
+Apply Maximal Marginal Relevance (MMR) to avoid recommending 5 similar hikes
+
+If top 2 hikes are both "alpine lake 10 miles", bump diversity by selecting different trail type for #3
+
+
+
+
+Return top 5
+
+If fewer than 5 trails match: Show however many are available with message "Found X hikes matching your criteria. Try relaxing distance or drive time constraints for more options."
+
+2.4 Trail Database
+Schema:
+sqlCREATE TABLE trails (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    region TEXT,  -- e.g., "Front Range", "San Juans"
+    trailhead_location GEOGRAPHY(POINT, 4326),
+    trailhead_elevation INTEGER,  -- feet
+    highest_point_elevation INTEGER,  -- feet
+    distance_miles DECIMAL(5,2),
+    elevation_gain_ft INTEGER,
+    trail_type TEXT,  -- 'loop', 'out-and-back', 'point-to-point'
+    difficulty TEXT,  -- 'easy', 'moderate', 'hard', 'very-hard'
+    technical_class INTEGER,  -- 1-3 (1=trail, 2=scramble, 3=exposed scramble)
+    exposure_level INTEGER,  -- 1-5 (1=none, 5=extreme)
+    terrain_types TEXT[],  -- ['alpine', 'forest']
+    features TEXT[],  -- ['lake', 'waterfall', 'summit']
+    typical_crowd_level INTEGER,  -- 1-5
+    dogs_allowed BOOLEAN DEFAULT true,
+    fee_required BOOLEAN DEFAULT false,
+    best_months INTEGER[],  -- [6,7,8,9] for June-Sept
+    estimated_time_hours DECIMAL(4,2),
+    route_description TEXT,
+    required_gear TEXT[],  -- ['microspikes'] in winter, etc.
+    elevation_profile JSONB,  -- [{dist: 0, elev: 8000}, {dist: 0.5, elev: 8200}, ...]
+    photos TEXT[],  -- URLs or local paths
+    data_source TEXT DEFAULT 'manual',
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_trails_location ON trails USING GIST(trailhead_location);
+CREATE INDEX idx_trails_difficulty ON trails(difficulty);
+CREATE INDEX idx_trails_distance ON trails(distance_miles);
+CREATE INDEX idx_trails_elevation_gain ON trails(elevation_gain_ft);
+
+CREATE TABLE trail_conditions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    trail_id UUID REFERENCES trails(id) ON DELETE CASCADE,
+    report_date DATE NOT NULL,
+    snow_level_ft INTEGER,  -- NULL if no snow
+    trail_status TEXT,  -- 'clear', 'muddy', 'icy', 'snowy', 'closed'
+    mud_level TEXT,  -- 'none', 'light', 'moderate', 'heavy'
+    water_crossing_status TEXT,  -- 'low', 'moderate', 'high', 'impassable'
+    hazards TEXT[],  -- ['rockfall', 'washed_out_bridge']
+    required_gear TEXT[],  -- extracted from trip report
+    difficulty_sentiment TEXT,  -- 'easier', 'as-expected', 'harder'
+    overall_sentiment TEXT,  -- 'positive', 'neutral', 'negative'
+    source TEXT,  -- 'alltrails', 'manual', 'reddit'
+    source_url TEXT,
+    raw_text TEXT,
+    confidence DECIMAL(3,2),  -- LLM confidence in extraction (0-1)
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_conditions_trail_date ON trail_conditions(trail_id, report_date DESC);
+Initial Data Source:
+Manually enter 50-100 trails in your region (Colorado Front Range, for example).
+For each trail, gather from AllTrails or HikingProject:
+
+Name, location, stats (distance, elevation)
+Difficulty, terrain types, features
+Route description
+Photos
+
+Store in CSV, then bulk import via script.
+Elevation Profile Processing:
+
+Download USGS 1/3 arc-second DEM data for your region (free from USGS Earth Explorer)
+Use gdalwarp and Python rasterio to extract elevation along trail route
+Store as JSON array in elevation_profile column
+
+
+2.5 Weather Integration
+Primary API: National Weather Service (weather.gov) - 100% free, no API key
+Endpoints:
+
+/points/{lat},{lon} → Get forecast URL for a location
+Forecast grid data → Hourly forecasts
+
+Data Fetching Strategy:
+Once per week (Sunday night):
+
+Fetch 7-day forecast for all trails (trailhead + summit locations)
+Store in database
+
+Schema:
+sqlCREATE TABLE weather_forecasts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    trail_id UUID REFERENCES trails(id) ON DELETE CASCADE,
+    location_type TEXT,  -- 'trailhead' or 'summit'
+    forecast_date DATE,
+    forecast_hour INTEGER,  -- 0-23
+    temperature_f INTEGER,
+    precipitation_prob INTEGER,  -- 0-100
+    precipitation_type TEXT,  -- 'rain', 'snow', null
+    wind_speed_mph INTEGER,
+    wind_gust_mph INTEGER,
+    sky_cover INTEGER,  -- 0-100 percent
+    weather_summary TEXT,  -- 'Partly Cloudy', 'Thunderstorms Likely'
+    fetched_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_weather_trail_date ON weather_forecasts(trail_id, forecast_date, forecast_hour);
+```
+
+**Why once per week?**
+- 7-day forecasts don't change drastically day-to-day for planning purposes
+- Reduces API calls to near-zero (50 trails × 2 locations × once/week = 100 calls/week, well under any limit)
+- If user assesses a hike for "tomorrow", they're using a 6-day-old forecast for that day, which is still reasonably accurate
+
+**Elevation Adjustment:**
+- Summit temperature = Trailhead temp - (elevation_diff / 1000 * 3.5°F)
+- Summit wind = Trailhead wind × 1.3 (rough multiplier for exposure)
+
+**Lightning Risk Calculation:**
+- If forecast says "Thunderstorms" or "Scattered T-Storms" and trail has `exposure_level >= 3`:
+  - Lightning risk = HIGH
+  - Major confidence penalty
+
+---
+
+### 2.6 Trip Report Scraping & Parsing
+
+**Sources (in priority order):**
+1. AllTrails trip reports
+2. Reddit: r/coloradohikers, r/14ers (or regional subs)
+3. Mountain Project (for technical routes)
+4. Summitpost
+
+**Scraping Frequency:**
+- **Weekly batch job** (Sunday night, same time as weather update)
+- Scrape reports from last 30 days for top 50 most popular trails
+- Scrape reports from last 14 days for all other trails
+
+**LLM Parsing:**
+
+**Use:** DeepSeek API (free tier) or Llama 3.1 70B via Groq API (free tier, fast)
+
+**Prompt Template:**
+```
+You are extracting structured trail condition data from a hiking trip report.
+
+Trip Report:
+"""
+{trip_report_text}
+"""
+
+Extract the following information and return ONLY valid JSON:
+
+{
+  "report_date": "YYYY-MM-DD" or null,
+  "snow_level_ft": integer or null,
+  "trail_status": "clear" | "muddy" | "icy" | "snowy" | "washed_out" | "closed" | null,
+  "mud_level": "none" | "light" | "moderate" | "heavy" | null,
+  "water_crossing_status": "low" | "moderate" | "high" | "impassable" | null,
+  "hazards": [] or ["rockfall", "lightning", "wildlife", etc.],
+  "required_gear": [] or ["microspikes", "crampons", "ice_axe", etc.],
+  "difficulty_sentiment": "easier" | "as-expected" | "harder" | null,
+  "overall_sentiment": "positive" | "neutral" | "negative",
+  "confidence": float 0.0-1.0 (how confident are you in this extraction?)
+}
+
+Rules:
+- If information is not mentioned, use null
+- Be conservative with confidence scores
+- For dates, try to infer from context (e.g., "yesterday", "last weekend")
+- Return ONLY the JSON, no explanations
+Post-Processing:
+
+Validate JSON structure
+If confidence < 0.5, discard the extraction
+Insert into trail_conditions table
+Deduplicate: If multiple reports for same trail/date, keep highest confidence one
+
+Cost: DeepSeek or Groq free tier should handle ~1000 reports/week easily.
+
+2.7 Decision Engine
+Architecture: Hybrid Rules + Lightweight ML
+Hard Rules (Always Applied):
+pythondef apply_hard_rules(trail, user, weather, conditions, gear):
+    confidence = 100.0
+    concerns = []
+    
+    # Trail officially closed
+    if conditions.trail_status == 'closed':
+        return 0, ["Trail is officially closed"]
+    
+    # Lightning risk on exposed trail
+    if weather.thunderstorm_prob > 40 and trail.exposure_level >= 3:
+        confidence = min(confidence, 30)
+        concerns.append("High lightning risk on exposed sections - start early or reconsider")
+    
+    # Missing critical gear
+    required_gear = set(trail.required_gear + conditions.required_gear)
+    user_gear = set(gear)
+    missing_critical = required_gear - user_gear
+    
+    if 'microspikes' in missing_critical and conditions.trail_status == 'icy':
+        confidence = min(confidence, 25)
+        concerns.append("Trail is icy - microspikes required")
+    
+    if 'ice_axe' in missing_critical and trail.technical_class >= 3 and conditions.snow_level_ft:
+        confidence = min(confidence, 20)
+        concerns.append("Snow on technical terrain - ice axe required")
+    
+    # Distance/elevation way beyond user capability
+    estimated_time = calculate_naismith_time(trail, user)
+    if estimated_time > user.max_hours * 1.5:
+        confidence = min(confidence, 40)
+        concerns.append(f"This hike may take {estimated_time:.1f} hours - significantly longer than your usual range")
+    
+    return confidence, concerns
+Feature Engineering:
+pythondef extract_features(trail, user, weather, conditions, gear):
+    return {
+        # User capability features
+        'user_max_hours': user.max_hours,
+        'user_max_gain': user.max_elevation_gain,
+        'user_pace_mph': pace_to_mph(user.pace),
+        'user_experience_years': user.experience_years,
+        'user_scrambling': 1 if user.scrambling_comfort else 0,
+        'user_exposure_comfort': user.exposure_comfort,
+        'user_navigation_skill': skill_to_numeric(user.navigation_skill),
+        'user_cold_tolerance': user.cold_tolerance,
+        'user_risk_tolerance': risk_to_numeric(user.risk_tolerance),
+        'user_fatigue': user.current_fatigue,
+        
+        # Trail features
+        'trail_distance': trail.distance_miles,
+        'trail_elevation_gain': trail.elevation_gain_ft,
+        'trail_technical_class': trail.technical_class,
+        'trail_exposure_level': trail.exposure_level,
+        'trail_crowd_level': trail.typical_crowd_level,
+        'estimated_hours': calculate_naismith_time(trail, user),
+        
+        # Trail fit features (normalized ratios)
+        'distance_ratio': trail.distance_miles / (user.max_hours * user.pace_mph),
+        'elevation_ratio': trail.elevation_gain_ft / user.max_elevation_gain,
+        'time_ratio': estimated_hours / user.max_hours,
+        
+        # Weather features
+        'temp_min': weather.trailhead_temp_min,
+        'temp_max': weather.summit_temp_max,
+        'temp_range': weather.summit_temp_max - weather.trailhead_temp_min,
+        'precip_prob': weather.precipitation_prob,
+        'is_thunderstorm': 1 if 'thunder' in weather.summary.lower() else 0,
+        'wind_mph': weather.wind_speed_mph,
+        'wind_gust_mph': weather.wind_gust_mph,
+        
+        # Condition features
+        'conditions_staleness_days': (today - conditions.report_date).days,
+        'has_snow': 1 if conditions.snow_level_ft else 0,
+        'is_muddy': mud_to_numeric(conditions.mud_level),
+        'is_icy': 1 if conditions.trail_status == 'icy' else 0,
+        'crossing_difficulty': crossing_to_numeric(conditions.water_crossing_status),
+        'difficulty_sentiment': sentiment_to_numeric(conditions.difficulty_sentiment),
+        'overall_sentiment': sentiment_to_numeric(conditions.overall_sentiment),
+        
+        # Gear features
+        'gear_match_ratio': len(user_gear & required_gear) / max(len(required_gear), 1),
+        'has_poles': 1 if 'trekking_poles' in gear else 0,
+        'has_microspikes': 1 if 'microspikes' in gear else 0,
+        
+        # Temporal features
+        'month': date.month,
+        'is_weekend': 1 if date.weekday() >= 5 else 0,
+    }
+ML Model:
+Type: Gradient Boosted Trees (XGBoost or LightGBM)
+Target Variable:
+
+From user's hike logs:
+
+Completed comfortably (difficulty_rating = 1-2) → 1.0
+Completed as expected (difficulty_rating = 3) → 0.75
+Harder than expected (difficulty_rating = 4-5) → 0.5
+Turned back → 0.0
+
+
+
+Training:
+
+Initially, generate synthetic training data based on rules
+As user logs hikes, retrain weekly with real data
+Use cross-validation to prevent overfitting
+Regularize heavily (max_depth=3-4, min_child_weight=5)
+
+Inference:
+pythondef predict_confidence(trail, user, weather, conditions, gear):
+    # Apply hard rules first
+    hard_confidence, concerns = apply_hard_rules(...)
+    
+    # Extract features
+    features = extract_features(...)
+    
+    # ML prediction
+    ml_confidence = model.predict_proba(features)[0][1] * 100
+    
+    # Combine: take minimum of hard rules and ML
+    final_confidence = min(hard_confidence, ml_confidence)
+    
+    # Add ML-based concerns if relevant
+    if ml_confidence < 60:
+        shap_values = get_shap_explanation(features)
+        top_negative_factors = get_top_negative_factors(shap_values, n=2)
+        concerns.extend(top_negative_factors)
+    
+    return final_confidence, concerns
+Model Explainability:
+
+Use SHAP (SHapley Additive exPlanations) to explain predictions
+Surface top 2-3 factors influencing confidence score
+Example: "Weather conditions are excellent (+12%), but trail is muddy after recent rain (-8%)"
+
+
+3. Frontend Design System Integration
+CRITICAL: Frontend must match your existing personal website exactly in:
+
+Typography (font families, sizes, weights, line heights)
+Color palette
+Spacing/layout grid
+Animation style and timing
+Component aesthetic (buttons, cards, inputs)
+Responsive breakpoints
+
+Required Assets from Personal Site:
+Please provide:
+
+CSS Variables Export:
+
+css   /* Extract all CSS custom properties */
+   :root {
+     --font-primary: ...;
+     --font-secondary: ...;
+     --color-primary: ...;
+     --color-secondary: ...;
+     --color-bg: ...;
+     --color-text: ...;
+     --spacing-unit: ...;
+     --border-radius: ...;
+     --transition-speed: ...;
+     /* etc. */
+   }
+```
+
+2. **Typography Specs:**
+   - Heading styles (H1-H6): font family, size, weight, letter-spacing
+   - Body text: font family, size, line-height
+   - Code/monospace: if applicable
+
+3. **Component Examples:**
+   - Button styles (primary, secondary, ghost)
+   - Input field styles
+   - Card/container styles
+   - Navigation style
+   - Any signature animations (page transitions, hover effects, etc.)
+
+4. **Animation Preferences:**
+   - Easing functions (ease-in-out, cubic-bezier, etc.)
+   - Typical transition durations
+   - Any signature micro-interactions
+
+### TrailSense-Specific Adaptations:
+
+While matching base styles, TrailSense adds:
+
+**New Components:**
+- **Confidence Score Badge:** Large circular progress indicator (0-100%)
+  - 0-39%: Red gradient
+  - 40-59%: Orange gradient
+  - 60-79%: Yellow gradient
+  - 80-100%: Green gradient
+  - Animate on load (count up effect)
+
+- **Assessment Breakdown Cards:** 4 cards in 2×2 grid
+  - Each card: icon, category name, status (✓ / ⚠ / ✗), brief note
+  - Hover effect: subtle elevation increase
+
+- **Trail Card (for recommendations):**
+  - Compact version (collapsed): Photo, name, stats, confidence badge
+  - Expanded version: Full assessment inline
+  - Smooth height transition on expand/collapse
+
+- **Constraint Form Inputs:**
+  - Sliders with value display
+  - Multi-select checkboxes (styled like tags)
+  - Date picker (use native or library that matches your style)
+
+**Map Integration:**
+- Use Mapbox GL JS with custom style matching your color palette
+- Trail markers: custom icon matching your design system
+- Keep map UI minimal (zoom controls, scale only)
+
+### Page Layouts:
+
+All pages follow your existing layout structure:
+
+**Header/Nav:**
+- Match your personal site's navigation exactly
+- Add TrailSense link to your project menu
+- Keep same responsive behavior (mobile hamburger, etc.)
+
+**Main Content Area:**
+- Use same max-width container
+- Same padding/margins
+- Same responsive breakpoints
+
+**Footer:**
+- Match your personal site footer
+- Optionally add TrailSense-specific footer info (data sources, disclaimer)
+
+---
+
+## 4. Technical Architecture
+
+### 4.1 Backend Stack
+
+**Framework:** FastAPI (Python 3.11+)
+
+**Database:** 
+- PostgreSQL 15 (Free tier: Supabase or Railway)
+- Extensions: PostGIS (geospatial), TimescaleDB (optional for time-series)
+
+**Task Queue:** 
+- Celery + Redis (for background jobs)
+- OR simpler: APScheduler (if no Redis free tier available)
+
+**External APIs (All Free):**
+- Weather: National Weather Service (weather.gov) - no key needed
+- Snow Data: SNOTEL (via NRCS API) - free
+- LLM: DeepSeek API (free tier) or Groq API (free tier)
+- Optional: Strava API (free, requires OAuth)
+
+**ML Libraries:**
+- scikit-learn (basic models)
+- XGBoost or LightGBM (gradient boosting)
+- SHAP (explainability)
+- NumPy, Pandas, GeoPandas (data processing)
+
+**Authentication:**
+- Simple JWT-based auth (no external service needed)
+- Passwords hashed with bcrypt
+- OR: If you want OAuth, use Supabase built-in auth (free)
+
+**Hosting:**
+- Backend: Railway free tier or Render free tier
+- Database: Supabase free tier (500MB, enough for thousands of trails)
+- Static files: GitHub or local filesystem (no S3 cost)
+
+### 4.2 Frontend Stack
+
+**Framework:** React 18 + TypeScript
+
+**Build Tool:** Vite (faster than CRA)
+
+**Key Libraries:**
+- **Routing:** React Router v6
+- **State Management:**
+  - TanStack Query (React Query) for server state
+  - Zustand for client state (lightweight)
+- **Forms:** React Hook Form + Zod validation
+- **Maps:** Mapbox GL JS (free tier: 50k loads/month)
+- **Charts:** Recharts (for elevation profiles if needed)
+- **UI Components:** 
+  - Use your existing component library if you have one
+  - OR: Headless UI (accessible primitives) + your custom styles
+  - NO pre-styled component library (to match your site exactly)
+- **Icons:** Lucide React (tree-shakeable, lightweight)
+- **Date Picker:** react-datepicker (customizable styling)
+
+**Styling:**
+- Tailwind CSS (configured to match your design tokens exactly)
+- OR: Vanilla CSS/SCSS if that's what your site uses
+- CSS Modules for component-scoped styles
+
+**Hosting:**
+- Vercel (free tier, excellent Next.js/React support)
+- OR: Netlify (free tier)
+- OR: GitHub Pages (if static export possible)
+
+### 4.3 Development Setup
+
+**Repo Structure:**
+```
+trailsense/
+├── backend/
+│   ├── app/
+│   │   ├── main.py              # FastAPI app entry
+│   │   ├── models/              # SQLAlchemy models
+│   │   ├── routes/              # API endpoints
+│   │   ├── services/            # Business logic
+│   │   ├── ml/                  # ML models, training scripts
+│   │   ├── scrapers/            # Web scraping scripts
+│   │   └── utils/               # Helpers
+│   ├── alembic/                 # Database migrations
+│   ├── tests/
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   └── .env.example
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── hooks/
+│   │   ├── services/            # API client
+│   │   ├── styles/              # Global styles, design tokens
+│   │   └── main.tsx
+│   ├── public/
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── tailwind.config.js
+│   └── vite.config.ts
+├── data/
+│   ├── trails.csv               # Initial trail data
+│   ├── dem/                     # Elevation data files
+│   └── import_scripts/
+├── docker-compose.yml           # Local dev environment
+└── README.md
+Local Development:
+bash# Backend
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+
+# Frontend
+cd frontend
+npm install
+npm run dev
+
+# Database (via Docker)
+docker-compose up -d postgres redis
+Environment Variables:
+bash# backend/.env
+DATABASE_URL=postgresql://user:pass@localhost:5432/trailsense
+REDIS_URL=redis://localhost:6379
+SECRET_KEY=your-secret-key-here
+DEEPSEEK_API_KEY=your-key-or-blank-if-using-groq
+MAPBOX_TOKEN=your-mapbox-token
+
+# frontend/.env
+VITE_API_BASE_URL=http://localhost:8000
+VITE_MAPBOX_TOKEN=same-as-backend
+```
+
+---
+
+## 5. API Specification
+
+### 5.1 Authentication
+```
+POST   /api/auth/register
+  Body: { email, password, name }
+  Returns: { user, token }
+
+POST   /api/auth/login
+  Body: { email, password }
+  Returns: { user, token }
+
+GET    /api/auth/me
+  Headers: Authorization: Bearer <token>
+  Returns: { user }
+```
+
+### 5.2 User Profile
+```
+GET    /api/profile
+  Returns: UserProfile object
+
+PUT    /api/profile
+  Body: Partial UserProfile
+  Returns: Updated UserProfile
+
+POST   /api/profile/onboard
+  Body: Onboarding form data (fitness, technical, personal, location)
+  Returns: UserProfile
+
+GET    /api/profile/gear
+  Returns: { gear_inventory: string[] }
+
+PUT    /api/profile/gear
+  Body: { gear_inventory: string[] }
+  Returns: Updated gear list
+```
+
+### 5.3 Trails
+```
+GET    /api/trails
+  Query params:
+    ?search=name
+    &region=Front Range
+    &max_distance=15
+    &max_elevation=4000
+    &difficulty=moderate
+    &limit=50
+  Returns: { trails: Trail[], count: number }
+
+GET    /api/trails/:id
+  Returns: Full Trail object
+
+GET    /api/trails/:id/conditions
+  Returns: { conditions: TrailCondition[], latest: TrailCondition }
+
+GET    /api/trails/:id/weather?date=2025-01-18
+  Returns: { 
+    trailhead: WeatherForecast[], 
+    summit: WeatherForecast[] 
+  }
+
+GET    /api/trails/nearby
+  Query: ?lat=39.7&lon=-105.2&radius_miles=50
+  Returns: { trails: Trail[] }
+```
+
+### 5.4 Assessments
+```
+POST   /api/assessments
+  Body: {
+    trail_id: uuid,
+    date: "2025-01-18",
+    gear: string[]
+  }
+  Returns: {
+    assessment_id: uuid,
+    confidence_score: number,
+    recommendation: string,
+    breakdown: {
+      capability: { status, notes },
+      weather: { status, notes },
+      conditions: { status, notes },
+      gear: { status, notes }
+    },
+    concerns: string[],
+    weather_summary: {...},
+    trail_summary: {...},
+    recent_reports: TrailCondition[]
+  }
+
+GET    /api/assessments/:id
+  Returns: Full Assessment object
+
+GET    /api/assessments?user_id=...
+  Returns: { assessments: Assessment[] }
+```
+
+### 5.5 Recommendations
+```
+POST   /api/recommendations
+  Body: {
+    date: "2025-01-18",
+    max_distance: 15,
+    max_elevation_gain: 3500,
+    max_drive_time_minutes: 120,
+    terrain_preferences: string[],
+    desired_features: string[],
+    avoid: string[],
+    difficulty: string | null
+  }
+  Returns: {
+    recommendations: [
+      {
+        trail: Trail,
+        confidence_score: number,
+        drive_time_minutes: number,
+        why_recommended: string,
+        key_info: string,
+        weather_summary: {...},
+        assessment_preview: {...}
+      },
+      ... (5 total)
+    ]
+  }
+```
+
+### 5.6 Hike Logs
+```
+GET    /api/hikes
+  Returns: { hikes: HikeLog[] }
+
+POST   /api/hikes
+  Body: {
+    trail_id: uuid,
+    date: "2025-01-18",
+    completed: true,
+    difficulty_rating: 3,
+    time_taken_hours: 5.5,
+    notes: "Great hike!"
+  }
+  Returns: { hike: HikeLog, updated_profile: UserProfile }
+
+PUT    /api/hikes/:id
+  Body: Partial HikeLog
+  Returns: Updated HikeLog
+
+DELETE /api/hikes/:id
+  Returns: { success: true }
+```
+
+### 5.7 Admin/Background (Internal)
+```
+POST   /api/admin/scrape/trails
+  Trigger trail database scraping
+
+POST   /api/admin/scrape/conditions
+  Trigger trip report scraping
+
+POST   /api/admin/weather/update
+  Trigger weekly weather forecast update
+
+POST   /api/admin/model/train
+  Trigger ML model retraining
+
+6. Database Schema (Complete SQL)
+sql-- Enable extensions
+CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Users table
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    name TEXT,
+    profile JSONB NOT NULL DEFAULT '{}'::jsonb,
+    -- profile structure: {fitness: {...}, technical: {...}, personal: {...}, location: {...}}
+    gear_inventory TEXT[] DEFAULT '{}',
+    current_fatigue DECIMAL(3,2) DEFAULT 0.0,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_users_email ON users(email);
+
+-- Trails table
+CREATE TABLE trails (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    region TEXT,
+    trailhead_location GEOGRAPHY(POINT, 4326) NOT NULL,
+    trailhead_elevation INTEGER,
+    highest_point_elevation INTEGER,
+    distance_miles DECIMAL(5,2) NOT NULL,
+    elevation_gain_ft INTEGER NOT NULL,
+    trail_type TEXT, -- 'loop', 'out-and-back', 'point-to-point'
+    difficulty TEXT, -- 'easy', 'moderate', 'hard', 'very-hard'
+    technical_class INTEGER DEFAULT 1, -- 1-3
+    exposure_level INTEGER DEFAULT 1, -- 1-5
+    terrain_types TEXT[] DEFAULT '{}',
+    features TEXT[] DEFAULT '{}',
+    typical_crowd_level INTEGER DEFAULT 3,
+    dogs_allowed BOOLEAN DEFAULT TRUE,
+    fee_required BOOLEAN DEFAULT FALSE,
+    best_months INTEGER[] DEFAULT '{}',
+    estimated_time_hours DECIMAL(4,2),
+    route_description TEXT,
+    required_gear TEXT[] DEFAULT '{}',
+    elevation_profile JSONB, -- [{dist: 0, elev: 8000}, ...]
+    photos TEXT[] DEFAULT '{}',
+    data_source TEXT DEFAULT 'manual',
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_trails_location ON trails USING GIST(trailhead_location);
+CREATE INDEX idx_trails_difficulty ON trails(difficulty);
+CREATE INDEX idx_trails_distance ON trails(distance_miles);
+CREATE INDEX idx_trails_elevation_gain ON trails(elevation_gain_ft);
+CREATE INDEX idx_trails_name ON trails USING GIN(to_tsvector('english', name));
+
+-- Trail conditions table
+CREATE TABLE trail_conditions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    trail_id UUID REFERENCES trails(id) ON DELETE CASCADE,
+    report_date DATE NOT NULL,
+    snow_level_ft INTEGER,
+    trail_status TEXT, -- 'clear', 'muddy', 'icy', 'snowy', 'closed'
+    mud_level TEXT, -- 'none', 'light', 'moderate', 'heavy'
+    water_crossing_status TEXT, -- 'low', 'moderate', 'high', 'impassable'
+    hazards TEXT[] DEFAULT '{}',
+    required_gear TEXT[] DEFAULT '{}',
+    difficulty_sentiment TEXT, -- 'easier', 'as-expected', 'harder'
+    overall_sentiment TEXT, -- 'positive', 'neutral', 'negative'
+    source TEXT, -- 'alltrails', 'manual', 'reddit', 'mountainproject'
+    source_url TEXT,
+    raw_text TEXT,
+    confidence DECIMAL(3,2), -- 0.0-1.0
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_conditions_trail_date ON trail_conditions(trail_id, report_date DESC);
+
+-- Weather forecasts table
+CREATE TABLE weather_forecasts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    trail_id UUID REFERENCES trails(id) ON DELETE CASCADE,
+    location_type TEXT NOT NULL, -- 'trailhead' or 'summit'
+    forecast_date DATE NOT NULL,
+    forecast_hour INTEGER NOT NULL, -- 0-23
+    temperature_f INTEGER,
+    precipitation_prob INTEGER, -- 0-100
+    precipitation_type TEXT, -- 'rain', 'snow', null
+    wind_speed_mph INTEGER,
+    wind_gust_mph INTEGER,
+    sky_cover INTEGER, -- 0-100
+    weather_summary TEXT,
+    fetched_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_weather_trail_date ON weather_forecasts(trail_id, forecast_date, forecast_hour);
+CREATE INDEX idx_weather_location_type ON weather_forecasts(location_type);
+
+-- Assessments table
+CREATE TABLE assessments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    trail_id UUID REFERENCES trails(id) ON DELETE CASCADE,
+    assessment_date DATE NOT NULL,
+    confidence_score DECIMAL(5,2) NOT NULL,
+    recommendation TEXT NOT NULL, -- 'go', 'caution', 'reconsider', 'dont-go'
+    breakdown JSONB NOT NULL, -- {capability: {...}, weather: {...}, conditions: {...}, gear: {...}}
+    concerns TEXT[] DEFAULT '{}',
+    model_version TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_assessments_user ON assessments(user_id, created_at DESC);
+CREATE INDEX idx_assessments_trail ON assessments(trail_id);
+
+-- Hike logs table
+CREATE TABLE hike_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    trail_id UUID REFERENCES trails(id) ON DELETE SET NULL,
+    trail_name TEXT, -- Denormalized in case trail is deleted
+    hike_date DATE NOT NULL,
+    completed BOOLEAN NOT NULL,
+    difficulty_rating INTEGER, -- 1-5
+    time_taken_hours DECIMAL(4,2),
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_hike_logs_user ON hike_logs(user_id, hike_date DESC);
+
+-- Saved hikes table (user's "want to do" list)
+CREATE TABLE saved_hikes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    trail_id UUID REFERENCES trails(id) ON DELETE CASCADE,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(user_id, trail_id)
+);
+
+CREATE INDEX idx_saved_hikes_user ON saved_hikes(user_id);
+
+7. Implementation Roadmap
+Phase 1: Backend Foundation (Week 1)
+Goals:
+
+Set up FastAPI project
+Database schema + migrations
+User authentication
+Basic CRUD endpoints
+
+Tasks:
+
+Initialize FastAPI project structure
+Set up PostgreSQL + PostGIS on Supabase
+Create all database tables (use Alembic for migrations)
+Implement user auth (register, login, JWT)
+Create User Profile endpoints (GET/PUT /api/profile)
+Implement gear inventory endpoints
+Write basic tests
+
+Deliverable: Backend API running locally, can create users and manage profiles
+
+Phase 2: Trail Database & Weather (Week 2)
+Goals:
+
+Populate trail database
+Weather API integration
+Basic trail endpoints
+
+Tasks:
+
+Create trails.csv with 50-100 local trails (manual data entry from AllTrails)
+Write CSV import script → populate trails table
+Implement NWS weather API client
+Create weather fetching script (runs weekly)
+Implement elevation adjustment logic
+Create trail endpoints (GET /api/trails, GET /api/trails/:id)
+Create weather endpoint (GET /api/trails/:id/weather)
+Set up scheduled task (APScheduler or Celery) for weekly weather updates
+
+Deliverable: Database with trails, weather forecasts updating weekly
+
+Phase 3: Decision Engine & Assessment (Week 3)
+Goals:
+
+Build decision engine (rules + basic ML)
+Assessment endpoint working
+
+Tasks:
+
+Implement hard rules logic
+Implement feature extraction
+Generate synthetic training data (100-500 samples)
+Train initial XGBoost model
+Implement assessment endpoint (POST /api/assessments)
+Calculate confidence score, breakdown, concerns
+Write comprehensive tests for decision logic
+
+Deliverable: Can assess a hike and get confidence score (even without trip reports yet)
+
+Phase 4: Trip Report Scraping (Week 4)
+Goals:
+
+Scrape trip reports from AllTrails
+Parse with LLM
+Populate conditions table
+
+Tasks:
+
+Write AllTrails scraper (respect robots.txt, rate limits)
+Set up DeepSeek or Groq API client
+Implement LLM parsing logic (prompt engineering)
+Create conditions endpoint (GET /api/trails/:id/conditions)
+Set up weekly scraping job
+Test parsing accuracy manually on 20-30 reports
+
+Deliverable: Conditions data available for trails, integrated into assessments
+
+Phase 5: Recommendations Engine (Week 5)
+Goals:
+
+Build recommendation system
+Ranking algorithm working
+
+Tasks:
+
+Implement constraint filtering logic
+Implement scoring algorithm (feature match, weather quality, etc.)
+Implement MMR diversification
+Create recommendations endpoint (POST /api/recommendations)
+Test with various constraint combinations
+Optimize query performance (add indexes if needed)
+
+Deliverable: Can get personalized hike recommendations
+
+Phase 6: Frontend Foundation (Week 6)
+Goals:
+
+Set up React app
+Integrate design system from personal site
+Basic pages and routing
+
+Tasks:
+
+Initialize Vite + React + TypeScript project
+Extract design tokens from personal website (CSS variables, Tailwind config)
+Set up Tailwind with custom config matching personal site
+Create layout components (Header, Footer, Container)
+Implement routing (React Router)
+Create pages: Home, Login, Register, Onboarding, Dashboard
+Set up React Query for API calls
+Create API client service
+
+Deliverable: Frontend skeleton running, styled to match personal site
+
+Phase 7: Onboarding & Profile UI (Week 7)
+Goals:
+
+Build onboarding flow
+Profile settings page
+
+Tasks:
+
+Create onboarding multi-step form:
+
+Fitness metrics (sliders, inputs)
+Technical ability (radio buttons, sliders)
+Personal factors
+Location
+Gear inventory (checkboxes)
+
+
+Implement form validation (Zod schemas)
+Connect to POST /api/profile/onboard
+Create profile settings page
+Implement gear management UI
+Add loading states, error handling
+
+Deliverable: Can complete onboarding and update profile
+
+Phase 8: Trail Browse & Assessment UI (Week 8)
+Goals:
+
+Browse/search trails
+View trail details
+Assess a hike
+
+Tasks:
+
+Create trail browse page:
+
+Search bar
+Filter by difficulty, distance, elevation
+List/grid view of trail cards
+
+
+Implement trail search (debounced input)
+Create trail detail page:
+
+Photos, stats, description
+Map with trailhead marker (Mapbox)
+Recent conditions display
+"Assess this hike" button
+
+
+Create assessment modal:
+
+Date picker
+Gear checklist
+Assess button
+
+
+Create assessment results component (expandable card):
+
+Confidence score (animated circular progress)
+Breakdown cards (4-grid)
+Concerns list
+Weather summary
+Recent trip reports
+
+
+Connect to POST /api/assessments
+
+Deliverable: Can browse trails and assess them
+
+Phase 9: Recommendations UI (Week 9)
+Goals:
+
+Build recommendation flow
+Display ranked results
+
+Tasks:
+
+Create "Find a hike" page:
+
+Constraint form (all inputs)
+Date picker
+Sliders (distance, elevation, drive time)
+Multi-select checkboxes (terrain, features, avoid)
+Difficulty dropdown
+Search button
+
+
+Create recommendations results page:
+
+5 expandable trail cards
+Each card shows: name, stats, confidence, why recommended
+Click to expand → full assessment inline
+Smooth height transition animation
+
+
+Connect to POST /api/recommendations
+Add loading skeleton while fetching
+Handle edge cases (< 5 results found)
+
+Deliverable: Can get and view personalized recommendations
+
+Phase 10: Hike Logging & Learning (Week 10)
+Goals:
+
+Log completed hikes
+Adaptive profile updates
+Model retraining
+
+Tasks:
+
+Create "My Hikes" page:
+
+List of past hikes
+Log new hike button
+
+
+Create hike logging form/modal:
+
+Trail selector (or manual entry)
+Date, completed?, difficulty rating, time taken, notes
+
+
+Connect to POST /api/hikes
+Implement Bayesian profile update logic in backend
+Display updated profile stats to user
+Create weekly model retraining job
+Show user their hiking stats (total hikes, avg difficulty, etc.)
+
+Deliverable: System learns from user's hikes
+
+Phase 11: Polish & Optimization (Week 11)
+Goals:
+
+Responsive design
+Animations
+Performance optimization
+Error handling
+
+Tasks:
+
+Ensure all pages are mobile-responsive
+Add smooth page transitions (match personal site style)
+Add micro-interactions (button hovers, input focus, etc.)
+Optimize API response times (caching, query optimization)
+Add comprehensive error states (network errors, empty states, 404s)
+Add loading skeletons for all async content
+Accessibility audit (keyboard navigation, ARIA labels)
+SEO basics (meta tags, Open Graph)
+
+Deliverable: Production-quality UI/UX
+
+Phase 12: Deployment & Integration (Week 12)
+Goals:
+
+Deploy to production
+Link to personal website
+Documentation
+
+Tasks:
+
+Deploy backend to Railway/Render:
+
+Set up production database (Supabase)
+Configure environment variables
+Set up scheduled jobs (weather updates, scraping)
+
+
+Deploy frontend to Vercel:
+
+Configure build settings
+Set API base URL
+Custom domain (trailsense.yourdomain.com)
+
+
+Add TrailSense link to personal website nav
+Create project page on personal site (screenshots, description, tech stack)
+Write README with setup instructions
+Create user guide / help page
+Add disclaimer (liability, data accuracy)
+Set up monitoring (Sentry for backend, analytics for frontend)
+
+Deliverable: Live production app, accessible from your personal site
+
+8. Implementation Notes for Claude Code
+Code Quality Standards
+Python (Backend):
+
+Use type hints everywhere
+Follow PEP 8 style guide
+Use Black for formatting
+Use mypy for type checking
+Comprehensive docstrings for all functions/classes
+Unit tests with pytest (aim for >80% coverage)
+
+TypeScript (Frontend):
+
+Strict mode enabled
+No any types unless absolutely necessary
+Use ESLint + Prettier
+Functional components with hooks only
+PropTypes or TypeScript interfaces for all component props
+
+General:
+
+DRY principle (Don't Repeat Yourself)
+SOLID principles where applicable
+Meaningful variable/function names
+Small, focused functions (< 50 lines ideally)
+Comment complex logic, not obvious code
+
+
+Error Handling Patterns
+Backend:
+pythonfrom fastapi import HTTPException
+
+# Always use specific HTTP exceptions
+if not trail:
+    raise HTTPException(status_code=404, detail="Trail not found")
+
+# Catch external API failures gracefully
+try:
+    weather_data = fetch_nws_forecast(lat, lon)
+except requests.RequestException as e:
+    logger.error(f"NWS API error: {e}")
+    # Return cached data or reasonable defaults
+    weather_data = get_cached_forecast(lat, lon)
+Frontend:
+typescript// Use React Query's built-in error handling
+const { data, error, isLoading } = useQuery(['trail', id], fetchTrail);
+
+if (error) {
+  return <ErrorState message="Failed to load trail. Please try again." />;
+}
+
+// Always provide user-friendly error messages
+// Never expose raw error objects to users
+
+Performance Considerations
+Database:
+
+Index all foreign keys
+Index frequently queried columns (lat/lon, dates, user_id)
+Use EXPLAIN ANALYZE to optimize slow queries
+Batch insert when importing trail data
+
+API:
+
+Cache weather forecasts aggressively (they don't change often)
+Use pagination for trail lists (limit=50 default)
+Debounce search inputs (300ms)
+Use connection pooling (SQLAlchemy handles this)
+
+Frontend:
+
+Lazy load route components (React.lazy)
+Virtualize long lists if >100 items
+Optimize images (compress trail photos, serve WebP)
+Code split by route
+Use React.memo for expensive components
+
+
+Security Checklist
+
+ Passwords hashed with bcrypt (cost factor ≥12)
+ JWT tokens have reasonable expiration (7 days)
+ CORS configured properly (only allow your frontend domain in production)
+ SQL injection prevention (use parameterized queries, SQLAlchemy ORM)
+ XSS prevention (React escapes by default, but validate user input)
+ Rate limiting on auth endpoints (max 5 login attempts per minute)
+ HTTPS only in production
+ Environment variables never committed to Git
+ Validate all user inputs (Pydantic models in backend, Zod in frontend)
+
+
+Testing Strategy
+Backend (pytest):
+python# Test decision engine thoroughly
+def test_hard_rules_lightning_risk():
+    trail = create_mock_trail(exposure_level=4)
+    weather = create_mock_weather(thunderstorm_prob=50)
+    confidence, concerns = apply_hard_rules(trail, user, weather, conditions, gear)
+    assert confidence <= 30
+    assert "lightning risk" in concerns[0].lower()
+
+# Test API endpoints
+def test_create_assessment(client, auth_headers):
+    response = client.post("/api/assessments", 
+        json={"trail_id": "...", "date": "2025-01-18", "gear": []},
+        headers=auth_headers
+    )
+    assert response.status_code == 200
+    assert "confidence_score" in response.json()
+Frontend (Vitest + React Testing Library):
+typescript// Test critical user flows
+test('onboarding form submits successfully', async () => {
+  render(<OnboardingFlow />);
+  
+  fireEvent.change(screen.getByLabelText(/max hours/i), { target: { value: '6' } });
+  fireEvent.click(screen.getByText(/next/i));
+  
+  await waitFor(() => {
+    expect(screen.getByText(/profile created/i)).toBeInTheDocument();
+  });
+});
+Integration Tests:
+
+Test complete user flows (register → onboard → assess hike)
+Test recommendations with various constraints
+Test adaptive learning (log hike → profile updates)
+
+
+Logging & Monitoring
+Backend:
+pythonimport logging
+
+logger = logging.getLogger(__name__)
+
+# Log important events
+logger.info(f"User {user_id} assessed trail {trail_id} - confidence: {score}%")
+
+# Log errors with context
+logger.error(f"Weather API failed for trail {trail_id}", exc_info=True)
+
+# Log performance metrics
+logger.info(f"Recommendation query took {elapsed_time:.2f}s")
+Frontend:
+
+Use Sentry for error tracking
+Track key events: assessments created, recommendations generated, hikes logged
+Monitor Core Web Vitals (LCP, FID, CLS)
+
+
+Documentation Requirements
+API Documentation:
+
+FastAPI auto-generates OpenAPI docs at /docs
+Add description to all endpoints
+Document request/response schemas
+Include example requests
+
+Code Documentation:
+
+README with setup instructions
+Architecture diagram (simple text/ASCII is fine)
+Comment complex algorithms (especially ML model logic)
+Inline comments for non-obvious code
+
+User Documentation:
+
+Help page explaining confidence scores
+FAQ page
+Data sources attribution
+Privacy policy (basic, since it's personal project)
+
+
+9. Success Criteria
+MVP is complete when:
+
+✅ User can create account and complete onboarding
+✅ User can browse and search 50+ trails
+✅ User can assess a specific hike and get confidence score
+✅ User can get 5 personalized recommendations based on constraints
+✅ User can log completed hikes
+✅ System updates user profile based on logged hikes
+✅ Weather forecasts update weekly automatically
+✅ Trip reports are scraped and parsed weekly
+✅ Frontend matches personal website design system exactly
+✅ App is deployed and accessible from personal website
+
+Quality Bars:
+
+Accuracy: Confidence scores align with user's actual experience (test on yourself for 10+ hikes)
+Performance: Page loads < 2s, API responses < 500ms
+Reliability: 99% uptime (use health check endpoint)
+Usability: Can complete core flows without documentation
+Design: Seamless integration with personal site (no jarring style differences)
+
+
+10. Open Questions & Decisions Needed
+Before starting implementation, please decide:
+
+Personal Website Design Tokens: Provide your site's CSS variables, typography specs, and component styles
+Primary Region: Which geographic region to focus on for initial trail data?
+
+Colorado Front Range?
+Pacific Northwest?
+Other?
+
+
+Hosting Preferences:
+
+Backend: Railway, Render, or other?
+Frontend: Vercel, Netlify, or other?
+Database: Supabase (recommended) or self-hosted Postgres?
+
+
+LLM Provider:
+
+DeepSeek API (free tier, good quality)
+Groq API (free tier, very fast Llama 70B)
+Other?
+
+
+Map Provider:
+
+Mapbox (50k loads/month free, excellent)
+Google Maps (expensive)
+OpenStreetMap + Leaflet (100% free, less polished)
+
+
+Domain:
+
+Subdomain of personal site? (trailsense.yourdomain.com)
+Separate domain?
+Path on personal site? (yourdomain.com/trailsense)
+
+
+
+
+11. Final Checklist for Claude Code
+When implementing this project, ensure:
+
+ All code is production-ready (no TODOs, no commented-out code)
+ Type safety everywhere (Python type hints, TypeScript strict mode)
+ Comprehensive error handling
+ All API endpoints have tests
+ Frontend components are reusable and composable
+ Design system tokens are extracted and configurable
+ Environment variables are documented in .env.example
+ Database migrations are version controlled
+ README includes: setup, architecture, deployment instructions
+ Code is well-commented where complexity exists
+ Performance is optimized (caching, indexing, code splitting)
+ Security best practices followed
+ Accessibility standards met (WCAG 2.1 AA)
+ Mobile responsive on all breakpoints
+ SEO basics implemented (meta tags, semantic HTML)
+ Analytics/monitoring configured
+ Deployment instructions are clear and tested

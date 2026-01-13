@@ -80,30 +80,6 @@ const Footer = () => {
               let's talk - email: hg532@cornell.edu . made by hari gridharan 2026
             </p>
           </div>
-
-          {/* Right: Small signature doodle */}
-          <div className="hidden md:block">
-            <svg
-              width="60"
-              height="40"
-              viewBox="0 0 60 40"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <motion.path
-                d="M5 30C10 25 15 20 20 22C25 24 22 30 18 32C14 34 10 32 8 28C6 24 8 18 12 15C16 12 22 14 26 18C30 22 32 28 30 34M32 20C34 16 38 14 42 16C46 18 48 24 46 28C44 32 38 34 34 32M50 15L55 25L50 35"
-                stroke="#C67B5C"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                opacity="0.3"
-                initial={{ pathLength: 0 }}
-                whileInView={{ pathLength: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 2, ease: "easeInOut" }}
-              />
-            </svg>
-          </div>
         </div>
 
         {/* Small ink splatter decoration */}

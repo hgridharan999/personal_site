@@ -1,10 +1,20 @@
 import { motion } from 'framer-motion';
 import { useInView } from 'framer-motion';
 import { useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { HandDrawnArrow, SketchCheckmark, StarDoodle, BracketDecoration } from './HandDrawnElements';
-import { ExternalLink, Github } from 'lucide-react';
+import { ExternalLink, Github, ArrowRight } from 'lucide-react';
 
 const projectsData = [
+  {
+    date: "January 2026",
+    title: "TrailSense",
+    description: "A personal hiking decision support system that assesses trail feasibility and recommends hikes based on weather conditions, trail characteristics, and user capability. Features adaptive learning from logged hikes, real-time weather integration via NWS API, and ML-powered confidence scoring using gradient boosted trees with SHAP explainability.",
+    tech: ["React", "FastAPI", "PostgreSQL", "XGBoost", "Mapbox", "NWS API"],
+    liveUrl: null,
+    githubUrl: null,
+    internalUrl: "/trailsense",
+  },
   {
     date: "August 2025 - Present",
     title: "Fintech Prediction Market Startup",
@@ -14,29 +24,29 @@ const projectsData = [
     githubUrl: null,
   },
   {
-    date: "September 2025 - Present",
-    title: "ML & GEO Tools for High-Risk Projects",
-    description: "Built experimental machine learning models and online applications as part of Cornell Entrepreneurship Club's 'Failures' team. Developed tools using CLIMADA for climate data analysis and EfficientNet for image classification. Tech stack spans web development to advanced ML.",
-    tech: ["Python", "TensorFlow", "EfficientNet", "CLIMADA", "React", "Tailwind CSS"],
+    date: "December 2025",
+    title: "Dynamic Sports Betting Portfolio Optimizer",
+    description: "Reinforcement learning agent that optimizes betting strategies across multiple sports markets using PPO and DQN algorithms. Trained on historical odds data from NFL, NBA, and tennis to maximize Kelly Criterion-adjusted returns while managing risk constraints. Outperformed baseline strategies (flat betting, martingale) by 23% in simulated environments with realistic bankroll dynamics.",
+    tech: ["Python", "PyTorch", "Stable-Baselines3", "Pandas", "NumPy", "Odds API"],
     liveUrl: null,
     githubUrl: "https://github.com/hgridharan999",
   },
   {
-    date: "November 2025 - Present",
-    title: "DTI Product Strategy & Marketing",
-    description: "Developed content strategy and marketing materials for Cornell Digital Tech and Innovation products serving 15,000+ students. Conducted market analysis and created strategic recommendations for digital product enhancements to improve user engagement.",
-    tech: ["Market Analysis", "Content Strategy", "Product Strategy"],
+    date: "January 2026",
+    title: "VC Deal Flow Analyzer",
+    description: "NLP system that analyzes startup pitch decks and predicts funding success for venture capital firms. Fine-tuned LLaMA 3.1 on 800+ pitch decks to extract key metrics (market size, traction, team background) and built binary classifier achieving 78% accuracy on funding prediction. Implemented RAG pipeline to generate comparative feedback against successful historical pitches in similar sectors.",
+    tech: ["Python", "LangChain", "LLaMA 3.1", "ChromaDB", "FastAPI", "scikit-learn"],
     liveUrl: null,
-    githubUrl: null,
+    githubUrl: "https://github.com/hgridharan999",
   },
   {
-    date: "April 2024 - December 2025",
-    title: "Fund The Future Nonprofit Platform",
-    description: "Founded a state-recognized nonprofit to reduce financial barriers for high school extracurriculars. Built organizational infrastructure, established chapters statewide, managed 100+ volunteers, and created educational fundraising resources. Obtained EIN and secured funding from businesses and school districts.",
-    tech: ["Nonprofit Management", "Fundraising", "Operations"],
+    date: "December 2025 - January 2026",
+    title: "Rice Yield Prediction System for Tamil Nadu",
+    description: "Satellite-based crop forecasting system that predicts rice harvests 60 days before harvest using multi-temporal remote sensing data. Processed 500GB+ of Sentinel-1/2 imagery via Google Earth Engine, achieving R²=0.85 and 10% error rate across 400,000+ hectares. Deployed full-stack application with FastAPI backend, PostgreSQL/PostGIS for geospatial queries, and interactive Mapbox frontend for agricultural stakeholders.",
+    tech: ["Python", "TensorFlow", "XGBoost", "Google Earth Engine", "FastAPI", "PostgreSQL", "PostGIS", "React", "Mapbox"],
     liveUrl: null,
-    githubUrl: null,
-  },
+    githubUrl: "https://github.com/hgridharan999",
+  }
 ];
 
 const ProjectCard = ({ project, index }) => {
@@ -124,6 +134,16 @@ const ProjectCard = ({ project, index }) => {
 
           {/* Links with hand-drawn style */}
           <div className="flex flex-wrap gap-4 pt-4">
+            {project.internalUrl && (
+              <Link
+                to={project.internalUrl}
+                className="handwritten-link flex items-center gap-1.5 group/link"
+              >
+                <HandDrawnArrow direction="right" className="w-4 h-4 text-highlight group-hover/link:translate-x-1 transition-transform" />
+                <span>explore project</span>
+                <ArrowRight className="w-4 h-4 opacity-0 group-hover/link:opacity-100 transition-opacity" />
+              </Link>
+            )}
             {project.liveUrl && (
               <a
                 href={project.liveUrl}
