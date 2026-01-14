@@ -131,40 +131,94 @@ API documentation: `http://localhost:8000/docs`
 - Temperature, precipitation, wind data
 - Fetched from National Weather Service API
 
+## Phase 2: Backend Intelligence (Completed)
+
+### Features Implemented
+- Decision engine with hard rules and Naismith's Rule
+- Confidence scoring (0-100%) and recommendation categories
+- LLM-powered trip report parsing with Groq API
+- Trail condition tracking and management
+- Personalized trail recommendation system
+- Hike logging with adaptive learning capabilities
+
+See [PHASE2_COMPLETE.md](PHASE2_COMPLETE.md) for detailed documentation.
+
+## Phase 3: Frontend Core (Completed)
+
+### Features Implemented
+- React 18 + TypeScript application with Vite
+- Tailwind CSS with custom design system matching portfolio
+- User authentication (login, register)
+- Protected routing with React Router v6
+- Trail browsing with search functionality
+- Trail detail pages with conditions
+- Dashboard and profile management
+- TanStack Query for server state
+- Zustand for auth state management
+
+See [PHASE3_COMPLETE.md](PHASE3_COMPLETE.md) for detailed documentation.
+
+### Frontend Setup
+
+1. Navigate to frontend directory:
+```bash
+cd trailsense/frontend
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Configure environment:
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
+```
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+4. Start development server:
+```bash
+npm run dev
+```
+
+Frontend runs at `http://localhost:3000`
+
 ## Next Steps
 
-### Phase 2: Backend Intelligence (Coming Soon)
-- Decision engine with hard rules and ML models
-- Trip report scraping and LLM parsing
-- Recommendation system
-- Hike logging with adaptive learning
-
-### Phase 3: Frontend Core (Coming Soon)
-- React application with TypeScript
-- User onboarding flow
-- Trail browsing and search
-- Design system matching personal website
-
 ### Phase 4: Frontend Polish & Deploy (Coming Soon)
-- Assessment UI with confidence scoring
-- Recommendation interface
-- Hike logging
-- Production deployment
+- Complete onboarding multi-step form
+- Assessment modal and results UI
+- Recommendation constraint form
+- Hike logging interface
+- Mapbox trail maps
+- Animations and transitions
+- Production deployment (Vercel + Railway/Render)
 
 ## Development Status
 
 - [x] Project structure
-- [x] Database models
+- [x] Database models and migrations
 - [x] Authentication system
 - [x] Profile management
 - [x] Trail CRUD operations
 - [x] Weather service integration
 - [x] Sample data import
-- [x] Database migrations
-- [ ] Decision engine
-- [ ] Trip report scraping
-- [ ] Recommendation system
-- [ ] Frontend application
+- [x] Decision engine with hard rules
+- [x] Trip report scraping and LLM parsing
+- [x] Recommendation system
+- [x] Hike logging backend
+- [x] Frontend core with React + TypeScript
+- [x] Trail browsing and search UI
+- [x] Authentication UI
+- [ ] Complete onboarding flow UI
+- [ ] Assessment UI
+- [ ] Recommendation UI
+- [ ] Hike logging UI
+- [ ] Production deployment
 
 ## Contributing
 

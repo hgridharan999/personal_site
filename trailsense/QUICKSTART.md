@@ -1,8 +1,8 @@
 # TrailSense Quick Start Guide
 
-## Phase 1 Complete! 🎉
+## Phase 2 Complete! 🎉
 
-The backend foundation is now operational with all core functionality.
+The backend is now fully functional with decision engine, recommendations, and intelligence features!
 
 ## What You Can Do Now
 
@@ -20,7 +20,7 @@ pip install -r requirements.txt
 
 # Set up environment
 cp .env.example .env
-# Edit .env with your database URL and secret key
+# Edit .env with your database URL, secret key, and Groq API key
 
 # Run migrations
 alembic upgrade head
@@ -162,6 +162,24 @@ trailsense/backend/
 - `POST /api/trails` - Create trail
 - `GET /api/trails/{id}/weather` - Weather forecast
 
+### Assessments (Phase 2)
+- `POST /api/assessments` - Assess trail feasibility
+- `GET /api/assessments/:id` - Get assessment
+- `GET /api/assessments` - List all assessments
+
+### Recommendations (Phase 2)
+- `POST /api/recommendations` - Get personalized trail recommendations
+
+### Conditions (Phase 2)
+- `GET /api/trails/{id}/conditions` - Get trail conditions
+- `POST /api/trails/{id}/conditions` - Add condition report
+
+### Hike Logs (Phase 2)
+- `GET /api/hikes` - List logged hikes
+- `POST /api/hikes` - Log a hike
+- `PUT /api/hikes/:id` - Update hike log
+- `DELETE /api/hikes/:id` - Delete hike log
+
 ## Sample Data
 
 10 Colorado trails included:
@@ -184,6 +202,7 @@ DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/trailsense
 SECRET_KEY=generate-with-openssl-rand-hex-32
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=10080
+GROQ_API_KEY=your-groq-api-key
 ```
 
 Generate SECRET_KEY:
@@ -216,13 +235,23 @@ alembic upgrade head
 python scripts/import_trails.py
 ```
 
+## Phase 2 Features
+
+Now available:
+- Trail feasibility assessment with confidence scores
+- Personalized trail recommendations
+- Trip report parsing with LLM
+- Hike logging and tracking
+- Trail condition management
+
+See [PHASE2_COMPLETE.md](PHASE2_COMPLETE.md) for detailed documentation.
+
 ## Next Steps
 
-Phase 1 is complete! Next phases:
+Phase 2 is complete! Next phases:
 
-**Phase 2**: Decision engine, trip report scraping, recommendations
 **Phase 3**: React frontend with design system integration
-**Phase 4**: Assessment UI, deployment
+**Phase 4**: Assessment UI, recommendations UI, deployment
 
 ## Code Quality
 
@@ -238,9 +267,9 @@ Phase 1 is complete! Next phases:
 
 - API docs: http://localhost:8000/docs
 - Check README.md for detailed information
-- Review PHASE1_COMPLETE.md for implementation details
+- Review PHASE2_COMPLETE.md for Phase 2 details
 
 ---
 
-**Status**: Phase 1 ✅ Complete
-**Ready for**: Phase 2 development
+**Status**: Phase 2 ✅ Complete
+**Ready for**: Phase 3 (Frontend development)

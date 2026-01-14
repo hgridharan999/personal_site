@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import auth, profile, trails, weather
+from app.routes import auth, profile, trails, weather, assessments, recommendations, conditions, hikes
 
 app = FastAPI(
     title="TrailSense API",
@@ -21,6 +21,10 @@ app.include_router(auth.router)
 app.include_router(profile.router)
 app.include_router(trails.router)
 app.include_router(weather.router)
+app.include_router(assessments.router)
+app.include_router(recommendations.router)
+app.include_router(conditions.router)
+app.include_router(hikes.router)
 
 
 @app.get("/")

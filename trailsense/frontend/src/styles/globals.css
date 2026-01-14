@@ -1,0 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Lora:wght@400;600;700&family=Patrick+Hand&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-body bg-paper text-ink;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-handwritten;
+  }
+}
+
+@layer components {
+  .irregular-border {
+    border-radius: 4px 8px 6px 10px;
+  }
+
+  .irregular-border-alt {
+    border-radius: 10px 12px 8px 14px;
+  }
+}

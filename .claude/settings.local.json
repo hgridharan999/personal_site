@@ -6,7 +6,8 @@
       "Bash(npm run build:*)",
       "Bash(npm run dev:*)",
       "Bash(timeout:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(test:*)"
     ]
   }
 }
