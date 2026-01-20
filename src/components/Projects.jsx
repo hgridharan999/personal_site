@@ -7,6 +7,22 @@ import { ExternalLink, Github, ArrowRight } from 'lucide-react';
 
 const projectsData = [
   {
+    date: "January 2026 - Present",
+    title: "AI-Powered Climate Solution Discovery Engine",
+    description: "NLP platform analyzing 10,000+ climate tech startups to identify high-potential solutions across 50+ verticals. Engineered classification pipeline using BERT embeddings for startup categorization, multi-factor scoring algorithm incorporating patent analysis and founder backgrounds, and semantic search system enabling sub-second retrieval of similar companies. Built comprehensive market trend signals to surface emerging climate innovation patterns.",
+    tech: ["Python", "BERT", "Transformers", "FAISS", "Sentence-Transformers", "Pandas", "scikit-learn"],
+    liveUrl: null,
+    githubUrl: "https://github.com/hgridharan999",
+  },
+  {
+    date: "January 2026 - Present",
+    title: "Open-Source LLM Cost Optimizer",
+    description: "Python library reducing LLM API costs by 40-60% through intelligent model routing, semantic caching, and prompt optimization. Architected caching system using sentence-transformers and Redis to avoid redundant API calls with semantic similarity matching. Built comprehensive benchmarking suite comparing GPT-4, Claude, and Gemini across quality/cost tradeoffs, enabling developers to optimize inference budgets without sacrificing output quality.",
+    tech: ["Python", "Redis", "OpenAI API", "Anthropic API", "Sentence-Transformers", "AsyncIO", "Pytest"],
+    liveUrl: null,
+    githubUrl: "https://github.com/hgridharan999",
+  },
+  {
     date: "January 2026",
     title: "TrailSense",
     description: "A personal hiking decision support system that assesses trail feasibility and recommends hikes based on weather conditions, trail characteristics, and user capability. Features adaptive learning from logged hikes, real-time weather integration via NWS API, and ML-powered confidence scoring using gradient boosted trees with SHAP explainability.",
