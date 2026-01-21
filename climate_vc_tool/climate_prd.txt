@@ -1,0 +1,924 @@
+AI-POWERED CLIMATE SOLUTION DISCOVERY ENGINE
+Complete Product Requirements Document
+Technical Implementation Guide for Claude Code
+SIMPLIFIED ARCHITECTURE FOR 16GB RAM
+
+================================================================================
+
+1. PROJECT OVERVIEW
+
+Product Name: Climate Solution Discovery Engine
+Description: An NLP-powered semantic search platform that analyzes 10,000+ climate 
+tech startups using BERT embeddings, multi-factor scoring algorithms, and vector 
+search to enable sub-second discovery across 50+ hierarchical climate technology 
+verticals.
+
+Key Objectives:
+- Process and classify 10,000+ startup descriptions using BERT embeddings
+- Deploy semantic search with <1 second query latency
+- Score companies using simplified 3-factor algorithm (semantic + funding + founders)
+- Support hierarchical filtering across 50+ climate tech verticals
+- Run efficiently on 16GB RAM laptop
+
+Technical Constraints:
+- 16GB RAM total (must be memory-efficient)
+- Batch processing window: 2 AM daily (simple rebuild, no blue-green)
+- Use free/open-source tools (FAISS, SQLite, no PostgreSQL/Redis)
+- CPU-only inference (no GPU required)
+- Single data source: Crunchbase (skip patents/news for MVP)
+
+Success Metrics:
+- Search latency: <500ms for top-10 results
+- Classification accuracy: >80% for primary vertical
+- Data freshness: <24 hours from source update
+- Index rebuild time: <30 minutes for 10K startups on CPU
+- Memory usage: <8GB during operation
+
+================================================================================
+
+2. CORE FEATURES SPECIFICATION
+
+2.1 Data Ingestion Pipeline (Simplified)
+
+DATA SOURCE: CRUNCHBASE ONLY (MVP)
+
+Crunchbase API:
+- Endpoint: https://api.crunchbase.com/v4/searches/organizations
+- Filters: categories containing climate_tech, cleantech, renewable_energy, carbon, sustainability
+- Rate limit: 200 requests/minute (paid tier: $199/month for 5000 calls)
+- Fields to extract:
+  * name
+  * short_description
+  * long_description
+  * founded_on
+  * total_funding_usd
+  * num_funding_rounds
+  * last_funding_date
+  * last_funding_type (Seed, Series A, B, etc.)
+  * founders (names only)
+  * website_url
+  * headquarters_location
+  * employee_count
+  * categories (for vertical classification)
+
+Alternative/Supplementary Sources (Web Scraping):
+- Y Combinator companies: https://www.ycombinator.com/companies?tags=Climate
+- ClimateBase directory: https://climatebase.org/companies
+- Greentown Labs portfolio: https://greentownlabs.com/companies/
+- Work on Climate directory
+
+SIMPLIFIED DATABASE SCHEMA (SQLite):
+
+-- Single denormalized table instead of 7 tables
+CREATE TABLE startups (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    short_description TEXT,
+    long_description TEXT,
+    founded_year INTEGER,
+    total_funding_usd INTEGER,
+    num_funding_rounds INTEGER,
+    last_funding_date TEXT,  -- ISO format
+    last_funding_type TEXT,  -- 'Seed', 'Series A', etc.
+    website_url TEXT,
+    headquarters_location TEXT,
+    employee_count INTEGER,
+    
+    -- Verticals (JSON array)
+    verticals TEXT,  -- ["Clean Energy > Solar > Photovoltaic", "Energy Storage"]
+    primary_vertical TEXT,  -- Most confident vertical
+    
+    -- Founders (JSON array)
+    founders TEXT,  -- [{"name": "John Doe", "previous_exits": 1}, ...]
+    
+    -- All other Crunchbase data (flexible storage)
+    crunchbase_data TEXT,  -- JSON blob for any additional fields
+    
+    -- Embedding reference (NOT stored in DB)
+    embedding_file_path TEXT,  -- 'embeddings/startup_001234.npy'
+    
+    -- Timestamps
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Index for search performance
+CREATE INDEX idx_founded_year ON startups(founded_year);
+CREATE INDEX idx_funding ON startups(total_funding_usd);
+CREATE INDEX idx_name ON startups(name);
+
+-- Embeddings stored separately as numpy files
+-- /data/embeddings/startup_001234.npy (768-dim float32 array)
+-- /data/embeddings/all_embeddings.npy (master file with all vectors)
+-- /data/embeddings/startup_id_mapping.json (maps FAISS index to startup ID)
+
+BATCH JOB SCHEDULER (Simplified - No Blue-Green):
+
+import schedule
+import time
+from datetime import datetime
+import sqlite3
+
+def run_simplified_batch():
+    """
+    Simplified batch pipeline at 2 AM:
+    1. Scrape new/updated Crunchbase data (10 min)
+    2. Generate embeddings for new startups (10-15 min on CPU)
+    3. Zero-shot classification (5 min)
+    4. Rebuild FAISS index (1 min)
+    5. Save and reload index (30 sec downtime)
+    """
+    logger.info("Starting 2 AM batch job...")
+    
+    try:
+        # Step 1: Scrape Crunchbase
+        logger.info("Step 1/5: Scraping Crunchbase data")
+        new_startups, updated_startups = scrape_crunchbase_incremental()
+        
+        # Step 2: Generate embeddings for new/updated
+        logger.info(f"Step 2/5: Generating embeddings for {len(new_startups)} new startups")
+        embedder = StartupEmbedder()
+        for startup in new_startups + updated_startups:
+            text = f"{startup.short_description} {startup.long_description}"
+            embedding = embedder.generate_embedding(text)
+            
+            # Save as individual file
+            embedding_path = f"data/embeddings/startup_{startup.id:06d}.npy"
+            np.save(embedding_path, embedding)
+            
+            # Update database
+            db.execute("UPDATE startups SET embedding_file_path = ? WHERE id = ?",
+                      (embedding_path, startup.id))
+        
+        # Step 3: Zero-shot classification for new startups
+        logger.info(f"Step 3/5: Classifying {len(new_startups)} startups")
+        classifier = ClimateVerticalClassifier()
+        for startup in new_startups:
+            verticals = classifier.classify_startup(startup.description)
+            db.execute("""
+                UPDATE startups 
+                SET verticals = ?, primary_vertical = ?
+                WHERE id = ?
+            """, (json.dumps(verticals), verticals[0][0] if verticals else None, startup.id))
+        
+        # Step 4: Rebuild FAISS index from all embeddings
+        logger.info("Step 4/5: Rebuilding FAISS index")
+        all_startups = db.execute("SELECT id, embedding_file_path FROM startups WHERE embedding_file_path IS NOT NULL").fetchall()
+        
+        embeddings_list = []
+        id_mapping = []
+        for startup_id, emb_path in all_startups:
+            emb = np.load(emb_path)
+            embeddings_list.append(emb)
+            id_mapping.append(startup_id)
+        
+        # Stack into single array
+        all_embeddings = np.vstack(embeddings_list).astype('float32')
+        
+        # Build FAISS index
+        index = faiss.IndexFlatIP(768)
+        index.add(all_embeddings)
+        
+        # Step 5: Save index and mapping
+        logger.info("Step 5/5: Saving new index")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        faiss.write_index(index, f"data/faiss_index_{timestamp}.bin")
+        
+        with open(f"data/startup_id_mapping_{timestamp}.json", 'w') as f:
+            json.dump(id_mapping, f)
+        
+        # Create symlinks to latest (or just rename)
+        os.replace(f"data/faiss_index_{timestamp}.bin", "data/faiss_index_latest.bin")
+        os.replace(f"data/startup_id_mapping_{timestamp}.json", "data/startup_id_mapping_latest.json")
+        
+        # Signal FastAPI to reload index (file watcher or manual restart)
+        logger.info("Batch job completed successfully!")
+        
+    except Exception as e:
+        logger.error(f"Batch job failed: {str(e)}")
+        send_alert(f"Batch job failed: {str(e)}")
+
+# Schedule for 2 AM daily
+schedule.every().day.at("02:00").do(run_simplified_batch)
+
+while True:
+    schedule.run_pending()
+    time.sleep(60)
+
+================================================================================
+
+2.2 Climate Tech Vertical Taxonomy
+
+HIERARCHICAL STRUCTURE (50+ Verticals):
+
+{
+  "taxonomy": {
+    "Carbon Management": {
+      "description": "Technologies for capturing, removing, or offsetting carbon emissions",
+      "subcategories": [
+        "Direct Air Capture",
+        "Carbon Capture & Storage",
+        "Carbon Offsets & Credits",
+        "Biochar & Soil Carbon",
+        "Ocean-Based Carbon Removal"
+      ]
+    },
+    "Clean Energy": {
+      "description": "Renewable energy generation and distribution",
+      "subcategories": [
+        "Solar > Photovoltaic",
+        "Solar > Concentrated Solar Power",
+        "Solar > Thin-Film",
+        "Wind > Onshore",
+        "Wind > Offshore",
+        "Hydropower",
+        "Geothermal",
+        "Nuclear > Fusion",
+        "Nuclear > Fission",
+        "Biomass & Bioenergy"
+      ]
+    },
+    "Energy Storage": {
+      "description": "Storage technologies for renewable energy",
+      "subcategories": [
+        "Lithium-Ion Batteries",
+        "Solid-State Batteries",
+        "Flow Batteries",
+        "Thermal Storage",
+        "Hydrogen Storage",
+        "Compressed Air Storage",
+        "Gravity-Based Storage"
+      ]
+    },
+    "Green Transportation": {
+      "description": "Low-emission mobility solutions",
+      "subcategories": [
+        "Electric Vehicles (Passenger)",
+        "Electric Vehicles (Commercial)",
+        "EV Charging Infrastructure",
+        "Sustainable Aviation Fuel",
+        "Electric Aviation",
+        "Maritime Decarbonization",
+        "Micromobility",
+        "Public Transit Electrification"
+      ]
+    },
+    "Sustainable Agriculture": {
+      "description": "Climate-friendly food and farming technologies",
+      "subcategories": [
+        "Precision Agriculture",
+        "Vertical Farming",
+        "Alternative Proteins > Plant-Based",
+        "Alternative Proteins > Cultivated Meat",
+        "Alternative Proteins > Fermentation",
+        "Regenerative Agriculture",
+        "Agricultural Robotics",
+        "Livestock Methane Reduction"
+      ]
+    },
+    "Built Environment": {
+      "description": "Energy-efficient buildings and construction",
+      "subcategories": [
+        "Green Building Materials",
+        "HVAC Optimization",
+        "Smart Building Systems",
+        "Insulation & Windows",
+        "Low-Carbon Concrete",
+        "Sustainable Timber"
+      ]
+    },
+    "Circular Economy": {
+      "description": "Waste reduction and material recycling",
+      "subcategories": [
+        "Plastic Recycling & Alternatives",
+        "E-Waste Management",
+        "Textile Recycling",
+        "Industrial Waste Valorization",
+        "Food Waste Reduction",
+        "Packaging Innovation"
+      ]
+    },
+    "Climate Fintech": {
+      "description": "Financial tools for climate action",
+      "subcategories": [
+        "Green Bonds & Investment",
+        "Carbon Credit Marketplaces",
+        "ESG Data & Analytics",
+        "Climate Risk Assessment",
+        "Sustainable Banking"
+      ]
+    },
+    "Water & Ocean": {
+      "description": "Water conservation and ocean health",
+      "subcategories": [
+        "Water Purification",
+        "Desalination",
+        "Smart Water Management",
+        "Wastewater Treatment",
+        "Ocean Cleanup",
+        "Aquaculture Sustainability"
+      ]
+    },
+    "Industrial Decarbonization": {
+      "description": "Reducing emissions from heavy industry",
+      "subcategories": [
+        "Green Hydrogen Production",
+        "Steel Decarbonization",
+        "Cement Alternatives",
+        "Chemical Process Innovation",
+        "Industrial Heat Electrification"
+      ]
+    },
+    "Climate Adaptation": {
+      "description": "Technologies for resilience and adaptation",
+      "subcategories": [
+        "Flood Management",
+        "Drought-Resistant Crops",
+        "Wildfire Prevention & Detection",
+        "Climate Modeling & Prediction",
+        "Infrastructure Resilience"
+      ]
+    },
+    "Grid & Energy Management": {
+      "description": "Smart grid and energy optimization",
+      "subcategories": [
+        "Virtual Power Plants",
+        "Demand Response",
+        "Grid Modernization",
+        "Energy Management Software",
+        "Microgrids"
+      ]
+    }
+  }
+}
+
+Storage: Save as config/climate_taxonomy.json
+
+================================================================================
+
+2.3 Zero-Shot Classification System
+
+IMPLEMENTATION:
+
+from transformers import pipeline
+import json
+
+class ClimateVerticalClassifier:
+    def __init__(self, taxonomy_path='config/climate_taxonomy.json'):
+        # CPU-only inference
+        self.classifier = pipeline(
+            "zero-shot-classification",
+            model="facebook/bart-large-mnli",
+            device=-1  # CPU only for 16GB RAM
+        )
+        
+        # Load taxonomy
+        with open(taxonomy_path, 'r') as f:
+            taxonomy = json.load(f)
+        
+        # Flatten to list of labels
+        self.candidate_labels = self._flatten_taxonomy(taxonomy)
+        
+    def _flatten_taxonomy(self, taxonomy_dict):
+        """Extract all subcategories as classification labels"""
+        labels = []
+        for category, data in taxonomy_dict['taxonomy'].items():
+            for subcategory in data['subcategories']:
+                labels.append(subcategory)
+        return labels
+    
+    def classify_startup(self, description, top_k=3, confidence_threshold=0.4):
+        """
+        Classify startup into climate verticals
+        
+        Returns:
+            List of tuples: [(vertical_path, confidence_score), ...]
+        """
+        result = self.classifier(
+            description,
+            self.candidate_labels,
+            multi_label=True
+        )
+        
+        # Extract top K results above threshold
+        classifications = []
+        for label, score in zip(result['labels'], result['scores']):
+            if score >= confidence_threshold and len(classifications) < top_k:
+                classifications.append((label, float(score)))
+        
+        return classifications
+
+# Usage:
+classifier = ClimateVerticalClassifier()
+verticals = classifier.classify_startup("We develop next-generation lithium batteries for EVs")
+# Returns: [("Lithium-Ion Batteries", 0.92), ("Electric Vehicles (Passenger)", 0.78)]
+
+================================================================================
+
+2.4 BERT Embedding Generation
+
+MODEL: sentence-transformers/all-mpnet-base-v2 (CPU-friendly)
+
+from sentence_transformers import SentenceTransformer
+import numpy as np
+
+class StartupEmbedder:
+    def __init__(self, model_name='sentence-transformers/all-mpnet-base-v2'):
+        # CPU-only for 16GB RAM
+        self.model = SentenceTransformer(model_name, device='cpu')
+        
+    def generate_embedding(self, text):
+        """Generate 768-dim embedding for single text"""
+        return self.model.encode(text, convert_to_numpy=True, normalize_embeddings=True)
+    
+    def generate_embeddings_batch(self, texts, batch_size=16):
+        """
+        Batch generation (CPU: use smaller batch size)
+        10K startups takes ~20-30 minutes on CPU
+        """
+        embeddings = self.model.encode(
+            texts,
+            batch_size=batch_size,  # Smaller for CPU
+            show_progress_bar=True,
+            convert_to_numpy=True,
+            normalize_embeddings=True
+        )
+        return embeddings
+
+# Usage in batch job:
+embedder = StartupEmbedder()
+for startup in new_startups:
+    text = f"{startup.short_description} {startup.long_description}"
+    embedding = embedder.generate_embedding(text)
+    np.save(f"data/embeddings/startup_{startup.id:06d}.npy", embedding)
+
+================================================================================
+
+2.5 FAISS Vector Search (Simplified)
+
+import faiss
+import numpy as np
+import json
+
+class FAISSIndexManager:
+    def __init__(self, dimension=768):
+        self.dimension = dimension
+        self.index = None
+        self.startup_ids = []
+        
+    def build_index(self, embeddings, startup_ids):
+        """
+        Build FAISS index from embeddings
+        For 10K startups: ~30MB RAM
+        """
+        # IndexFlatIP for exact cosine similarity (normalized embeddings)
+        self.index = faiss.IndexFlatIP(self.dimension)
+        self.index.add(embeddings.astype('float32'))
+        self.startup_ids = startup_ids
+        
+        logger.info(f"Built FAISS index with {self.index.ntotal} vectors")
+    
+    def search(self, query_embedding, top_k=10):
+        """Search for similar startups"""
+        query = query_embedding.reshape(1, -1).astype('float32')
+        similarities, indices = self.index.search(query, top_k)
+        
+        results = []
+        for idx, sim in zip(indices[0], similarities[0]):
+            if idx < len(self.startup_ids):
+                startup_id = self.startup_ids[idx]
+                results.append((startup_id, float(sim)))
+        
+        return results
+    
+    def save_index(self, filepath):
+        """Save FAISS index"""
+        faiss.write_index(self.index, filepath)
+    
+    def load_index(self, filepath, mapping_path):
+        """Load FAISS index and ID mapping"""
+        self.index = faiss.read_index(filepath)
+        
+        with open(mapping_path, 'r') as f:
+            self.startup_ids = json.load(f)
+        
+        logger.info(f"Loaded FAISS index with {self.index.ntotal} vectors")
+
+# Usage:
+manager = FAISSIndexManager()
+manager.load_index('data/faiss_index_latest.bin', 'data/startup_id_mapping_latest.json')
+results = manager.search(query_embedding, top_k=10)
+
+================================================================================
+
+2.6 Simplified Multi-Factor Scoring (3 Factors Only)
+
+class SimplifiedScoringEngine:
+    def __init__(self):
+        # Only 3 factors (no patents, no news sentiment)
+        self.weights = {
+            'semantic_similarity': 0.50,   # Primary signal
+            'funding_strength': 0.30,      # Total funding + recency
+            'founder_background': 0.20     # Previous exits from Crunchbase
+        }
+    
+    def calculate_composite_score(self, startup_data, query_similarity):
+        """
+        Calculate composite score
+        
+        Returns:
+            tuple: (composite_score, breakdown_dict)
+        """
+        scores = {}
+        
+        # 1. Semantic Similarity (from FAISS)
+        scores['semantic_similarity'] = float(np.clip(query_similarity, 0, 1))
+        
+        # 2. Funding Strength
+        scores['funding_strength'] = self._calculate_funding_score(startup_data)
+        
+        # 3. Founder Background
+        scores['founder_background'] = self._calculate_founder_score(startup_data)
+        
+        # Weighted composite
+        composite_score = sum(
+            scores[component] * self.weights[component]
+            for component in scores
+        )
+        
+        return composite_score, scores
+    
+    def _calculate_funding_score(self, startup_data):
+        """
+        Funding strength based on:
+        - Total funding amount
+        - Recency of last round
+        - Number of rounds
+        """
+        total_funding = startup_data.get('total_funding_usd', 0)
+        num_rounds = startup_data.get('num_funding_rounds', 0)
+        last_funding_date = startup_data.get('last_funding_date')
+        
+        # Funding amount score (log scale, cap at $100M)
+        if total_funding > 0:
+            funding_amount_score = min(np.log10(total_funding + 1) / 8, 1.0)
+        else:
+            funding_amount_score = 0.0
+        
+        # Recency score (last 12 months = 1.0, decay over time)
+        if last_funding_date:
+            days_since = (datetime.now() - datetime.fromisoformat(last_funding_date)).days
+            recency_score = max(0, 1 - (days_since / 730))  # 2 year decay
+        else:
+            recency_score = 0.3  # Neutral if no data
+        
+        # Number of rounds (signal of progress)
+        rounds_score = min(num_rounds / 5, 1.0)  # Cap at 5 rounds
+        
+        # Combine
+        funding_score = (
+            0.50 * funding_amount_score +
+            0.30 * recency_score +
+            0.20 * rounds_score
+        )
+        
+        return float(funding_score)
+    
+    def _calculate_founder_score(self, startup_data):
+        """
+        Founder background based on Crunchbase data only:
+        - Previous successful exits
+        - Number of previous companies
+        """
+        founders = startup_data.get('founders', [])
+        
+        if not founders:
+            return 0.3  # Neutral if no founder data
+        
+        # Parse founders JSON
+        if isinstance(founders, str):
+            founders = json.loads(founders)
+        
+        # Count exits across team
+        total_exits = sum(f.get('previous_exits', 0) for f in founders)
+        exit_score = min(total_exits / 2, 1.0)  # Cap at 2 exits
+        
+        # Experience (number of previous companies)
+        total_prev_companies = sum(len(f.get('previous_companies', [])) for f in founders)
+        experience_score = min(total_prev_companies / 5, 1.0)  # Cap at 5 companies
+        
+        # Combine
+        founder_score = 0.6 * exit_score + 0.4 * experience_score
+        
+        return float(founder_score)
+
+# Usage:
+scoring_engine = SimplifiedScoringEngine()
+composite_score, breakdown = scoring_engine.calculate_composite_score(startup_data, similarity)
+
+================================================================================
+
+2.7 FastAPI Backend (Simplified - No Redis)
+
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from functools import lru_cache
+import hashlib
+
+app = FastAPI(title="Climate Solution Discovery Engine")
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Global state
+app.state.faiss_manager = None
+app.state.embedder = None
+app.state.scoring_engine = None
+app.state.db = None
+
+@app.on_event("startup")
+async def startup_event():
+    """Load FAISS index and models on startup"""
+    # Connect to SQLite
+    app.state.db = sqlite3.connect('data/climate_startups.db', check_same_thread=False)
+    
+    # Load FAISS index
+    app.state.faiss_manager = FAISSIndexManager()
+    app.state.faiss_manager.load_index(
+        'data/faiss_index_latest.bin',
+        'data/startup_id_mapping_latest.json'
+    )
+    
+    # Load models
+    app.state.embedder = StartupEmbedder()
+    app.state.scoring_engine = SimplifiedScoringEngine()
+    
+    logger.info("Startup complete!")
+
+# In-memory cache (no Redis needed for 16GB)
+@lru_cache(maxsize=1000)
+def cached_search_internal(query_hash: str, query: str, top_k: int):
+    """LRU cache for last 1000 queries"""
+    # Generate embedding
+    query_embedding = app.state.embedder.generate_embedding(query)
+    
+    # FAISS search
+    faiss_results = app.state.faiss_manager.search(query_embedding, top_k=50)
+    
+    # Enrich with scores
+    enriched = enrich_search_results(faiss_results)[:top_k]
+    
+    return enriched
+
+class SearchRequest(BaseModel):
+    query: str
+    top_k: int = 10
+    vertical_filter: str = None
+    founded_year_min: int = None
+    founded_year_max: int = None
+    min_funding_usd: int = None
+
+@app.post("/api/search")
+async def search_startups(request: SearchRequest):
+    """Semantic search with in-memory caching"""
+    import time
+    start = time.time()
+    
+    # Create cache key
+    cache_key = hashlib.md5(f"{request.query}_{request.top_k}".encode()).hexdigest()
+    
+    # Search (uses LRU cache)
+    results = cached_search_internal(cache_key, request.query, request.top_k)
+    
+    # Apply filters
+    if request.vertical_filter:
+        results = [r for r in results if request.vertical_filter in r['startup'].get('verticals', [])]
+    
+    if request.founded_year_min:
+        results = [r for r in results if r['startup'].get('founded_year', 0) >= request.founded_year_min]
+    
+    processing_time = (time.time() - start) * 1000
+    
+    return {
+        "query": request.query,
+        "total_results": len(results),
+        "results": results,
+        "processing_time_ms": round(processing_time, 2)
+    }
+
+@app.get("/api/startups/{startup_id}")
+async def get_startup_details(startup_id: int):
+    """Get full details for a startup"""
+    cursor = app.state.db.cursor()
+    row = cursor.execute("SELECT * FROM startups WHERE id = ?", (startup_id,)).fetchone()
+    
+    if not row:
+        raise HTTPException(status_code=404, detail="Startup not found")
+    
+    # Convert to dict
+    columns = [desc[0] for desc in cursor.description]
+    startup = dict(zip(columns, row))
+    
+    return startup
+
+@app.get("/api/verticals")
+async def get_verticals():
+    """Get climate tech taxonomy"""
+    with open('config/climate_taxonomy.json', 'r') as f:
+        return json.load(f)
+
+@app.get("/api/batch-status")
+async def get_batch_status():
+    """Get last batch update timestamp"""
+    cursor = app.state.db.cursor()
+    total = cursor.execute("SELECT COUNT(*) FROM startups").fetchone()[0]
+    
+    # Get file modification time of FAISS index
+    import os
+    last_update = datetime.fromtimestamp(os.path.getmtime('data/faiss_index_latest.bin'))
+    
+    return {
+        "total_startups": total,
+        "last_update": last_update.isoformat(),
+        "status": "operational"
+    }
+
+def enrich_search_results(faiss_results):
+    """Add multi-factor scores to FAISS results"""
+    enriched = []
+    cursor = app.state.db.cursor()
+    
+    for startup_id, similarity in faiss_results:
+        # Fetch from SQLite
+        row = cursor.execute("SELECT * FROM startups WHERE id = ?", (startup_id,)).fetchone()
+        columns = [desc[0] for desc in cursor.description]
+        startup_data = dict(zip(columns, row))
+        
+        # Calculate composite score
+        composite_score, breakdown = app.state.scoring_engine.calculate_composite_score(
+            startup_data, similarity
+        )
+        
+        enriched.append({
+            'startup': {
+                'id': startup_data['id'],
+                'name': startup_data['name'],
+                'description': startup_data['short_description'],
+                'founded_year': startup_data['founded_year'],
+                'total_funding_usd': startup_data['total_funding_usd'],
+                'website_url': startup_data['website_url'],
+                'verticals': json.loads(startup_data['verticals']) if startup_data['verticals'] else [],
+                'headquarters': startup_data['headquarters_location']
+            },
+            'scores': {
+                'composite_score': round(composite_score, 3),
+                'breakdown': {k: round(v, 3) for k, v in breakdown.items()}
+            }
+        })
+    
+    # Sort by composite score
+    enriched.sort(key=lambda x: x['scores']['composite_score'], reverse=True)
+    
+    return enriched
+
+================================================================================
+
+2.8 React Frontend (Same as before, no changes needed)
+
+See full PRD for React implementation - unchanged from original.
+
+================================================================================
+
+3. DEVELOPMENT ROADMAP (SIMPLIFIED)
+
+Phase 1: Data Foundation (Week 1-2)
+- [ ] Set up SQLite database
+- [ ] Implement Crunchbase API scraper
+- [ ] Scrape 10,000+ climate tech startups
+- [ ] Validate data quality
+
+Phase 2: NLP & Classification (Week 3-4)
+- [ ] Set up sentence-transformers (CPU)
+- [ ] Generate embeddings for all startups
+- [ ] Implement zero-shot classification
+- [ ] Create climate taxonomy JSON
+- [ ] Classify all startups into verticals
+
+Phase 3: Search Infrastructure (Week 5)
+- [ ] Build FAISS index from embeddings
+- [ ] Test search latency (<500ms)
+- [ ] Create batch job orchestrator (2 AM)
+- [ ] Test index rebuild process
+
+Phase 4: Scoring & Backend (Week 6-7)
+- [ ] Implement 3-factor scoring algorithm
+- [ ] Set up FastAPI project
+- [ ] Implement all API endpoints
+- [ ] Add LRU caching
+- [ ] Write API tests
+
+Phase 5: Frontend (Week 7-8)
+- [ ] Set up React + TypeScript
+- [ ] Build search interface
+- [ ] Build vertical filters
+- [ ] Build result cards with score breakdowns
+- [ ] Add batch status display
+
+Phase 6: Testing & Deployment (Week 8)
+- [ ] Performance testing
+- [ ] Deploy to production
+- [ ] Monitor batch job
+- [ ] Write documentation
+
+================================================================================
+
+4. TECHNICAL SPECIFICATIONS (SIMPLIFIED)
+
+Tech Stack:
+- Backend: Python 3.10+, FastAPI, SQLite
+- ML: sentence-transformers, transformers (CPU-only), FAISS, numpy
+- Frontend: React 18+, TypeScript, Tailwind CSS, Recharts
+- Infrastructure: Ubuntu/Windows, Cron/Task Scheduler
+
+System Requirements (16GB-Friendly):
+- CPU: 4+ cores
+- RAM: 16GB (uses ~6-8GB during operation)
+- GPU: NOT REQUIRED (CPU inference only)
+- Storage: 50GB SSD
+- Network: Stable internet for API calls
+
+Memory Breakdown:
+- OS: 3GB
+- SQLite: 100MB
+- FAISS index (10K vectors): 30MB
+- BERT model (all-mpnet-base-v2): 420MB
+- FastAPI app: 500MB
+- Browser/dev: 2GB
+Total: ~6GB (10GB free buffer)
+
+Performance Targets:
+- Search latency: <500ms
+- Batch job duration: <30 minutes (10K startups, CPU)
+- Classification accuracy: >80%
+- Memory usage: <8GB
+
+================================================================================
+
+5. WHAT WE REMOVED (vs Original PRD)
+
+REMOVED COMPONENTS:
+❌ PostgreSQL (replaced with SQLite)
+❌ pgvector extension (embeddings in .npy files)
+❌ Redis caching (replaced with Python LRU cache)
+❌ Blue-green deployment (simple rebuild at 2 AM)
+❌ Patent analysis (Google BigQuery)
+❌ News sentiment analysis (NewsAPI + BERT)
+❌ Complex multi-table schema (single denormalized table)
+❌ GPU requirement (CPU-only inference)
+❌ 5-factor scoring (reduced to 3 factors)
+
+KEPT ESSENTIALS:
+✅ FAISS vector search
+✅ sentence-transformers embeddings
+✅ Zero-shot classification
+✅ 3-factor scoring (semantic + funding + founders)
+✅ Crunchbase data
+✅ SQLite storage
+✅ FastAPI backend
+✅ React frontend
+
+RESULT: 
+- Memory usage: 20GB+ → 6-8GB
+- Development time: 16-20 weeks → 8 weeks
+- Infrastructure cost: $200/month → $20/month
+- Complexity: High → Medium
+
+================================================================================
+
+6. FUTURE ENHANCEMENTS (Post-MVP)
+
+Once MVP is validated and user feedback gathered:
+
+1. Add patent analysis (if users find it valuable)
+2. Add news sentiment (if market momentum matters)
+3. Migrate to PostgreSQL (if scaling beyond 50K startups)
+4. Add Redis caching (if serving >10K queries/day)
+5. Fine-tune BERT classifier (if zero-shot accuracy insufficient)
+6. Add user accounts and saved searches
+7. Build advanced filters (location, employee count)
+8. Create API for external developers
+
+================================================================================
+
+END OF PRD - Ready for Implementation
+
+This simplified architecture is optimized for 16GB RAM, solo developer efficiency,
+and rapid MVP iteration. All unnecessary complexity has been removed while keeping
+core functionality intact.

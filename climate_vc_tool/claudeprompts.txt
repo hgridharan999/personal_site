@@ -1,0 +1,3581 @@
+================================================================================
+
+1. PROJECT OVERVIEW
+
+Product Name: Climate Solution Discovery Engine
+Description: A hybrid search platform (semantic + keyword) that enables sub-second 
+discovery across 10,000+ climate tech startups using BERT embeddings, BM25 keyword 
+matching, and FAISS vector search.
+
+Key Objectives:
+- Process and index 10,000+ startup descriptions using BERT embeddings
+- Deploy hybrid search (semantic + keyword) with <500ms query latency
+- Support filtering across 12 core climate tech verticals
+- Run efficiently on 16GB RAM laptop
+- Include proper evaluation metrics (NDCG@10, latency monitoring)
+
+Technical Constraints:
+- 16GB RAM total (must be memory-efficient)
+- Manual index rebuild (no automated scheduler for MVP)
+- Use free/open-source tools (FAISS, SQLite, BM25)
+- CPU-only inference (no GPU required)
+- Single data source: Crunchbase + public directories
+
+Success Metrics:
+- Search latency: <500ms for top-10 results
+- NDCG@10: >0.7 on test queries
+- Data coverage: 10,000+ climate tech startups
+- Index rebuild time: <30 minutes on CPU
+- Memory usage: <8GB during operation
+
+================================================================================
+
+2. CORE FEATURES SPECIFICATION
+
+2.1 Data Ingestion Pipeline
+
+DATA SOURCES:
+
+Primary: Crunchbase API
+- Endpoint: https://api.crunchbase.com/v4/searches/organizations
+- Filters: categories containing climate_tech, cleantech, renewable_energy, carbon, sustainability
+- Rate limit: 200 requests/minute (paid tier: $199/month)
+- Fields to extract:
+  * name
+  * short_description
+  * long_description
+  * founded_on
+  * total_funding_usd
+  * num_funding_rounds
+  * last_funding_date
+  * last_funding_type (Seed, Series A, B, etc.)
+  * founders (names only)
+  * website_url
+  * headquarters_location
+  * employee_count
+  * categories (for vertical classification)
+
+Secondary: Web Scraping (Supplementary)
+- Y Combinator: https://www.ycombinator.com/companies?tags=Climate
+- ClimateBase: https://climatebase.org/companies
+- Greentown Labs: https://greentownlabs.com/companies/
+
+SIMPLIFIED DATABASE SCHEMA (SQLite):
+
+-- Single denormalized table
+CREATE TABLE startups (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    short_description TEXT,
+    long_description TEXT,
+    founded_year INTEGER,
+    total_funding_usd INTEGER,
+    num_funding_rounds INTEGER,
+    last_funding_date TEXT,
+    last_funding_type TEXT,
+    website_url TEXT,
+    headquarters_location TEXT,
+    employee_count INTEGER,
+    
+    -- Vertical assignment (use Crunchbase categories directly)
+    primary_vertical TEXT,
+    all_verticals TEXT,  -- JSON array
+    
+    -- Crunchbase categories (raw)
+    crunchbase_categories TEXT,  -- JSON array
+    
+    -- Full text for BM25 indexing
+    full_text TEXT,  -- Concatenated description for keyword search
+    
+    -- Timestamps
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for performance
+CREATE INDEX idx_founded_year ON startups(founded_year);
+CREATE INDEX idx_funding ON startups(total_funding_usd);
+CREATE INDEX idx_name ON startups(name);
+CREATE INDEX idx_primary_vertical ON startups(primary_vertical);
+
+-- Full-text search index for BM25
+CREATE VIRTUAL TABLE startups_fts USING fts5(
+    name, 
+    short_description, 
+    long_description,
+    content=startups,
+    content_rowid=id
+);
+
+-- Embeddings stored separately as memory-mapped numpy array
+-- /data/embeddings/all_embeddings.npy (N x 768 float32 array)
+-- /data/embeddings/startup_id_mapping.json (maps array index to startup ID)
+
+-- Click-through rate logging
+CREATE TABLE search_interactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    query TEXT NOT NULL,
+    clicked_startup_id INTEGER,
+    rank_position INTEGER,
+    timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (clicked_startup_id) REFERENCES startups(id)
+);
+
+MANUAL REBUILD SCRIPT (No Scheduler):
+
+# rebuild_index.py - Run manually when adding new data
+import argparse
+
+def rebuild_index(incremental=False):
+    """
+    Manual index rebuild process:
+    1. Scrape new/updated Crunchbase data (10 min)
+    2. Generate embeddings for new startups (15 min on CPU)
+    3. Map to simplified verticals (1 min)
+    4. Rebuild FAISS index (1 min)
+    5. Rebuild BM25 index (30 sec)
+    """
+    logger.info("Starting manual index rebuild...")
+    
+    try:
+        # Step 1: Scrape Crunchbase
+        if incremental:
+            logger.info("Incremental update: fetching new/changed startups only")
+            new_startups = scrape_crunchbase_incremental()
+        else:
+            logger.info("Full rebuild: fetching all startups")
+            new_startups = scrape_crunchbase_full()
+        
+        # Step 2: Generate embeddings
+        logger.info(f"Generating embeddings for {len(new_startups)} startups")
+        embedder = StartupEmbedder()
+        
+        all_startups = db.execute("SELECT id, short_description, long_description FROM startups").fetchall()
+        
+        texts = [f"{row[1]} {row[2]}" for row in all_startups]
+        embeddings = embedder.generate_embeddings_batch(texts, batch_size=16)
+        
+        # Save as memory-mapped array
+        np.save('data/embeddings/all_embeddings.npy', embeddings)
+        
+        # Save ID mapping
+        id_mapping = [row[0] for row in all_startups]
+        with open('data/embeddings/startup_id_mapping.json', 'w') as f:
+            json.dump(id_mapping, f)
+        
+        # Step 3: Map verticals using Crunchbase categories
+        logger.info("Mapping verticals from Crunchbase categories")
+        for startup in new_startups:
+            verticals = map_crunchbase_categories_to_verticals(startup.categories)
+            db.execute("""
+                UPDATE startups 
+                SET primary_vertical = ?, all_verticals = ?, full_text = ?
+                WHERE id = ?
+            """, (
+                verticals[0] if verticals else None,
+                json.dumps(verticals),
+                f"{startup.name} {startup.short_description} {startup.long_description}",
+                startup.id
+            ))
+        
+        # Step 4: Build FAISS index
+        logger.info("Building FAISS index")
+        faiss_manager = FAISSIndexManager()
+        faiss_manager.build_index(embeddings, id_mapping)
+        faiss_manager.save_index('data/faiss_index.bin')
+        
+        # Step 5: Rebuild BM25 index (SQLite FTS5 auto-updates)
+        logger.info("Rebuilding BM25 index")
+        db.execute("INSERT INTO startups_fts(startups_fts) VALUES('rebuild')")
+        
+        logger.info("Index rebuild completed successfully!")
+        
+    except Exception as e:
+        logger.error(f"Index rebuild failed: {str(e)}")
+        raise
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--incremental', action='store_true', help='Only update new/changed startups')
+    args = parser.parse_args()
+    
+    rebuild_index(incremental=args.incremental)
+
+================================================================================
+
+2.2 Simplified Climate Tech Vertical Taxonomy (12 Core Verticals)
+
+FLAT STRUCTURE (No hierarchy for MVP):
+
+{
+  "verticals": [
+    {
+      "id": "carbon_management",
+      "name": "Carbon Management",
+      "description": "Carbon capture, removal, and offset technologies",
+      "keywords": ["carbon capture", "DAC", "carbon removal", "carbon offsets", "biochar"]
+    },
+    {
+      "id": "clean_energy",
+      "name": "Clean Energy",
+      "description": "Renewable energy generation (solar, wind, hydro, geothermal)",
+      "keywords": ["solar", "wind", "renewable energy", "photovoltaic", "turbine"]
+    },
+    {
+      "id": "energy_storage",
+      "name": "Energy Storage",
+      "description": "Battery and alternative energy storage technologies",
+      "keywords": ["battery", "lithium-ion", "energy storage", "flow battery", "grid storage"]
+    },
+    {
+      "id": "green_transportation",
+      "name": "Green Transportation",
+      "description": "Electric vehicles, sustainable aviation, and low-emission mobility",
+      "keywords": ["electric vehicle", "EV", "charging", "sustainable aviation", "SAF"]
+    },
+    {
+      "id": "sustainable_agriculture",
+      "name": "Sustainable Agriculture",
+      "description": "Climate-smart farming and alternative proteins",
+      "keywords": ["precision agriculture", "vertical farming", "alternative protein", "regenerative"]
+    },
+    {
+      "id": "built_environment",
+      "name": "Built Environment",
+      "description": "Green buildings, energy-efficient construction, and HVAC",
+      "keywords": ["green building", "HVAC", "insulation", "smart building", "construction"]
+    },
+    {
+      "id": "circular_economy",
+      "name": "Circular Economy",
+      "description": "Waste reduction, recycling, and material recovery",
+      "keywords": ["recycling", "circular", "waste", "plastic", "e-waste"]
+    },
+    {
+      "id": "climate_fintech",
+      "name": "Climate Fintech",
+      "description": "Green finance, ESG, and carbon markets",
+      "keywords": ["ESG", "green bonds", "carbon credits", "climate risk", "sustainable finance"]
+    },
+    {
+      "id": "water_ocean",
+      "name": "Water & Ocean",
+      "description": "Water management and ocean health solutions",
+      "keywords": ["water", "desalination", "wastewater", "ocean", "aquaculture"]
+    },
+    {
+      "id": "industrial_decarbonization",
+      "name": "Industrial Decarbonization",
+      "description": "Decarbonizing heavy industry (steel, cement, chemicals)",
+      "keywords": ["green hydrogen", "steel", "cement", "industrial", "process heat"]
+    },
+    {
+      "id": "climate_adaptation",
+      "name": "Climate Adaptation",
+      "description": "Resilience and adaptation technologies",
+      "keywords": ["flood", "drought", "wildfire", "resilience", "adaptation"]
+    },
+    {
+      "id": "grid_energy_management",
+      "name": "Grid & Energy Management",
+      "description": "Smart grid, VPPs, and energy optimization",
+      "keywords": ["smart grid", "VPP", "demand response", "microgrid", "grid"]
+    }
+  ]
+}
+
+Storage: Save as config/climate_taxonomy.json
+
+SIMPLE CATEGORY MAPPING (No Zero-Shot Classification):
+
+def map_crunchbase_categories_to_verticals(crunchbase_categories):
+    """
+    Map Crunchbase categories to our simplified verticals
+    Uses keyword matching instead of ML classification
+    """
+    CATEGORY_MAP = {
+        'Solar': 'clean_energy',
+        'Wind Energy': 'clean_energy',
+        'Renewable Energy': 'clean_energy',
+        'Energy Storage': 'energy_storage',
+        'Battery': 'energy_storage',
+        'Electric Vehicle': 'green_transportation',
+        'Carbon Capture': 'carbon_management',
+        'Agriculture': 'sustainable_agriculture',
+        'Vertical Farming': 'sustainable_agriculture',
+        'Green Building': 'built_environment',
+        'Recycling': 'circular_economy',
+        'Water Treatment': 'water_ocean',
+        'Green Finance': 'climate_fintech',
+        # ... etc
+    }
+    
+    verticals = []
+    for category in crunchbase_categories:
+        if category in CATEGORY_MAP:
+            vertical_id = CATEGORY_MAP[category]
+            if vertical_id not in verticals:
+                verticals.append(vertical_id)
+    
+    return verticals if verticals else ['clean_energy']  # Default fallback
+
+================================================================================
+
+2.3 BERT Embedding Generation
+
+MODEL: sentence-transformers/all-mpnet-base-v2 (CPU-friendly, 768-dim)
+
+from sentence_transformers import SentenceTransformer
+import numpy as np
+
+class StartupEmbedder:
+    def __init__(self, model_name='sentence-transformers/all-mpnet-base-v2'):
+        self.model = SentenceTransformer(model_name, device='cpu')
+        
+    def generate_embedding(self, text):
+        """Generate 768-dim embedding for single text"""
+        return self.model.encode(
+            text, 
+            convert_to_numpy=True, 
+            normalize_embeddings=True  # For cosine similarity
+        )
+    
+    def generate_embeddings_batch(self, texts, batch_size=16):
+        """
+        Batch generation for efficiency
+        10K startups takes ~20-30 minutes on CPU
+        """
+        embeddings = self.model.encode(
+            texts,
+            batch_size=batch_size,
+            show_progress_bar=True,
+            convert_to_numpy=True,
+            normalize_embeddings=True
+        )
+        return embeddings.astype('float32')  # Save memory
+
+# Usage in rebuild script:
+embedder = StartupEmbedder()
+texts = [f"{s.short_description} {s.long_description}" for s in startups]
+embeddings = embedder.generate_embeddings_batch(texts)
+np.save('data/embeddings/all_embeddings.npy', embeddings)
+
+================================================================================
+
+2.4 FAISS Vector Search
+
+import faiss
+import numpy as np
+import json
+
+class FAISSIndexManager:
+    def __init__(self, dimension=768):
+        self.dimension = dimension
+        self.index = None
+        self.startup_ids = []
+        
+    def build_index(self, embeddings, startup_ids):
+        """
+        Build FAISS index from embeddings
+        For 10K startups: ~30MB RAM
+        """
+        # IndexFlatIP for exact cosine similarity (normalized embeddings)
+        self.index = faiss.IndexFlatIP(self.dimension)
+        self.index.add(embeddings.astype('float32'))
+        self.startup_ids = startup_ids
+        
+        logger.info(f"Built FAISS index with {self.index.ntotal} vectors")
+    
+    def search(self, query_embedding, top_k=20):
+        """Search for similar startups"""
+        query = query_embedding.reshape(1, -1).astype('float32')
+        similarities, indices = self.index.search(query, top_k)
+        
+        results = []
+        for idx, sim in zip(indices[0], similarities[0]):
+            if idx < len(self.startup_ids):
+                startup_id = self.startup_ids[idx]
+                results.append((startup_id, float(sim)))
+        
+        return results
+    
+    def save_index(self, filepath):
+        """Save FAISS index and mapping"""
+        faiss.write_index(self.index, filepath)
+        
+        mapping_path = filepath.replace('.bin', '_mapping.json')
+        with open(mapping_path, 'w') as f:
+            json.dump(self.startup_ids, f)
+    
+    def load_index(self, filepath):
+        """Load FAISS index and ID mapping"""
+        self.index = faiss.read_index(filepath)
+        
+        mapping_path = filepath.replace('.bin', '_mapping.json')
+        with open(mapping_path, 'r') as f:
+            self.startup_ids = json.load(f)
+        
+        logger.info(f"Loaded FAISS index with {self.index.ntotal} vectors")
+
+================================================================================
+
+2.5 BM25 Keyword Search
+
+from rank_bm25 import BM25Okapi
+import sqlite3
+
+class BM25SearchEngine:
+    def __init__(self, db_path):
+        self.db = sqlite3.connect(db_path)
+        self.startup_texts = []
+        self.startup_ids = []
+        self.bm25 = None
+        
+    def build_index(self):
+        """Build BM25 index from startup descriptions"""
+        cursor = self.db.cursor()
+        rows = cursor.execute("""
+            SELECT id, name, short_description, long_description 
+            FROM startups
+        """).fetchall()
+        
+        self.startup_ids = []
+        tokenized_corpus = []
+        
+        for row in rows:
+            startup_id, name, short_desc, long_desc = row
+            full_text = f"{name} {short_desc} {long_desc}"
+            
+            # Simple tokenization (lowercase + split)
+            tokens = full_text.lower().split()
+            
+            self.startup_ids.append(startup_id)
+            tokenized_corpus.append(tokens)
+        
+        self.bm25 = BM25Okapi(tokenized_corpus)
+        logger.info(f"Built BM25 index for {len(self.startup_ids)} startups")
+    
+    def search(self, query, top_k=20):
+        """Search using BM25 keyword matching"""
+        tokenized_query = query.lower().split()
+        scores = self.bm25.get_scores(tokenized_query)
+        
+        # Get top K results
+        top_indices = np.argsort(scores)[::-1][:top_k]
+        
+        results = []
+        for idx in top_indices:
+            startup_id = self.startup_ids[idx]
+            score = float(scores[idx])
+            if score > 0:  # Only return non-zero scores
+                results.append((startup_id, score))
+        
+        return results
+
+================================================================================
+
+2.6 Query Expansion & Understanding
+
+class QueryProcessor:
+    def __init__(self):
+        # Climate-specific synonym expansion
+        self.expansions = {
+            'solar': 'solar photovoltaic PV renewable energy sun',
+            'battery': 'battery energy storage lithium-ion accumulator',
+            'carbon': 'carbon CO2 emissions capture removal sequestration offset',
+            'ev': 'electric vehicle EV battery car automotive',
+            'wind': 'wind turbine renewable energy offshore onshore',
+            'hydrogen': 'hydrogen H2 green hydrogen fuel cell',
+            'agriculture': 'agriculture farming agtech food crops',
+            'recycling': 'recycling circular waste upcycling reuse',
+            'water': 'water desalination purification treatment wastewater',
+        }
+        
+    def expand_query(self, query):
+        """Expand query with domain-specific synonyms"""
+        query_lower = query.lower()
+        expanded_terms = [query]
+        
+        for keyword, expansion in self.expansions.items():
+            if keyword in query_lower:
+                expanded_terms.append(expansion)
+        
+        return ' '.join(expanded_terms)
+    
+    def extract_filters(self, query):
+        """Extract structured filters from natural language query"""
+        filters = {}
+        
+        # Founded year patterns
+        import re
+        year_match = re.search(r'founded\s+(after|since|before)\s+(\d{4})', query, re.IGNORECASE)
+        if year_match:
+            operator, year = year_match.groups()
+            if operator.lower() in ['after', 'since']:
+                filters['founded_year_min'] = int(year)
+            elif operator.lower() == 'before':
+                filters['founded_year_max'] = int(year)
+        
+        # Funding patterns
+        funding_match = re.search(r'raised\s+over\s+\$?(\d+)([MmBb])', query, re.IGNORECASE)
+        if funding_match:
+            amount, unit = funding_match.groups()
+            multiplier = 1_000_000 if unit.lower() == 'm' else 1_000_000_000
+            filters['min_funding_usd'] = int(amount) * multiplier
+        
+        return filters
+
+================================================================================
+
+2.7 Hybrid Search with Reciprocal Rank Fusion
+
+class HybridSearchEngine:
+    def __init__(self, faiss_manager, bm25_engine, embedder):
+        self.faiss_manager = faiss_manager
+        self.bm25_engine = bm25_engine
+        self.embedder = embedder
+        self.query_processor = QueryProcessor()
+        
+    def search(self, query, top_k=10, semantic_weight=0.6):
+        """
+        Hybrid search combining semantic (FAISS) and keyword (BM25)
+        Uses Reciprocal Rank Fusion (RRF) for merging
+        """
+        # Expand query
+        expanded_query = self.query_processor.expand_query(query)
+        
+        # 1. Semantic search (FAISS)
+        query_embedding = self.embedder.generate_embedding(expanded_query)
+        semantic_results = self.faiss_manager.search(query_embedding, top_k=20)
+        
+        # 2. Keyword search (BM25)
+        keyword_results = self.bm25_engine.search(query, top_k=20)
+        
+        # 3. Reciprocal Rank Fusion
+        merged_results = self.reciprocal_rank_fusion(
+            semantic_results,
+            keyword_results,
+            semantic_weight=semantic_weight
+        )
+        
+        return merged_results[:top_k]
+    
+    def reciprocal_rank_fusion(self, semantic_results, keyword_results, k=60, semantic_weight=0.6):
+        """
+        Merge two ranked lists using RRF
+        
+        RRF score = semantic_weight * (1 / (k + rank_semantic)) + 
+                    (1 - semantic_weight) * (1 / (k + rank_keyword))
+        """
+        scores = {}
+        
+        # Add semantic scores
+        for rank, (startup_id, sim) in enumerate(semantic_results, start=1):
+            scores[startup_id] = semantic_weight * (1 / (k + rank))
+        
+        # Add keyword scores
+        keyword_weight = 1 - semantic_weight
+        for rank, (startup_id, score) in enumerate(keyword_results, start=1):
+            if startup_id in scores:
+                scores[startup_id] += keyword_weight * (1 / (k + rank))
+            else:
+                scores[startup_id] = keyword_weight * (1 / (k + rank))
+        
+        # Sort by combined score
+        ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+        
+        return [(startup_id, score) for startup_id, score in ranked]
+
+================================================================================
+
+2.8 Result Diversification
+
+class ResultDiversifier:
+    def diversify(self, results, startup_data_map, max_per_vertical=3):
+        """
+        Ensure diversity across verticals
+        Prevents one category from dominating results
+        """
+        diversified = []
+        vertical_counts = {}
+        
+        for startup_id, score in results:
+            startup = startup_data_map[startup_id]
+            vertical = startup.get('primary_vertical', 'unknown')
+            
+            # Check if vertical quota not exceeded
+            if vertical_counts.get(vertical, 0) < max_per_vertical:
+                diversified.append((startup_id, score))
+                vertical_counts[vertical] = vertical_counts.get(vertical, 0) + 1
+            
+            # Stop when we have enough diverse results
+            if len(diversified) >= len(results):
+                break
+        
+        return diversified
+
+================================================================================
+
+2.9 Evaluation Framework
+
+class SearchEvaluator:
+    def __init__(self, test_queries_path='config/test_queries.json'):
+        """
+        test_queries.json format:
+        [
+            {
+                "query": "solar panel companies",
+                "relevant_startup_ids": [123, 456, 789],
+                "vertical": "clean_energy"
+            },
+            ...
+        ]
+        """
+        with open(test_queries_path, 'r') as f:
+            self.test_queries = json.load(f)
+    
+    def calculate_ndcg(self, ranked_results, relevant_ids, k=10):
+        """
+        Calculate Normalized Discounted Cumulative Gain @ K
+        """
+        dcg = 0.0
+        for i, (startup_id, score) in enumerate(ranked_results[:k], start=1):
+            if startup_id in relevant_ids:
+                # Relevance = 1 if relevant, 0 otherwise
+                dcg += 1.0 / np.log2(i + 1)
+        
+        # Ideal DCG (all relevant items at top)
+        idcg = sum(1.0 / np.log2(i + 2) for i in range(min(len(relevant_ids), k)))
+        
+        return dcg / idcg if idcg > 0 else 0.0
+    
+    def evaluate(self, search_engine):
+        """
+        Run evaluation on test queries
+        
+        Returns:
+            dict: {
+                'mean_ndcg@10': float,
+                'mean_latency_ms': float,
+                'p95_latency_ms': float
+            }
+        """
+        ndcg_scores = []
+        latencies = []
+        
+        for test_case in self.test_queries:
+            query = test_case['query']
+            relevant_ids = test_case['relevant_startup_ids']
+            
+            # Measure latency
+            start = time.time()
+            results = search_engine.search(query, top_k=10)
+            latency_ms = (time.time() - start) * 1000
+            latencies.append(latency_ms)
+            
+            # Calculate NDCG
+            ndcg = self.calculate_ndcg(results, relevant_ids, k=10)
+            ndcg_scores.append(ndcg)
+        
+        return {
+            'mean_ndcg@10': np.mean(ndcg_scores),
+            'mean_latency_ms': np.mean(latencies),
+            'p95_latency_ms': np.percentile(latencies, 95),
+            'total_queries': len(self.test_queries)
+        }
+
+# Create test queries manually for MVP:
+# config/test_queries.json
+[
+    {
+        "query": "solar panel companies",
+        "relevant_startup_ids": [1, 5, 12, 34],
+        "vertical": "clean_energy"
+    },
+    {
+        "query": "carbon capture startups",
+        "relevant_startup_ids": [7, 15, 23],
+        "vertical": "carbon_management"
+    },
+    {
+        "query": "battery storage for grid",
+        "relevant_startup_ids": [3, 9, 18, 27],
+        "vertical": "energy_storage"
+    }
+    // ... add 20-30 test queries total
+]
+
+================================================================================
+
+2.10 FastAPI Backend
+
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from functools import lru_cache
+import hashlib
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+app = FastAPI(title="Climate Solution Discovery Engine")
+
+# Rate limiting
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Global state
+app.state.hybrid_search = None
+app.state.diversifier = None
+app.state.db = None
+
+@app.on_event("startup")
+async def startup_event():
+    """Load models and indexes on startup"""
+    try:
+        # Connect to SQLite
+        app.state.db = sqlite3.connect('data/climate_startups.db', check_same_thread=False)
+        
+        # Load FAISS index
+        faiss_manager = FAISSIndexManager()
+        faiss_manager.load_index('data/faiss_index.bin')
+        
+        # Load BM25 index
+        bm25_engine = BM25SearchEngine('data/climate_startups.db')
+        bm25_engine.build_index()
+        
+        # Initialize embedder
+        embedder = StartupEmbedder()
+        
+        # Initialize hybrid search
+        app.state.hybrid_search = HybridSearchEngine(faiss_manager, bm25_engine, embedder)
+        app.state.diversifier = ResultDiversifier()
+        
+        logger.info("Startup complete - all indexes loaded!")
+        
+    except Exception as e:
+        logger.error(f"Startup failed: {e}")
+        raise
+
+# In-memory LRU cache (no Redis needed)
+@lru_cache(maxsize=1000)
+def cached_search_internal(query_hash: str, query: str, top_k: int):
+    """Cache last 1000 queries"""
+    results = app.state.hybrid_search.search(query, top_k=50)
+    return results
+
+class SearchRequest(BaseModel):
+    query: str
+    top_k: int = 10
+    vertical_filter: str = None
+    founded_year_min: int = None
+    founded_year_max: int = None
+    min_funding_usd: int = None
+    enable_diversity: bool = True
+
+@app.post("/api/search")
+@limiter.limit("30/minute")
+async def search_startups(request: Request, search_req: SearchRequest):
+    """
+    Hybrid semantic + keyword search with result diversification
+    """
+    import time
+    start = time.time()
+    
+    try:
+        # Create cache key
+        cache_key = hashlib.md5(
+            f"{search_req.query}_{search_req.top_k}".encode()
+        ).hexdigest()
+        
+        # Search (uses LRU cache)
+        results = cached_search_internal(cache_key, search_req.query, search_req.top_k)
+        
+        # Enrich with startup data
+        enriched = enrich_search_results(results, app.state.db)
+        
+        # Apply diversity
+        if search_req.enable_diversity:
+            startup_map = {r['startup']['id']: r['startup'] for r in enriched}
+            results_tuples = [(r['startup']['id'], r['score']) for r in enriched]
+            
+            diversified_tuples = app.state.diversifier.diversify(
+                results_tuples, 
+                startup_map,
+                max_per_vertical=3
+            )
+            
+            # Reconstruct enriched results in new order
+            id_to_enriched = {r['startup']['id']: r for r in enriched}
+            enriched = [id_to_enriched[sid] for sid, score in diversified_tuples]
+        
+        # Apply filters
+        if search_req.vertical_filter:
+            enriched = [r for r in enriched 
+                       if r['startup'].get('primary_vertical') == search_req.vertical_filter]
+        
+        if search_req.founded_year_min:
+            enriched = [r for r in enriched 
+                       if r['startup'].get('founded_year', 0) >= search_req.founded_year_min]
+        
+        if search_req.min_funding_usd:
+            enriched = [r for r in enriched 
+                       if r['startup'].get('total_funding_usd', 0) >= search_req.min_funding_usd]
+        
+        processing_time = (time.time() - start) * 1000
+        
+        return {
+            "query": search_req.query,
+            "total_results": len(enriched),
+            "results": enriched[:search_req.top_k],
+            "processing_time_ms": round(processing_time, 2)
+        }
+        
+    except Exception as e:
+        logger.error(f"Search failed: {e}")
+        raise HTTPException(status_code=500, detail="Search temporarily unavailable")
+
+@app.get("/api/startups/{startup_id}")
+async def get_startup_details(startup_id: int):
+    """Get full details for a startup"""
+    try:
+        cursor = app.state.db.cursor()
+        row = cursor.execute("SELECT * FROM startups WHERE id = ?", (startup_id,)).fetchone()
+        
+        if not row:
+            raise HTTPException(status_code=404, detail="Startup not found")
+        
+        columns = [desc[0] for desc in cursor.description]
+        startup = dict(zip(columns, row))
+        
+        # Parse JSON fields
+        if startup.get('all_verticals'):
+            startup['all_verticals'] = json.loads(startup['all_verticals'])
+        
+        return startup
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to fetch startup {startup_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch startup details")
+
+@app.get("/api/verticals")
+async def get_verticals():
+    """Get climate tech taxonomy"""
+    try:
+        with open('config/climate_taxonomy.json', 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        logger.error(f"Failed to load taxonomy: {e}")
+        raise HTTPException(status_code=500, detail="Failed to load taxonomy")
+
+@app.get("/api/stats")
+async def get_stats():
+    """Get database statistics"""
+    try:
+        cursor = app.state.db.cursor()
+        
+        total = cursor.execute("SELECT COUNT(*) FROM startups").fetchone()[0]
+        
+        vertical_counts = cursor.execute("""
+            SELECT primary_vertical, COUNT(*) as count
+            FROM startups
+            WHERE primary_vertical IS NOT NULL
+            GROUP BY primary_vertical
+            ORDER BY count DESC
+        """).fetchall()
+        
+        # Get file modification time of FAISS index
+        import os
+        last_update = datetime.fromtimestamp(
+            os.path.getmtime('data/faiss_index.bin')
+        )
+        
+        return {
+            "total_startups": total,
+            "last_index_update": last_update.isoformat(),
+            "verticals": [
+                {"vertical": v, "count": c} for v, c in vertical_counts
+            ]
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get stats: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch statistics")
+
+@app.post("/api/log-interaction")
+@limiter.limit("100/minute")
+async def log_interaction(
+    request: Request,
+    query: str,
+    clicked_startup_id: int,
+    rank_position: int
+):
+    """Log user click-through for future ranking improvements"""
+    try:
+        cursor = app.state.db.cursor()
+        cursor.execute("""
+            INSERT INTO search_interactions (query, clicked_startup_id, rank_position)
+            VALUES (?, ?, ?)
+        """, (query, clicked_startup_id, rank_position))
+        app.state.db.commit()
+        
+        return {"status": "logged"}
+        
+    except Exception as e:
+        logger.error(f"Failed to log interaction: {e}")
+        return {"status": "failed"}
+
+@app.get("/api/evaluate")
+async def run_evaluation():
+    """Run search evaluation on test queries"""
+    try:
+        evaluator = SearchEvaluator()
+        metrics = evaluator.evaluate(app.state.hybrid_search)
+        
+        return metrics
+        
+    except Exception as e:
+        logger.error(f"Evaluation failed: {e}")
+        raise HTTPException(status_code=500, detail="Evaluation failed")
+
+def enrich_search_results(search_results, db):
+    """Add full startup data to search results"""
+    enriched = []
+    cursor = db.cursor()
+    
+    for startup_id, score in search_results:
+        row = cursor.execute("SELECT * FROM startups WHERE id = ?", (startup_id,)).fetchone()
+        
+        if not row:
+            continue
+            
+        columns = [desc[0] for desc in cursor.description]
+        startup_data = dict(zip(columns, row))
+        
+        enriched.append({
+            'startup': {
+                'id': startup_data['id'],
+                'name': startup_data['name'],
+                'description': startup_data['short_description'],
+                'founded_year': startup_data['founded_year'],
+                'total_funding_usd': startup_data['total_funding_usd'],
+                'website_url': startup_data['website_url'],
+                'primary_vertical': startup_data['primary_vertical'],
+                'headquarters': startup_data['headquarters_location']
+            },
+            'score': round(score, 3)
+        })
+    
+    return enriched
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+================================================================================
+
+2.11 React Frontend (Simplified - Focus on Search UX)
+
+Key Components:
+- SearchBar with query expansion hints
+- ResultCard with score visualization
+- VerticalFilter dropdown
+- StatsPanel showing database metrics
+- EvaluationPanel (admin view)
+
+See full implementation in Phase 4 prompt.
+
+================================================================================
+
+3. DEVELOPMENT ROADMAP
+
+Phase 1: Data Foundation (Week 1-2)
+- Set up SQLite database with FTS5
+- Implement Crunchbase API scraper
+- Web scraping for supplementary sources
+- Scrape 10,000+ climate tech startups
+- Create simple category mapping
+
+Phase 2: Search Infrastructure (Week 3-4)
+- Generate BERT embeddings (all-mpnet-base-v2)
+- Build FAISS index
+- Implement BM25 search
+- Build hybrid search with RRF
+- Create query expansion system
+- Build manual rebuild script
+
+Phase 3: Backend & Evaluation (Week 5-6)
+- Implement FastAPI backend
+- Add result diversification
+- Create evaluation framework
+- Build test query set (20-30 queries)
+- Add CTR logging
+- Performance testing
+
+Phase 4: Frontend & Polish (Week 6-7)
+- Build React search interface
+- Add vertical filters
+- Create stats dashboard
+- Add evaluation panel
+- Error handling & logging
+- Documentation
+
+================================================================================
+
+4. TECHNICAL SPECIFICATIONS
+
+Tech Stack:
+- Backend: Python 3.10+, FastAPI, SQLite with FTS5
+- ML: sentence-transformers, FAISS, rank-bm25, numpy
+- Frontend: React 18+, TypeScript, Tailwind CSS, Recharts
+- Infrastructure: Ubuntu/Windows, manual deployment
+
+System Requirements:
+- CPU: 4+ cores
+- RAM: 16GB (uses ~6-8GB during operation)
+- GPU: NOT REQUIRED
+- Storage: 50GB SSD
+- Network: Stable internet for API calls
+
+Memory Breakdown:
+- OS: 3GB
+- SQLite: 100MB
+- FAISS index (10K vectors): 30MB
+- BM25 index (in-memory): 200MB
+- BERT model: 420MB
+- FastAPI app: 500MB
+- Browser: 2GB
+Total: ~6.5GB (9.5GB free buffer)
+
+Performance Targets:
+- Search latency: <500ms (P95)
+- NDCG@10: >0.7
+- Index rebuild: <30 minutes
+- Memory usage: <8GB
+
+================================================================================
+
+5. WHAT WAS SIMPLIFIED
+
+REMOVED:
+❌ Zero-shot classification (use Crunchbase categories)
+❌ Multi-factor scoring (use pure search relevance)
+❌ Automated batch scheduler (manual rebuild script)
+❌ 50+ hierarchical verticals (12 flat verticals)
+❌ Complex database schema (single table)
+❌ PostgreSQL + Redis (SQLite + LRU cache)
+
+ADDED:
+✅ Hybrid search (FAISS + BM25 with RRF)
+✅ Query expansion system
+✅ Evaluation framework (NDCG@10)
+✅ Result diversification
+✅ Click-through logging
+✅ Rate limiting & error handling
+
+RESULT:
+- Development time: 16 weeks → 7 weeks
+- Infrastructure cost: $200/month → $20/month
+- Memory usage: 20GB → 6-8GB
+- Complexity: High → Medium
+- Production-readiness: Higher (proper evaluation + monitoring)
+
+================================================================================
+
+END OF REVISED PRD
+
+CLAUDE CODE PROMPTS (4 PHASES)
+PHASE 1: Data Foundation & Scraping
+markdown# PHASE 1: Climate Solution Discovery Engine - Data Foundation
+
+Build the data ingestion pipeline for a climate tech startup search engine. This is Phase 1 of 4.
+
+## Project Context
+You're building an AI-powered search platform for discovering 10,000+ climate tech startups. This phase focuses on data collection and storage.
+
+## Tasks for This Phase
+
+### 1. Project Setup
+Create this directory structure:
+```
+climate-search/
+├── data/
+│   ├── embeddings/
+│   └── climate_startups.db (SQLite)
+├── config/
+│   ├── climate_taxonomy.json
+│   └── test_queries.json
+├── src/
+│   ├── scrapers/
+│   │   ├── crunchbase_scraper.py
+│   │   └── web_scraper.py
+│   ├── database/
+│   │   └── db_manager.py
+│   └── utils/
+│       └── logging_config.py
+├── scripts/
+│   └── rebuild_index.py
+├── requirements.txt
+└── README.md
+```
+
+### 2. SQLite Database Schema
+Create `src/database/db_manager.py` with:
+```python
+# Implement the exact schema from the PRD:
+# - startups table (single denormalized table)
+# - startups_fts (FTS5 full-text search)
+# - search_interactions table
+# - All indexes (idx_founded_year, idx_funding, idx_name, idx_primary_vertical)
+```
+
+Include these functions:
+- `create_database()` - Initialize schema
+- `insert_startup(data)` - Insert single startup
+- `batch_insert_startups(startups)` - Bulk insert
+- `get_startup_by_id(id)` - Retrieve startup
+- `update_startup(id, data)` - Update existing
+
+### 3. Climate Taxonomy Configuration
+Create `config/climate_taxonomy.json` with the 12 simplified verticals from the PRD:
+- carbon_management
+- clean_energy  
+- energy_storage
+- green_transportation
+- sustainable_agriculture
+- built_environment
+- circular_economy
+- climate_fintech
+- water_ocean
+- industrial_decarbonization
+- climate_adaptation
+- grid_energy_management
+
+Each with: id, name, description, keywords (for mapping)
+
+### 4. Crunchbase API Scraper
+Create `src/scrapers/crunchbase_scraper.py`:
+```python
+class CrunchbaseScraper:
+    def __init__(self, api_key):
+        # Initialize with rate limiting (200 req/min)
+        pass
+    
+    def search_climate_startups(self, categories=None, limit=10000):
+        """
+        Search for climate tech companies using Crunchbase API
+        
+        Filters:
+        - Categories: climate_tech, cleantech, renewable_energy, carbon, sustainability
+        - Fields: name, short_description, long_description, founded_on,
+                 total_funding_usd, num_funding_rounds, last_funding_date,
+                 last_funding_type, website_url, headquarters_location,
+                 employee_count, categories
+        
+        Returns: List of startup dicts
+        """
+        pass
+    
+    def fetch_startup_details(self, organization_id):
+        """Fetch detailed info for a single startup"""
+        pass
+    
+    def map_categories_to_verticals(self, crunchbase_categories):
+        """
+        Map Crunchbase categories to our 12 verticals
+        Use keyword matching from taxonomy config
+        """
+        pass
+```
+
+### 5. Supplementary Web Scrapers
+Create `src/scrapers/web_scraper.py` for:
+```python
+def scrape_yc_climate_companies():
+    """
+    Scrape Y Combinator climate companies
+    URL: https://www.ycombinator.com/companies?tags=Climate
+    
+    Extract: name, description, website, batch (e.g. W23)
+    """
+    pass
+
+def scrape_climatebase_directory():
+    """
+    Scrape ClimateBase company directory
+    URL: https://climatebase.org/companies
+    
+    Extract: name, description, website, categories
+    """
+    pass
+
+def scrape_greentown_portfolio():
+    """
+    Scrape Greentown Labs portfolio
+    URL: https://greentownlabs.com/companies/
+    
+    Extract: name, description, website, vertical
+    """
+    pass
+```
+
+### 6. Main Data Collection Script
+Create `scripts/collect_data.py`:
+```python
+"""
+Main script to collect all startup data
+
+Usage:
+    python scripts/collect_data.py --source crunchbase --limit 10000
+    python scripts/collect_data.py --source yc
+    python scripts/collect_data.py --source all
+"""
+
+# Implement CLI with argparse
+# Support: --source (crunchbase/yc/climatebase/greentown/all)
+#          --limit (max startups to fetch)
+#          --incremental (only fetch new/updated)
+```
+
+### 7. Requirements File
+Create `requirements.txt`:
+```
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+sqlite3  # Built-in
+python-dotenv>=1.0.0
+ratelimit>=2.2.1
+```
+
+### 8. Logging Configuration
+Create `src/utils/logging_config.py`:
+```python
+# Set up Python logging with:
+# - Console output (INFO level)
+# - File output (DEBUG level) to logs/scraper.log
+# - Formatted with timestamp, level, message
+```
+
+### 9. Environment Configuration
+Create `.env.example`:
+```
+CRUNCHBASE_API_KEY=your_api_key_here
+LOG_LEVEL=INFO
+DB_PATH=data/climate_startups.db
+```
+
+### 10. README
+Create `README.md` with:
+- Project overview
+- Setup instructions
+- How to run data collection
+- Database schema documentation
+- API key setup guide
+
+## Success Criteria
+- [ ] SQLite database created with correct schema
+- [ ] Can scrape 100+ startups from Crunchbase (test with small limit first)
+- [ ] Can scrape YC/ClimateBase/Greentown
+- [ ] Verticals correctly mapped from Crunchbase categories
+- [ ] All data inserted into database with no errors
+- [ ] Logging working properly
+- [ ] Can run `python scripts/collect_data.py --source crunchbase --limit 100` successfully
+
+## Important Notes
+- Start with SMALL limits (100 startups) to test before scaling to 10K
+- Respect rate limits (Crunchbase: 200/min)
+- Handle API errors gracefully with retries
+- Log all scraping activity
+- Store Crunchbase categories as JSON array for later reference
+- Use transactions for batch inserts (performance)
+
+## Deliverables
+When complete, I should be able to:
+1. Run data collection script
+2. Have a populated SQLite database with 100+ startups
+3. See proper vertical mapping
+4. Have clean logs of the scraping process
+
+Begin implementation. Ask clarifying questions if needed, then build the complete system.
+
+PHASE 2: Search Infrastructure (Embeddings + FAISS + BM25)
+markdown# PHASE 2: Climate Solution Discovery Engine - Search Infrastructure
+
+Build the hybrid search system (semantic + keyword). This is Phase 2 of 4.
+
+## Project Context
+You now have a database with 10,000+ climate tech startups. This phase builds the search infrastructure using BERT embeddings (FAISS) and keyword matching (BM25).
+
+## Tasks for This Phase
+
+### 1. Update Directory Structure
+Add to existing project:
+```
+climate-search/
+├── src/
+│   ├── search/
+│   │   ├── embedder.py
+│   │   ├── faiss_manager.py
+│   │   ├── bm25_engine.py
+│   │   ├── hybrid_search.py
+│   │   ├── query_processor.py
+│   │   └── diversifier.py
+│   └── evaluation/
+│       └── evaluator.py
+├── models/
+│   └── (sentence-transformers cache)
+└── config/
+    └── test_queries.json
+```
+
+### 2. BERT Embedder
+Create `src/search/embedder.py`:
+```python
+from sentence_transformers import SentenceTransformer
+import numpy as np
+
+class StartupEmbedder:
+    """
+    Generate 768-dim embeddings using all-mpnet-base-v2
+    Optimized for CPU-only inference on 16GB RAM
+    """
+    
+    def __init__(self, model_name='sentence-transformers/all-mpnet-base-v2'):
+        # Load model on CPU
+        # Cache to models/ directory
+        pass
+    
+    def generate_embedding(self, text: str) -> np.ndarray:
+        """
+        Generate single embedding
+        
+        Args:
+            text: Startup description
+            
+        Returns:
+            768-dim normalized float32 array
+        """
+        pass
+    
+    def generate_embeddings_batch(self, texts: list, batch_size=16) -> np.ndarray:
+        """
+        Batch generation for efficiency
+        
+        Args:
+            texts: List of startup descriptions
+            batch_size: Smaller for CPU (16)
+            
+        Returns:
+            (N, 768) float32 array, normalized
+            
+        Notes:
+            - 10K startups takes ~20-30 min on CPU
+            - Shows progress bar
+            - Normalizes for cosine similarity
+        """
+        pass
+```
+
+### 3. FAISS Index Manager
+Create `src/search/faiss_manager.py`:
+```python
+import faiss
+import numpy as np
+import json
+
+class FAISSIndexManager:
+    """
+    Manages FAISS index for semantic search
+    Uses IndexFlatIP for exact cosine similarity
+    """
+    
+    def __init__(self, dimension=768):
+        self.dimension = dimension
+        self.index = None
+        self.startup_ids = []
+    
+    def build_index(self, embeddings: np.ndarray, startup_ids: list):
+        """
+        Build FAISS index from embeddings
+        
+        Args:
+            embeddings: (N, 768) float32 normalized array
+            startup_ids: List of startup IDs (same order as embeddings)
+        """
+        # Use IndexFlatIP for exact cosine similarity
+        # Memory: ~30MB for 10K vectors
+        pass
+    
+    def search(self, query_embedding: np.ndarray, top_k=20) -> list:
+        """
+        Search for similar startups
+        
+        Args:
+            query_embedding: (768,) float32 array
+            top_k: Number of results
+            
+        Returns:
+            List of tuples: [(startup_id, similarity_score), ...]
+        """
+        pass
+    
+    def save_index(self, filepath: str):
+        """
+        Save index and ID mapping
+        
+        Saves:
+            - {filepath}: FAISS index binary
+            - {filepath}_mapping.json: ID mapping
+        """
+        pass
+    
+    def load_index(self, filepath: str):
+        """Load saved index and mapping"""
+        pass
+```
+
+### 4. BM25 Keyword Search
+Create `src/search/bm25_engine.py`:
+```python
+from rank_bm25 import BM25Okapi
+import sqlite3
+import numpy as np
+
+class BM25SearchEngine:
+    """
+    Keyword search using BM25 algorithm
+    Complements semantic search for exact term matching
+    """
+    
+    def __init__(self, db_path: str):
+        self.db = sqlite3.connect(db_path)
+        self.startup_ids = []
+        self.bm25 = None
+    
+    def build_index(self):
+        """
+        Build BM25 index from startup descriptions
+        
+        Process:
+        1. Fetch all startups from DB
+        2. Tokenize: lowercase + split on whitespace
+        3. Build BM25Okapi index
+        
+        Memory: ~200MB for 10K startups
+        """
+        pass
+    
+    def search(self, query: str, top_k=20) -> list:
+        """
+        Keyword search
+        
+        Args:
+            query: Raw search query
+            top_k: Number of results
+            
+        Returns:
+            List of tuples: [(startup_id, bm25_score), ...]
+            Only returns results with score > 0
+        """
+        pass
+```
+
+### 5. Query Processor
+Create `src/search/query_processor.py`:
+```python
+class QueryProcessor:
+    """
+    Query understanding and expansion
+    Enhances search with domain-specific synonyms
+    """
+    
+    def __init__(self):
+        # Climate-specific synonym map
+        self.expansions = {
+            'solar': 'solar photovoltaic PV renewable energy sun',
+            'battery': 'battery energy storage lithium-ion accumulator',
+            'carbon': 'carbon CO2 emissions capture removal sequestration offset',
+            # ... add all expansions from PRD
+        }
+    
+    def expand_query(self, query: str) -> str:
+        """
+        Expand query with domain synonyms
+        
+        Example:
+            "solar companies" -> "solar photovoltaic PV renewable energy sun companies"
+        """
+        pass
+    
+    def extract_filters(self, query: str) -> dict:
+        """
+        Extract structured filters from natural language
+        
+        Patterns:
+        - "founded after 2020" -> {'founded_year_min': 2020}
+        - "raised over $10M" -> {'min_funding_usd': 10_000_000}
+        
+        Returns:
+            Dict of filters: {
+                'founded_year_min': int,
+                'founded_year_max': int,
+                'min_funding_usd': int
+            }
+        """
+        pass
+```
+
+### 6. Hybrid Search Engine
+Create `src/search/hybrid_search.py`:
+```python
+class HybridSearchEngine:
+    """
+    Combines semantic (FAISS) and keyword (BM25) search
+    Uses Reciprocal Rank Fusion (RRF) for merging
+    """
+    
+    def __init__(self, faiss_manager, bm25_engine, embedder):
+        self.faiss_manager = faiss_manager
+        self.bm25_engine = bm25_engine
+        self.embedder = embedder
+        self.query_processor = QueryProcessor()
+    
+    def search(self, query: str, top_k=10, semantic_weight=0.6) -> list:
+        """
+        Hybrid search combining both methods
+        
+        Process:
+        1. Expand query with synonyms
+        2. Semantic search (FAISS) -> top 20
+        3. Keyword search (BM25) -> top 20
+        4. Merge with RRF
+        5. Return top K
+        
+        Args:
+            query: Raw search query
+            top_k: Number of final results
+            semantic_weight: Weight for semantic vs keyword (0.6 = 60% semantic)
+            
+        Returns:
+            List of tuples: [(startup_id, combined_score), ...]
+        """
+        pass
+    
+    def reciprocal_rank_fusion(self, semantic_results, keyword_results, 
+                               k=60, semantic_weight=0.6) -> list:
+        """
+        RRF formula:
+        score = semantic_weight * (1/(k + rank_semantic)) + 
+                (1-semantic_weight) * (1/(k + rank_keyword))
+        
+        Args:
+            semantic_results: [(id, score), ...] from FAISS
+            keyword_results: [(id, score), ...] from BM25
+            k: RRF constant (default: 60)
+            semantic_weight: Weighting factor
+            
+        Returns:
+            Merged and sorted results: [(id, rrf_score), ...]
+        """
+        pass
+```
+
+### 7. Result Diversifier
+Create `src/search/diversifier.py`:
+```python
+class ResultDiversifier:
+    """
+    Ensure diversity across climate verticals
+    Prevents one category from dominating results
+    """
+    
+    def diversify(self, results: list, startup_data_map: dict, 
+                 max_per_vertical=3) -> list:
+        """
+        Apply vertical diversity constraint
+        
+        Args:
+            results: [(startup_id, score), ...] sorted by score
+            startup_data_map: {startup_id: {vertical, ...}}
+            max_per_vertical: Max results per vertical category
+            
+        Returns:
+            Diversified results maintaining score order where possible
+        """
+        pass
+```
+
+### 8. Index Rebuild Script
+Create `scripts/rebuild_index.py`:
+```python
+"""
+Manual index rebuild script
+
+Usage:
+    python scripts/rebuild_index.py --full
+    python scripts/rebuild_index.py --incremental
+    python scripts/rebuild_index.py --test (100 startups only)
+
+Steps:
+1. Load startups from SQLite
+2. Generate BERT embeddings (batch_size=16, ~20 min for 10K)
+3. Build FAISS index
+4. Build BM25 index
+5. Save indexes to data/
+
+Progress logging at each step.
+"""
+
+import argparse
+from src.database.db_manager import DBManager
+from src.search.embedder import StartupEmbedder
+from src.search.faiss_manager import FAISSIndexManager
+from src.search.bm25_engine import BM25SearchEngine
+
+def rebuild_index(mode='full'):
+    """
+    Rebuild search indexes
+    
+    Args:
+        mode: 'full', 'incremental', or 'test'
+    """
+    # Implement full rebuild pipeline from PRD
+    pass
+
+if __name__ == "__main__":
+    # Implement CLI
+    pass
+```
+
+### 9. Test Queries Configuration
+Create `config/test_queries.json`:
+```json
+[
+    {
+        "query": "solar panel companies",
+        "relevant_startup_ids": [1, 5, 12, 34],
+        "vertical": "clean_energy"
+    },
+    {
+        "query": "carbon capture startups",
+        "relevant_startup_ids": [7, 15, 23],
+        "vertical": "carbon_management"
+    },
+    {
+        "query": "battery storage for grid",
+        "relevant_startup_ids": [3, 9, 18, 27],
+        "vertical": "energy_storage"
+    },
+    {
+        "query": "electric vehicle charging infrastructure",
+        "relevant_startup_ids": [2, 11, 19],
+        "vertical": "green_transportation"
+    },
+    {
+        "query": "alternative proteins and plant-based meat",
+        "relevant_startup_ids": [8, 14, 22],
+        "vertical": "sustainable_agriculture"
+    }
+]
+```
+
+**TODO:** After running rebuild with real data, populate this with 20-30 real test queries using actual startup IDs from the database.
+
+### 10. Evaluation Framework
+Create `src/evaluation/evaluator.py`:
+```python
+import numpy as np
+import time
+import json
+
+class SearchEvaluator:
+    """
+    Evaluate search quality using NDCG@10 and latency metrics
+    """
+    
+    def __init__(self, test_queries_path='config/test_queries.json'):
+        with open(test_queries_path, 'r') as f:
+            self.test_queries = json.load(f)
+    
+    def calculate_ndcg(self, ranked_results: list, relevant_ids: list, k=10) -> float:
+        """
+        Calculate Normalized Discounted Cumulative Gain @ K
+        
+        DCG = sum(relevance / log2(rank + 1))
+        NDCG = DCG / IDCG (ideal DCG with perfect ranking)
+        
+        Args:
+            ranked_results: [(startup_id, score), ...] from search
+            relevant_ids: List of relevant startup IDs (ground truth)
+            k: Cutoff rank (default: 10)
+            
+        Returns:
+            NDCG score (0.0 to 1.0)
+        """
+        pass
+    
+    def evaluate(self, search_engine) -> dict:
+        """
+        Run evaluation on all test queries
+        
+        Returns:
+            {
+                'mean_ndcg@10': float,
+                'mean_latency_ms': float,
+                'p95_latency_ms': float,
+                'total_queries': int,
+                'per_query_results': [...]
+            }
+        """
+        ndcg_scores = []
+        latencies = []
+        
+        for test_case in self.test_queries:
+            # Measure latency and NDCG for each query
+            pass
+        
+        # Return aggregate metrics
+        pass
+```
+
+### 11. Update Requirements
+Add to `requirements.txt`:
+```
+sentence-transformers>=2.2.0
+faiss-cpu>=1.7.4
+rank-bm25>=0.2.2
+numpy>=1.24.0
+torch>=2.0.0  # For sentence-transformers
+```
+
+### 12. Testing Script
+Create `scripts/test_search.py`:
+```python
+"""
+Interactive search testing
+
+Usage:
+    python scripts/test_search.py
+
+Loads indexes and allows interactive queries to test hybrid search.
+"""
+
+from src.search.hybrid_search import HybridSearchEngine
+from src.search.faiss_manager import FAISSIndexManager
+from src.search.bm25_engine import BM25SearchEngine
+from src.search.embedder import StartupEmbedder
+
+def interactive_search():
+    """
+    Load indexes and run interactive search loop
+    
+    Shows:
+    - Top 10 results
+    - Semantic vs keyword scores
+    - Processing time
+    - Vertical distribution
+    """
+    # Load all components
+    # Run search loop
+    pass
+
+if __name__ == "__main__":
+    interactive_search()
+```
+
+## Success Criteria
+- [ ] Can generate embeddings for all startups (~20-30 min on CPU)
+- [ ] FAISS index built successfully (~30MB for 10K startups)
+- [ ] BM25 index built successfully
+- [ ] Hybrid search returns results in <500ms
+- [ ] Query expansion works for climate terms
+- [ ] Result diversification prevents vertical clustering
+- [ ] Evaluation shows NDCG@10 > 0.7 (after populating test queries)
+- [ ] Can run `python scripts/rebuild_index.py --test` successfully
+- [ ] Interactive search script works
+
+## Important Notes
+- Test with 100 startups first before running on full 10K dataset
+- Embeddings take ~20-30 minutes for 10K startups on CPU - be patient
+- FAISS index should be ~30MB for 10K vectors (768-dim float32)
+- BM25 builds instantly (<1 min)
+- Tune semantic_weight (default: 0.6) based on evaluation results
+- Save indexes to data/ directory
+- Use normalized embeddings for cosine similarity
+
+## Testing Checklist
+1. Run rebuild_index.py with --test flag (100 startups)
+2. Verify data/faiss_index.bin and data/faiss_index_mapping.json created
+3. Run test_search.py and try queries:
+   - "solar panel companies"
+   - "carbon capture"
+   - "battery storage"
+4. Verify results return in <500ms
+5. Check vertical diversity in results
+
+## Deliverables
+When complete, I should be able to:
+1. Run index rebuild on full dataset
+2. Perform hybrid searches with <500ms latency
+3. See diverse results across verticals
+4. Run evaluation and see NDCG@10 metrics
+5. Use interactive search for testing
+
+Begin implementation. Build all components and test thoroughly before moving to Phase 3.
+
+PHASE 3: FastAPI Backend
+markdown# PHASE 3: Climate Solution Discovery Engine - FastAPI Backend
+
+Build the production API server with caching, rate limiting, and monitoring. This is Phase 3 of 4.
+
+## Project Context
+You have a working hybrid search engine. This phase wraps it in a production-grade API with proper error handling, monitoring, and logging.
+
+## Tasks for This Phase
+
+### 1. Update Directory Structure
+Add to existing project:
+```
+climate-search/
+├── api/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── routes/
+│   │   ├── __init__.py
+│   │   ├── search.py
+│   │   ├── startups.py
+│   │   ├── admin.py
+│   │   └── health.py
+│   ├── models/
+│   │   ├── __init__.py
+│   │   └── schemas.py
+│   └── middleware/
+│       ├── __init__.py
+│       └── error_handler.py
+├── logs/
+│   └── api.log
+└── tests/
+    └── test_api.py
+```
+
+### 2. Pydantic Schemas
+Create `api/models/schemas.py`:
+```python
+from pydantic import BaseModel, Field
+from typing import Optional, List
+from datetime import datetime
+
+class SearchRequest(BaseModel):
+    query: str = Field(..., min_length=1, max_length=500, 
+                      description="Search query")
+    top_k: int = Field(10, ge=1, le=50, 
+                      description="Number of results to return")
+    vertical_filter: Optional[str] = Field(None, 
+                      description="Filter by vertical ID")
+    founded_year_min: Optional[int] = Field(None, ge=1900, le=2030)
+    founded_year_max: Optional[int] = Field(None, ge=1900, le=2030)
+    min_funding_usd: Optional[int] = Field(None, ge=0)
+    enable_diversity: bool = Field(True, 
+                      description="Enable result diversification")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "query": "solar panel companies",
+                "top_k": 10,
+                "vertical_filter": "clean_energy",
+                "founded_year_min": 2015,
+                "enable_diversity": True
+            }
+        }
+
+class StartupResult(BaseModel):
+    id: int
+    name: str
+    description: Optional[str]
+    founded_year: Optional[int]
+    total_funding_usd: Optional[int]
+    website_url: Optional[str]
+    primary_vertical: Optional[str]
+    headquarters: Optional[str]
+
+class SearchResult(BaseModel):
+    startup: StartupResult
+    score: float = Field(..., ge=0.0, le=1.0, 
+                        description="Relevance score")
+
+class SearchResponse(BaseModel):
+    query: str
+    total_results: int
+    results: List[SearchResult]
+    processing_time_ms: float
+    filters_applied: dict
+
+class InteractionLog(BaseModel):
+    query: str
+    clicked_startup_id: int
+    rank_position: int = Field(..., ge=1)
+
+class EvaluationMetrics(BaseModel):
+    mean_ndcg_at_10: float
+    mean_latency_ms: float
+    p95_latency_ms: float
+    total_queries: int
+    timestamp: datetime
+
+class VerticalStats(BaseModel):
+    vertical: str
+    count: int
+
+class StatsResponse(BaseModel):
+    total_startups: int
+    last_index_update: datetime
+    verticals: List[VerticalStats]
+```
+
+### 3. Main FastAPI Application
+Create `api/main.py`:
+```python
+from fastapi import FastAPI, Request, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+import logging
+from contextlib import asynccontextmanager
+
+from api.routes import search, startups, admin, health
+from src.search.hybrid_search import HybridSearchEngine
+from src.search.faiss_manager import FAISSIndexManager
+from src.search.bm25_engine import BM25SearchEngine
+from src.search.embedder import StartupEmbedder
+from src.search.diversifier import ResultDiversifier
+
+# Logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('logs/api.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
+# Lifespan context manager for startup/shutdown
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Load models and indexes on startup, cleanup on shutdown
+    """
+    logger.info("Starting up - loading indexes and models...")
+    
+    try:
+        # Load FAISS index
+        faiss_manager = FAISSIndexManager()
+        faiss_manager.load_index('data/faiss_index.bin')
+        
+        # Load BM25 index
+        bm25_engine = BM25SearchEngine('data/climate_startups.db')
+        bm25_engine.build_index()
+        
+        # Load embedder
+        embedder = StartupEmbedder()
+        
+        # Initialize hybrid search
+        hybrid_search = HybridSearchEngine(faiss_manager, bm25_engine, embedder)
+        diversifier = ResultDiversifier()
+        
+        # Store in app state
+        app.state.hybrid_search = hybrid_search
+        app.state.diversifier = diversifier
+        app.state.db_path = 'data/climate_startups.db'
+        
+        logger.info("Startup complete - all systems operational!")
+        
+        yield  # Application runs here
+        
+    except Exception as e:
+        logger.error(f"Startup failed: {e}")
+        raise
+    finally:
+        # Cleanup on shutdown
+        logger.info("Shutting down...")
+
+# Create FastAPI app
+app = FastAPI(
+    title="Climate Solution Discovery Engine",
+    description="Hybrid search API for climate tech startups",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# Rate limiting
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173"  # Vite dev server
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Global exception handler
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "detail": "Internal server error",
+            "type": "server_error"
+        }
+    )
+
+# Include routers
+app.include_router(health.router, prefix="/api", tags=["Health"])
+app.include_router(search.router, prefix="/api", tags=["Search"])
+app.include_router(startups.router, prefix="/api", tags=["Startups"])
+app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "api.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,  # Dev mode
+        log_level="info"
+    )
+```
+
+### 4. Search Routes
+Create `api/routes/search.py`:
+```python
+from fastapi import APIRouter, HTTPException, Request, Depends
+from functools import lru_cache
+import hashlib
+import time
+import sqlite3
+
+from api.models.schemas import SearchRequest, SearchResponse, SearchResult, StartupResult
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
+
+# LRU cache for search results (no Redis needed)
+@lru_cache(maxsize=1000)
+def cached_search_internal(query_hash: str, query: str, top_k: int, app_state):
+    """
+    Cache last 1000 queries in memory
+    
+    Args:
+        query_hash: MD5 hash of query+top_k (for cache key)
+        query: Original search query
+        top_k: Number of results
+        app_state: FastAPI app.state object
+        
+    Returns:
+        List of (startup_id, score) tuples
+    """
+    return app_state.hybrid_search.search(query, top_k=top_k * 2)  # Get more for filtering
+
+@router.post("/search", response_model=SearchResponse)
+@limiter.limit("30/minute")
+async def search_startups(request: Request, search_req: SearchRequest):
+    """
+    Hybrid semantic + keyword search
+    
+    Features:
+    - Query expansion with climate-specific synonyms
+    - Semantic search (BERT embeddings + FAISS)
+    - Keyword search (BM25)
+    - Reciprocal Rank Fusion (RRF) merging
+    - Result diversification across verticals
+    - Filtering by vertical, founding year, funding
+    
+    Rate limit: 30 requests/minute per IP
+    """
+    start_time = time.time()
+    
+    try:
+        # Create cache key
+        cache_key = hashlib.md5(
+            f"{search_req.query}_{search_req.top_k}".encode()
+        ).hexdigest()
+        
+        # Search (with LRU cache)
+        results = cached_search_internal(
+            cache_key,
+            search_req.query,
+            search_req.top_k,
+            request.app.state
+        )
+        
+        # Enrich with startup data
+        enriched = enrich_search_results(results, request.app.state.db_path)
+        
+        # Apply diversity if enabled
+        if search_req.enable_diversity:
+            enriched = apply_diversity(enriched, request.app.state.diversifier)
+        
+        # Apply filters
+        enriched = apply_filters(enriched, search_req)
+        
+        # Limit to top_k
+        enriched = enriched[:search_req.top_k]
+        
+        processing_time = (time.time() - start_time) * 1000
+        
+        return SearchResponse(
+            query=search_req.query,
+            total_results=len(enriched),
+            results=enriched,
+            processing_time_ms=round(processing_time, 2),
+            filters_applied={
+                "vertical": search_req.vertical_filter,
+                "founded_year_min": search_req.founded_year_min,
+                "founded_year_max": search_req.founded_year_max,
+                "min_funding_usd": search_req.min_funding_usd,
+                "diversity_enabled": search_req.enable_diversity
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Search failed for query '{search_req.query}': {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Search temporarily unavailable. Please try again."
+        )
+
+def enrich_search_results(search_results: list, db_path: str) -> list:
+    """
+    Add full startup data to search results
+    
+    Args:
+        search_results: [(startup_id, score), ...]
+        db_path: Path to SQLite database
+        
+    Returns:
+        List of SearchResult objects
+    """
+    # Implement enrichment logic
+    # Query SQLite for each startup_id
+    # Convert to SearchResult schema
+    pass
+
+def apply_diversity(results: list, diversifier) -> list:
+    """Apply vertical diversity constraint"""
+    # Extract startup data map
+    # Call diversifier.diversify()
+    # Reconstruct enriched results
+    pass
+
+def apply_filters(results: list, search_req: SearchRequest) -> list:
+    """
+    Apply post-search filters
+    
+    Filters:
+    - vertical_filter
+    - founded_year_min/max
+    - min_funding_usd
+    """
+    filtered = results
+    
+    if search_req.vertical_filter:
+        # Filter by vertical
+        pass
+    
+    if search_req.founded_year_min:
+        # Filter by min year
+        pass
+    
+    # ... implement all filters
+    
+    return filtered
+```
+
+### 5. Startup Routes
+Create `api/routes/startups.py`:
+```python
+from fastapi import APIRouter, HTTPException
+import sqlite3
+
+router = APIRouter()
+
+@router.get("/startups/{startup_id}")
+async def get_startup_details(startup_id: int):
+    """
+    Get full details for a specific startup
+    
+    Returns:
+        Complete startup data including:
+        - Basic info (name, description, website)
+        - Funding data
+        - Vertical classifications
+        - Crunchbase categories
+    """
+    try:
+        # Query SQLite
+        # Convert to dict
+        # Parse JSON fields (all_verticals, crunchbase_categories)
+        # Return full data
+        pass
+        
+    except Exception as e:
+        logger.error(f"Failed to fetch startup {startup_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch startup")
+
+@router.get("/verticals")
+async def get_verticals():
+    """
+    Get climate tech taxonomy
+    
+    Returns:
+        List of 12 climate verticals with descriptions and keywords
+    """
+    try:
+        with open('config/climate_taxonomy.json', 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        logger.error(f"Failed to load taxonomy: {e}")
+        raise HTTPException(status_code=500, detail="Failed to load taxonomy")
+
+@router.get("/stats")
+async def get_stats(request: Request):
+    """
+    Get database statistics
+    
+    Returns:
+        - Total startup count
+        - Count by vertical
+        - Last index update timestamp
+    """
+    try:
+        # Query SQLite for counts
+        # Get FAISS index file modification time
+        # Group by vertical
+        # Return stats
+        pass
+    except Exception as e:
+        logger.error(f"Failed to get stats: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch statistics")
+```
+
+### 6. Admin Routes
+Create `api/routes/admin.py`:
+```python
+from fastapi import APIRouter, HTTPException, Request
+from api.models.schemas import InteractionLog, EvaluationMetrics
+import sqlite3
+from datetime import datetime
+
+router = APIRouter()
+
+@router.post("/log-interaction")
+@limiter.limit("100/minute")
+async def log_interaction(request: Request, interaction: InteractionLog):
+    """
+    Log user click-through for future ranking improvements
+    
+    Stores:
+    - Query text
+    - Clicked startup ID
+    - Rank position
+    - Timestamp
+    
+    Used for:
+    - Understanding user preferences
+    - Future Learning-to-Rank improvements
+    - A/B testing
+    """
+    try:
+        # Insert into search_interactions table
+        # Use transactions
+        # Handle duplicates gracefully
+        pass
+    except Exception as e:
+        logger.error(f"Failed to log interaction: {e}")
+        return {"status": "failed", "error": str(e)}
+
+@router.get("/evaluate", response_model=EvaluationMetrics)
+async def run_evaluation(request: Request):
+    """
+    Run search evaluation on test queries
+    
+    Calculates:
+    - Mean NDCG@10
+    - Mean latency
+    - P95 latency
+    
+    Note: Requires test_queries.json to be populated with real data
+    """
+    try:
+        from src.evaluation.evaluator import SearchEvaluator
+        
+        evaluator = SearchEvaluator()
+        metrics = evaluator.evaluate(request.app.state.hybrid_search)
+        
+        # Add timestamp
+        metrics['timestamp'] = datetime.now()
+        
+        return EvaluationMetrics(**metrics)
+        
+    except Exception as e:
+        logger.error(f"Evaluation failed: {e}")
+        raise HTTPException(status_code=500, detail="Evaluation failed")
+
+@router.get("/interactions/stats")
+async def get_interaction_stats(request: Request):
+    """
+    Get click-through statistics
+    
+    Returns:
+    - Total interactions logged
+    - Top queries
+    - Top clicked startups
+    - Average rank of clicked results
+    """
+    try:
+        # Query search_interactions table
+        # Aggregate by query, startup
+        # Calculate avg rank
+        # Return stats
+        pass
+    except Exception as e:
+        logger.error(f"Failed to get interaction stats: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch stats")
+```
+
+### 7. Health Routes
+Create `api/routes/health.py`:
+```python
+from fastapi import APIRouter, Request
+from datetime import datetime
+import os
+
+router = APIRouter()
+
+@router.get("/health")
+async def health_check():
+    """
+    Simple health check endpoint
+    
+    Returns:
+        status: "healthy" if operational
+        timestamp: Current server time
+    """
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat()
+    }
+
+@router.get("/ready")
+async def readiness_check(request: Request):
+    """
+    Readiness check - verifies all dependencies loaded
+    
+    Checks:
+    - Hybrid search engine initialized
+    - FAISS index loaded
+    - Database accessible
+    
+    Returns:
+        ready: true if all systems operational
+        components: Status of each component
+    """
+    try:
+        components = {
+            "hybrid_search": request.app.state.hybrid_search is not None,
+            "diversifier": request.app.state.diversifier is not None,
+            "faiss_index": request.app.state.hybrid_search.faiss_manager.index is not None,
+            "database": os.path.exists(request.app.state.db_path)
+        }
+        
+        all_ready = all(components.values())
+        
+        return {
+            "ready": all_ready,
+            "components": components,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {
+            "ready": False,
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+```
+
+### 8. Update Requirements
+Add to `requirements.txt`:
+```
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.4.0
+slowapi>=0.1.9  # Rate limiting
+python-multipart>=0.0.6
+```
+
+### 9. API Documentation
+Create `docs/API.md`:
+```markdown
+# Climate Solution Discovery API
+
+## Base URL
+```
+http://localhost:8000/api
+Endpoints
+POST /search
+Search for climate tech startups
+Request:
+json{
+  "query": "solar panel companies",
+  "top_k": 10,
+  "vertical_filter": "clean_energy",
+  "founded_year_min": 2015,
+  "enable_diversity": true
+}
+Response:
+json{
+  "query": "solar panel companies",
+  "total_results": 10,
+  "results": [
+    {
+      "startup": {
+        "id": 123,
+        "name": "SolarCo",
+        "description": "Next-gen solar panels...",
+        "founded_year": 2018,
+        "total_funding_usd": 50000000,
+        "website_url": "https://solarco.com",
+        "primary_vertical": "clean_energy",
+        "headquarters": "San Francisco, CA"
+      },
+      "score": 0.89
+    }
+  ],
+  "processing_time_ms": 234.56,
+  "filters_applied": {...}
+}
+```
+
+### GET /startups/{id}
+Get detailed startup information
+
+### GET /verticals
+Get all climate verticals
+
+### GET /stats
+Get database statistics
+
+### POST /admin/log-interaction
+Log user interaction
+
+### GET /admin/evaluate
+Run evaluation metrics
+
+### GET /health
+Health check
+
+### GET /ready
+Readiness check
+
+## Rate Limits
+- `/search`: 30 requests/minute per IP
+- `/admin/log-interaction`: 100 requests/minute per IP
+- Other endpoints: No rate limit
+
+## Error Codes
+- 400: Bad request (validation error)
+- 404: Resource not found
+- 429: Rate limit exceeded
+- 500: Server error
+```
+
+### 10. Testing
+Create `tests/test_api.py`:
+```python
+from fastapi.testclient import TestClient
+from api.main import app
+
+client = TestClient(app)
+
+def test_health_check():
+    """Test health endpoint"""
+    response = client.get("/api/health")
+    assert response.status_code == 200
+    assert response.json()["status"] == "healthy"
+
+def test_search_basic():
+    """Test basic search"""
+    response = client.post("/api/search", json={
+        "query": "solar companies",
+        "top_k": 5
+    })
+    assert response.status_code == 200
+    data = response.json()
+    assert "results" in data
+    assert data["total_results"] <= 5
+
+def test_search_with_filters():
+    """Test search with filters"""
+    response = client.post("/api/search", json={
+        "query": "solar companies",
+        "top_k": 10,
+        "vertical_filter": "clean_energy",
+        "founded_year_min": 2015
+    })
+    assert response.status_code == 200
+    # All results should match filters
+    for result in response.json()["results"]:
+        assert result["startup"]["primary_vertical"] == "clean_energy"
+        assert result["startup"]["founded_year"] >= 2015
+
+def test_get_startup():
+    """Test get startup details"""
+    # First search to get a valid ID
+    search_resp = client.post("/api/search", json={"query": "solar", "top_k": 1})
+    startup_id = search_resp.json()["results"][0]["startup"]["id"]
+    
+    # Then fetch details
+    response = client.get(f"/api/startups/{startup_id}")
+    assert response.status_code == 200
+    assert response.json()["id"] == startup_id
+
+def test_get_verticals():
+    """Test get verticals"""
+    response = client.get("/api/verticals")
+    assert response.status_code == 200
+    data = response.json()
+    assert "verticals" in data
+    assert len(data["verticals"]) == 12
+
+def test_rate_limiting():
+    """Test rate limiting on search endpoint"""
+    # Make 31 requests (limit is 30/min)
+    responses = []
+    for i in range(31):
+        resp = client.post("/api/search", json={"query": f"test {i}", "top_k": 1})
+        responses.append(resp.status_code)
+    
+    # Last request should be rate limited
+    assert 429 in responses
+
+# Add more tests...
+```
+
+### 11. Run Script
+Create `scripts/run_api.sh`:
+```bash
+#!/bin/bash
+
+# Start FastAPI server with auto-reload
+echo "Starting Climate Solution Discovery API..."
+echo "API will be available at http://localhost:8000"
+echo "API docs at http://localhost:8000/docs"
+
+uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload --log-level info
+```
+
+## Success Criteria
+- [ ] API starts without errors
+- [ ] Health check returns 200
+- [ ] Search endpoint returns results in <500ms
+- [ ] Rate limiting works (429 after 30 req/min)
+- [ ] Filters work correctly (vertical, year, funding)
+- [ ] Diversity prevents vertical clustering
+- [ ] All tests pass
+- [ ] API docs accessible at /docs
+- [ ] Logging works (check logs/api.log)
+- [ ] Can run evaluation endpoint
+
+## Important Notes
+- Start API with: `bash scripts/run_api.sh`
+- API docs auto-generated at http://localhost:8000/docs
+- LRU cache holds 1000 queries (no Redis needed)
+- Rate limits are per-IP (not user)
+- All errors logged to logs/api.log
+- Use transactions for database writes
+- CORS enabled for localhost:3000 (React dev server)
+
+## Testing Checklist
+1. Start API: `bash scripts/run_api.sh`
+2. Visit http://localhost:8000/docs (Swagger UI)
+3. Test /health endpoint
+4. Test /search with various queries
+5. Test filters (vertical, year, funding)
+6. Run pytest: `pytest tests/test_api.py -v`
+7. Check logs: `tail -f logs/api.log`
+8. Test rate limiting (make 31 requests quickly)
+
+## Deliverables
+When complete, I should have:
+1. Production-ready FastAPI application
+2. All endpoints working and documented
+3. Rate limiting and error handling
+4. Comprehensive test suite
+5. API documentation
+6. Logging system
+
+Begin implementation. Build all routes, test thoroughly, and ensure proper error handling throughout.
+
+PHASE 4: React Frontend
+markdown# PHASE 4: Climate Solution Discovery Engine - React Frontend
+
+Build the user interface for the climate tech startup search engine. This is Phase 4 of 4 (final phase).
+
+## Project Context
+You have a fully functional FastAPI backend with hybrid search. This phase builds a professional React frontend with search interface, filters, and analytics.
+
+## Tasks for This Phase
+
+### 1. Project Setup
+Create new React + TypeScript project:
+```bash
+npm create vite@latest frontend -- --template react-ts
+cd frontend
+npm install
+```
+
+Install dependencies:
+```bash
+npm install axios recharts lucide-react
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+```
+
+### 2. Directory Structure
+```
+frontend/
+├── src/
+│   ├── components/
+│   │   ├── SearchBar.tsx
+│   │   ├── ResultCard.tsx
+│   │   ├── FilterPanel.tsx
+│   │   ├── StatsPanel.tsx
+│   │   ├── EvaluationPanel.tsx
+│   │   └── LoadingSpinner.tsx
+│   ├── services/
+│   │   └── api.ts
+│   ├── types/
+│   │   └── index.ts
+│   ├── hooks/
+│   │   └── useSearch.ts
+│   ├── utils/
+│   │   └── formatting.ts
+│   ├── App.tsx
+│   ├── App.css
+│   └── main.tsx
+├── public/
+├── index.html
+├── tailwind.config.js
+├── tsconfig.json
+└── package.json
+```
+
+### 3. TypeScript Types
+Create `src/types/index.ts`:
+```typescript
+export interface Startup {
+  id: number;
+  name: string;
+  description: string | null;
+  founded_year: number | null;
+  total_funding_usd: number | null;
+  website_url: string | null;
+  primary_vertical: string | null;
+  headquarters: string | null;
+}
+
+export interface SearchResult {
+  startup: Startup;
+  score: number;
+}
+
+export interface SearchResponse {
+  query: string;
+  total_results: number;
+  results: SearchResult[];
+  processing_time_ms: number;
+  filters_applied: {
+    vertical: string | null;
+    founded_year_min: number | null;
+    founded_year_max: number | null;
+    min_funding_usd: number | null;
+    diversity_enabled: boolean;
+  };
+}
+
+export interface SearchRequest {
+  query: string;
+  top_k?: number;
+  vertical_filter?: string | null;
+  founded_year_min?: number | null;
+  founded_year_max?: number | null;
+  min_funding_usd?: number | null;
+  enable_diversity?: boolean;
+}
+
+export interface Vertical {
+  id: string;
+  name: string;
+  description: string;
+  keywords: string[];
+}
+
+export interface TaxonomyResponse {
+  verticals: Vertical[];
+}
+
+export interface Stats {
+  total_startups: number;
+  last_index_update: string;
+  verticals: Array;
+}
+
+export interface EvaluationMetrics {
+  mean_ndcg_at_10: number;
+  mean_latency_ms: number;
+  p95_latency_ms: number;
+  total_queries: number;
+  timestamp: string;
+}
+```
+
+### 4. API Service
+Create `src/services/api.ts`:
+```typescript
+import axios from 'axios';
+import {
+  SearchRequest,
+  SearchResponse,
+  Startup,
+  TaxonomyResponse,
+  Stats,
+  EvaluationMetrics
+} from '../types';
+
+const API_BASE_URL = 'http://localhost:8000/api';
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+export const searchStartups = async (
+  request: SearchRequest
+): Promise<SearchResponse> => {
+  const response = await api.post<SearchResponse>('/search', request);
+  return response.data;
+};
+
+export const getStartupDetails = async (iContinue8:55 PMd: number): Promise<Startup> => {
+const response = await api.get<Startup>(/startups/${id});
+return response.data;
+};
+export const getVerticals = async (): Promise<TaxonomyResponse> => {
+const response = await api.get<TaxonomyResponse>('/verticals');
+return response.data;
+};
+export const getStats = async (): Promise<Stats> => {
+const response = await api.get<Stats>('/stats');
+return response.data;
+};
+export const getEvaluation = async (): Promise<EvaluationMetrics> => {
+const response = await api.get<EvaluationMetrics>('/admin/evaluate');
+return response.data;
+};
+export const logInteraction = async (
+query: string,
+clickedStartupId: number,
+rankPosition: number
+): Promise<void> => {
+await api.post('/admin/log-interaction', {
+query,
+clicked_startup_id: clickedStartupId,
+rank_position: rankPosition,
+});
+};
+export default api;
+
+### 5. Custom Search Hook
+Create `src/hooks/useSearch.ts`:
+```typescript
+import { useState, useCallback } from 'react';
+import { searchStartups } from '../services/api';
+import { SearchRequest, SearchResponse } from '../types';
+
+export const useSearch = () => {
+  const [results, setResults] = useState<SearchResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const search = useCallback(async (request: SearchRequest) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await searchStartups(request);
+      setResults(response);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Search failed. Please try again.');
+      setResults(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const clearResults = useCallback(() => {
+    setResults(null);
+    setError(null);
+  }, []);
+
+  return { results, loading, error, search, clearResults };
+};
+```
+
+### 6. Utility Functions
+Create `src/utils/formatting.ts`:
+```typescript
+export const formatFunding = (usd: number | null): string => {
+  if (!usd) return 'Undisclosed';
+  
+  if (usd >= 1_000_000_000) {
+    return `$${(usd / 1_000_000_000).toFixed(1)}B`;
+  } else if (usd >= 1_000_000) {
+    return `$${(usd / 1_000_000).toFixed(1)}M`;
+  } else if (usd >= 1_000) {
+    return `$${(usd / 1_000).toFixed(0)}K`;
+  }
+  return `$${usd}`;
+};
+
+export const formatDate = (isoDate: string): string => {
+  return new Date(isoDate).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+
+export const getVerticalColor = (vertical: string | null): string => {
+  const colors: Record<string, string> = {
+    carbon_management:okay simply give me the four prompts all in one copy pasteable block of text.8:56 PM# PHASE 1: Climate Solution Discovery Engine - Data Foundation
+
+Build the data ingestion pipeline for a climate tech startup search engine. This is Phase 1 of 4.
+
+## Project Context
+You're building an AI-powered search platform for discovering 10,000+ climate tech startups. This phase focuses on data collection and storage.
+
+## Tasks for This Phase
+
+### 1. Project Setup
+Create this directory structure:
+climate-search/
+├── data/
+│   ├── embeddings/
+│   └── climate_startups.db (SQLite)
+├── config/
+│   ├── climate_taxonomy.json
+│   └── test_queries.json
+├── src/
+│   ├── scrapers/
+│   │   ├── crunchbase_scraper.py
+│   │   └── web_scraper.py
+│   ├── database/
+│   │   └── db_manager.py
+│   └── utils/
+│       └── logging_config.py
+├── scripts/
+│   └── collect_data.py
+├── requirements.txt
+├── .env.example
+└── README.md
+
+### 2. SQLite Database Schema
+Create `src/database/db_manager.py` implementing the exact schema from the PRD:
+- startups table (single denormalized table with all fields)
+- startups_fts (FTS5 full-text search)
+- search_interactions table
+- All indexes (idx_founded_year, idx_funding, idx_name, idx_primary_vertical)
+
+Include these functions:
+- `create_database()` - Initialize schema
+- `insert_startup(data)` - Insert single startup
+- `batch_insert_startups(startups)` - Bulk insert with transactions
+- `get_startup_by_id(id)` - Retrieve startup
+- `update_startup(id, data)` - Update existing
+
+### 3. Climate Taxonomy Configuration
+Create `config/climate_taxonomy.json` with the 12 simplified verticals:
+- carbon_management
+- clean_energy  
+- energy_storage
+- green_transportation
+- sustainable_agriculture
+- built_environment
+- circular_economy
+- climate_fintech
+- water_ocean
+- industrial_decarbonization
+- climate_adaptation
+- grid_energy_management
+
+Each with: id, name, description, keywords array
+
+### 4. Crunchbase API Scraper
+Create `src/scrapers/crunchbase_scraper.py` with CrunchbaseScraper class:
+- `search_climate_startups()` - Search with filters (climate_tech, cleantech, renewable_energy, carbon, sustainability)
+- Extract all fields from PRD (name, descriptions, funding, founders, etc.)
+- `fetch_startup_details()` - Get detailed info for single startup
+- `map_categories_to_verticals()` - Map Crunchbase categories to our 12 verticals using keyword matching
+- Implement rate limiting (200 requests/min)
+
+### 5. Supplementary Web Scrapers
+Create `src/scrapers/web_scraper.py` with functions:
+- `scrape_yc_climate_companies()` - Y Combinator climate companies
+- `scrape_climatebase_directory()` - ClimateBase company directory
+- `scrape_greentown_portfolio()` - Greentown Labs portfolio
+- Extract: name, description, website, categories
+
+### 6. Main Data Collection Script
+Create `scripts/collect_data.py` with CLI using argparse:
+- Support flags: --source (crunchbase/yc/climatebase/greentown/all), --limit, --incremental
+- Orchestrate all scrapers
+- Insert data into SQLite with proper error handling
+
+### 7. Requirements File
+Create `requirements.txt`:
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+python-dotenv>=1.0.0
+ratelimit>=2.2.1
+
+### 8. Logging Configuration
+Create `src/utils/logging_config.py` with Python logging setup:
+- Console output (INFO level)
+- File output (DEBUG level) to logs/scraper.log
+- Formatted with timestamp, level, message
+
+### 9. Environment Configuration
+Create `.env.example`:
+CRUNCHBASE_API_KEY=your_api_key_here
+LOG_LEVEL=INFO
+DB_PATH=data/climate_startups.db
+
+### 10. README
+Create `README.md` with:
+- Project overview
+- Setup instructions
+- How to run data collection
+- Database schema documentation
+- API key setup guide
+
+## Success Criteria
+- SQLite database created with correct schema
+- Can scrape 100+ startups from Crunchbase (test with small limit first)
+- Can scrape YC/ClimateBase/Greentown
+- Verticals correctly mapped from Crunchbase categories
+- All data inserted into database with no errors
+- Logging working properly
+- Can run `python scripts/collect_data.py --source crunchbase --limit 100` successfully
+
+## Important Notes
+- Start with SMALL limits (100 startups) to test before scaling to 10K
+- Respect rate limits (Crunchbase: 200/min)
+- Handle API errors gracefully with retries
+- Log all scraping activity
+- Store Crunchbase categories as JSON array
+- Use transactions for batch inserts
+
+## Deliverables
+When complete, I should be able to:
+1. Run data collection script
+2. Have a populated SQLite database with 100+ startups
+3. See proper vertical mapping
+4. Have clean logs of the scraping process
+
+Begin implementation. Build the complete system with all components working together.
+
+---END OF PHASE 1---
+
+
+
+
+# PHASE 2: Climate Solution Discovery Engine - Search Infrastructure
+
+Build the hybrid search system (semantic + keyword). This is Phase 2 of 4.
+
+## Project Context
+You now have a database with climate tech startups. This phase builds the search infrastructure using BERT embeddings (FAISS) and keyword matching (BM25).
+
+## Tasks for This Phase
+
+### 1. Update Directory Structure
+Add to existing project:
+climate-search/
+├── src/
+│   ├── search/
+│   │   ├── embedder.py
+│   │   ├── faiss_manager.py
+│   │   ├── bm25_engine.py
+│   │   ├── hybrid_search.py
+│   │   ├── query_processor.py
+│   │   └── diversifier.py
+│   └── evaluation/
+│       └── evaluator.py
+├── models/ (sentence-transformers cache)
+├── scripts/
+│   ├── rebuild_index.py
+│   └── test_search.py
+└── config/
+└── test_queries.json
+
+### 2. BERT Embedder
+Create `src/search/embedder.py` with StartupEmbedder class:
+- Use model: sentence-transformers/all-mpnet-base-v2
+- `generate_embedding(text)` - Single 768-dim normalized embedding
+- `generate_embeddings_batch(texts, batch_size=16)` - Batch generation with progress bar
+- CPU-only, normalized for cosine similarity
+- Cache model to models/ directory
+
+### 3. FAISS Index Manager
+Create `src/search/faiss_manager.py` with FAISSIndexManager class:
+- Use IndexFlatIP for exact cosine similarity
+- `build_index(embeddings, startup_ids)` - Build from embeddings array
+- `search(query_embedding, top_k=20)` - Return [(startup_id, score), ...]
+- `save_index(filepath)` - Save index + ID mapping JSON
+- `load_index(filepath)` - Load saved index
+
+### 4. BM25 Keyword Search
+Create `src/search/bm25_engine.py` with BM25SearchEngine class:
+- Use rank_bm25 library
+- `build_index()` - Build from SQLite startup descriptions
+- Simple tokenization (lowercase + split)
+- `search(query, top_k=20)` - Return [(startup_id, score), ...]
+
+### 5. Query Processor
+Create `src/search/query_processor.py` with QueryProcessor class:
+- Climate-specific synonym expansions (solar, battery, carbon, ev, wind, hydrogen, agriculture, recycling, water)
+- `expand_query(query)` - Add domain synonyms
+- `extract_filters(query)` - Extract year/funding filters from natural language using regex
+
+### 6. Hybrid Search Engine
+Create `src/search/hybrid_search.py` with HybridSearchEngine class:
+- Combine FAISS + BM25 using Reciprocal Rank Fusion
+- `search(query, top_k=10, semantic_weight=0.6)` - Main search function
+- `reciprocal_rank_fusion()` - RRF merging with formula: score = semantic_weight * (1/(k + rank_semantic)) + (1-semantic_weight) * (1/(k + rank_keyword))
+- Use QueryProcessor for expansion
+
+### 7. Result Diversifier
+Create `src/search/diversifier.py` with ResultDiversifier class:
+- `diversify(results, startup_data_map, max_per_vertical=3)` - Prevent vertical clustering
+- Maintain score order while enforcing diversity
+
+### 8. Index Rebuild Script
+Create `scripts/rebuild_index.py` with CLI:
+- Flags: --full, --incremental, --test (100 startups only)
+- Steps: Load from SQLite → Generate embeddings → Build FAISS → Build BM25 → Save
+- Progress logging at each step
+- Save to data/faiss_index.bin and data/faiss_index_mapping.json
+
+### 9. Test Queries Configuration
+Create `config/test_queries.json` with 5 initial test queries:
+```json
+[
+    {
+        "query": "solar panel companies",
+        "relevant_startup_ids": [],
+        "vertical": "clean_energy"
+    },
+    {
+        "query": "carbon capture startups",
+        "relevant_startup_ids": [],
+        "vertical": "carbon_management"
+    },
+    {
+        "query": "battery storage for grid",
+        "relevant_startup_ids": [],
+        "vertical": "energy_storage"
+    },
+    {
+        "query": "electric vehicle charging infrastructure",
+        "relevant_startup_ids": [],
+        "vertical": "green_transportation"
+    },
+    {
+        "query": "alternative proteins and plant-based meat",
+        "relevant_startup_ids": [],
+        "vertical": "sustainable_agriculture"
+    }
+]
+```
+NOTE: Populate relevant_startup_ids after rebuild with real data
+
+### 10. Evaluation Framework
+Create `src/evaluation/evaluator.py` with SearchEvaluator class:
+- Load test queries from JSON
+- `calculate_ndcg(ranked_results, relevant_ids, k=10)` - NDCG@10 calculation
+- `evaluate(search_engine)` - Run all test queries, return metrics dict with mean_ndcg@10, mean_latency_ms, p95_latency_ms
+
+### 11. Update Requirements
+Add to `requirements.txt`:
+sentence-transformers>=2.2.0
+faiss-cpu>=1.7.4
+rank-bm25>=0.2.2
+numpy>=1.24.0
+torch>=2.0.0
+
+### 12. Testing Script
+Create `scripts/test_search.py`:
+- Interactive search loop
+- Load all indexes
+- Display top 10 results with scores and processing time
+- Show vertical distribution
+
+## Success Criteria
+- Can generate embeddings for all startups (~20-30 min on CPU)
+- FAISS index built successfully (~30MB for 10K startups)
+- BM25 index built successfully
+- Hybrid search returns results in <500ms
+- Query expansion works for climate terms
+- Result diversification prevents vertical clustering
+- Can run `python scripts/rebuild_index.py --test` successfully
+- Interactive search script works
+
+## Important Notes
+- Test with 100 startups first (--test flag)
+- Embeddings take ~20-30 minutes for 10K startups on CPU
+- FAISS index should be ~30MB for 10K vectors
+- Use normalized embeddings for cosine similarity
+- Save indexes to data/ directory
+- BM25 builds instantly (<1 min)
+
+## Testing Checklist
+1. Run `python scripts/rebuild_index.py --test` (100 startups)
+2. Verify data/faiss_index.bin and mapping created
+3. Run `python scripts/test_search.py`
+4. Try queries: "solar panel companies", "carbon capture", "battery storage"
+5. Verify <500ms latency
+6. Check vertical diversity in results
+
+## Deliverables
+When complete, I should be able to:
+1. Run index rebuild on full dataset
+2. Perform hybrid searches with <500ms latency
+3. See diverse results across verticals
+4. Run evaluation (after populating test queries)
+5. Use interactive search for testing
+
+Begin implementation. Build all components with proper error handling and logging.
+
+---END OF PHASE 2---
+
+
+
+
+# PHASE 3: Climate Solution Discovery Engine - FastAPI Backend
+
+Build the production API server with caching, rate limiting, and monitoring. This is Phase 3 of 4.
+
+## Project Context
+You have a working hybrid search engine. This phase wraps it in a production-grade API.
+
+## Tasks for This Phase
+
+### 1. Directory Structure
+Add to existing project:
+climate-search/
+├── api/
+│   ├── init.py
+│   ├── main.py
+│   ├── routes/
+│   │   ├── init.py
+│   │   ├── search.py
+│   │   ├── startups.py
+│   │   ├── admin.py
+│   │   └── health.py
+│   └── models/
+│       ├── init.py
+│       └── schemas.py
+├── logs/
+│   └── api.log
+└── tests/
+└── test_api.py
+
+### 2. Pydantic Schemas
+Create `api/models/schemas.py` with all Pydantic models:
+- SearchRequest (query, top_k, filters, enable_diversity)
+- StartupResult (id, name, description, funding, etc.)
+- SearchResult (startup + score)
+- SearchResponse (query, results, processing_time_ms, filters_applied)
+- InteractionLog (query, clicked_startup_id, rank_position)
+- EvaluationMetrics (ndcg, latencies, timestamp)
+- VerticalStats, StatsResponse
+
+### 3. Main FastAPI Application
+Create `api/main.py`:
+- Use lifespan context manager for startup/shutdown
+- On startup: Load FAISS, build BM25, load embedder, initialize HybridSearchEngine
+- Store in app.state
+- Add CORS middleware (allow localhost:3000)
+- Add rate limiting with slowapi (Limiter)
+- Global exception handler
+- Include all routers with /api prefix
+- Logging to logs/api.log and console
+
+### 4. Search Routes
+Create `api/routes/search.py`:
+- POST /api/search with rate limit (30/minute)
+- LRU cache with @lru_cache(maxsize=1000) for cached_search_internal()
+- Search pipeline: cache check → hybrid search → enrich → diversify → filter → return
+- Implement `enrich_search_results()` - query SQLite for full data
+- Implement `apply_diversity()` - use ResultDiversifier
+- Implement `apply_filters()` - vertical, year, funding filters
+- Return SearchResponse with processing time
+
+### 5. Startup Routes
+Create `api/routes/startups.py`:
+- GET /api/startups/{id} - Full startup details
+- GET /api/verticals - Return climate_taxonomy.json
+- GET /api/stats - Total count, vertical distribution, last update timestamp
+
+### 6. Admin Routes
+Create `api/routes/admin.py`:
+- POST /api/admin/log-interaction (rate limit 100/min) - Insert to search_interactions table
+- GET /api/admin/evaluate - Run SearchEvaluator, return metrics
+- GET /api/admin/interactions/stats - CTR statistics
+
+### 7. Health Routes
+Create `api/routes/health.py`:
+- GET /api/health - Simple health check
+- GET /api/ready - Readiness check (verify all components loaded)
+
+### 8. Update Requirements
+Add to `requirements.txt`:
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.4.0
+slowapi>=0.1.9
+python-multipart>=0.0.6
+
+### 9. API Documentation
+Create `docs/API.md` documenting all endpoints with request/response examples, rate limits, error codes
+
+### 10. Testing
+Create `tests/test_api.py` with pytest tests:
+- test_health_check()
+- test_search_basic()
+- test_search_with_filters()
+- test_get_startup()
+- test_get_verticals()
+- test_rate_limiting()
+
+### 11. Run Script
+Create `scripts/run_api.sh`:
+```bash
+#!/bin/bash
+echo "Starting API at http://localhost:8000"
+echo "Docs at http://localhost:8000/docs"
+uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload --log-level info
+```
+
+## Success Criteria
+- API starts without errors
+- Health check returns 200
+- Search endpoint returns results in <500ms
+- Rate limiting works (429 after 30 req/min)
+- Filters work correctly
+- Diversity prevents vertical clustering
+- All tests pass
+- API docs accessible at /docs
+- Logging works
+
+## Important Notes
+- LRU cache holds 1000 queries (no Redis needed)
+- Rate limits are per-IP
+- All errors logged to logs/api.log
+- Use transactions for database writes
+- CORS enabled for localhost:3000
+
+## Testing Checklist
+1. Start: `bash scripts/run_api.sh`
+2. Visit http://localhost:8000/docs
+3. Test /health
+4. Test /search with various queries
+5. Run `pytest tests/test_api.py -v`
+6. Check `tail -f logs/api.log`
+7. Test rate limiting
+
+## Deliverables
+When complete, I should have:
+1. Production-ready FastAPI application
+2. All endpoints working
+3. Rate limiting and error handling
+4. Test suite passing
+5. API documentation
+6. Logging system
+
+Begin implementation. Build all routes with proper error handling.
+
+---END OF PHASE 3---
+
+
+
+
+# PHASE 4: Climate Solution Discovery Engine - React Frontend
+
+Build the user interface for the climate tech startup search engine. This is Phase 4 of 4 (final phase).
+
+## Project Context
+You have a fully functional FastAPI backend. This phase builds a professional React frontend.
+
+## Tasks for This Phase
+
+### 1. Project Setup
+```bash
+npm create vite@latest frontend -- --template react-ts
+cd frontend
+npm install axios recharts lucide-react
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+```
+
+Configure tailwind.config.js:
+```js
+export default {
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  theme: { extend: {} },
+  plugins: [],
+}
+```
+
+Add to src/index.css:
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+### 2. Directory Structure
+frontend/
+├── src/
+│   ├── components/
+│   │   ├── SearchBar.tsx
+│   │   ├── ResultCard.tsx
+│   │   ├── FilterPanel.tsx
+│   │   ├── StatsPanel.tsx
+│   │   └── LoadingSpinner.tsx
+│   ├── services/
+│   │   └── api.ts
+│   ├── types/
+│   │   └── index.ts
+│   ├── hooks/
+│   │   └── useSearch.ts
+│   ├── utils/
+│   │   └── formatting.ts
+│   ├── App.tsx
+│   └── main.tsx
+
+### 3. TypeScript Types
+Create `src/types/index.ts` with interfaces:
+- Startup (id, name, description, founded_year, total_funding_usd, website_url, primary_vertical, headquarters)
+- SearchResult (startup + score)
+- SearchResponse (query, total_results, results, processing_time_ms, filters_applied)
+- SearchRequest (query, top_k, vertical_filter, founded_year_min/max, min_funding_usd, enable_diversity)
+- Vertical (id, name, description, keywords)
+- TaxonomyResponse, Stats, EvaluationMetrics
+
+### 4. API Service
+Create `src/services/api.ts`:
+- axios instance with baseURL: http://localhost:8000/api
+- searchStartups(request) → SearchResponse
+- getStartupDetails(id) → Startup
+- getVerticals() → TaxonomyResponse
+- getStats() → Stats
+- getEvaluation() → EvaluationMetrics
+- logInteraction(query, clickedStartupId, rankPosition)
+
+### 5. Custom Search Hook
+Create `src/hooks/useSearch.ts`:
+- useState for results, loading, error
+- search(request) function using api.searchStartups
+- clearResults() function
+- Return { results, loading, error, search, clearResults }
+
+### 6. Utility Functions
+Create `src/utils/formatting.ts`:
+- formatFunding(usd) → "$50M", "$1.2B", etc.
+- formatDate(isoDate) → "January 20, 2026"
+- getVerticalColor(vertical) → Tailwind color class
+- truncateText(text, maxLength)
+
+### 7. SearchBar Component
+Create `src/components/SearchBar.tsx`:
+- Input field with search icon
+- Search button
+- Query expansion hints below input
+- onSearch callback
+- Clear button when query exists
+- Tailwind styling
+
+### 8. FilterPanel Component
+Create `src/components/FilterPanel.tsx`:
+- Vertical filter dropdown (load from API)
+- Founded year range inputs (min/max)
+- Minimum funding input
+- Enable diversity checkbox
+- Clear filters button
+- onChange callback with all filter values
+
+### 9. ResultCard Component
+Create `src/components/ResultCard.tsx`:
+- Display startup name (link to website)
+- Description (truncated)
+- Founded year, funding amount, headquarters
+- Primary vertical badge with color
+- Relevance score progress bar
+- Click tracking (call logInteraction)
+- Tailwind card styling with hover effects
+
+### 10. StatsPanel Component
+Create `src/components/StatsPanel.tsx`:
+- Load stats from API on mount
+- Display total startups
+- Display last index update time
+- Vertical distribution chart using recharts (BarChart)
+- Refresh button
+
+### 11. LoadingSpinner Component
+Create `src/components/LoadingSpinner.tsx`:
+- Animated spinner using lucide-react
+- Loading text
+- Center aligned
+
+### 12. Main App Component
+Create `src/App.tsx`:
+- Layout: Header with title, SearchBar, FilterPanel (sidebar), Results grid, StatsPanel (sidebar)
+- Use useSearch hook
+- State for filters
+- handleSearch function combining query + filters
+- Display loading spinner when searching
+- Display error message if search fails
+- Map results to ResultCard components
+- Display "No results found" when appropriate
+- Display processing time
+- Responsive grid layout with Tailwind
+
+### 13. Styling
+Use Tailwind CSS throughout:
+- Modern, clean design
+- Responsive layout (mobile-friendly)
+- Color scheme: Blues/greens for climate theme
+- Proper spacing and typography
+- Card shadows and hover effects
+- Smooth transitions
+
+### 14. Package.json Scripts
+Update scripts:
+```json
+{
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  }
+}
+```
+
+### 15. Environment Configuration
+Create `.env`:
+VITE_API_BASE_URL=http://localhost:8000/api
+
+Update api.ts to use: `import.meta.env.VITE_API_BASE_URL`
+
+### 16. README
+Create frontend/README.md:
+- Setup instructions
+- Development server commands
+- Build instructions
+- Environment variables
+- Component documentation
+
+## Success Criteria
+- Clean, professional UI
+- Search works with real-time results
+- Filters apply correctly
+- Results display with proper formatting
+- Click tracking works
+- Stats panel shows distribution
+- Responsive design works on mobile
+- No console errors
+- Fast load times (<2s)
+
+## Important Notes
+- Use Tailwind for ALL styling (no custom CSS)
+- Implement proper error boundaries
+- Add loading states for all API calls
+- Debounce search input (500ms)
+- Cache API responses where appropriate
+- Use semantic HTML
+- Accessible (ARIA labels, keyboard navigation)
+
+## Design Guidelines
+- Header: Large, bold title with search bar
+- Filters: Left sidebar (collapsible on mobile)
+- Results: Grid layout (1 col mobile, 2-3 cols desktop)
+- Stats: Right sidebar (bottom on mobile)
+- Colors: Green (#10b981) for climate theme, blue (#3b82f6) for accents
+- Cards: White background, subtle shadow, rounded corners
+- Typography: Inter or similar modern sans-serif
+
+## Testing Checklist
+1. Run `npm run dev`
+2. Visit http://localhost:5173
+3. Try search: "solar companies"
+4. Apply filters (vertical, year, funding)
+5. Click on result cards (check network tab for log-interaction)
+6. View stats panel
+7. Test on mobile (responsive)
+8. Check browser console (no errors)
+
+## Deliverables
+When complete, I should have:
+1. Fully functional React app
+2. Professional UI/UX
+3. All features working (search, filters, stats)
+4. Responsive design
+5. Click tracking integrated
+6. Production build ready
+
+Begin implementation. Build a polished, production-ready frontend.
+
+---END OF PHASE 4---
