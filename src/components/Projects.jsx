@@ -13,6 +13,7 @@ const projectsData = [
     tech: ["Python", "BERT", "Transformers", "FAISS", "Sentence-Transformers", "Pandas", "scikit-learn"],
     liveUrl: null,
     githubUrl: "https://github.com/hgridharan999",
+    internalUrl: "/climate-search",
   },
   {
     date: "January 2026 - Present",
