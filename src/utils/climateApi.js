@@ -3,8 +3,7 @@
  * Handles all API communication with the backend search service
  */
 
-// API base URL - adjust based on environment
-const API_BASE_URL = import.meta.env.VITE_CLIMATE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = 'http://localhost:8000';
 
 /**
  * Search for climate tech startups
