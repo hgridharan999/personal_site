@@ -3,7 +3,7 @@
  * Handles all API communication with the backend search service
  */
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'https://climatetechdiscoverybackend-production.up.railway.app';
 
 /**
  * Search for climate tech startups
