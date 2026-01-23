@@ -18,6 +18,12 @@ export default function StatsPanel() {
         setStats(data);
       } catch (error) {
         console.error('Failed to fetch stats:', error);
+        // Set default stats on error
+        setStats({
+          total_startups: 0,
+          verticals: {},
+          last_updated: new Date().toISOString(),
+        });
       } finally {
         setLoading(false);
       }
@@ -39,11 +45,7 @@ export default function StatsPanel() {
     );
   }
 
-  if (!stats) {
-    return null;
-  }
-
-  const topVerticals = Object.entries(stats.verticals || {})
+  const topVerticals = Object.entries(stats?.verticals || {})
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
 
@@ -66,7 +68,7 @@ export default function StatsPanel() {
           <span className="font-notes text-sm text-fade">Total Startups</span>
         </div>
         <p className="text-3xl font-handwritten font-bold text-ink">
-          {stats.total_startups?.toLocaleString()}
+          {stats?.total_startups?.toLocaleString() || '0'}
         </p>
       </div>
 
