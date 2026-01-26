@@ -31,38 +31,6 @@ const projectsData = [
     liveUrl: null,
     githubUrl: null,
     internalUrl: "/trailsense",
-  },
-  {
-    date: "August 2025 - Present",
-    title: "Fintech Prediction Market Startup",
-    description: "Co-founded a stealth fintech startup that achieved top 10% among 20,000+ Y Combinator applicants. Built the entire platform from scratch—user experience, landing page, database systems, and core functionality. Created detailed financial projections, competitive analysis, and monetization models for investor pitches.",
-    tech: ["React", "JavaScript", "Database Management", "Financial Modeling"],
-    liveUrl: null,
-    githubUrl: null,
-  },
-  {
-    date: "December 2025",
-    title: "Dynamic Sports Betting Portfolio Optimizer",
-    description: "Reinforcement learning agent that optimizes betting strategies across multiple sports markets using PPO and DQN algorithms. Trained on historical odds data from NFL, NBA, and tennis to maximize Kelly Criterion-adjusted returns while managing risk constraints. Outperformed baseline strategies (flat betting, martingale) by 23% in simulated environments with realistic bankroll dynamics.",
-    tech: ["Python", "PyTorch", "Stable-Baselines3", "Pandas", "NumPy", "Odds API"],
-    liveUrl: null,
-    githubUrl: "https://github.com/hgridharan999",
-  },
-  {
-    date: "January 2026",
-    title: "VC Deal Flow Analyzer",
-    description: "NLP system that analyzes startup pitch decks and predicts funding success for venture capital firms. Fine-tuned LLaMA 3.1 on 800+ pitch decks to extract key metrics (market size, traction, team background) and built binary classifier achieving 78% accuracy on funding prediction. Implemented RAG pipeline to generate comparative feedback against successful historical pitches in similar sectors.",
-    tech: ["Python", "LangChain", "LLaMA 3.1", "ChromaDB", "FastAPI", "scikit-learn"],
-    liveUrl: null,
-    githubUrl: "https://github.com/hgridharan999",
-  },
-  {
-    date: "December 2025 - January 2026",
-    title: "Rice Yield Prediction System for Tamil Nadu",
-    description: "Satellite-based crop forecasting system that predicts rice harvests 60 days before harvest using multi-temporal remote sensing data. Processed 500GB+ of Sentinel-1/2 imagery via Google Earth Engine, achieving R²=0.85 and 10% error rate across 400,000+ hectares. Deployed full-stack application with FastAPI backend, PostgreSQL/PostGIS for geospatial queries, and interactive Mapbox frontend for agricultural stakeholders.",
-    tech: ["Python", "TensorFlow", "XGBoost", "Google Earth Engine", "FastAPI", "PostgreSQL", "PostGIS", "React", "Mapbox"],
-    liveUrl: null,
-    githubUrl: "https://github.com/hgridharan999",
   }
 ];
 
