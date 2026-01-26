@@ -5,11 +5,19 @@ import { Calendar, MapPin, Briefcase } from 'lucide-react';
 
 const experiencesData = [
   {
-    title: "Co-Founder",
-    company: "Stealth Startup (YC Applicant)",
+    title: "AI/Strategy Consultant (Contract)",
+    company: "Adobe",
+    location: "Remote",
+    period: "Jan 2025 - Present",
+    description: "Conducting competitive analysis of AI tools across model training, performance metrics, and market adoption. Researching data privacy, model performance, governance, and IP protection frameworks for enterprise AI deployment. Developing strategic brief on model-optimized architecture and services for board presentation, supporting IT leadership.",
+    type: "work"
+  },
+  {
+    title: "Developer",
+    company: "Cornell Entrepreneurship Club",
     location: "Ithaca, NY",
-    period: "Aug 2025 - Present",
-    description: "Developed fintech and prediction market startup; achieved top 10% amongst 20,000+ Y Combinator applicants. Built entire platform, user experience, landing page, and database management systems. Created financial projections, competitive analysis, and monetization models to pitch to investors.",
+    period: "Sep 2025 - Present",
+    description: "Engineered high-risk experimental projects: ML applications and analysis, full-stack web platforms, geospatial analysis. Organized YC speaker series, managed logistics (150+ attendees), partnered with unicorns and venture-backed startups. Generated 140,000+ views on Instagram/LinkedIn through speaker content and technical project showcases.",
     type: "work"
   },
   {
@@ -17,32 +25,8 @@ const experiencesData = [
     company: "Cornell Digital Tech and Innovation (DTI)",
     location: "Ithaca, NY",
     period: "Nov 2025 - Present",
-    description: "Developed content strategy and marketing materials for product initiatives serving 15,000+ Cornell students. Conducted market analysis and developed strategic recommendations for digital product enhancements.",
+    description: "Developed content strategy and marketing materials for product initiatives serving 15,000+ Cornell students. Conducted market analysis and developed strategic recommendations for digital product enhancements. Organized teamwide social events and fundraisers for 70+ members, led fundraising ventures.",
     type: "work"
-  },
-  {
-    title: "Failures Team Member",
-    company: "Cornell Entrepreneurship Club",
-    location: "Ithaca, NY",
-    period: "Sep 2025 - Present",
-    description: "Built high-risk experimental projects, including online applications, machine learning models, and GEO tools. Organized speaker events with YC founders, managing for 150+ attendees, generated 140,000 views across social media. Tech stack: JavaScript, React, Tailwind CSS, CLIMADA, EfficientNet, TensorFlow, LLMs, Python ML libraries.",
-    type: "work"
-  },
-  {
-    title: "Tournament Manager and Judge",
-    company: "National Speech and Debate Association",
-    location: "Colorado",
-    period: "Sep 2023 - Present",
-    description: "Managed logistics and operations for regional tournaments with 900+ competitors from 30+ schools. Utilized Speechwire, Tabroom, and MS365 Suite for tournament organization, fee collection, and communication. Evaluated 200+ debate rounds providing structured analytical feedback.",
-    type: "volunteer"
-  },
-  {
-    title: "Co-Founder and Co-President",
-    company: "Fund The Future",
-    location: "Centennial, CO",
-    period: "Apr 2024 - Dec 2025",
-    description: "Founded a state-recognized nonprofit, reducing financial barriers for high-school extracurriculars through fundraising. Established chapters across the state, gathering 100+ volunteers, and created educational fundraising resources. Obtained an EIN, pitched to businesses and school districts, securing support for schools statewide.",
-    type: "volunteer"
   },
 ];
 
