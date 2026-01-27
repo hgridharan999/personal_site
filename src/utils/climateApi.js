@@ -3,7 +3,7 @@
  * Handles all API communication with the backend search service
  */
 
-const API_BASE_URL = 'https://climatetechdiscoverybackend-production.up.railway.app';
+const API_BASE_URL = import.meta.env.VITE_CLIMATE_API_URL || 'https://climatetechdiscoverybackend-production.up.railway.app';
 
 /**
  * Search for climate tech startups
