@@ -16,12 +16,12 @@ const projectsData = [
     internalUrl: "/climate-search",
   },
   {
-    date: "January 2026 - Present",
+    date: "December 2025 – January 2026",
     title: "Open-Source LLM Cost Optimizer",
-    description: "Python library reducing LLM API costs by 40-60% through intelligent model routing, semantic caching, and prompt optimization. Architected caching system using sentence-transformers and Redis to avoid redundant API calls with semantic similarity matching. Built comprehensive benchmarking suite comparing GPT-4, Claude, and Gemini across quality/cost tradeoffs, enabling developers to optimize inference budgets without sacrificing output quality.",
+    description: "Created a Python toolkit to minimize LLM API expenses via intelligent model selection, prompt tuning, and semantic cache. Engineered a cache layer leveraging sentence-transformers and Redis to eliminate duplicate LLM requests. Developed a robust benchmarking framework to evaluate GPT-4, Claude, and Gemini for performance and cost efficiency.",
     tech: ["Python", "Redis", "OpenAI API", "Anthropic API", "Sentence-Transformers", "AsyncIO", "Pytest"],
     liveUrl: null,
-    githubUrl: "https://github.com/hgridharan999",
+    githubUrl: "https://github.com/hgridharan999/token_optimizer",
   },
   {
     date: "January 2026",
