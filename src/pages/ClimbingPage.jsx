@@ -12,8 +12,8 @@ const hikesData = [
     distance: "7.0 mi",
     difficulty: "Moderate",
     photos: ["/bierstadt-1.jpg", "/bierstadt-2.jpg", "/bierstadt-3.jpg"],
-    review: "My first fourteener summit. Started at 5 AM under headlamp, watching the sky slowly lighten. The trail is straightforward but relentless - just keeps climbing. Hit the willows section which was muddy and annoying, then broke above treeline. The final push to the summit had me gasping in the thin air. But standing on top at 14,065 feet, looking across at the Sawtooth, I finally got it. This is just the beginning.",
-    highlights: ["First 14er summit", "Alpine start", "Above treeline views", "Sawtooth ridge perspective"],
+    review: "My first fourteener summit. May be the hardest and also most rewarding thing I've ever done. Started at 5 AM under headlamp, watching the sky slowly lighten. The trail is pretty straightforward. Did NOT pick the right time of year to do this hike, there was still 6+ feet of snow the last 1000 feet and we didn't bring any spikes or gear. Also managed to lose my phone on the summit but found it 2 hours later using Find My :).",
+    highlights: ["First 14er summit", "Alpine start", "Above treeline views", "Insane photos"],
     rotation: 1.5,
     icon: CompassIcon,
   },
@@ -25,7 +25,7 @@ const hikesData = [
     distance: "9.0 mi",
     difficulty: "Strenuous",
     photos: ["/skypond-1.jpg", "/skypond-2.jpg", "/skypond-3.jpg", "/skypond-4.jpg"],
-    review: "The boulder scramble up to Sky Pond was unlike anything I'd done before - hands and feet finding holds on massive rocks, pulling myself up through narrow gaps. Lake of Glass appeared first, perfectly still and reflecting the cliffs. Then Sky Pond itself, tucked into this dramatic cirque with waterfalls cascading down sheer walls. The water was absolutely freezing but crystal clear. Worth every challenging step.",
+    review: "May be some of the best views in Colorado. Started up before sunrise, caught it as we climbed through gorgeous forests and lakes. The waterfall scramble at the end was insanely fun: so much so we did an additional one just for fun. Crazy views from Glass Lake at the top. Only regret was not being able to cliff jump it was too cold :(",
     highlights: ["Boulder field scramble", "Lake of Glass", "Waterfall climbs", "Alpine lake swimming"],
     rotation: -1.5,
     icon: TentIcon,
@@ -38,7 +38,7 @@ const hikesData = [
     distance: "8.2 mi",
     difficulty: "Moderate",
     photos: ["/lostlake-1.jpg", "/lostlake-2.jpg", "/lostlake-3.jpg", "/lostlake-4.jpg"],
-    review: "Late season hike with fresh snow dusting the peaks. The trail wound through golden aspen groves before climbing into evergreen forest. Lost Lake sits in this perfect basin surrounded by jagged peaks. The reflection was insane - mountains mirrored perfectly in the still water. Hardly saw another soul. Found a rock to sit on and just absorbed the silence. This is why I hike.",
+    review: "First truly winter hike. Started before sunrise, but when we got there, winds were over 50 mph and there was zero visibility. Thankfully it lightened up over the course of the hike. Got a bit lost and climbed an additional mountain to get cell service. Ended the hike at the beautiful frozen lake, where we nearly fell in and my boot got soaked with ice cold water. Beautiful views. Played some football at the top.",
     highlights: ["Fall colors", "Peak reflections", "Solitude", "Fresh snow on peaks"],
     rotation: 2,
     icon: BackpackIcon,
@@ -51,7 +51,7 @@ const hikesData = [
     distance: "3.8 mi",
     difficulty: "Easy",
     photos: ["/escondido-1.jpg", "/escondido-2.jpg", "/escondido-3.jpg", "/escondido-4.jpg"],
-    review: "Coastal hike with an ocean breeze and the sound of waves in the background. The trail took us through a creek and up to this stunning 150-foot waterfall hidden in a canyon. Winter rains had it flowing strong. Upper falls required a bit of scrambling over slippery rocks, but the payoff was worth it. A perfect California adventure mixing beach vibes with waterfall magic.",
+    review: "Great coastal hike if you're in the LA area. Weather was not conducive: lots of rain in the week beforehand made the trail fully just mud. Really fun climb that my dad and I did, and tons of little river crossings as well made pathfinding really fun. Waterfall at the end was 100% worth getting my shoes absolutely soaked. Beautiful views of the ocean on the way back as the sun was setting.",
     highlights: ["Coastal trail", "Hidden waterfall", "Creek crossing", "Ocean views"],
     rotation: -1.8,
     icon: BootsIcon,
@@ -59,13 +59,13 @@ const hikesData = [
   {
     date: "January 2026",
     name: "Seven Falls",
-    location: "Colorado Springs",
-    elevation: "7,200 ft",
-    distance: "2.4 mi",
-    difficulty: "Easy-Moderate",
+    location: "Santa Barbara, California",
+    elevation: "1,500 ft gain",
+    distance: "8.8 mi",
+    difficulty: "Hard",
     photos: [],
-    review: "Winter hike with ice formations everywhere. The seven cascading waterfalls were partially frozen, creating these incredible ice sculptures. Climbed the 224 metal steps alongside the falls - legs were burning by the top. The canyon walls narrow dramatically, and you can hear the water echoing. Short hike but the frozen waterfalls made it special. Perfect winter adventure close to town.",
-    highlights: ["224 steps climb", "Frozen waterfalls", "Narrow canyon", "Ice formations"],
+    review: "Another crazy waterfall hike near Santa Barbara. Trail starts off pretty light, and then you get to a crazy river crossing, and then have a 60 degree incline up the side of a mountain, and then maybe the hardest technical climb with metal cable going 70-85 degrees decline down the side to the actual falls. From there, climbed the side of another mountain to get the insane views and see the falls together.",
+    highlights: ["85 degree incline, crazy waterfall views, rock climbing, technical climb"],
     rotation: -2,
     icon: FlagIcon,
   },
@@ -514,7 +514,7 @@ const ClimbingPage = () => {
                 </svg>
 
                 <p className="font-body text-lg text-ink leading-relaxed mb-8">
-                  Every peak tells a story. Scroll right through my Colorado adventures →
+                  I love hiking and will love it till I die. Scroll right to see some cool things I've climbed →
                 </p>
 
                 {/* Timeline markers - one per unique month */}
