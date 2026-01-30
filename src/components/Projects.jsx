@@ -5,15 +5,49 @@ import { Link } from 'react-router-dom';
 import { HandDrawnArrow, SketchCheckmark, StarDoodle, BracketDecoration } from './HandDrawnElements';
 import { ExternalLink, Github, ArrowRight } from 'lucide-react';
 
+const StealthLock = ({ delay, isInView }) => {
+  return (
+    <motion.span
+      className="inline-flex items-center gap-1.5 font-notes text-sm text-fade"
+      initial={{ opacity: 0 }}
+      animate={isInView ? { opacity: 1 } : {}}
+      transition={{ delay, duration: 0.4 }}
+    >
+      <motion.span
+        className="inline-block"
+        initial={{ rotate: 0 }}
+        animate={isInView ? { rotate: [0, -15, 0] } : {}}
+        transition={{ delay: delay + 0.4, duration: 0.5, ease: "easeInOut" }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <motion.rect
+            x="3" y="11" width="18" height="11" rx="2" ry="2"
+            initial={{ pathLength: 0 }}
+            animate={isInView ? { pathLength: 1 } : {}}
+            transition={{ delay: delay + 0.2, duration: 0.6 }}
+          />
+          <motion.path
+            d="M7 11V7a5 5 0 0 1 10 0v4"
+            initial={{ pathLength: 0 }}
+            animate={isInView ? { pathLength: 1 } : {}}
+            transition={{ delay, duration: 0.5 }}
+          />
+        </svg>
+      </motion.span>
+      <span>link unavailable — building in stealth</span>
+    </motion.span>
+  );
+};
+
 const projectsData = [
   {
-    date: "January 2026 - Present",
-    title: "AI-Powered Climate Solution Discovery Engine",
-    description: "NLP platform analyzing 10,000+ climate tech startups to identify high-potential solutions across 50+ verticals. Engineered classification pipeline using BERT embeddings for startup categorization, multi-factor scoring algorithm incorporating patent analysis and founder backgrounds, and semantic search system enabling sub-second retrieval of similar companies. Built comprehensive market trend signals to surface emerging climate innovation patterns.",
-    tech: ["Python", "BERT", "Transformers", "FAISS", "Sentence-Transformers", "Pandas", "scikit-learn"],
+    date: "September 2025 - Present",
+    title: "Social Network Prediction Market Platform",
+    description: "Co-founded and developed a fintech prediction market platform from concept to MVP, ranking in the top 10% among 20,000+ Y Combinator applicants. Architected the full-stack application including prediction algorithms, backend services, and PostgreSQL database systems. Conducted market sizing analysis and competitive landscape assessment across 15+ platforms, and built a unit economics model to validate the business case.",
+    tech: ["React", "Node.js", "PostgreSQL", "Python"],
     liveUrl: null,
-    githubUrl: "https://github.com/hgridharan999",
-    internalUrl: "/climate-search",
+    githubUrl: null,
+    stealth: true,
   },
   {
     date: "December 2025 – January 2026",
@@ -22,6 +56,15 @@ const projectsData = [
     tech: ["Python", "Redis", "OpenAI API", "Anthropic API", "Sentence-Transformers", "AsyncIO", "Pytest"],
     liveUrl: null,
     githubUrl: "https://github.com/hgridharan999/token_optimizer",
+  },
+  {
+    date: "January 2026 - Present",
+    title: "AI-Powered Climate Solution Discovery Engine",
+    description: "NLP platform analyzing 10,000+ climate tech startups to identify high-potential solutions across 50+ verticals. Engineered classification pipeline using BERT embeddings for startup categorization, multi-factor scoring algorithm incorporating patent analysis and founder backgrounds, and semantic search system enabling sub-second retrieval of similar companies. Built comprehensive market trend signals to surface emerging climate innovation patterns.",
+    tech: ["Python", "BERT", "Transformers", "FAISS", "Sentence-Transformers", "Pandas", "scikit-learn"],
+    liveUrl: null,
+    githubUrl: "https://github.com/hgridharan999",
+    internalUrl: "/climate-search",
   },
   {
     date: "January 2026",
@@ -119,6 +162,9 @@ const ProjectCard = ({ project, index }) => {
 
           {/* Links with hand-drawn style */}
           <div className="flex flex-wrap gap-4 pt-4">
+            {project.stealth && (
+              <StealthLock delay={index * 0.15 + 0.6} isInView={isInView} />
+            )}
             {project.internalUrl && (
               <Link
                 to={project.internalUrl}
