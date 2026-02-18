@@ -108,7 +108,7 @@ const ProjectCard = ({ project, index }) => {
 
 const Projects = () => {
   return (
-    <section className="py-2 px-6 max-w-3xl">
+    <section className="py-2 max-w-3xl mx-auto w-full">
       <div className="space-y-3">
         {projectsData.map((project, index) => (
           <ProjectCard key={index} project={project} index={index} />

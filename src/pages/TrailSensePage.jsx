@@ -64,7 +64,7 @@ const TrailSensePage = () => {
 
   return (
     <PageShell title="TrailSense">
-      <div className="max-w-3xl space-y-6">
+      <div className="max-w-3xl mx-auto w-full space-y-6">
 
         {/* Description + status */}
         <motion.div

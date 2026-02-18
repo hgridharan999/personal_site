@@ -20,7 +20,7 @@ export default function BlogPage() {
       {loading ? (
         <p className="font-body text-sm text-fade">Loading...</p>
       ) : (
-        <div className="max-w-2xl space-y-3">
+        <div className="max-w-2xl mx-auto w-full space-y-3">
           {posts.map((post, i) => (
             <motion.article
               key={post.slug}

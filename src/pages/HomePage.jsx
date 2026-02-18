@@ -18,7 +18,7 @@ const socialLinks = [
 export default function HomePage() {
   return (
     <div className="h-screen w-screen bg-paper flex items-center justify-center overflow-hidden px-8 lg:px-16">
-      <div className="max-w-5xl w-full flex flex-col lg:flex-row gap-12 lg:gap-24 items-center lg:items-center">
+      <div className="max-w-4xl w-full flex flex-col lg:flex-row gap-12 lg:gap-16 items-center lg:items-center">
 
         {/* LEFT — text content */}
         <div className="flex flex-col gap-5 flex-1">
@@ -102,7 +102,7 @@ export default function HomePage() {
           <img
             src="/profile.jpg"
             alt="Hari"
-            className="w-48 h-48 object-cover rounded-xl border border-line shadow-page"
+            className="w-64 h-64 object-cover rounded-xl border border-line shadow-page"
           />
         </motion.div>
 

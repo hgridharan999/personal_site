@@ -56,7 +56,7 @@ export default function ClimateSearchPage() {
   return (
     <PageShell title="Climate Tech Discovery">
       {/* Subtitle + badge */}
-      <div className="max-w-3xl mb-8 space-y-3">
+      <div className="max-w-3xl mx-auto w-full mb-8 space-y-3">
         <p className="font-body text-base text-ink-accent leading-relaxed">
           Search 100+ climate startups using AI-powered semantic search. Find innovative companies tackling carbon removal, clean energy, sustainable agriculture, and more.
         </p>
@@ -67,7 +67,7 @@ export default function ClimateSearchPage() {
       </div>
 
       {/* Main layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 max-w-4xl mx-auto w-full">
 
         {/* Left sidebar — filters (desktop) */}
         <aside className="hidden lg:block lg:col-span-3">

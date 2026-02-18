@@ -180,7 +180,8 @@ const ClimbingPage = () => {
 
   return (
     <>
-      <div className="h-screen overflow-hidden bg-paper px-8 pt-8 pb-6 flex flex-col">
+      <div className="h-screen overflow-hidden bg-paper flex flex-col items-center px-8 pt-8 pb-6">
+      <div className="max-w-2xl w-full flex flex-col flex-1">
         <motion.div
           className="mb-4"
           initial={{ opacity: 0, x: -12 }}
@@ -208,11 +209,12 @@ const ClimbingPage = () => {
           </p>
         </motion.div>
 
-        <div className="max-w-2xl space-y-3">
+        <div className="space-y-3">
           {hikesData.map((hike, index) => (
             <HikeCard key={index} hike={hike} index={index} onClick={() => setSelectedHike(hike)} />
           ))}
         </div>
+      </div>
       </div>
 
       {selectedHike && (
