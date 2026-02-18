@@ -39,57 +39,140 @@ export default function HomePage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.5 }}
           >
-            Cornell Dyson '29 · Building ML systems and startups.
+            Cornell Dyson '29 - Building ML systems and startups.
           </motion.p>
 
-          {/* Nav links */}
-          <nav className="flex flex-col gap-0.5 mt-2">
-            {navLinks.map(({ label, to }, i) => (
-              <motion.div
-                key={to}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 + i * 0.07, duration: 0.35 }}
-              >
-                <Link
-                  to={to}
-                  className="font-handwritten text-2xl lg:text-3xl text-ink hover:text-highlight transition-colors inline-block py-0.5"
-                >
-                  {label}
-                </Link>
-              </motion.div>
-            ))}
-          </nav>
-
-          {/* Social + resume */}
-          <motion.div
-            className="flex flex-wrap gap-5 items-center mt-1"
+          {/* Blurb */}
+          <motion.p
+            className="font-body text-sm text-fade leading-relaxed max-w-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.85, duration: 0.4 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
           >
-            {socialLinks.map(({ label, href, Icon }) => (
+            I love failing: how I learned to build what matters. An internationally-recognized mathematician, debater, and marketer turned serial founder. YC top applicant, Fortune 500 AI work. Love taking risks and doing generally cool stuff.
+          </motion.p>
+
+          {/* Nav links and Social in grid */}
+          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 mt-2">
+            {/* Projects */}
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5, duration: 0.35 }}
+            >
+              <Link
+                to="/projects"
+                className="font-handwritten text-2xl lg:text-3xl text-ink hover:text-highlight transition-colors inline-block py-0.5"
+              >
+                Projects
+              </Link>
+            </motion.div>
+            {/* LinkedIn */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.35 }}
+            >
               <a
-                key={label}
-                href={href}
+                href="https://www.linkedin.com/in/harigridharan1/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-fade hover:text-ink-accent transition-colors"
+                className="flex items-center gap-1.5 text-fade hover:text-ink-accent transition-colors py-0.5"
               >
-                <Icon className="w-4 h-4" />
-                <span className="font-body text-sm">{label}</span>
+                <Linkedin className="w-4 h-4" />
+                <span className="font-body text-sm">LinkedIn</span>
               </a>
-            ))}
+            </motion.div>
 
-            <a
-              href="/resume.pdf"
-              download
-              className="flex items-center gap-1.5 text-fade hover:text-highlight transition-colors"
+            {/* Work */}
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.57, duration: 0.35 }}
             >
-              <Download className="w-4 h-4" />
-              <span className="font-body text-sm">Resume</span>
-            </a>
-          </motion.div>
+              <Link
+                to="/work"
+                className="font-handwritten text-2xl lg:text-3xl text-ink hover:text-highlight transition-colors inline-block py-0.5"
+              >
+                Work
+              </Link>
+            </motion.div>
+            {/* GitHub */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.57, duration: 0.35 }}
+            >
+              <a
+                href="https://github.com/hgridharan999"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-fade hover:text-ink-accent transition-colors py-0.5"
+              >
+                <Github className="w-4 h-4" />
+                <span className="font-body text-sm">GitHub</span>
+              </a>
+            </motion.div>
+
+            {/* Climbing */}
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.64, duration: 0.35 }}
+            >
+              <Link
+                to="/climbing"
+                className="font-handwritten text-2xl lg:text-3xl text-ink hover:text-highlight transition-colors inline-block py-0.5"
+              >
+                Climbing
+              </Link>
+            </motion.div>
+            {/* Email */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.64, duration: 0.35 }}
+            >
+              <a
+                href="mailto:hg532@cornell.edu"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-fade hover:text-ink-accent transition-colors py-0.5"
+              >
+                <Mail className="w-4 h-4" />
+                <span className="font-body text-sm">Email</span>
+              </a>
+            </motion.div>
+
+            {/* Blog */}
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.71, duration: 0.35 }}
+            >
+              <Link
+                to="/blog"
+                className="font-handwritten text-2xl lg:text-3xl text-ink hover:text-highlight transition-colors inline-block py-0.5"
+              >
+                Blog
+              </Link>
+            </motion.div>
+            {/* Resume */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.71, duration: 0.35 }}
+            >
+              <a
+                href="/resume.pdf"
+                download
+                className="flex items-center gap-1.5 text-fade hover:text-highlight transition-colors py-0.5"
+              >
+                <Download className="w-4 h-4" />
+                <span className="font-body text-sm">Resume</span>
+              </a>
+            </motion.div>
+          </div>
         </div>
 
         {/* RIGHT — photo (desktop only) */}
