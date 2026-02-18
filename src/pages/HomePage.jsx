@@ -6,7 +6,7 @@ const navLinks = [
   { label: 'Projects', to: '/projects' },
   { label: 'Work',     to: '/work'     },
   { label: 'Climbing', to: '/climbing' },
-  { label: 'Notes',    to: '/blog'     },
+  { label: 'Blog',     to: '/blog'     },
 ];
 
 const socialLinks = [

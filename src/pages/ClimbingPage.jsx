@@ -137,7 +137,7 @@ const ImageGallery = ({ hike, onClose }) => {
         )}
 
         <blockquote className="font-body text-base text-ink leading-relaxed border-l-2 border-highlight pl-4 italic mb-4">
-          "{hike.review}"
+          {hike.review}
         </blockquote>
 
         <p className="font-notes text-sm text-fade">
