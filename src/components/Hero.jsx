@@ -229,7 +229,7 @@ const Hero = () => {
 
               {/* Date stamp on polaroid */}
               <div className="absolute bottom-4 left-4 font-notes text-sm text-fade">
-                Dec 2024
+                Dec 2025
               </div>
 
               {/* Corner tape pieces */}
