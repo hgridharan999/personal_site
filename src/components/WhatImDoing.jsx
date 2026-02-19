@@ -58,7 +58,7 @@ const experiencesData = [
     description: "Competitive analysis of AI tools across model training, performance, and market adoption. Developing strategic briefs on model-optimized architecture for board presentation and IT leadership.",
   },
   {
-    title: "Developer",
+    title: "Operations Lead",
     company: "Cornell Entrepreneurship Club",
     location: "Ithaca, NY",
     period: "Sep 2025 - Present",
