@@ -49,7 +49,7 @@ export default function HomePage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4, duration: 0.5 }}
           >
-            I love failing: how I learned to build what matters. An internationally-recognized mathematician, debater, and marketer turned serial founder. YC top applicant, Fortune 500 AI work. Love taking risks and doing generally cool stuff.
+            An internationally-recognized mathematician, debater, and marketer turned serial founder. YC top applicant, Fortune 500 AI work. Love taking risks and doing generally cool stuff.
           </motion.p>
 
           {/* Nav links and Social in grid */}
