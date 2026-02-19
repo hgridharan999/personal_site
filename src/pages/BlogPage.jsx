@@ -55,8 +55,21 @@ export default function BlogPage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
           >
-            <p className="font-notes text-xs text-fade tracking-widest mb-4">me in 10 bullet points</p>
-            <div className="border-t border-line pt-4 flex-1" />
+            <p className="font-notes text-xs text-fade tracking-widest mb-4 font-bold">me in 10 bullet points</p>
+            <div className="border-t border-line pt-4 flex-1 flex flex-col gap-3">
+              <ul className="space-y-2 font-body text-xs text-ink leading-relaxed">
+                <li>• time being so limited means that you shouldn't waste time doing stuff you don't like.</li>
+                <li>• your best experiences are memories shared with friends.</li>
+                <li>• bias to action, choice paralysis kills 99% of solutions.</li>
+                <li>• become someone who loves risk-taking.</li>
+                <li>• health outweighs all other priorities.</li>
+                <li>• potential is the worst thing you can have: it prevents you from maximizing effort.</li>
+                <li>• derealization is a bottom 5 experience all time.</li>
+                <li>• literally everyone around you is underappreciative of the things they have.</li>
+                <li>• not knowing what comes after death should be the scariest thing you ever think about.</li>
+                <li>• human connection is the single most undervalued experience of our time.</li>
+              </ul>
+            </div>
           </motion.div>
 
           {/* RIGHT — subscribe + posts */}
