@@ -2,9 +2,40 @@ import { motion } from 'framer-motion';
 import { useInView } from 'framer-motion';
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ExternalLink, Github, ArrowRight, Lock } from 'lucide-react';
+import { ExternalLink, Github, ArrowRight, Lock, Star } from 'lucide-react';
+
+const BigRedNetworkLogo = () => (
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style={{ width: 44, height: 44 }}>
+    <rect width="100" height="100" fill="#B31B1B" rx="8" />
+    <text x="50" y="58" fontFamily="monospace" fontSize="32" fontWeight="bold" fill="white" textAnchor="middle">BR</text>
+  </svg>
+);
+
+const LoadstoneLogo = () => (
+  <img src="https://loadstonelabs.com/_next/image?url=%2Floadstone-logo.png&w=48&q=75" alt="Loadstone" style={{ width: 44, height: 44 }} className="object-contain" />
+);
 
 const projectsData = [
+  {
+    date: "February 2026 - Present",
+    title: "Loadstone",
+    description: "Probabilistic power chain risk simulator for AI compute infrastructure paired with drone-based predictive maintenance. Upload data center topology, run 1,000 Monte Carlo scenarios, and get cascade failure risk reports in 30 seconds—validating power chains before deployment and enabling automated physical infrastructure management.",
+    tech: ["Python", "Monte Carlo Simulation", "React", "Drones", "Infrastructure Modeling"],
+    liveUrl: "https://loadstonelabs.com/",
+    githubUrl: null,
+    Logo: LoadstoneLogo,
+    featured: true,
+  },
+  {
+    date: "January 2026 - Present",
+    title: "BigRed Network",
+    description: "Curated directory platform connecting Cornell builders, founders, and researchers. Features member filtering, network visualization, and manual review system for access control.",
+    tech: ["React", "TypeScript", "Network Graphs", "Authentication"],
+    liveUrl: "https://www.bigred.network/",
+    githubUrl: null,
+    Logo: BigRedNetworkLogo,
+    featured: true,
+  },
   {
     date: "September 2025 - Present",
     title: "Social Network Prediction Market Platform",
@@ -42,78 +73,114 @@ const projectsData = [
   }
 ];
 
-const ProjectCard = ({ project, index }) => {
+const ProjectCard = ({ project, index, isFeatured }) => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-80px" });
+  const { Logo } = project;
 
   return (
     <motion.div
       ref={ref}
-      className="border-b border-line pb-3 last:border-0"
+      className={`border border-line rounded-lg p-4 ${isFeatured ? 'bg-paper-subtle' : ''}`}
       initial={{ opacity: 0, y: 16 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.5, delay: index * 0.08, ease: "easeOut" }}
     >
-      <div className="flex items-baseline justify-between gap-4 mb-1">
-        <h3 className="font-handwritten text-xl font-bold text-ink">{project.title}</h3>
-        <p className="font-notes text-sm text-fade whitespace-nowrap flex-shrink-0">{project.date}</p>
-      </div>
+      <div className="flex gap-4">
+        {/* Logo column */}
+        {Logo && (
+          <div className="flex-shrink-0 flex items-center">
+            <Logo />
+          </div>
+        )}
 
-      <p className="font-body text-sm text-ink leading-relaxed mb-2">{project.description}</p>
+        {/* Content column */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-4 mb-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-handwritten text-xl font-bold text-ink">{project.title}</h3>
+              {project.featured && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-highlight/10 text-highlight text-xs font-body rounded-full">
+                  <Star className="w-3 h-3 fill-current" />
+                  Featured
+                </span>
+              )}
+            </div>
+            <p className="font-notes text-sm text-fade whitespace-nowrap flex-shrink-0">{project.date}</p>
+          </div>
 
-      <p className="font-notes text-xs text-fade mb-2">{project.tech.join(' · ')}</p>
+          <p className="font-body text-sm text-ink leading-relaxed mb-2">{project.description}</p>
 
-      <div className="flex flex-wrap gap-5 items-center">
-        {project.stealth && (
-          <span className="inline-flex items-center gap-1.5 font-body text-sm text-fade">
-            <Lock className="w-3.5 h-3.5" />
-            building in stealth
-          </span>
-        )}
-        {project.internalUrl && (
-          <Link
-            to={project.internalUrl}
-            className="inline-flex items-center gap-1 font-body text-sm text-ink-accent hover:text-highlight transition-colors group"
-          >
-            explore project
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-          </Link>
-        )}
-        {project.liveUrl && (
-          <a
-            href={project.liveUrl}
-            className="inline-flex items-center gap-1 font-body text-sm text-ink-accent hover:text-highlight transition-colors"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            live site
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
-        )}
-        {project.githubUrl && (
-          <a
-            href={project.githubUrl}
-            className="inline-flex items-center gap-1 font-body text-sm text-ink-accent hover:text-highlight transition-colors"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Github className="w-3.5 h-3.5" />
-            github
-          </a>
-        )}
+          <p className="font-notes text-xs text-fade mb-2">{project.tech.join(' · ')}</p>
+
+          <div className="flex flex-wrap gap-5 items-center">
+            {project.stealth && (
+              <span className="inline-flex items-center gap-1.5 font-body text-sm text-fade">
+                <Lock className="w-3.5 h-3.5" />
+                building in stealth
+              </span>
+            )}
+            {project.internalUrl && (
+              <Link
+                to={project.internalUrl}
+                className="inline-flex items-center gap-1 font-body text-sm text-ink-accent hover:text-highlight transition-colors group"
+              >
+                explore project
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            )}
+            {project.liveUrl && (
+              <a
+                href={project.liveUrl}
+                className="inline-flex items-center gap-1 font-body text-sm text-ink-accent hover:text-highlight transition-colors"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                live site
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
+            {project.githubUrl && (
+              <a
+                href={project.githubUrl}
+                className="inline-flex items-center gap-1 font-body text-sm text-ink-accent hover:text-highlight transition-colors"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Github className="w-3.5 h-3.5" />
+                github
+              </a>
+            )}
+          </div>
+        </div>
       </div>
     </motion.div>
   );
 };
 
 const Projects = () => {
+  const featuredProjects = projectsData.filter(p => p.featured);
+  const regularProjects = projectsData.filter(p => !p.featured);
+
   return (
-    <section className="py-2 max-w-3xl mx-auto w-full">
-      <div className="space-y-3">
-        {projectsData.map((project, index) => (
-          <ProjectCard key={index} project={project} index={index} />
-        ))}
-      </div>
+    <section className="py-2 pb-12 max-w-5xl mx-auto w-full px-4">
+      {/* Featured Projects */}
+      {featuredProjects.length > 0 && (
+        <div className="space-y-4 mb-8">
+          {featuredProjects.map((project, index) => (
+            <ProjectCard key={index} project={project} index={index} isFeatured={true} />
+          ))}
+        </div>
+      )}
+
+      {/* Regular Projects - Two Column Grid */}
+      {regularProjects.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {regularProjects.map((project, index) => (
+            <ProjectCard key={index + featuredProjects.length} project={project} index={index + featuredProjects.length} isFeatured={false} />
+          ))}
+        </div>
+      )}
     </section>
   );
 };

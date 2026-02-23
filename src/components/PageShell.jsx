@@ -4,8 +4,8 @@ import { ArrowLeft } from 'lucide-react';
 
 export default function PageShell({ title, children }) {
   return (
-    <div className="h-screen overflow-hidden bg-paper flex flex-col items-center px-8 pt-8 pb-6">
-      <div className="max-w-4xl w-full flex flex-col flex-1 min-h-0">
+    <div className="min-h-screen bg-paper flex flex-col items-center px-8 pt-8 pb-6">
+      <div className="max-w-4xl w-full flex flex-col">
         <motion.div
           className="mb-4"
           initial={{ opacity: 0, x: -12 }}
@@ -30,7 +30,7 @@ export default function PageShell({ title, children }) {
           {title}
         </motion.h1>
 
-        <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
+        <div className="w-full">{children}</div>
       </div>
     </div>
   );
