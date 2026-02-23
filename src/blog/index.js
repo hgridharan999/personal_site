@@ -1,18 +1,28 @@
 import matter from 'gray-matter';
+import { Buffer } from 'buffer';
 
-// Vite's import.meta.glob with { as: 'raw' } loads .md files as raw strings at build time.
-// eager: false means each file is a lazy dynamic import.
-const modules = import.meta.glob('./posts/*.md', { query: '?raw', import: 'default', eager: false });
+// Make Buffer available globally for gray-matter
+if (typeof window !== 'undefined') {
+  window.Buffer = Buffer;
+}
+
+// Import all markdown files
+const modules = import.meta.glob('./posts/*.md', { eager: false, query: '?raw', import: 'default' });
 
 // Returns sorted array of post metadata (no body) for the listing page.
 export async function getAllPosts() {
+  console.log('getAllPosts called');
+  console.log('modules:', modules);
   const posts = [];
   for (const path in modules) {
+    console.log('Loading:', path);
     const raw = await modules[path]();
+    console.log('Raw content:', raw?.substring(0, 100));
     const { data } = matter(raw);
     const slug = data.slug || path.replace('./posts/', '').replace('.md', '');
     posts.push({ slug, ...data });
   }
+  console.log('Final posts:', posts);
   return posts.sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 

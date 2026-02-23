@@ -10,10 +10,16 @@ export default function BlogPage() {
   const [email, setEmail] = useState('');
 
   useEffect(() => {
-    getAllPosts().then((p) => {
-      setPosts(p);
-      setLoading(false);
-    });
+    getAllPosts()
+      .then((p) => {
+        console.log('Loaded posts:', p);
+        setPosts(p);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Error loading posts:', err);
+        setLoading(false);
+      });
   }, []);
 
   return (
