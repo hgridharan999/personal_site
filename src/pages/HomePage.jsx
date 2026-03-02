@@ -164,7 +164,7 @@ export default function HomePage() {
               transition={{ delay: 0.71, duration: 0.35 }}
             >
               <a
-                href="/resume.pdf"
+                href="/Gridharan_Hari_Resume.pdf"
                 download
                 className="flex items-center gap-1.5 text-fade hover:text-highlight transition-colors py-0.5"
               >

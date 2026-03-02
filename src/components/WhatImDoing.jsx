@@ -63,7 +63,7 @@ const experiencesData = [
     location: "Ithaca, NY",
     period: "Sep 2025 - Present",
     Logo: CornellECLogo,
-    description: "Built ML apps, full-stack platforms, and geospatial tools. Organized YC speaker series (150+ attendees), partnered with unicorns and venture-backed startups, generated 140k+ views on social media.",
+    description: "Built ML apps, full-stack platforms, and geospatial tools. Organized YC speaker series (150+ attendees), partnered with unicorns and venture-backed startups, generated 150k+ views on social media.",
   },
   {
     title: "Builder",
