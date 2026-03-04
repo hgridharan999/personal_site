@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useInView } from 'framer-motion';
 import { useRef } from 'react';
-import { MapPin, Briefcase } from 'lucide-react';
+import { MapPin, Briefcase, ExternalLink } from 'lucide-react';
 
 const AdobeLogo = () => (
   <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style={{ width: 44, height: 44 }}>
@@ -52,6 +52,7 @@ const experiencesData = [
   {
     title: "AI/Strategy Consultant (Contract)",
     company: "Adobe",
+    url: "https://www.adobe.com/",
     location: "Remote",
     period: "Jan 2025 - Present",
     Logo: AdobeLogo,
@@ -60,6 +61,7 @@ const experiencesData = [
   {
     title: "Operations Lead",
     company: "Cornell Entrepreneurship Club",
+    url: "https://www.cornellentrepreneurship.com/",
     location: "Ithaca, NY",
     period: "Sep 2025 - Present",
     Logo: CornellECLogo,
@@ -68,6 +70,7 @@ const experiencesData = [
   {
     title: "Builder",
     company: "Cornell Armada",
+    url: "https://armada.build/",
     location: "Ithaca, NY",
     period: "Feb 2026 - Present",
     Logo: ArmadaLogo,
@@ -76,6 +79,7 @@ const experiencesData = [
   {
     title: "Business Analyst",
     company: "Cornell Digital Tech and Innovation (DTI)",
+    url: "https://www.cornelldti.org/",
     location: "Ithaca, NY",
     period: "Nov 2025 - Present",
     Logo: DTILogo,
@@ -112,7 +116,19 @@ const ExperienceCard = ({ experience, index }) => {
           <div className="flex flex-wrap gap-4 font-body text-sm text-ink-accent mb-1.5">
             <span className="flex items-center gap-1.5">
               <Briefcase className="w-3.5 h-3.5" />
-              {experience.company}
+              {experience.url ? (
+                <a
+                  href={experience.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 hover:text-highlight transition-colors"
+                >
+                  {experience.company}
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              ) : (
+                experience.company
+              )}
             </span>
             <span className="flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5" />

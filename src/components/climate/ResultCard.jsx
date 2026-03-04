@@ -21,6 +21,9 @@ export default function ResultCard({ result, rank, onView }) {
     return `$${amount}`;
   };
 
+  const websiteUrl = startup.website_url ||
+    `https://www.google.com/search?q=${encodeURIComponent(startup.name + ' climate startup')}`;
+
   const handleClick = () => {
     if (onView) {
       onView(startup.id, rank);
@@ -50,21 +53,17 @@ export default function ResultCard({ result, rank, onView }) {
         </h3>
         
         {/* Website Link */}
-        {startup.website_url && (
-          <a
-            href={startup.website_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={handleClick}
-            className="
-              flex-shrink-0 text-highlight hover:text-ink
-              transition-colors
-            "
-            aria-label={`Visit ${startup.name} website`}
-          >
-            <ExternalLink className="w-5 h-5 md:w-6 md:h-6" />
-          </a>
-        )}
+        <a
+          href={websiteUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={handleClick}
+          className="flex-shrink-0 text-highlight hover:text-ink transition-colors"
+          aria-label={`Visit ${startup.name} website`}
+          title={startup.website_url ? startup.name : `Search ${startup.name}`}
+        >
+          <ExternalLink className="w-5 h-5 md:w-6 md:h-6" />
+        </a>
       </div>
 
       {/* Description */}
