@@ -31,7 +31,7 @@ export default function ResultsList({ results, searchInfo, onViewStartup }) {
       <div className="space-y-6">
         {results.map((result, index) => (
           <ResultCard
-            key={result.startup.id}
+            key={result.startup.id ?? `${result.startup.name}-${index}`}
             result={result}
             rank={index}
             onView={onViewStartup}
