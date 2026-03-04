@@ -5,14 +5,23 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))
 
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import async_session_maker
 from app.models.trail import Trail
 
 
 async def import_trails_from_csv(csv_path: str):
-    """Import trails from CSV file into database."""
+    """Import trails from CSV — skips if trails already exist to avoid duplicates on restart."""
     async with async_session_maker() as session:
+        result = await session.execute(select(func.count()).select_from(Trail))
+        existing = result.scalar()
+        if existing > 0:
+            print(f"Database already has {existing} trails. Skipping import.")
+            return
+
+        print(f"Importing trails from {csv_path}...")
+        count = 0
         with open(csv_path, 'r', encoding='utf-8') as csvfile:
             reader = csv.DictReader(csvfile)
 
@@ -45,12 +54,11 @@ async def import_trails_from_csv(csv_path: str):
                     required_gear=[],
                     photos=[]
                 )
-
                 session.add(trail)
-                print(f"Added trail: {trail.name}")
+                count += 1
 
-            await session.commit()
-            print(f"\nSuccessfully imported trails from {csv_path}")
+        await session.commit()
+        print(f"Successfully imported {count} trails.")
 
 
 if __name__ == "__main__":

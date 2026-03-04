@@ -9,7 +9,9 @@
       "Bash(npm install:*)",
       "Bash(test:*)",
       "Bash(xargs grep:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(xargs cat:*)",
+      "Bash(cat:*)"
     ]
   }
 }
