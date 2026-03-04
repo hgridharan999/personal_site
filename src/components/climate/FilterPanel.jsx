@@ -3,7 +3,7 @@
  * Vertical filters and search options
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Filter, X } from 'lucide-react';
 
 const VERTICALS = [
@@ -26,22 +26,41 @@ export default function FilterPanel({ filters, onFiltersChange }) {
   const [yearMin, setYearMin] = useState(filters.founded_year_min || '');
   const [yearMax, setYearMax] = useState(filters.founded_year_max || '');
 
-  useEffect(() => {
+  const handleVerticalClick = (verticalId) => {
+    const next = selectedVertical === verticalId ? null : verticalId;
+    setSelectedVertical(next);
     onFiltersChange({
-      vertical_filter: selectedVertical,
+      vertical_filter: next,
       founded_year_min: yearMin ? parseInt(yearMin) : undefined,
       founded_year_max: yearMax ? parseInt(yearMax) : undefined,
     });
-  }, [selectedVertical, yearMin, yearMax]);
+  };
 
-  const handleVerticalClick = (verticalId) => {
-    setSelectedVertical(selectedVertical === verticalId ? null : verticalId);
+  const handleYearMinChange = (e) => {
+    const val = e.target.value;
+    setYearMin(val);
+    onFiltersChange({
+      vertical_filter: selectedVertical,
+      founded_year_min: val ? parseInt(val) : undefined,
+      founded_year_max: yearMax ? parseInt(yearMax) : undefined,
+    });
+  };
+
+  const handleYearMaxChange = (e) => {
+    const val = e.target.value;
+    setYearMax(val);
+    onFiltersChange({
+      vertical_filter: selectedVertical,
+      founded_year_min: yearMin ? parseInt(yearMin) : undefined,
+      founded_year_max: val ? parseInt(val) : undefined,
+    });
   };
 
   const handleClearFilters = () => {
     setSelectedVertical(null);
     setYearMin('');
     setYearMax('');
+    onFiltersChange({ vertical_filter: null, founded_year_min: undefined, founded_year_max: undefined });
   };
 
   const hasActiveFilters = selectedVertical || yearMin || yearMax;
@@ -111,7 +130,7 @@ export default function FilterPanel({ filters, onFiltersChange }) {
             <input
               type="number"
               value={yearMin}
-              onChange={(e) => setYearMin(e.target.value)}
+              onChange={handleYearMinChange}
               placeholder="2000"
               min="1900"
               max={new Date().getFullYear()}
@@ -132,7 +151,7 @@ export default function FilterPanel({ filters, onFiltersChange }) {
             <input
               type="number"
               value={yearMax}
-              onChange={(e) => setYearMax(e.target.value)}
+              onChange={handleYearMaxChange}
               placeholder={new Date().getFullYear().toString()}
               min="1900"
               max={new Date().getFullYear()}
@@ -149,10 +168,6 @@ export default function FilterPanel({ filters, onFiltersChange }) {
         </div>
       </div>
 
-      {/* Info Text */}
-      <p className="text-xs font-notes text-fade mt-4">
-        Filters apply to your next search
-      </p>
     </div>
   );
 }

@@ -3,15 +3,16 @@
  * Hand-drawn journal style search input with debounced searching
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Search, X } from 'lucide-react';
 
-export default function SearchBar({ onSearch, loading }) {
+export default function SearchBar({ onSearch, onQueryChange, loading }) {
   const [query, setQuery] = useState('');
 
   const handleClear = () => {
     setQuery('');
     onSearch('');
+    onQueryChange?.('');
   };
 
   const handleSubmit = (e) => {
@@ -27,7 +28,7 @@ export default function SearchBar({ onSearch, loading }) {
         <input
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => { setQuery(e.target.value); onQueryChange?.(e.target.value); }}
           placeholder="Search climate tech startups..."
           className="
             w-full px-4 py-3 pl-12 pr-12

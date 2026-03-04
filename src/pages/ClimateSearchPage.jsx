@@ -43,6 +43,10 @@ export default function ClimateSearchPage() {
     }
   };
 
+  const handleQueryChange = (rawQuery) => {
+    setQuery(rawQuery);
+  };
+
   const handleViewStartup = (startupId, rank) => {
     if (query) logClick(query, startupId, rank, 'click');
   };
@@ -77,7 +81,7 @@ export default function ClimateSearchPage() {
         {/* Center — search + results */}
         <main className="lg:col-span-6">
           <div className="mb-6">
-            <SearchBar onSearch={handleSearch} loading={loading} />
+            <SearchBar onSearch={handleSearch} onQueryChange={handleQueryChange} loading={loading} />
           </div>
 
           {/* Mobile filters */}
