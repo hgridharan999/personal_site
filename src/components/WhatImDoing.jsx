@@ -48,7 +48,46 @@ const DTILogo = () => (
   </svg>
 );
 
+const LoadstoneLogo = () => (
+  <img src="/loadstonelabs_logo.jpg" alt="Loadstone Labs" style={{ width: 44, height: 44 }} className="object-contain rounded" />
+);
+
+const WidgetFactoryLogo = () => (
+  <img src="/widgetfactory_logo.jpg" alt="Widget Factory" style={{ width: 44, height: 44 }} className="object-contain rounded" />
+);
+
+const Ship1Logo = () => (
+  <img src="/shipaccelerator_logo.jpg" alt="SH1P" style={{ width: 44, height: 44 }} className="object-contain rounded" />
+);
+
 const experiencesData = [
+  {
+    title: "Co-Founder",
+    company: "Loadstone Labs",
+    url: "https://loadstonelabs.com",
+    location: "Ithaca, NY",
+    period: "Feb 2026 - Present",
+    Logo: LoadstoneLogo,
+    description: "Building scale-agnostic drone synchronization — infra, deeptech.",
+  },
+  {
+    title: "Problem Design Engineer",
+    company: "Widget Factory",
+    url: "https://widgetfactory.ai/",
+    location: "Remote",
+    period: "Mar 2026 - Present",
+    Logo: WidgetFactoryLogo,
+    description: "Part-time. Designing and implementing solutions at the intersection of product and engineering.",
+  },
+  {
+    title: "Growth",
+    company: "SH1P",
+    url: "https://www.ship-studio.co/",
+    location: "Remote",
+    period: "Mar 2026 - Present",
+    Logo: Ship1Logo,
+    description: "Driving growth initiatives and product-market fit acceleration.",
+  },
   {
     title: "AI/Strategy Consultant (Contract)",
     company: "Adobe",
