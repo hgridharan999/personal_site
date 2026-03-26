@@ -48,19 +48,17 @@ const DTILogo = () => (
   </svg>
 );
 
-const LettermarkLogo = ({ text, bg = "#111827", fg = "#ffffff", size = 44 }) => (
-  <div
-    aria-hidden="true"
-    className="rounded-md grid place-items-center font-bold"
-    style={{ width: size, height: size, backgroundColor: bg, color: fg, fontSize: text.length > 2 ? 12 : 14, letterSpacing: 0.5 }}
-  >
-    {text}
-  </div>
+const LoadstoneLogo = () => (
+  <img src="/loadstonelabs_logo.jpg" alt="Loadstone Labs" style={{ width: 44, height: 44 }} className="object-contain rounded" />
 );
 
-const LoadstoneLogo = () => <LettermarkLogo text="LS" bg="#0f172a" />;
-const WidgetFactoryLogo = () => <LettermarkLogo text="WF" bg="#1d4ed8" />;
-const Ship1Logo = () => <LettermarkLogo text="SH1P" bg="#0f766e" />;
+const WidgetFactoryLogo = () => (
+  <img src="/widgetfactory_logo.jpg" alt="Widget Factory" style={{ width: 44, height: 44 }} className="object-contain rounded" />
+);
+
+const Ship1Logo = () => (
+  <img src="/shipaccelerator_logo.jpg" alt="SH1P" style={{ width: 44, height: 44 }} className="object-contain rounded" />
+);
 
 const experiencesData = [
   {
