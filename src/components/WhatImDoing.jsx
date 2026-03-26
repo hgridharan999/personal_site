@@ -48,27 +48,29 @@ const DTILogo = () => (
   </svg>
 );
 
-const LoadstoneLogo = () => (
-  <img src="/loadstonelabs_logo.jpg" alt="Loadstone Labs" style={{ width: 44, height: 44 }} className="object-contain rounded" />
+const LettermarkLogo = ({ text, bg = "#111827", fg = "#ffffff", size = 44 }) => (
+  <div
+    aria-hidden="true"
+    className="rounded-md grid place-items-center font-bold"
+    style={{ width: size, height: size, backgroundColor: bg, color: fg, fontSize: text.length > 2 ? 12 : 14, letterSpacing: 0.5 }}
+  >
+    {text}
+  </div>
 );
 
-const WidgetFactoryLogo = () => (
-  <img src="/widgetfactory_logo.jpg" alt="Widget Factory" style={{ width: 44, height: 44 }} className="object-contain rounded" />
-);
-
-const Ship1Logo = () => (
-  <img src="/shipaccelerator_logo.jpg" alt="SH1P" style={{ width: 44, height: 44 }} className="object-contain rounded" />
-);
+const LoadstoneLogo = () => <LettermarkLogo text="LS" bg="#0f172a" />;
+const WidgetFactoryLogo = () => <LettermarkLogo text="WF" bg="#1d4ed8" />;
+const Ship1Logo = () => <LettermarkLogo text="SH1P" bg="#0f766e" />;
 
 const experiencesData = [
   {
-    title: "Co-Founder",
-    company: "Loadstone Labs",
-    url: "https://loadstonelabs.com",
-    location: "Ithaca, NY",
-    period: "Feb 2026 - Present",
-    Logo: LoadstoneLogo,
-    description: "Building scale-agnostic drone synchronization — infra, deeptech.",
+    title: "AI/Strategy Consultant (Contract)",
+    company: "Adobe",
+    url: "https://www.adobe.com/",
+    location: "Remote",
+    period: "Jan 2026 - Present",
+    Logo: AdobeLogo,
+    description: "Advised IT leadership on AI strategy tied to $1M+ enterprise contract decisions.",
   },
   {
     title: "Problem Design Engineer",
@@ -77,25 +79,16 @@ const experiencesData = [
     location: "Remote",
     period: "Mar 2026 - Present",
     Logo: WidgetFactoryLogo,
-    description: "Part-time. Designing and implementing solutions at the intersection of product and engineering.",
+    description: "Designed frontier evaluation tasks that sharpened model behavior in production environments.",
   },
   {
-    title: "Growth",
-    company: "SH1P",
-    url: "https://www.ship-studio.co/",
-    location: "Remote",
-    period: "Mar 2026 - Present",
-    Logo: Ship1Logo,
-    description: "Driving growth initiatives and product-market fit acceleration.",
-  },
-  {
-    title: "AI/Strategy Consultant (Contract)",
-    company: "Adobe",
-    url: "https://www.adobe.com/",
-    location: "Remote",
-    period: "Jan 2025 - Present",
-    Logo: AdobeLogo,
-    description: "Competitive analysis of AI tools across model training, performance, and market adoption. Developing strategic briefs on model-optimized architecture for board presentation and IT leadership.",
+    title: "Builder",
+    company: "Cornell Armada",
+    url: "https://armada.build/",
+    location: "Ithaca, NY",
+    period: "Jan 2026 - Present",
+    Logo: ArmadaLogo,
+    description: "Partnered with founders and VCs to ship ambitious AI and full-stack builds from idea to MVP.",
   },
   {
     title: "Operations Lead",
@@ -104,16 +97,7 @@ const experiencesData = [
     location: "Ithaca, NY",
     period: "Sep 2025 - Present",
     Logo: CornellECLogo,
-    description: "Built ML apps, full-stack platforms, and geospatial tools. Organized YC speaker series (150+ attendees), partnered with unicorns and venture-backed startups, generated 150k+ views on social media.",
-  },
-  {
-    title: "Builder",
-    company: "Cornell Armada",
-    url: "https://armada.build/",
-    location: "Ithaca, NY",
-    period: "Feb 2026 - Present",
-    Logo: ArmadaLogo,
-    description: "Cornell's most hands-on founder community — invite-only, YC-advised, and built around shipping over talking. Weekly sprint cycles with full accountability; same cohort produced 70% of Cornell's YC S25 admits.",
+    description: "Ran YC-facing events for 150+ attendees and drove 200k+ views across growth channels.",
   },
   {
     title: "Business Analyst",
@@ -122,7 +106,25 @@ const experiencesData = [
     location: "Ithaca, NY",
     period: "Nov 2025 - Present",
     Logo: DTILogo,
-    description: "Content strategy and market analysis for products serving 15,000+ Cornell students. Organized team events and fundraisers for 70+ members.",
+    description: "Led market and GTM analysis for student products serving 15,000+ Cornell users.",
+  },
+  {
+    title: "Co-Founder",
+    company: "Loadstone Labs",
+    url: "https://loadstonelabs.com",
+    location: "Ithaca, NY",
+    period: "Feb 2026 - Present",
+    Logo: LoadstoneLogo,
+    description: "Co-building autonomous drone synchronization infrastructure with deeptech ambition.",
+  },
+  {
+    title: "Growth",
+    company: "SH1P",
+    url: "https://www.ship-studio.co/",
+    location: "Remote",
+    period: "Mar 2026 - Present",
+    Logo: Ship1Logo,
+    description: "Accelerating founder growth loops and early product-market fit experiments.",
   },
 ];
 
