@@ -22,7 +22,7 @@ export default function BlogPostPage() {
       <div className="h-screen bg-paper flex flex-col items-center justify-center gap-4">
         <p className="font-handwritten text-3xl text-ink">Post not found.</p>
         <Link to="/blog" className="font-body text-sm text-ink-accent hover:text-ink transition-colors">
-          ← back to notes
+          ← back to blogs + posts
         </Link>
       </div>
     );
@@ -50,7 +50,7 @@ export default function BlogPostPage() {
           className="inline-flex items-center gap-2 font-body text-sm text-fade hover:text-ink-accent transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          notes
+          blogs + posts
         </Link>
       </motion.div>
 

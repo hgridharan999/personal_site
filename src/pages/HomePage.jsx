@@ -6,7 +6,7 @@ const navLinks = [
   { label: 'Projects', to: '/projects' },
   { label: 'Work',     to: '/work'     },
   { label: 'Climbing', to: '/climbing' },
-  { label: 'Blog',     to: '/blog'     },
+  { label: 'Blogs + Posts', to: '/blog' },
 ];
 
 const socialLinks = [
@@ -144,7 +144,7 @@ export default function HomePage() {
               </a>
             </motion.div>
 
-            {/* Blog */}
+            {/* Blogs + Posts */}
             <motion.div
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
@@ -154,7 +154,7 @@ export default function HomePage() {
                 to="/blog"
                 className="font-handwritten text-2xl lg:text-3xl text-ink hover:text-highlight transition-colors inline-block py-0.5"
               >
-                Blog
+                Blogs + Posts
               </Link>
             </motion.div>
             {/* Resume */}
