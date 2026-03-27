@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getLocalFeedItems } from '../blog/index.js';
 import { getRemoteFeedItems } from '../utils/postsApi';
+import { staticLinkedInPosts } from '../data/staticLinkedInPosts.js';
 
 function sortByDateDesc(items) {
   return [...items].sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
@@ -40,7 +41,7 @@ export function useUnifiedFeed() {
         }),
       ]);
 
-      const merged = sortByDateDesc(dedupe([...localItems, ...remoteItems]));
+      const merged = sortByDateDesc(dedupe([...localItems, ...remoteItems, ...staticLinkedInPosts]));
       setItems(merged);
     } catch (err) {
       console.error('Unified feed error:', err);

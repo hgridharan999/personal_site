@@ -152,6 +152,15 @@ export default function BlogPage() {
 
                       <p className="font-body text-sm text-ink-accent leading-relaxed mb-2">{item.excerpt}</p>
 
+                      {item.imageUrl && (
+                        <img
+                          src={item.imageUrl}
+                          alt=""
+                          className="w-full max-w-sm rounded-md border border-line object-cover mb-2"
+                          style={{ maxHeight: '220px' }}
+                        />
+                      )}
+
                       <span className={`inline-flex px-2 py-0.5 rounded-full font-notes text-xs ${sourceStyles[item.source] || sourceStyles.blog}`}>
                         {item.sourceLabel || item.source}
                       </span>

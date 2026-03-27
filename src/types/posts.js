@@ -9,6 +9,7 @@
  * @property {string} displayDate
  * @property {string|null} internalSlug
  * @property {string|null} externalUrl
+ * @property {string|null} [imageUrl]
  */
 
 export {};
