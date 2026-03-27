@@ -16,17 +16,18 @@ export default function ChatWidget() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
+  const msgId = useRef(2); // 0 used by OPENING_MESSAGE id logic, start at 2
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading]);
+  }, [messages]);
 
   async function sendMessage(e) {
     e?.preventDefault();
     const text = input.trim();
     if (!text || isLoading) return;
 
-    const userMsg = { id: Date.now(), role: 'user', content: text };
+    const userMsg = { id: msgId.current++, role: 'user', content: text };
     const nextMessages = [...messages, userMsg];
 
     setMessages(nextMessages);
@@ -42,24 +43,19 @@ export default function ChatWidget() {
         }),
       });
 
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+
       const data = await res.json();
       const reply = data.content || "hmm, something went sideways. try again?";
 
-      setMessages(prev => [...prev, { id: Date.now() + 1, role: 'assistant', content: reply }]);
+      setMessages(prev => [...prev, { id: msgId.current++, role: 'assistant', content: reply }]);
     } catch {
       setMessages(prev => [
         ...prev,
-        { id: Date.now() + 1, role: 'assistant', content: "oops, lost connection for a sec. try again!" },
+        { id: msgId.current++, role: 'assistant', content: "oops, lost connection for a sec. try again!" },
       ]);
     } finally {
       setIsLoading(false);
-    }
-  }
-
-  function handleKeyDown(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
     }
   }
 
@@ -69,6 +65,8 @@ export default function ChatWidget() {
         {isOpen && (
           <motion.div
             key="chat-panel"
+            role="dialog"
+            aria-label="Chat with Axle"
             initial={{ opacity: 0, y: 16, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.95 }}
@@ -122,26 +120,25 @@ export default function ChatWidget() {
             </div>
 
             {/* Input bar */}
-            <div className="flex items-center gap-2 px-4 py-3 border-t border-line flex-shrink-0">
+            <form onSubmit={sendMessage} className="flex items-center gap-2 px-4 py-3 border-t border-line flex-shrink-0">
               <input
                 type="text"
                 value={input}
                 onChange={e => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
                 placeholder="ask me anything..."
                 disabled={isLoading}
                 className="flex-1 bg-transparent text-sm font-notes text-ink outline-none placeholder-fade disabled:opacity-50"
                 aria-label="Chat input"
               />
               <button
-                onClick={sendMessage}
+                type="submit"
                 disabled={isLoading || !input.trim()}
                 className="text-ink-accent hover:text-highlight transition-colors disabled:opacity-30 p-0.5"
                 aria-label="Send message"
               >
                 <Send size={15} />
               </button>
-            </div>
+            </form>
           </motion.div>
         )}
       </AnimatePresence>
