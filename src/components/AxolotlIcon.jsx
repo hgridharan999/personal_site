@@ -24,26 +24,28 @@ export default function AxolotlIcon({ size = 40, isOpen = false, isThinking = fa
       <circle cx="20" cy="18" r="9" fill="#F5DDD0" stroke="#2C2C2C" strokeWidth="1.5" />
 
       {/* Left gill group — anchor at (11, 18), paths in local coords */}
-      <motion.g
-        transform="translate(11, 18)"
-        animate={{ rotate: [-gillDegrees, gillDegrees, -gillDegrees] }}
-        transition={{ repeat: Infinity, duration: gillDuration, ease: 'easeInOut' }}
-      >
-        <path d="M0 -4 Q-5 -9 -3 -15" stroke="#C67B5C" strokeWidth="2" strokeLinecap="round" />
-        <path d="M0 0 Q-7 -4 -7 -9" stroke="#C67B5C" strokeWidth="2" strokeLinecap="round" />
-        <path d="M0 4 Q-6 2 -7 -3" stroke="#C67B5C" strokeWidth="2" strokeLinecap="round" />
-      </motion.g>
+      <g transform="translate(11, 18)">
+        <motion.g
+          animate={{ rotate: [-gillDegrees, gillDegrees, -gillDegrees] }}
+          transition={{ repeat: Infinity, duration: gillDuration, ease: 'easeInOut' }}
+        >
+          <path d="M0 -4 Q-5 -9 -3 -15" stroke="#C67B5C" strokeWidth="2" strokeLinecap="round" />
+          <path d="M0 0 Q-7 -4 -7 -9" stroke="#C67B5C" strokeWidth="2" strokeLinecap="round" />
+          <path d="M0 4 Q-6 2 -7 -3" stroke="#C67B5C" strokeWidth="2" strokeLinecap="round" />
+        </motion.g>
+      </g>
 
       {/* Right gill group — anchor at (29, 18), paths in local coords */}
-      <motion.g
-        transform="translate(29, 18)"
-        animate={{ rotate: [gillDegrees, -gillDegrees, gillDegrees] }}
-        transition={{ repeat: Infinity, duration: gillDuration, ease: 'easeInOut' }}
-      >
-        <path d="M0 -4 Q5 -9 3 -15" stroke="#C67B5C" strokeWidth="2" strokeLinecap="round" />
-        <path d="M0 0 Q7 -4 7 -9" stroke="#C67B5C" strokeWidth="2" strokeLinecap="round" />
-        <path d="M0 4 Q6 2 7 -3" stroke="#C67B5C" strokeWidth="2" strokeLinecap="round" />
-      </motion.g>
+      <g transform="translate(29, 18)">
+        <motion.g
+          animate={{ rotate: [gillDegrees, -gillDegrees, gillDegrees] }}
+          transition={{ repeat: Infinity, duration: gillDuration, ease: 'easeInOut' }}
+        >
+          <path d="M0 -4 Q5 -9 3 -15" stroke="#C67B5C" strokeWidth="2" strokeLinecap="round" />
+          <path d="M0 0 Q7 -4 7 -9" stroke="#C67B5C" strokeWidth="2" strokeLinecap="round" />
+          <path d="M0 4 Q6 2 7 -3" stroke="#C67B5C" strokeWidth="2" strokeLinecap="round" />
+        </motion.g>
+      </g>
 
       {/* Eyes */}
       <circle cx="17" cy="17" r="1.5" fill="#2C2C2C" />
