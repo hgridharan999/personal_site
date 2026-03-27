@@ -16,7 +16,13 @@
       "Bash(python3 -c \"import base64, hashlib; print\\(base64.urlsafe_b64encode\\(hashlib.sha256\\(b'portfolio-backend-dev-key'\\).digest\\(\\)\\).decode\\(\\)\\)\")",
       "Bash(pip show:*)",
       "Bash(cd \"C:/Users/hgrid/journal_portfolio/portfolio_backend\" && pip install -r requirements.txt --quiet 2>&1 | tail -5)",
-      "Bash(cd \"C:/Users/hgrid/journal_portfolio/portfolio_backend\" && python -c \"from app.main import app; print\\('OK'\\)\" 2>&1)"
+      "Bash(cd \"C:/Users/hgrid/journal_portfolio/portfolio_backend\" && python -c \"from app.main import app; print\\('OK'\\)\" 2>&1)",
+      "Bash(find /c/Users/hgrid/journal_portfolio/src -name *.css)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git:*)",
+      "Bash(find c:Usershgridjournal_portfoliosrc -type f -name *.jsx -o -name *.js -o -name *.tsx -o -name *.ts)",
+      "Bash(grep -l \"chat\\\\|bot\\\\|ChatWidget\\\\|AxolotlIcon\" \"c:\\\\Users\\\\hgrid\\\\journal_portfolio\\\\src\\\\pages\"/*.jsx)"
     ]
   }
 }

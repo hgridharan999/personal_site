@@ -1,58 +1,113 @@
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, useAnimation } from 'framer-motion';
 
-export default function AxolotlIcon({ size = 40, isOpen = false, isThinking = false }) {
-  const gillDuration = isThinking ? 0.6 : isOpen ? 1.2 : 2.5;
-  const gillDegrees = isThinking ? 14 : isOpen ? 10 : 6;
+export default function AxolotlIcon({ size = 44, isOpen = false, isThinking = false }) {
+  const [blinkVisible, setBlinkVisible] = useState(false);
+  const controls = useAnimation();
+
+  // Random blinking overlay effect
+  useEffect(() => {
+    let blinkTimeout, closeTimeout;
+    function scheduleBlink() {
+      blinkTimeout = setTimeout(() => {
+        setBlinkVisible(true);
+        closeTimeout = setTimeout(() => {
+          setBlinkVisible(false);
+          scheduleBlink();
+        }, 120);
+      }, 3000 + Math.random() * 2500);
+    }
+    scheduleBlink();
+    return () => { clearTimeout(blinkTimeout); clearTimeout(closeTimeout); };
+  }, []);
+
+  // Thinking: gentle side-to-side head tilt
+  useEffect(() => {
+    if (isThinking) {
+      controls.start({
+        rotate: [-3, 3, -3],
+        transition: { repeat: Infinity, duration: 0.7, ease: 'easeInOut' },
+      });
+    } else {
+      controls.start({ rotate: 0, transition: { duration: 0.3 } });
+    }
+  }, [isThinking, controls]);
 
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 40 40"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
+    <div
+      style={{ width: size, height: size, position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
     >
-      {/* Body */}
-      <ellipse cx="20" cy="31" rx="10" ry="7" fill="#F5DDD0" stroke="#2C2C2C" strokeWidth="1.5" />
-
-      {/* Front legs */}
-      <ellipse cx="12" cy="36" rx="3.5" ry="2" fill="#F5DDD0" stroke="#2C2C2C" strokeWidth="1.5" />
-      <ellipse cx="28" cy="36" rx="3.5" ry="2" fill="#F5DDD0" stroke="#2C2C2C" strokeWidth="1.5" />
-
-      {/* Head */}
-      <circle cx="20" cy="18" r="9" fill="#F5DDD0" stroke="#2C2C2C" strokeWidth="1.5" />
-
-      {/* Left gill group — anchor at (11, 18), paths in local coords */}
-      <g transform="translate(11, 18)">
-        <motion.g
-          animate={{ rotate: [-gillDegrees, gillDegrees, -gillDegrees] }}
-          transition={{ repeat: Infinity, duration: gillDuration, ease: 'easeInOut' }}
+      {/* Idle gentle float */}
+      <motion.div
+        animate={isOpen || isThinking ? {} : {
+          y: [0, -2, 0],
+        }}
+        transition={{
+          repeat: Infinity,
+          duration: 2.8,
+          ease: 'easeInOut',
+        }}
+        style={{ width: '100%', height: '100%', position: 'relative' }}
+      >
+        {/* Head tilt when thinking */}
+        <motion.div
+          animate={controls}
+          style={{ width: '100%', height: '100%', transformOrigin: 'center bottom' }}
         >
-          <path d="M0 -4 Q-5 -9 -3 -15" stroke="#C67B5C" strokeWidth="2" strokeLinecap="round" />
-          <path d="M0 0 Q-7 -4 -7 -9" stroke="#C67B5C" strokeWidth="2" strokeLinecap="round" />
-          <path d="M0 4 Q-6 2 -7 -3" stroke="#C67B5C" strokeWidth="2" strokeLinecap="round" />
-        </motion.g>
-      </g>
+          <img
+            src="/gizmo.png"
+            alt="Gizmo the goat"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              display: 'block',
+              // Slightly squint when thinking
+              filter: isThinking ? 'brightness(0.95) saturate(0.9)' : 'none',
+              transition: 'filter 0.3s ease',
+            }}
+            draggable={false}
+          />
 
-      {/* Right gill group — anchor at (29, 18), paths in local coords */}
-      <g transform="translate(29, 18)">
-        <motion.g
-          animate={{ rotate: [gillDegrees, -gillDegrees, gillDegrees] }}
-          transition={{ repeat: Infinity, duration: gillDuration, ease: 'easeInOut' }}
+          {/* Blink overlay — two white bars that cover the eyes */}
+          {blinkVisible && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '34%',
+                left: '20%',
+                right: '20%',
+                height: '8%',
+                background: '#F5F3EE',
+                borderRadius: '50%',
+                pointerEvents: 'none',
+              }}
+            />
+          )}
+        </motion.div>
+      </motion.div>
+
+      {/* Thinking dots — appear above the icon */}
+      {isThinking && (
+        <div
+          style={{
+            position: 'absolute',
+            top: -10,
+            right: -2,
+            display: 'flex',
+            gap: 2,
+          }}
         >
-          <path d="M0 -4 Q5 -9 3 -15" stroke="#C67B5C" strokeWidth="2" strokeLinecap="round" />
-          <path d="M0 0 Q7 -4 7 -9" stroke="#C67B5C" strokeWidth="2" strokeLinecap="round" />
-          <path d="M0 4 Q6 2 7 -3" stroke="#C67B5C" strokeWidth="2" strokeLinecap="round" />
-        </motion.g>
-      </g>
-
-      {/* Eyes */}
-      <circle cx="17" cy="17" r="1.5" fill="#2C2C2C" />
-      <circle cx="23" cy="17" r="1.5" fill="#2C2C2C" />
-
-      {/* Smile */}
-      <path d="M17 21 Q20 23.5 23 21" stroke="#2C2C2C" strokeWidth="1.5" strokeLinecap="round" fill="none" />
-    </svg>
+          {[0, 0.2, 0.4].map((delay, i) => (
+            <motion.span
+              key={i}
+              style={{ width: 3, height: 3, borderRadius: '50%', background: '#C67B5C', display: 'block' }}
+              animate={{ y: [0, -4, 0], opacity: [0.5, 1, 0.5] }}
+              transition={{ repeat: Infinity, duration: 0.7, delay, ease: 'easeInOut' }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
