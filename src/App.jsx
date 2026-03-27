@@ -7,6 +7,7 @@ import ProjectsPage from './pages/ProjectsPage';
 import WorkPage from './pages/WorkPage';
 import BlogPage from './pages/BlogPage';
 import BlogPostPage from './pages/BlogPostPage';
+import ChatWidget from './components/ChatWidget';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path="/trailsense" element={<TrailSensePage />} />
         <Route path="/climate-search" element={<ClimateSearchPage />} />
       </Routes>
+      <ChatWidget />
     </Router>
   );
 }
