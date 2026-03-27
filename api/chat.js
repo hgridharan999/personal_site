@@ -11,9 +11,13 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid request: messages must be an array' });
   }
 
+  const ALLOWED_ROLES = new Set(['user', 'assistant']);
   const apiMessages = [
     { role: 'system', content: SYSTEM_PROMPT },
-    ...messages.slice(-10).map(({ role, content }) => ({ role, content })),
+    ...messages
+      .slice(-10)
+      .filter(({ role }) => ALLOWED_ROLES.has(role))
+      .map(({ role, content }) => ({ role, content: String(content).slice(0, 2000) })),
   ];
 
   try {
