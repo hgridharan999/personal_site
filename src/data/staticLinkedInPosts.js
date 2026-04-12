@@ -4,6 +4,18 @@
  */
 export const staticLinkedInPosts = [
   {
+    id: 'linkedin:static-cory-levy-day-1',
+    source: 'linkedin',
+    sourceLabel: 'LinkedIn',
+    title: 'Just met Mark Zuckerberg.',
+    excerpt:
+      "Not really, but for a second, I had you. The closest I could get was his lookalike, Cory Levy, founder of Z Fellows. Cornell Entrepreneurship Club brought him in to talk about product ideation and building a startup incubator from scratch. A great speaker in a great room. But here's what actually stuck with me. Mid-talk, the guy next to me was prompting Claude: 'Give me the best questions to ask Cory Levy'. It's the same trick I pulled on you. A little sleight of hand. Technically not a lie, but not exactly honest either. AI is quietly changing how we show up. We're constantly presenting curated, optimized versions of ourselves: the right question, the right words, the right impression, while the originality becomes obscured. Authenticity is becoming a performance of authenticity. That's why, starting today, I'm committing to posting every day: my unfiltered, unoptimized thoughts out loud. This is Day 1/100. Follow for more. #Entrepreneurship #Startups #LinkedIn Alana Sung Krishna Naresh Nicolas Dunlap",
+    publishedAt: '2026-04-11T00:00:00Z',
+    displayDate: '2026-04-11',
+    internalSlug: null,
+    externalUrl: 'https://www.linkedin.com/in/harisgridharan',
+  },
+  {
     id: 'linkedin:static-have-a-story',
     source: 'linkedin',
     sourceLabel: 'LinkedIn',
