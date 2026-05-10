@@ -172,7 +172,7 @@ export default function HomePage() {
           <img
             src="/profile.jpg"
             alt="Hari"
-            className="w-40 h-40 sm:w-48 sm:h-48 lg:w-64 lg:h-64 object-cover rounded-xl border border-line shadow-page"
+            className="profile-image w-40 h-40 sm:w-48 sm:h-48 lg:w-64 lg:h-64 object-cover rounded-xl border border-line shadow-page"
           />
         </motion.div>
 

@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Tunable mountain/background variables for quick framing adjustments */
+:root {
+  --mountain-opacity: 1;
+  --mountain-size: 100% auto;
+  --mountain-pos-y: 72%;
+}
+
 /* Paper texture and base styles */
 body {
   margin: 0;
@@ -19,9 +26,25 @@ body {
   line-height: 1.55;
 }
 
+/* Ensure root content stacks above background */
 #root {
   position: relative;
   z-index: 1;
+}
+
+/* Ensure all in-root images and key elements render above the mountain background */
+#root img,
+#root picture,
+#root video,
+.profile-image {
+  position: relative;
+  z-index: 3;
+}
+
+/* fallback: ensure any element with .above-bg sits above background */
+.above-bg {
+  position: relative;
+  z-index: 3;
 }
 
 /* Subtle paper texture */
@@ -35,7 +58,26 @@ body::before {
   background-image:
     url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.018'/%3E%3C/svg%3E");
   pointer-events: none;
-  z-index: 0;
+  z-index: -2;
+}
+
+/* Fixed mountain + accent background for consistent positioning across pages */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  /* left-tree accent + mountain image */
+  background-image:
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200"><g fill="%232C2C2C" opacity="0.12"><polygon points="20,160 60,80 100,160"/><polygon points="60,140 100,60 140,140"/><polygon points="140,160 180,90 220,160"/></g></svg>'),
+    url('/mountain-bg-clean.png');
+  background-repeat: no-repeat, no-repeat;
+  background-size: 34% auto, var(--mountain-size);
+  /* tree at left-bottom; mountain centered and controlled by variable */
+  background-position: left 6% bottom 6%, center var(--mountain-pos-y);
+  image-rendering: pixelated;
+  opacity: var(--mountain-opacity);
+  pointer-events: none;
+  z-index: -1;
 }
 
 /* Custom cursor only on precise pointers (desktop) */
@@ -76,6 +118,24 @@ body::before {
     transition-duration: 0.01ms !important;
     will-change: auto !important;
   }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --mountain-opacity: 0.95;
+    --mountain-size: 160% auto;
+    --mountain-pos-y: 10%;
+  }
+  body::after {
+    background-size: 220% auto, var(--mountain-size);
+    background-position: left 22% bottom 6%, center var(--mountain-pos-y);
+  }
+}
+
+/* Make the paper surfaces slightly translucent so the mountain shows through.
+   Targets any utility classes that include "bg-paper" (bg-paper, bg-paper-subtle, bg-paper/80, etc.) */
+[class*="bg-paper"] {
+  background-color: rgba(245, 241, 232, 0.68) !important;
 }
 
 /* Custom scrollbar - vertical */
