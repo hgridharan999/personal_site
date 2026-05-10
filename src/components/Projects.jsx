@@ -81,7 +81,7 @@ const ProjectCard = ({ project, index, isFeatured }) => {
   return (
     <motion.div
       ref={ref}
-      className={`border border-line rounded-lg p-4 ${isFeatured ? 'bg-paper-subtle' : ''}`}
+      className={`border border-line rounded-xl p-5 shadow-card ${isFeatured ? 'bg-paper-subtle' : 'bg-paper/80'}`}
       initial={{ opacity: 0, y: 16 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.5, delay: index * 0.08, ease: "easeOut" }}
@@ -96,9 +96,9 @@ const ProjectCard = ({ project, index, isFeatured }) => {
 
         {/* Content column */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-4 mb-1">
+          <div className="flex items-start justify-between gap-4 mb-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-handwritten text-xl font-bold text-ink">{project.title}</h3>
+              <h3 className="font-handwritten text-xl sm:text-2xl font-bold text-ink">{project.title}</h3>
               {project.featured && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-highlight/10 text-highlight text-xs font-body rounded-full">
                   <Star className="w-3 h-3 fill-current" />
@@ -106,12 +106,12 @@ const ProjectCard = ({ project, index, isFeatured }) => {
                 </span>
               )}
             </div>
-            <p className="font-notes text-sm text-fade whitespace-nowrap flex-shrink-0">{project.date}</p>
+            <p className="font-notes text-xs sm:text-sm text-fade whitespace-nowrap flex-shrink-0">{project.date}</p>
           </div>
 
-          <p className="font-body text-sm text-ink leading-relaxed mb-2">{project.description}</p>
+          <p className="font-body text-[15px] text-ink leading-relaxed mb-3">{project.description}</p>
 
-          <p className="font-notes text-xs text-fade mb-2">{project.tech.join(' · ')}</p>
+          <p className="font-notes text-xs text-fade mb-3">{project.tech.join(' · ')}</p>
 
           <div className="flex flex-wrap gap-5 items-center">
             {project.stealth && (
@@ -163,7 +163,7 @@ const Projects = () => {
   const regularProjects = projectsData.filter(p => !p.featured);
 
   return (
-    <section className="py-2 pb-12 max-w-5xl mx-auto w-full px-4">
+    <section className="py-1 pb-12 max-w-5xl mx-auto w-full px-1 sm:px-2">
       {/* Featured Projects */}
       {featuredProjects.length > 0 && (
         <div className="space-y-4 mb-8">

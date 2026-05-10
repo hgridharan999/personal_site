@@ -8,10 +8,11 @@ export default {
     extend: {
       colors: {
         paper: '#F5F1E8',
+        'paper-subtle': '#F1EBDF',
         ink: '#2C2C2C',
         'ink-accent': '#6B7A5C',
         highlight: '#C67B5C',
-        fade: '#8A8A8A',
+        fade: '#6F6F6F',
         line: '#D4CFC4',
         tape: 'rgba(200, 180, 150, 0.3)',
       },
@@ -31,6 +32,7 @@ export default {
       boxShadow: {
         'page': '0 4px 12px rgba(44, 44, 44, 0.08)',
         'page-hover': '0 8px 24px rgba(44, 44, 44, 0.12)',
+        'card': '0 2px 10px rgba(44, 44, 44, 0.06)',
         'photo': '0 2px 8px rgba(44, 44, 44, 0.15)',
         'tape': '0 1px 3px rgba(44, 44, 44, 0.1)',
       },

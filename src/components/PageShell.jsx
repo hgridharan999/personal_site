@@ -4,10 +4,10 @@ import { ArrowLeft } from 'lucide-react';
 
 export default function PageShell({ title, children }) {
   return (
-    <div className="min-h-screen bg-paper flex flex-col items-center px-8 pt-8 pb-6">
-      <div className="max-w-4xl w-full flex flex-col">
+    <div className="min-h-screen bg-paper flex flex-col items-center px-6 sm:px-8 pt-6 sm:pt-8 pb-10">
+      <div className="max-w-5xl w-full flex flex-col">
         <motion.div
-          className="mb-4"
+          className="mb-5"
           initial={{ opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
@@ -22,7 +22,7 @@ export default function PageShell({ title, children }) {
         </motion.div>
 
         <motion.h1
-          className="font-handwritten text-4xl font-bold text-ink mb-6"
+          className="font-handwritten text-4xl sm:text-5xl font-bold text-ink mb-7"
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.5 }}

@@ -134,7 +134,7 @@ const ExperienceCard = ({ experience, index }) => {
   return (
     <motion.div
       ref={ref}
-      className="border-b border-line pb-4 last:border-0"
+      className="border border-line rounded-xl p-4 sm:p-5 bg-paper/80 shadow-card"
       initial={{ opacity: 0, y: 16 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.5, delay: index * 0.08, ease: "easeOut" }}
@@ -147,12 +147,12 @@ const ExperienceCard = ({ experience, index }) => {
 
         {/* Content column */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-baseline justify-between gap-4 mb-1">
-            <h3 className="font-handwritten text-xl font-bold text-ink">{experience.title}</h3>
-            <p className="font-notes text-sm text-fade whitespace-nowrap flex-shrink-0">{experience.period}</p>
+          <div className="flex items-baseline justify-between gap-4 mb-2">
+            <h3 className="font-handwritten text-xl sm:text-2xl font-bold text-ink">{experience.title}</h3>
+            <p className="font-notes text-xs sm:text-sm text-fade whitespace-nowrap flex-shrink-0">{experience.period}</p>
           </div>
 
-          <div className="flex flex-wrap gap-4 font-body text-sm text-ink-accent mb-1.5">
+          <div className="flex flex-wrap gap-4 font-body text-sm text-ink-accent mb-2">
             <span className="flex items-center gap-1.5">
               <Briefcase className="w-3.5 h-3.5" />
               {experience.url ? (
@@ -174,7 +174,7 @@ const ExperienceCard = ({ experience, index }) => {
               {experience.location}
             </span>
           </div>
-          <p className="font-body text-sm text-ink leading-relaxed">{experience.description}</p>
+          <p className="font-body text-[15px] text-ink leading-relaxed">{experience.description}</p>
         </div>
       </div>
     </motion.div>
@@ -183,8 +183,8 @@ const ExperienceCard = ({ experience, index }) => {
 
 const WhatImDoing = () => {
   return (
-    <section id="doing" className="py-2 max-w-3xl mx-auto w-full">
-      <div className="space-y-3">
+    <section id="doing" className="py-1 max-w-4xl mx-auto w-full px-1 sm:px-2">
+      <div className="space-y-4">
         {experiencesData.map((experience, index) => (
           <ExperienceCard key={index} experience={experience} index={index} />
         ))}

@@ -73,14 +73,14 @@ const ImageGallery = ({ hike, onClose }) => {
 
   return (
     <motion.div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/80 backdrop-blur-sm p-6"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/80 backdrop-blur-sm p-3 sm:p-6"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={onClose}
     >
       <motion.div
-        className="relative bg-paper p-8 max-w-4xl w-full max-h-[90vh] overflow-auto shadow-2xl rounded-sm"
+        className="relative bg-paper p-5 sm:p-8 max-w-4xl w-full max-h-[90vh] overflow-auto shadow-2xl rounded-lg"
         initial={{ scale: 0.95, y: 16 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.95, y: 16 }}
@@ -94,9 +94,9 @@ const ImageGallery = ({ hike, onClose }) => {
         </button>
 
         <div className="mb-6">
-          <h2 className="font-handwritten text-4xl font-bold text-ink mb-1">{hike.name}</h2>
-          <p className="font-handwritten text-xl text-ink-accent mb-3">{hike.location}</p>
-          <div className="flex gap-4 font-body text-sm text-fade">
+          <h2 className="font-handwritten text-3xl sm:text-4xl font-bold text-ink mb-1">{hike.name}</h2>
+          <p className="font-handwritten text-lg sm:text-xl text-ink-accent mb-3">{hike.location}</p>
+          <div className="flex flex-wrap gap-3 sm:gap-4 font-body text-sm text-fade">
             <span className="flex items-center gap-1"><ElevationIcon className="w-4 h-4" /> {hike.elevation}</span>
             <span className="flex items-center gap-1"><DistanceIcon className="w-4 h-4" /> {hike.distance}</span>
             <span>{hike.difficulty}</span>
@@ -121,7 +121,7 @@ const ImageGallery = ({ hike, onClose }) => {
         </div>
 
         {hike.photos.length > 0 && (
-          <div className="grid grid-cols-4 gap-2 mb-6">
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-6">
             {hike.photos.map((photo, index) => (
               <button
                 key={index}
@@ -151,17 +151,17 @@ const ImageGallery = ({ hike, onClose }) => {
 const HikeCard = ({ hike, index, onClick }) => {
   return (
     <motion.div
-      className="cursor-pointer group border-b border-line pb-3 last:border-0"
+      className="cursor-pointer group border border-line rounded-xl p-4 bg-paper/80 shadow-card"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: index * 0.06, ease: "easeOut" }}
       onClick={onClick}
     >
-      <div className="flex items-baseline justify-between gap-3 mb-0.5">
-        <h3 className="font-handwritten text-lg font-bold text-ink group-hover:text-ink-accent transition-colors">{hike.name}</h3>
-        <span className="font-notes text-xs text-fade whitespace-nowrap flex-shrink-0">{hike.date}</span>
+      <div className="flex items-baseline justify-between gap-3 mb-1">
+        <h3 className="font-handwritten text-xl font-bold text-ink group-hover:text-ink-accent transition-colors">{hike.name}</h3>
+        <span className="font-notes text-xs sm:text-sm text-fade whitespace-nowrap flex-shrink-0">{hike.date}</span>
       </div>
-      <div className="flex items-center gap-3 font-body text-xs text-fade">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 font-body text-xs sm:text-sm text-fade">
         <span className="text-ink-accent">{hike.location}</span>
         <span>·</span>
         <span className="flex items-center gap-1"><ElevationIcon className="w-3 h-3" />{hike.elevation}</span>
@@ -170,7 +170,7 @@ const HikeCard = ({ hike, index, onClick }) => {
         <span>·</span>
         <span>{hike.difficulty}</span>
       </div>
-      <p className="font-notes text-xs text-fade mt-0.5">{hike.highlights.join(' · ')}</p>
+      <p className="font-notes text-xs text-fade mt-1">{hike.highlights.join(' · ')}</p>
     </motion.div>
   );
 };
@@ -180,10 +180,10 @@ const ClimbingPage = () => {
 
   return (
     <>
-      <div className="h-screen overflow-hidden bg-paper flex flex-col items-center px-8 pt-8 pb-6">
-      <div className="max-w-2xl w-full flex flex-col flex-1">
+      <div className="min-h-screen bg-paper flex flex-col items-center px-6 sm:px-8 pt-6 sm:pt-8 pb-10">
+      <div className="max-w-3xl w-full flex flex-col flex-1">
         <motion.div
-          className="mb-4"
+          className="mb-5"
           initial={{ opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
@@ -201,15 +201,15 @@ const ClimbingPage = () => {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.5 }}
-          className="mb-5"
+          className="mb-6"
         >
-          <h1 className="font-handwritten text-4xl font-bold text-ink mb-1">Trail Log</h1>
-          <p className="font-body text-sm text-ink-accent">
+          <h1 className="font-handwritten text-4xl sm:text-5xl font-bold text-ink mb-2">Trail Log</h1>
+          <p className="font-body text-base text-ink-accent">
             I love hiking and will love it till I die. Click any entry for photos.
           </p>
         </motion.div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           {hikesData.map((hike, index) => (
             <HikeCard key={index} hike={hike} index={index} onClick={() => setSelectedHike(hike)} />
           ))}
