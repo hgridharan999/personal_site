@@ -68,7 +68,7 @@ const experiencesData = [
     location: "Remote",
     period: "Jan 2026 - Present",
     Logo: AdobeLogo,
-    description: "Advised IT leadership on AI strategy tied to $1M+ enterprise contract decisions.",
+    description: "Advised IT leaders on AI infrastructure strategy tied to $1M+ enterprise contract decisions.",
   },
   {
     title: "Problem Design Engineer",
@@ -77,7 +77,7 @@ const experiencesData = [
     location: "Remote",
     period: "Mar 2026 - Present",
     Logo: WidgetFactoryLogo,
-    description: "Designed frontier evaluation tasks that sharpened model behavior in production environments.",
+    description: "Designed adversarial evaluation tasks for frontier models used in production workflows.",
   },
   {
     title: "Builder",
@@ -86,7 +86,7 @@ const experiencesData = [
     location: "Ithaca, NY",
     period: "Jan 2026 - Present",
     Logo: ArmadaLogo,
-    description: "Partnered with founders and VCs to ship ambitious AI and full-stack builds from idea to MVP.",
+    description: "Built AI and full-stack MVPs with founders and VCs, from problem framing to launch.",
   },
   {
     title: "Operations Lead",
@@ -104,7 +104,7 @@ const experiencesData = [
     location: "Ithaca, NY",
     period: "Nov 2025 - Present",
     Logo: DTILogo,
-    description: "Led market and GTM analysis for student products serving 15,000+ Cornell users.",
+    description: "Ran market and GTM analysis for student products used across 15,000+ Cornell users.",
   },
   {
     title: "Co-Founder",
@@ -113,7 +113,7 @@ const experiencesData = [
     location: "Ithaca, NY",
     period: "Feb 2026 - Present",
     Logo: LoadstoneLogo,
-    description: "Co-building autonomous drone synchronization infrastructure with deeptech ambition.",
+    description: "Co-founding autonomous drone sync infrastructure for predictive maintenance in power-critical environments.",
   },
   {
     title: "Growth",
@@ -122,7 +122,7 @@ const experiencesData = [
     location: "Remote",
     period: "Mar 2026 - Present",
     Logo: Ship1Logo,
-    description: "Accelerating founder growth loops and early product-market fit experiments.",
+    description: "Supported founder growth loops and early product-market fit experiments across accelerator startups.",
   },
 ];
 

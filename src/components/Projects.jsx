@@ -19,7 +19,7 @@ const projectsData = [
   {
     date: "February 2026 - Present",
     title: "Loadstone",
-    description: "Probabilistic power chain risk simulator for AI compute infrastructure paired with drone-based predictive maintenance. Upload data center topology, run 1,000 Monte Carlo scenarios, and get cascade failure risk reports in 30 seconds—validating power chains before deployment and enabling automated physical infrastructure management.",
+    description: "Probabilistic power-chain risk simulator for AI compute infrastructure, paired with drone-based predictive maintenance. Teams can upload topology data, run 1,000 Monte Carlo scenarios, and get cascade-risk reports in about 30 seconds.",
     tech: ["Python", "Monte Carlo Simulation", "React", "Drones", "Infrastructure Modeling"],
     liveUrl: "https://loadstonelabs.com/",
     githubUrl: null,
@@ -29,7 +29,7 @@ const projectsData = [
   {
     date: "January 2026 - Present",
     title: "BigRed Network",
-    description: "Curated directory platform connecting Cornell builders, founders, and researchers. Features member filtering, network visualization, and manual review system for access control.",
+    description: "Curated directory platform connecting Cornell builders, founders, and researchers. Built member filtering, network visualization, and manual review workflows for controlled access.",
     tech: ["React", "TypeScript", "Network Graphs", "Authentication"],
     liveUrl: "https://www.bigred.network/",
     githubUrl: null,
@@ -39,7 +39,7 @@ const projectsData = [
   {
     date: "September 2025 - Present",
     title: "Social Network Prediction Market Platform",
-    description: "Co-founded a fintech prediction market platform, ranking top 10% among 20,000+ YC applicants. Built full-stack from concept to MVP including prediction algorithms and a unit economics model.",
+    description: "Co-founded a fintech prediction market platform that ranked in the top 10% of 20,000+ YC applicants. Built the product from concept to MVP, including prediction logic and unit-economics modeling.",
     tech: ["React", "Node.js", "PostgreSQL", "Python"],
     liveUrl: null,
     githubUrl: null,
@@ -48,7 +48,7 @@ const projectsData = [
   {
     date: "December 2025 – January 2026",
     title: "Open-Source LLM Cost Optimizer",
-    description: "Python toolkit to cut LLM API costs via intelligent model selection, prompt tuning, and a semantic cache layer using sentence-transformers + Redis. Benchmarked GPT-4, Claude, and Gemini for cost efficiency.",
+    description: "Open-source Python toolkit for lowering LLM API spend via model routing, prompt tuning, and semantic caching with sentence-transformers plus Redis. Benchmarked GPT-4, Claude, and Gemini on cost-efficiency tradeoffs.",
     tech: ["Python", "Redis", "OpenAI API", "Anthropic API", "Sentence-Transformers", "AsyncIO", "Pytest"],
     liveUrl: null,
     githubUrl: "https://github.com/hgridharan999/token_optimizer",
@@ -56,7 +56,7 @@ const projectsData = [
   {
     date: "January 2026 - Present",
     title: "AI-Powered Climate Solution Discovery Engine",
-    description: "NLP platform analyzing 10,000+ climate tech startups across 50+ verticals using BERT embeddings, multi-factor scoring, and semantic search for sub-second company retrieval.",
+    description: "NLP discovery engine analyzing 10,000+ climate-tech startups across 50+ verticals. Uses BERT embeddings, multi-factor scoring, and semantic search for sub-second retrieval.",
     tech: ["Python", "BERT", "FAISS", "Sentence-Transformers", "Pandas", "scikit-learn"],
     liveUrl: null,
     githubUrl: "https://github.com/hgridharan999",
@@ -65,7 +65,7 @@ const projectsData = [
   {
     date: "January 2026",
     title: "TrailSense",
-    description: "Hiking decision support system with ML-powered confidence scoring (XGBoost + SHAP), real-time NWS weather integration, and adaptive learning from logged hikes.",
+    description: "Hiking decision-support system with ML confidence scoring (XGBoost + SHAP), real-time NWS weather ingestion, and adaptive learning from logged hikes.",
     tech: ["React", "FastAPI", "PostgreSQL", "XGBoost", "Mapbox", "NWS API"],
     liveUrl: null,
     githubUrl: null,

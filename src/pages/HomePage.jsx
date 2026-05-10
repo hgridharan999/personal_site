@@ -39,7 +39,7 @@ export default function HomePage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.5 }}
           >
-            Cornell Dyson '29 - Building ML systems and startups.
+            Cornell Dyson '29 - Building ML systems, founder tools, and go-to-market experiments.
           </motion.p>
 
           {/* Blurb */}
@@ -49,7 +49,7 @@ export default function HomePage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4, duration: 0.5 }}
           >
-            An internationally-recognized mathematician, debater, and marketer turned serial founder. YC top applicant, Fortune 500 AI work. Love taking risks and doing generally cool stuff.
+            Founder and operator working across AI strategy, product builds, and growth. Top 10% YC applicant with Fortune 500 consulting exposure. I like high-agency teams, fast iteration, and ambitious technical bets.
           </motion.p>
 
           {/* Nav links and Social in grid */}
