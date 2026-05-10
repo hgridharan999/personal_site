@@ -5,13 +5,13 @@ import { Linkedin, Github, Mail, Download } from 'lucide-react';
 export default function HomePage() {
   return (
     <div className="min-h-screen w-full bg-paper flex items-center justify-center px-6 py-10 sm:px-8 lg:px-16">
-      <div className="max-w-4xl w-full flex flex-col lg:flex-row gap-10 lg:gap-16 items-center">
+      <div className="max-w-4xl w-full flex flex-col lg:flex-row gap-8 lg:gap-12 items-center">
 
         {/* LEFT — text content */}
         <div className="flex flex-col gap-6 flex-1 w-full">
           {/* Name */}
           <motion.h1
-            className="text-5xl sm:text-6xl lg:text-7xl font-handwritten font-bold text-ink leading-[0.95]"
+            className="text-5xl sm:text-6xl font-handwritten font-bold text-ink leading-[0.95]"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: 'easeOut' }}
@@ -31,7 +31,7 @@ export default function HomePage() {
 
           {/* Blurb */}
           <motion.p
-            className="font-body text-[15px] text-fade leading-relaxed max-w-xl"
+            className="font-body text-base text-fade leading-relaxed max-w-xl"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4, duration: 0.5 }}
@@ -40,7 +40,7 @@ export default function HomePage() {
           </motion.p>
 
           {/* Nav links and Social in grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 mt-1 pt-3 border-t border-line/80">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-1 pt-4 border-t border-line/80">
             {/* Projects */}
             <motion.div
               initial={{ opacity: 0, x: -10 }}
@@ -67,7 +67,7 @@ export default function HomePage() {
                 className="flex items-center gap-1.5 text-fade hover:text-ink-accent transition-colors py-0.5"
               >
                 <Linkedin className="w-4 h-4 shrink-0" />
-                <span className="font-body text-[15px]">LinkedIn</span>
+                <span className="font-body text-base">LinkedIn</span>
               </a>
             </motion.div>
 
@@ -97,7 +97,7 @@ export default function HomePage() {
                 className="flex items-center gap-1.5 text-fade hover:text-ink-accent transition-colors py-0.5"
               >
                 <Github className="w-4 h-4 shrink-0" />
-                <span className="font-body text-[15px]">GitHub</span>
+                <span className="font-body text-base">GitHub</span>
               </a>
             </motion.div>
 
@@ -127,7 +127,7 @@ export default function HomePage() {
                 className="flex items-center gap-1.5 text-fade hover:text-ink-accent transition-colors py-0.5"
               >
                 <Mail className="w-4 h-4 shrink-0" />
-                <span className="font-body text-[15px]">Email</span>
+                <span className="font-body text-base">Email</span>
               </a>
             </motion.div>
 
@@ -156,7 +156,7 @@ export default function HomePage() {
                 className="flex items-center gap-1.5 text-fade hover:text-highlight transition-colors py-0.5"
               >
                 <Download className="w-4 h-4 shrink-0" />
-                <span className="font-body text-[15px]">Resume</span>
+                <span className="font-body text-base">Resume</span>
               </a>
             </motion.div>
           </div>

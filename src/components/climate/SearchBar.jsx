@@ -75,9 +75,10 @@ export default function SearchBar({ onSearch, onQueryChange, loading }) {
       </div>
 
       {/* Search Tips */}
-      <p className="mt-2 text-sm font-notes text-fade">
+      <p className="mt-2 text-sm font-body text-fade">
         Try: "solar panels", "carbon capture", "vertical farming", or "EV charging"
       </p>
     </form>
   );
 }
+

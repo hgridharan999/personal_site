@@ -64,7 +64,7 @@ export default function ClimateSearchPage() {
         <p className="font-body text-base text-ink-accent leading-relaxed">
           Search 100+ climate startups using AI-powered semantic search. Find innovative companies tackling carbon removal, clean energy, sustainable agriculture, and more.
         </p>
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-ink-accent/10 border border-ink-accent/20 font-notes text-xs text-ink-accent rounded-sm">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-ink-accent/10 border border-ink-accent/20 font-body text-xs text-ink-accent rounded-sm">
           <Sparkles className="w-3.5 h-3.5" />
           Powered by BERT + BM25 Hybrid Search
         </span>
@@ -117,7 +117,7 @@ export default function ClimateSearchPage() {
                   <button
                     key={term}
                     onClick={() => handleSearch(term)}
-                    className="px-3 py-1 border border-ink-accent font-notes text-xs text-ink-accent hover:bg-ink-accent hover:text-paper transition-colors rounded-sm"
+                    className="px-3 py-1 border border-ink-accent font-body text-xs text-ink-accent hover:bg-ink-accent hover:text-paper transition-colors rounded-sm"
                   >
                     {term}
                   </button>
@@ -135,7 +135,7 @@ export default function ClimateSearchPage() {
                   <button
                     key={term}
                     onClick={() => handleSearch(term)}
-                    className="px-3 py-1 border border-line font-notes text-xs text-fade hover:border-ink-accent hover:text-ink-accent transition-colors rounded-sm"
+                    className="px-3 py-1 border border-line font-body text-xs text-fade hover:border-ink-accent hover:text-ink-accent transition-colors rounded-sm"
                   >
                     {term}
                   </button>
@@ -160,3 +160,4 @@ export default function ClimateSearchPage() {
     </PageShell>
   );
 }
+

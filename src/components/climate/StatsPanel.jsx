@@ -65,7 +65,7 @@ export default function StatsPanel() {
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-2">
           <Database className="w-4 h-4 text-ink-accent" />
-          <span className="font-notes text-sm text-fade">Total Startups</span>
+          <span className="font-body text-sm text-fade">Total Startups</span>
         </div>
         <p className="text-3xl font-handwritten font-bold text-ink">
           {stats?.total_startups?.toLocaleString() || '0'}
@@ -75,7 +75,7 @@ export default function StatsPanel() {
       {/* Top Verticals */}
       {topVerticals.length > 0 && (
         <div className="mb-6">
-          <h4 className="font-notes text-sm text-fade mb-3">Top Verticals</h4>
+          <h4 className="font-body text-sm text-fade mb-3">Top Verticals</h4>
           <div className="space-y-2">
             {topVerticals.map(([vertical, count]) => {
               const percentage = ((count / stats.total_startups) * 100).toFixed(1);
@@ -85,7 +85,7 @@ export default function StatsPanel() {
                     <span className="font-body text-xs text-ink">
                       {vertical.replace(/_/g, ' ')}
                     </span>
-                    <span className="font-notes text-xs text-fade">
+                    <span className="font-body text-xs text-fade">
                       {count}
                     </span>
                   </div>
@@ -104,7 +104,7 @@ export default function StatsPanel() {
 
       {/* Last Updated */}
       {stats.last_updated && (
-        <div className="flex items-center gap-2 text-xs font-notes text-fade">
+        <div className="flex items-center gap-2 text-xs font-body text-fade">
           <Clock className="w-3 h-3" />
           <span>Updated {stats.last_updated}</span>
         </div>
@@ -115,3 +115,4 @@ export default function StatsPanel() {
     </div>
   );
 }
+

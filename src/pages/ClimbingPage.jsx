@@ -80,7 +80,7 @@ const ImageGallery = ({ hike, onClose }) => {
       onClick={onClose}
     >
       <motion.div
-        className="relative bg-paper p-5 sm:p-8 max-w-4xl w-full max-h-[90vh] overflow-auto shadow-2xl rounded-lg"
+        className="relative bg-paper-subtle p-5 sm:p-6 max-w-4xl w-full max-h-[90vh] overflow-auto shadow-page-hover rounded-lg border border-line"
         initial={{ scale: 0.95, y: 16 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.95, y: 16 }}
@@ -115,7 +115,7 @@ const ImageGallery = ({ hike, onClose }) => {
               Photos coming soon
             </div>
           )}
-          <div className="absolute top-3 right-3 bg-paper/95 px-3 py-1 font-notes text-sm text-fade border border-line rounded-sm">
+          <div className="absolute top-3 right-3 bg-paper/95 px-3 py-1 font-body text-sm text-fade border border-line rounded-sm">
             {hike.date}
           </div>
         </div>
@@ -140,7 +140,7 @@ const ImageGallery = ({ hike, onClose }) => {
           {hike.review}
         </blockquote>
 
-        <p className="font-notes text-sm text-fade">
+        <p className="font-body text-sm text-fade">
           {hike.highlights.join(' · ')}
         </p>
       </motion.div>
@@ -159,7 +159,7 @@ const HikeCard = ({ hike, index, onClick }) => {
     >
       <div className="flex items-baseline justify-between gap-3 mb-1">
         <h3 className="font-handwritten text-xl font-bold text-ink group-hover:text-ink-accent transition-colors">{hike.name}</h3>
-        <span className="font-notes text-xs sm:text-sm text-fade whitespace-nowrap flex-shrink-0">{hike.date}</span>
+        <span className="font-body text-xs sm:text-sm text-fade whitespace-nowrap flex-shrink-0">{hike.date}</span>
       </div>
       <div className="flex flex-wrap items-center gap-2 sm:gap-3 font-body text-xs sm:text-sm text-fade">
         <span className="text-ink-accent">{hike.location}</span>
@@ -170,7 +170,7 @@ const HikeCard = ({ hike, index, onClick }) => {
         <span>·</span>
         <span>{hike.difficulty}</span>
       </div>
-      <p className="font-notes text-xs text-fade mt-1">{hike.highlights.join(' · ')}</p>
+      <p className="font-body text-xs text-fade mt-1">{hike.highlights.join(' · ')}</p>
     </motion.div>
   );
 };

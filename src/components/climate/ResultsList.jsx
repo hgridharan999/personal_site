@@ -19,7 +19,7 @@ export default function ResultsList({ results, searchInfo, onViewStartup }) {
         </h2>
         
         {searchInfo && (
-          <div className="flex items-center gap-4 text-sm font-notes text-fade">
+          <div className="flex items-center gap-4 text-sm font-body text-fade">
             <span>{searchInfo.totalResults} startups found</span>
             <span className="opacity-50">•</span>
             <span>{searchInfo.processingTime}ms</span>
@@ -41,3 +41,4 @@ export default function ResultsList({ results, searchInfo, onViewStartup }) {
     </div>
   );
 }
+

@@ -79,7 +79,7 @@ export default function ResultCard({ result, rank, onView }) {
       </div>
 
       {/* Metadata */}
-      <div className="flex flex-wrap gap-4 text-sm font-notes text-fade">
+      <div className="flex flex-wrap gap-4 text-sm font-body text-fade">
         {startup.headquarters_location && (
           <div className="flex items-center gap-1">
             <MapPin className="w-4 h-4" />
@@ -105,7 +105,7 @@ export default function ResultCard({ result, rank, onView }) {
       {/* Relevance Score (subtle, for development) */}
       {score !== undefined && (
         <div className="absolute top-2 right-2 opacity-30">
-          <span className="text-xs font-notes text-fade">
+          <span className="text-xs font-body text-fade">
             {(score * 100).toFixed(0)}%
           </span>
         </div>
@@ -113,3 +113,4 @@ export default function ResultCard({ result, rank, onView }) {
     </div>
   );
 }
+

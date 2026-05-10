@@ -8,7 +8,7 @@ export default function BlogPage() {
 
   const sourceStyles = {
     blog: 'bg-ink/10 text-ink border border-line',
-    linkedin: 'bg-highlight/15 text-highlight border border-highlight/30',
+    linkedin: 'bg-line/25 text-ink border border-line',
   };
 
   return (
@@ -59,7 +59,7 @@ export default function BlogPage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
           >
-            <p className="font-notes text-xs text-fade tracking-widest mb-3 font-bold">me in 10 bullet points</p>
+            <p className="font-body text-xs text-fade uppercase tracking-wide mb-3 font-semibold">me in 10 bullet points</p>
             <div className="border border-line rounded-xl bg-paper-subtle p-4 flex-1 flex flex-col gap-3 shadow-card">
               <ul className="space-y-2 font-body text-sm text-ink leading-relaxed">
                 <li>• time being so limited means that you shouldn't waste time doing stuff you don't like.</li>
@@ -100,9 +100,9 @@ export default function BlogPage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <span className="font-notes text-[11px] uppercase tracking-[0.18em] text-fade">sources</span>
-                <span className={`px-2 py-0.5 rounded-full font-notes text-xs ${sourceStyles.blog}`}>blog</span>
-                <span className={`px-2 py-0.5 rounded-full font-notes text-xs ${sourceStyles.linkedin}`}>linkedin</span>
+                <span className="font-body text-[11px] uppercase tracking-[0.18em] text-fade">sources</span>
+                <span className={`px-2 py-0.5 rounded-full font-body text-xs ${sourceStyles.blog}`}>blog</span>
+                <span className={`px-2 py-0.5 rounded-full font-body text-xs ${sourceStyles.linkedin}`}>linkedin</span>
               </div>
             </motion.div>
 
@@ -147,10 +147,10 @@ export default function BlogPage() {
                           </a>
                         )}
 
-                        <p className="font-notes text-xs sm:text-sm text-fade whitespace-nowrap flex-shrink-0">{item.displayDate}</p>
+                        <p className="font-body text-xs sm:text-sm text-fade whitespace-nowrap flex-shrink-0">{item.displayDate}</p>
                       </div>
 
-                      <p className="font-body text-[15px] text-ink leading-relaxed mb-3">{item.excerpt}</p>
+                      <p className="font-body text-base text-ink leading-relaxed mb-3">{item.excerpt}</p>
 
                       {item.imageUrl && (
                         <img
@@ -161,7 +161,7 @@ export default function BlogPage() {
                         />
                       )}
 
-                      <span className={`inline-flex px-2 py-0.5 rounded-full font-notes text-xs ${sourceStyles[item.source] || sourceStyles.blog}`}>
+                      <span className={`inline-flex px-2 py-0.5 rounded-full font-body text-xs ${sourceStyles[item.source] || sourceStyles.blog}`}>
                         {item.sourceLabel || item.source}
                       </span>
                     </motion.article>

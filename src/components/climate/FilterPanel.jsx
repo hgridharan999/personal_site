@@ -81,7 +81,7 @@ export default function FilterPanel({ filters, onFiltersChange }) {
         {hasActiveFilters && (
           <button
             onClick={handleClearFilters}
-            className="text-sm font-notes text-fade hover:text-ink transition-colors"
+            className="text-sm font-body text-fade hover:text-ink transition-colors"
           >
             Clear all
           </button>
@@ -101,7 +101,7 @@ export default function FilterPanel({ filters, onFiltersChange }) {
               className={`
                 px-3 py-1.5 text-sm
                 border-2 rounded-full
-                font-notes
+                font-body
                 transition-all duration-200
                 transform hover:scale-105
                 ${
@@ -124,7 +124,7 @@ export default function FilterPanel({ filters, onFiltersChange }) {
         </h4>
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="block text-sm font-notes text-fade mb-1">
+            <label className="block text-sm font-body text-fade mb-1">
               From
             </label>
             <input
@@ -145,7 +145,7 @@ export default function FilterPanel({ filters, onFiltersChange }) {
             />
           </div>
           <div className="flex-1">
-            <label className="block text-sm font-notes text-fade mb-1">
+            <label className="block text-sm font-body text-fade mb-1">
               To
             </label>
             <input
@@ -171,3 +171,4 @@ export default function FilterPanel({ filters, onFiltersChange }) {
     </div>
   );
 }
+

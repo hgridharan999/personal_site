@@ -81,12 +81,12 @@ const ProjectCard = ({ project, index, isFeatured }) => {
   return (
     <motion.div
       ref={ref}
-      className={`border border-line rounded-xl p-5 shadow-card ${isFeatured ? 'bg-paper-subtle' : 'bg-paper/80'}`}
+      className="border border-line rounded-xl p-5 shadow-card bg-paper-subtle"
       initial={{ opacity: 0, y: 16 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.5, delay: index * 0.08, ease: "easeOut" }}
     >
-      <div className="flex gap-4">
+      <div className="flex gap-6">
         {/* Logo column */}
         {Logo && (
           <div className="flex-shrink-0 flex items-center">
@@ -106,12 +106,12 @@ const ProjectCard = ({ project, index, isFeatured }) => {
                 </span>
               )}
             </div>
-            <p className="font-notes text-xs sm:text-sm text-fade whitespace-nowrap flex-shrink-0">{project.date}</p>
+            <p className="font-body text-xs sm:text-sm text-fade whitespace-nowrap flex-shrink-0">{project.date}</p>
           </div>
 
-          <p className="font-body text-[15px] text-ink leading-relaxed mb-3">{project.description}</p>
+          <p className="font-body text-base text-ink leading-relaxed mb-3">{project.description}</p>
 
-          <p className="font-notes text-xs text-fade mb-3">{project.tech.join(' · ')}</p>
+          <p className="font-body text-xs text-fade mb-3">{project.tech.join(' · ')}</p>
 
           <div className="flex flex-wrap gap-5 items-center">
             {project.stealth && (

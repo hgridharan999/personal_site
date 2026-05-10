@@ -37,10 +37,10 @@ export default function BlogPostPage() {
   }
 
   return (
-    <div className="min-h-screen bg-paper px-8 py-12">
+    <div className="min-h-screen bg-paper px-6 sm:px-8 py-10 sm:py-12">
       {/* Back nav */}
       <motion.div
-        className="mb-10"
+        className="mb-8"
         initial={{ opacity: 0, x: -12 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.4 }}
@@ -54,7 +54,7 @@ export default function BlogPostPage() {
         </Link>
       </motion.div>
 
-      <div className="max-w-2xl">
+      <div className="max-w-3xl">
         {/* Title */}
         <motion.h1
           className="font-handwritten text-5xl font-bold text-ink mb-3 leading-tight"
@@ -67,7 +67,7 @@ export default function BlogPostPage() {
 
         {/* Date */}
         <motion.p
-          className="font-notes text-sm text-fade mb-10"
+          className="font-body text-xs sm:text-sm text-fade mb-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.4 }}

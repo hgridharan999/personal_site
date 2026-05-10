@@ -205,7 +205,7 @@ export default function ChatWidget() {
                 onChange={e => setInput(e.target.value)}
                 placeholder="ask me anything..."
                 disabled={isLoading}
-                className="flex-1 bg-transparent text-sm font-notes text-ink outline-none placeholder-fade disabled:opacity-50"
+                className="flex-1 bg-transparent text-sm font-body text-ink outline-none placeholder-fade disabled:opacity-50"
                 aria-label="Chat input"
               />
               <button
@@ -290,3 +290,4 @@ export default function ChatWidget() {
     </div>
   );
 }
+

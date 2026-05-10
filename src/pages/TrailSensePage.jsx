@@ -77,10 +77,10 @@ const TrailSensePage = () => {
             Hiking decision support system — assesses trail feasibility based on weather, trail characteristics, and your capability profile. Learns from every hike you log.
           </p>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-100 border border-green-400/40 font-notes text-xs text-green-700 rounded-sm">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-100 border border-green-400/40 font-body text-xs text-green-700 rounded-sm">
               <Database className="w-3 h-3" /> All 4 phases complete
             </span>
-            <span className="font-notes text-xs text-fade">FastAPI · PostgreSQL · React · TypeScript</span>
+            <span className="font-body text-xs text-fade">FastAPI · PostgreSQL · React · TypeScript</span>
           </div>
         </motion.div>
 
@@ -107,7 +107,7 @@ const TrailSensePage = () => {
             {techStack.map((tech) => (
               <span
                 key={tech}
-                className="px-2.5 py-1 bg-ink-accent/10 border border-ink-accent/20 font-notes text-xs text-ink-accent rounded-sm"
+                className="px-2.5 py-1 bg-ink-accent/10 border border-ink-accent/20 font-body text-xs text-ink-accent rounded-sm"
               >
                 {tech}
               </span>
@@ -121,3 +121,4 @@ const TrailSensePage = () => {
 };
 
 export default TrailSensePage;
+

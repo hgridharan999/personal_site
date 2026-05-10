@@ -149,7 +149,7 @@ const ExperienceCard = ({ experience, index }) => {
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline justify-between gap-4 mb-2">
             <h3 className="font-handwritten text-xl sm:text-2xl font-bold text-ink">{experience.title}</h3>
-            <p className="font-notes text-xs sm:text-sm text-fade whitespace-nowrap flex-shrink-0">{experience.period}</p>
+            <p className="font-body text-xs sm:text-sm text-fade whitespace-nowrap flex-shrink-0">{experience.period}</p>
           </div>
 
           <div className="flex flex-wrap gap-4 font-body text-sm text-ink-accent mb-2">
@@ -174,7 +174,7 @@ const ExperienceCard = ({ experience, index }) => {
               {experience.location}
             </span>
           </div>
-          <p className="font-body text-[15px] text-ink leading-relaxed">{experience.description}</p>
+          <p className="font-body text-base text-ink leading-relaxed">{experience.description}</p>
         </div>
       </div>
     </motion.div>

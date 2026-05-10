@@ -19,7 +19,7 @@ export default {
       fontFamily: {
         handwritten: ['Caveat', 'cursive'],
         body: ['Indie Flower', 'cursive'],
-        notes: ['Shadows Into Light', 'cursive'],
+        notes: ['Indie Flower', 'cursive'],
       },
       rotate: {
         '1': '1deg',
@@ -33,6 +33,7 @@ export default {
         'page': '0 4px 12px rgba(44, 44, 44, 0.08)',
         'page-hover': '0 8px 24px rgba(44, 44, 44, 0.12)',
         'card': '0 2px 10px rgba(44, 44, 44, 0.06)',
+        'card-hover': '0 8px 24px rgba(44, 44, 44, 0.1)',
         'photo': '0 2px 8px rgba(44, 44, 44, 0.15)',
         'tape': '0 1px 3px rgba(44, 44, 44, 0.1)',
       },
