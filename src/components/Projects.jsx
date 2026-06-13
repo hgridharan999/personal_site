@@ -63,6 +63,15 @@ const projectsData = [
     internalUrl: "/climate-search",
   },
   {
+    date: "December 2025 – January 2026",
+    title: "AI-Powered Startup Discovery Engine",
+    description: "Research tool for semantic retrieval of companies across 50+ technical verticals for strategic sourcing. Uses multi-factor scoring (founder backgrounds, patent data, market signals) to surface and rank investment candidates. Deployed as an internal valuation and search tool.",
+    tech: ["Python", "NLP/Embeddings", "BERT", "FAISS", "pandas", "scikit-learn"],
+    liveUrl: null,
+    githubUrl: "https://github.com/hgridharan999",
+    internalUrl: null,
+  },
+  {
     date: "January 2026",
     title: "TrailSense",
     description: "Hiking decision-support system with ML confidence scoring (XGBoost + SHAP), real-time NWS weather ingestion, and adaptive learning from logged hikes.",

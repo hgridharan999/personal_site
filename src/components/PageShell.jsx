@@ -22,7 +22,7 @@ export default function PageShell({ title, children }) {
         </motion.div>
 
         <motion.h1
-          className="font-handwritten text-4xl font-bold text-ink mb-8"
+          className="page-title-underline font-handwritten text-4xl font-bold text-ink mb-10"
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.5 }}

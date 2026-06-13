@@ -86,23 +86,23 @@ export default function BlogPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25, duration: 0.4 }}
             >
-              <div className="flex items-center justify-between gap-3 mb-3">
-                <p className="font-body text-sm text-ink-accent">
-                  newest first, across every place I publish
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
+                <p className="font-body text-sm text-ink-accent max-w-md">
+                  Latest posts first, pulled together from blog essays and LinkedIn notes.
                 </p>
                 <button
                   onClick={refresh}
-                  className="inline-flex items-center gap-1.5 font-body text-xs text-fade hover:text-ink-accent transition-colors"
+                  className="inline-flex items-center gap-1.5 self-start sm:self-auto font-body text-xs text-fade hover:text-ink-accent transition-colors"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                   refresh
                 </button>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 border-t border-line/70 pt-3">
                 <span className="font-body text-[11px] uppercase tracking-[0.18em] text-fade">sources</span>
-                <span className={`px-2 py-0.5 rounded-full font-body text-xs ${sourceStyles.blog}`}>blog</span>
-                <span className={`px-2 py-0.5 rounded-full font-body text-xs ${sourceStyles.linkedin}`}>linkedin</span>
+                <span className={`px-2.5 py-0.5 rounded-full font-body text-xs ${sourceStyles.blog}`}>blog</span>
+                <span className={`px-2.5 py-0.5 rounded-full font-body text-xs ${sourceStyles.linkedin}`}>linkedin</span>
               </div>
             </motion.div>
 
@@ -118,16 +118,16 @@ export default function BlogPage() {
               ) : items.length === 0 ? (
                 <p className="font-body text-sm text-fade">No posts yet. Check back soon.</p>
               ) : (
-                <div className="space-y-3 pb-1">
+                <div className="space-y-4 pb-1">
                   {items.map((item, i) => (
                     <motion.article
                       key={item.id}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.3 + i * 0.06, duration: 0.35 }}
-                      className="border border-line rounded-xl bg-paper/80 p-4 sm:p-5 shadow-card"
+                      className="border border-line rounded-xl bg-paper/85 p-4 sm:p-5 shadow-card"
                     >
-                      <div className="flex items-start justify-between gap-4 mb-2">
+                      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4 mb-2">
                         {item.internalSlug ? (
                           <Link
                             to={`/blog/${item.internalSlug}`}
@@ -147,10 +147,19 @@ export default function BlogPage() {
                           </a>
                         )}
 
-                        <p className="font-body text-xs sm:text-sm text-fade whitespace-nowrap flex-shrink-0">{item.displayDate}</p>
+                        <p className="font-body text-xs sm:text-sm text-fade sm:whitespace-nowrap flex-shrink-0">{item.displayDate}</p>
                       </div>
 
-                      <p className="font-body text-base text-ink leading-relaxed mb-3">{item.excerpt}</p>
+                      <p
+                        className="font-body text-sm sm:text-base text-ink leading-relaxed mb-3 max-w-2xl overflow-hidden"
+                        style={{
+                          display: '-webkit-box',
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: 'vertical',
+                        }}
+                      >
+                        {item.excerpt}
+                      </p>
 
                       {item.imageUrl && (
                         <img

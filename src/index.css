@@ -2,13 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Tunable mountain/background variables for quick framing adjustments */
-:root {
-  --mountain-opacity: 1;
-  --mountain-size: 100% auto;
-  --mountain-pos-y: 72%;
-}
-
 /* Paper texture and base styles */
 body {
   margin: 0;
@@ -47,6 +40,40 @@ body {
   z-index: 3;
 }
 
+/* ── Pixel mountain background ── */
+:root {
+  --mountain-opacity: 1;
+  --mountain-size: 100% auto;
+  --mountain-pos-y: 72%;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 50% 36%, rgba(245, 241, 232, 0.16), transparent 48%),
+    linear-gradient(180deg, rgba(245, 241, 232, 0.14), rgba(245, 241, 232, 0.4)),
+    url('/mountain-bg-clean.png');
+  background-repeat: no-repeat;
+  background-size: 100% 100%, 100% 100%, var(--mountain-size);
+  background-position: center center, center center, center var(--mountain-pos-y);
+  background-blend-mode: screen, multiply, normal;
+  filter: saturate(0.82) contrast(0.9) brightness(1.08) sepia(0.12);
+  image-rendering: pixelated;
+  opacity: calc(var(--mountain-opacity) * 0.82);
+  pointer-events: none;
+  z-index: -1;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --mountain-opacity: 0.95;
+    --mountain-size: 160% auto;
+    --mountain-pos-y: 10%;
+  }
+}
+
 /* Subtle paper texture */
 body::before {
   content: '';
@@ -61,24 +88,7 @@ body::before {
   z-index: -2;
 }
 
-/* Fixed mountain + accent background for consistent positioning across pages */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  /* left-tree accent + mountain image */
-  background-image:
-    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200"><g fill="%232C2C2C" opacity="0.12"><polygon points="20,160 60,80 100,160"/><polygon points="60,140 100,60 140,140"/><polygon points="140,160 180,90 220,160"/></g></svg>'),
-    url('/mountain-bg-clean.png');
-  background-repeat: no-repeat, no-repeat;
-  background-size: 34% auto, var(--mountain-size);
-  /* tree at left-bottom; mountain centered and controlled by variable */
-  background-position: left 6% bottom 6%, center var(--mountain-pos-y);
-  image-rendering: pixelated;
-  opacity: var(--mountain-opacity);
-  pointer-events: none;
-  z-index: -1;
-}
+/* Background scene is now handled by <BackgroundScene /> React component */
 
 /* Custom cursor only on precise pointers (desktop) */
 @media (hover: hover) and (pointer: fine) {
@@ -120,17 +130,6 @@ body::after {
   }
 }
 
-@media (max-width: 768px) {
-  :root {
-    --mountain-opacity: 0.95;
-    --mountain-size: 160% auto;
-    --mountain-pos-y: 10%;
-  }
-  body::after {
-    background-size: 220% auto, var(--mountain-size);
-    background-position: left 22% bottom 6%, center var(--mountain-pos-y);
-  }
-}
 
 /* Make the paper surfaces slightly translucent so the mountain shows through.
    Targets any utility classes that include "bg-paper" (bg-paper, bg-paper-subtle, bg-paper/80, etc.) */
@@ -286,4 +285,112 @@ body::after {
 ::-moz-selection {
   background: rgba(198, 123, 92, 0.3);
   color: #2C2C2C;
+}
+
+/* ── Card hover lift ───────────────────────────────────── */
+.shadow-card {
+  transition: transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1),
+              box-shadow 0.22s ease,
+              border-color 0.22s ease;
+}
+
+.shadow-card:hover {
+  transform: translateY(-3px) rotate(0.2deg);
+  box-shadow: 0 10px 32px rgba(44, 44, 44, 0.13);
+  border-color: rgba(198, 123, 92, 0.3);
+}
+
+/* ── Homepage nav link sweep underline ─────────────────── */
+.nav-sweep {
+  position: relative;
+  text-decoration: none;
+}
+
+.nav-sweep::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #C67B5C;
+  border-radius: 2px;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nav-sweep:hover::after {
+  transform: scaleX(1);
+}
+
+/* Ink trail blobs are spawned and styled directly in InkTrail.jsx */
+
+/* ── Washi tape on cards — top-left decorative strip ──── */
+.shadow-card {
+  position: relative;
+  overflow: visible;
+}
+
+.shadow-card::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 18px;
+  width: 44px;
+  height: 14px;
+  background: repeating-linear-gradient(
+    105deg,
+    rgba(198, 123, 92, 0.22) 0px,
+    rgba(220, 160, 110, 0.18) 4px,
+    rgba(198, 123, 92, 0.22) 8px
+  );
+  border-radius: 2px;
+  transform: rotate(-2deg);
+  box-shadow: 0 1px 3px rgba(44,44,44,0.08);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Alternate tape color for even cards */
+.shadow-card:nth-child(even)::before {
+  left: auto;
+  right: 22px;
+  background: repeating-linear-gradient(
+    105deg,
+    rgba(107, 122, 92, 0.22) 0px,
+    rgba(130, 148, 108, 0.18) 4px,
+    rgba(107, 122, 92, 0.22) 8px
+  );
+  transform: rotate(1.5deg);
+}
+
+/* ── Backdrop glass effect on cards ────────────────────── */
+.shadow-card {
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+/* ── Page shell heading — underline decoration ──────────── */
+.page-title-underline {
+  position: relative;
+  display: inline-block;
+}
+.page-title-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 60%;
+  height: 3px;
+  background: linear-gradient(90deg, #C67B5C 0%, transparent 100%);
+  border-radius: 2px;
+}
+
+/* ── Smooth focus rings (accessibility) ─────────────────── */
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid #C67B5C;
+  outline-offset: 3px;
+  border-radius: 4px;
 }
