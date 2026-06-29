@@ -19,7 +19,7 @@ const projectsData = [
   {
     date: "February 2026 - Present",
     title: "Loadstone",
-    description: "Probabilistic power-chain risk simulator for AI compute infrastructure, paired with drone-based predictive maintenance. Teams can upload topology data, run 1,000 Monte Carlo scenarios, and get cascade-risk reports in about 30 seconds.",
+    description: "Data and operating layer infrastructure for Western water rights. Loadstone unifies workflow, basin intelligence, and transaction infrastructure for attorneys and engineers.",
     tech: ["Python", "Monte Carlo Simulation", "React", "Drones", "Infrastructure Modeling"],
     liveUrl: "https://loadstonelabs.com/",
     githubUrl: null,

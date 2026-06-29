@@ -15,25 +15,6 @@ function getTimeOfDay() {
   return 'night';
 }
 
-function drawFlowingCurve(ctx, startX, startY, midX, midY, endX, endY, wobblePhase) {
-  ctx.beginPath();
-  ctx.moveTo(startX, startY);
-  const steps = 58;
-  for (let i = 1; i <= steps; i++) {
-    const t = i / steps;
-    const x = startX + (endX - startX) * t;
-    const y = startY + (endY - startY) * t;
-    const distortion = Math.sin(wobblePhase + t * Math.PI * 4.2) * 3.8 + Math.cos(wobblePhase - t * Math.PI * 3.1) * 2.2;
-    const normY = -(endX - startX);
-    const normX = endY - startY;
-    const len = Math.sqrt(normX * normX + normY * normY) || 1;
-    const offsetX = (normX / len) * distortion;
-    const offsetY = (normY / len) * distortion;
-    ctx.lineTo(x + offsetX, y + offsetY);
-  }
-  ctx.stroke();
-}
-
 export default function BackgroundScene() {
   const layer1Ref  = useRef(null);
   const layer2Ref  = useRef(null);
@@ -46,13 +27,6 @@ export default function BackgroundScene() {
   const mouseRef    = useRef({ x: 0, y: 0 });
   const cursorRef   = useRef({ x: -999, y: -999 }); // screen px
   const parallaxRef = useRef({ x: 0, y: 0 });
-
-  const fieldRef = useRef([
-    { x: 0.26, y: 0.28, r: 88, speed: 0.16, drift: 0.9, phase: 0.0 },
-    { x: 0.64, y: 0.22, r: 118, speed: 0.12, drift: 0.7, phase: 1.8 },
-    { x: 0.52, y: 0.39, r: 156, speed: 0.09, drift: 0.5, phase: 3.3 },
-    { x: 0.78, y: 0.34, r: 72, speed: 0.2, drift: 1.1, phase: 2.4 },
-  ]);
 
   const [tod, setTod] = useState(getTimeOfDay);
   useEffect(() => {
@@ -95,8 +69,6 @@ export default function BackgroundScene() {
       ctx.clearRect(0, 0, W, H);
 
       const isNightNow = tod === 'night';
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
 
       const swayX = cursorRef.current.x ? (cursorRef.current.x / W - 0.5) : 0;
       const swayY = cursorRef.current.y ? (cursorRef.current.y / H - 0.5) : 0;
@@ -110,23 +82,6 @@ export default function BackgroundScene() {
       ctx.fillStyle = haze;
       ctx.globalAlpha = 1;
       ctx.fillRect(0, 0, W, H);
-
-      ctx.globalAlpha = 1;
-      ctx.strokeStyle = isNightNow ? 'rgba(180, 170, 160, 0.28)' : 'rgba(44, 44, 44, 0.22)';
-      ctx.lineWidth = 1.1;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-
-      const field = fieldRef.current;
-      field.forEach((node, index) => {
-        const t = now * 0.0001 * node.speed + node.phase;
-        const x = W * node.x + Math.cos(t * 1.6) * 28 + swayX * 36 * node.drift;
-        const y = H * node.y + Math.sin(t * 1.3) * 20 + swayY * 24 * node.drift;
-
-        drawFlowingCurve(ctx, x - node.r * 0.88, y - node.r * 0.36, x + node.r * 0.12, y - node.r * 0.68, x + node.r * 0.92, y + node.r * 0.28, t * 2.1);
-        drawFlowingCurve(ctx, x - node.r * 0.52, y + node.r * 0.44, x + node.r * 0.28, y + node.r * 0.08, x + node.r * 1.18, y - node.r * 0.52, t * 1.7);
-        drawFlowingCurve(ctx, x + node.r * 0.14, y - node.r * 0.88, x - node.r * 0.64, y + node.r * 0.12, x + node.r * 0.76, y + node.r * 0.72, t * 2.4);
-      });
 
       // Main accent sweep linking sky field to landscape
       const sweepY = H * 0.58 + Math.sin(now * 0.0004) * 16 + swayY * 24;

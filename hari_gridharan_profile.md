@@ -107,10 +107,9 @@ Hari came into Cornell without a clear direction — "Consulting? Banking? Both 
 *Ithaca, NY | Feb 2026 – Present*
 Website: loadstonelabs.com
 
-- Probabilistic power chain risk simulator for AI compute infrastructure, paired with drone-based predictive maintenance
-- Upload data center topology, run 1,000 Monte Carlo scenarios, get cascade failure risk reports in 30 seconds
-- Validates power chains before deployment and enables automated physical infrastructure management
-- Built with deep tech ambition; autonomous drone synchronization at its core
+- Data and operating layer infrastructure for Western water rights
+- Unifies workflow, basin intelligence, and transaction infrastructure for attorneys and engineers
+- Built for water-rights operations, not generic AI infrastructure
 - Stack: Python, Monte Carlo Simulation, React, Drones, Infrastructure Modeling
 
 ### Commit — Social Network Prediction Market Platform — Co-Founder

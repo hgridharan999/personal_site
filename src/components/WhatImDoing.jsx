@@ -113,7 +113,7 @@ const experiencesData = [
     location: "Ithaca, NY",
     period: "Feb 2026 – Present",
     Logo: LoadstoneLogo,
-    description: "Co-founding autonomous drone sync infrastructure for predictive maintenance in power-critical environments. Paired with a probabilistic power-chain risk simulator for AI compute infrastructure.",
+    description: "Building the data and operating layer for Western water rights, including workflow, basin intelligence, and transaction infrastructure.",
   },
   {
     title: "Growth",

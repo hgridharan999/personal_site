@@ -1,15 +1,25 @@
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ExternalLink, RefreshCw } from 'lucide-react';
 import { useUnifiedFeed } from '../hooks/useUnifiedFeed';
 
 export default function BlogPage() {
   const { items, loading, error, refresh } = useUnifiedFeed();
+  const [sourceFilter, setSourceFilter] = useState('all');
+
+  const filteredItems = sourceFilter === 'all' ? items : items.filter((item) => item.source === sourceFilter);
 
   const sourceStyles = {
     blog: 'bg-ink/10 text-ink border border-line',
     linkedin: 'bg-line/25 text-ink border border-line',
   };
+
+  const filterOptions = [
+    { key: 'all', label: 'all' },
+    { key: 'blog', label: 'blog posts' },
+    { key: 'linkedin', label: 'linkedin posts' },
+  ];
 
   return (
     <div className="min-h-screen bg-paper flex flex-col items-center px-6 sm:px-8 pt-6 sm:pt-8 pb-10">
@@ -99,10 +109,32 @@ export default function BlogPage() {
                 </button>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 border-t border-line/70 pt-3">
-                <span className="font-body text-[11px] uppercase tracking-[0.18em] text-fade">sources</span>
-                <span className={`px-2.5 py-0.5 rounded-full font-body text-xs ${sourceStyles.blog}`}>blog</span>
-                <span className={`px-2.5 py-0.5 rounded-full font-body text-xs ${sourceStyles.linkedin}`}>linkedin</span>
+              <div className="flex flex-col gap-3 border-t border-line/70 pt-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-body text-[11px] uppercase tracking-[0.18em] text-fade">filter</span>
+                  {filterOptions.map((option) => {
+                    const active = sourceFilter === option.key;
+                    return (
+                      <button
+                        key={option.key}
+                        onClick={() => setSourceFilter(option.key)}
+                        className={`px-3 py-1 rounded-full font-body text-xs transition-colors border ${
+                          active
+                            ? 'bg-ink text-paper border-ink'
+                            : 'bg-transparent text-fade border-line hover:text-ink hover:border-ink'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-body text-[11px] uppercase tracking-[0.18em] text-fade">sources</span>
+                  <span className={`px-2.5 py-0.5 rounded-full font-body text-xs ${sourceStyles.blog}`}>blog</span>
+                  <span className={`px-2.5 py-0.5 rounded-full font-body text-xs ${sourceStyles.linkedin}`}>linkedin</span>
+                </div>
               </div>
             </motion.div>
 
@@ -115,11 +147,11 @@ export default function BlogPage() {
                   <p className="font-body text-sm text-ink">Could not load this feed.</p>
                   <p className="font-body text-xs text-fade mt-1">{error}</p>
                 </div>
-              ) : items.length === 0 ? (
-                <p className="font-body text-sm text-fade">No posts yet. Check back soon.</p>
+              ) : filteredItems.length === 0 ? (
+                <p className="font-body text-sm text-fade">No {sourceFilter === 'all' ? 'posts' : `${sourceFilter} posts`} yet. Check back soon.</p>
               ) : (
                 <div className="space-y-4 pb-1">
-                  {items.map((item, i) => (
+                  {filteredItems.map((item, i) => (
                     <motion.article
                       key={item.id}
                       initial={{ opacity: 0, y: 8 }}
