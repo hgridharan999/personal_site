@@ -151,10 +151,10 @@ const ImageGallery = ({ hike, onClose }) => {
 const HikeCard = ({ hike, index, onClick }) => {
   return (
     <motion.div
-      className="cursor-pointer group border border-line rounded-xl p-4 bg-paper/80 shadow-card"
+      className="cursor-pointer group border border-line rounded-lg p-4 bg-paper/80 shadow-card flex flex-col justify-center min-h-0 overflow-hidden"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay: index * 0.06, ease: "easeOut" }}
+      transition={{ duration: 0.4, delay: 0.15 + index * 0.05, ease: "easeOut" }}
       onClick={onClick}
     >
       <div className="flex items-baseline justify-between gap-3 mb-1">
@@ -180,10 +180,10 @@ const ClimbingPage = () => {
 
   return (
     <>
-      <div className="min-h-screen bg-paper flex flex-col items-center px-6 sm:px-8 pt-6 sm:pt-8 pb-10">
-      <div className="max-w-3xl w-full flex flex-col flex-1">
+      <div className="h-[100dvh] overflow-hidden bg-paper flex flex-col items-center px-5 sm:px-8 pt-4 pb-5">
+      <div className="max-w-5xl w-full flex flex-col flex-1 min-h-0">
         <motion.div
-          className="mb-5"
+          className="mb-2"
           initial={{ opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
@@ -201,15 +201,15 @@ const ClimbingPage = () => {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.5 }}
-          className="mb-6"
+          className="mb-4"
         >
-          <h1 className="font-handwritten text-4xl sm:text-5xl font-bold text-ink mb-2">Trail Log</h1>
-          <p className="font-body text-base text-ink-accent">
+          <h1 className="page-title-underline inline-block font-handwritten text-3xl font-bold text-ink leading-none">Trail Log</h1>
+          <p className="font-body text-sm text-ink-accent mt-2">
             I love hiking and will love it till I die. Click any entry for photos.
           </p>
         </motion.div>
 
-        <div className="space-y-4">
+        <div className="flex-1 min-h-0 grid grid-cols-1 sm:grid-cols-2 auto-rows-fr gap-3">
           {hikesData.map((hike, index) => (
             <HikeCard key={index} hike={hike} index={index} onClick={() => setSelectedHike(hike)} />
           ))}

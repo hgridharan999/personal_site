@@ -1,6 +1,4 @@
 import { motion } from 'framer-motion';
-import { useInView } from 'framer-motion';
-import { useRef } from 'react';
 import { MapPin, Briefcase, ExternalLink } from 'lucide-react';
 
 const AdobeLogo = () => (
@@ -127,55 +125,50 @@ const experiencesData = [
 ];
 
 const ExperienceCard = ({ experience, index }) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-80px" });
   const { Logo } = experience;
 
   return (
     <motion.div
-      ref={ref}
-      className="border border-line rounded-xl p-4 sm:p-5 bg-paper/80 shadow-card"
-      initial={{ opacity: 0, y: 16 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5, delay: index * 0.08, ease: "easeOut" }}
+      className="border border-line rounded-lg p-3 bg-paper/80 shadow-card flex gap-3 min-h-0 overflow-hidden"
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, delay: 0.15 + index * 0.05, ease: "easeOut" }}
     >
-      <div className="flex gap-4">
-        {/* Logo column */}
-        <div className="flex-shrink-0 flex items-center">
-          {Logo && <Logo />}
+      {/* Logo */}
+      <div className="flex-shrink-0 flex items-start pt-0.5" style={{ transform: 'scale(0.82)', transformOrigin: 'top left' }}>
+        {Logo && <Logo />}
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        <div className="flex items-baseline justify-between gap-2">
+          <h3 className="font-handwritten text-lg font-bold text-ink leading-tight truncate">{experience.title}</h3>
+          <p className="font-body text-[11px] text-fade whitespace-nowrap flex-shrink-0">{experience.period}</p>
         </div>
 
-        {/* Content column */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-baseline justify-between gap-4 mb-2">
-            <h3 className="font-handwritten text-xl sm:text-2xl font-bold text-ink">{experience.title}</h3>
-            <p className="font-body text-xs sm:text-sm text-fade whitespace-nowrap flex-shrink-0">{experience.period}</p>
-          </div>
-
-          <div className="flex flex-wrap gap-4 font-body text-sm text-ink-accent mb-2">
-            <span className="flex items-center gap-1.5">
-              <Briefcase className="w-3.5 h-3.5" />
-              {experience.url ? (
-                <a
-                  href={experience.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 hover:text-highlight transition-colors"
-                >
-                  {experience.company}
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              ) : (
-                experience.company
-              )}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5" />
-              {experience.location}
-            </span>
-          </div>
-          <p className="font-body text-base text-ink leading-relaxed">{experience.description}</p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 font-body text-xs text-ink-accent mt-0.5 mb-1">
+          <span className="flex items-center gap-1">
+            <Briefcase className="w-3 h-3" />
+            {experience.url ? (
+              <a
+                href={experience.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-0.5 hover:text-highlight transition-colors"
+              >
+                {experience.company}
+                <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+            ) : (
+              experience.company
+            )}
+          </span>
+          <span className="flex items-center gap-1">
+            <MapPin className="w-3 h-3" />
+            {experience.location}
+          </span>
         </div>
+        <p className="font-body text-[13px] text-ink leading-snug line-clamp-3">{experience.description}</p>
       </div>
     </motion.div>
   );
@@ -183,13 +176,11 @@ const ExperienceCard = ({ experience, index }) => {
 
 const WhatImDoing = () => {
   return (
-    <section id="doing" className="py-1 max-w-4xl mx-auto w-full px-1 sm:px-2">
-      <div className="space-y-4">
-        {experiencesData.map((experience, index) => (
-          <ExperienceCard key={index} experience={experience} index={index} />
-        ))}
-      </div>
-    </section>
+    <div className="h-full grid grid-cols-1 sm:grid-cols-2 auto-rows-fr gap-3">
+      {experiencesData.map((experience, index) => (
+        <ExperienceCard key={index} experience={experience} index={index} />
+      ))}
+    </div>
   );
 };
 

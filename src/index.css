@@ -11,12 +11,12 @@ body {
     radial-gradient(circle at 88% 82%, rgba(107, 122, 92, 0.07), transparent 44%),
     #F5F1E8;
   color: #2C2C2C;
-  font-family: 'Indie Flower', cursive;
+  font-family: 'Newsreader', Georgia, serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
   position: relative;
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
 /* Ensure root content stacks above background */
@@ -40,39 +40,8 @@ body {
   z-index: 3;
 }
 
-/* ── Pixel mountain background ── */
-:root {
-  --mountain-opacity: 1;
-  --mountain-size: 100% auto;
-  --mountain-pos-y: 72%;
-}
-
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image:
-    radial-gradient(circle at 50% 36%, rgba(245, 241, 232, 0.16), transparent 48%),
-    linear-gradient(180deg, rgba(245, 241, 232, 0.14), rgba(245, 241, 232, 0.4)),
-    url('/mountain-bg-clean.png');
-  background-repeat: no-repeat;
-  background-size: 100% 100%, 100% 100%, var(--mountain-size);
-  background-position: center center, center center, center var(--mountain-pos-y);
-  background-blend-mode: screen, multiply, normal;
-  filter: saturate(0.82) contrast(0.9) brightness(1.08) sepia(0.12);
-  image-rendering: pixelated;
-  opacity: calc(var(--mountain-opacity) * 0.82);
-  pointer-events: none;
-  z-index: -1;
-}
-
-@media (max-width: 768px) {
-  :root {
-    --mountain-opacity: 0.95;
-    --mountain-size: 160% auto;
-    --mountain-pos-y: 10%;
-  }
-}
+/* The pixel-mountain backdrop is now owned by <PanoramaScene /> — a solid,
+   full-opacity image with a route-driven pan/zoom camera. No faded CSS layer. */
 
 /* Subtle paper texture */
 body::before {
@@ -88,7 +57,7 @@ body::before {
   z-index: -2;
 }
 
-/* Background scene is now handled by <BackgroundScene /> React component */
+/* Background scene is now handled by the <PanoramaScene /> React component */
 
 /* Custom cursor only on precise pointers (desktop) */
 @media (hover: hover) and (pointer: fine) {
@@ -201,8 +170,8 @@ body::before {
   background: transparent;
   border: 2px solid #6B7A5C;
   border-radius: 20px 18px 22px 16px;
-  font-family: 'Shadows Into Light', cursive;
-  font-size: 0.9rem;
+  font-family: 'Caveat', cursive;
+  font-size: 0.95rem;
   color: #6B7A5C;
   transform: rotate(-1deg);
   transition: all 0.2s ease-out;
@@ -300,6 +269,56 @@ body::before {
   border-color: rgba(198, 123, 92, 0.3);
 }
 
+/* ── Homepage hero reveal (CSS-driven so it always plays) ──── */
+@keyframes heroRise {
+  from { opacity: 0; transform: translateY(42px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes heroFade {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.hero-letter {
+  display: inline-block;
+  opacity: 0;
+  animation: heroRise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.hero-fade {
+  opacity: 0;
+  animation: heroFade 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+/* The hero reveal is intentional and gentle — keep it even when the OS
+   requests reduced motion (which the global rule below otherwise disables). */
+@media (prefers-reduced-motion: reduce) {
+  .hero-letter { animation-duration: 0.6s !important; }
+  .hero-fade   { animation-duration: 0.55s !important; }
+}
+
+/* ── Homepage section links — slide + highlight bar on hover ─ */
+.section-link {
+  position: relative;
+  padding-left: 0;
+  transition: padding-left 0.3s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.section-link::before {
+  content: '';
+  position: absolute;
+  left: -14px;
+  top: 50%;
+  height: 0;
+  width: 3px;
+  background: #C67B5C;
+  border-radius: 2px;
+  transform: translateY(-50%);
+  transition: height 0.3s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.section-link:hover {
+  padding-left: 8px;
+}
+.section-link:hover::before {
+  height: 62%;
+}
+
 /* ── Homepage nav link sweep underline ─────────────────── */
 .nav-sweep {
   position: relative;
@@ -324,7 +343,6 @@ body::before {
   transform: scaleX(1);
 }
 
-/* Ink trail blobs are spawned and styled directly in InkTrail.jsx */
 
 /* ── Washi tape on cards — top-left decorative strip ──── */
 .shadow-card {

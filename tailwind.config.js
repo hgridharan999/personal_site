@@ -17,9 +17,14 @@ export default {
         tape: 'rgba(200, 180, 150, 0.3)',
       },
       fontFamily: {
-        handwritten: ['Caveat', 'cursive'],
-        body: ['Indie Flower', 'cursive'],
-        notes: ['Indie Flower', 'cursive'],
+        // `handwritten` is kept as the class name used across the app, but now
+        // resolves to the editorial display serif for a professional, legible look.
+        handwritten: ['Fraunces', 'Georgia', 'serif'],
+        display: ['Fraunces', 'Georgia', 'serif'],
+        body: ['Newsreader', 'Georgia', 'serif'],
+        notes: ['Newsreader', 'Georgia', 'serif'],
+        // Handwriting is now reserved for the name / signature accents only.
+        signature: ['Caveat', 'cursive'],
       },
       rotate: {
         '1': '1deg',

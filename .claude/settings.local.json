@@ -22,7 +22,9 @@
       "Bash(git commit:*)",
       "Bash(git:*)",
       "Bash(find c:Usershgridjournal_portfoliosrc -type f -name *.jsx -o -name *.js -o -name *.tsx -o -name *.ts)",
-      "Bash(grep -l \"chat\\\\|bot\\\\|ChatWidget\\\\|AxolotlIcon\" \"c:\\\\Users\\\\hgrid\\\\journal_portfolio\\\\src\\\\pages\"/*.jsx)"
+      "Bash(grep -l \"chat\\\\|bot\\\\|ChatWidget\\\\|AxolotlIcon\" \"c:\\\\Users\\\\hgrid\\\\journal_portfolio\\\\src\\\\pages\"/*.jsx)",
+      "Bash([ -f \"$f\" ])",
+      "Bash(python -c \"from PIL import Image; print\\(Image.open\\('public/panorama.png'\\).size\\)\")"
     ]
   }
 }

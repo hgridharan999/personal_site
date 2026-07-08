@@ -9,13 +9,12 @@ import WorkPage from './pages/WorkPage';
 import BlogPage from './pages/BlogPage';
 import BlogPostPage from './pages/BlogPostPage';
 import ChatWidget from './components/ChatWidget';
-import BackgroundScene from './components/BackgroundScene';
-import InkTrail from './components/InkTrail';
+import PanoramaScene from './components/PanoramaScene';
 
 const pageVariants = {
-  initial: { opacity: 0, y: 10 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
-  exit:    { opacity: 0, y: -6, transition: { duration: 0.2, ease: 'easeIn' } },
+  initial: { opacity: 0 },
+  animate: { opacity: 1, transition: { duration: 0.35, ease: 'easeOut' } },
+  exit:    { opacity: 0, transition: { duration: 0.2, ease: 'easeIn' } },
 };
 
 function AnimatedRoutes() {
@@ -28,7 +27,7 @@ function AnimatedRoutes() {
         initial="initial"
         animate="animate"
         exit="exit"
-        style={{ width: '100%', minHeight: '100vh' }}
+        style={{ width: '100%', minHeight: '100dvh' }}
       >
         <Routes location={location}>
           <Route path="/" element={<HomePage />} />
@@ -48,8 +47,7 @@ function AnimatedRoutes() {
 function App() {
   return (
     <Router>
-      <BackgroundScene />
-      <InkTrail />
+      <PanoramaScene />
       <AnimatedRoutes />
       <ChatWidget />
     </Router>

@@ -1,6 +1,4 @@
 import { motion } from 'framer-motion';
-import { useInView } from 'framer-motion';
-import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ExternalLink, Github, ArrowRight, Lock, Star } from 'lucide-react';
 
@@ -82,115 +80,78 @@ const projectsData = [
   }
 ];
 
-const ProjectCard = ({ project, index, isFeatured }) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-80px" });
-  const { Logo } = project;
-
+const ProjectCard = ({ project, index }) => {
   return (
     <motion.div
-      ref={ref}
-      className="border border-line rounded-xl p-5 shadow-card bg-paper-subtle"
-      initial={{ opacity: 0, y: 16 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5, delay: index * 0.08, ease: "easeOut" }}
+      className="border border-line rounded-lg p-3 shadow-card bg-paper-subtle flex flex-col min-h-0 overflow-hidden"
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, delay: 0.15 + index * 0.05, ease: "easeOut" }}
     >
-      <div className="flex gap-6">
-        {/* Logo column */}
-        {Logo && (
-          <div className="flex-shrink-0 flex items-center">
-            <Logo />
-          </div>
-        )}
-
-        {/* Content column */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-4 mb-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-handwritten text-xl sm:text-2xl font-bold text-ink">{project.title}</h3>
-              {project.featured && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-highlight/10 text-highlight text-xs font-body rounded-full">
-                  <Star className="w-3 h-3 fill-current" />
-                  Featured
-                </span>
-              )}
-            </div>
-            <p className="font-body text-xs sm:text-sm text-fade whitespace-nowrap flex-shrink-0">{project.date}</p>
-          </div>
-
-          <p className="font-body text-base text-ink leading-relaxed mb-3">{project.description}</p>
-
-          <p className="font-body text-xs text-fade mb-3">{project.tech.join(' · ')}</p>
-
-          <div className="flex flex-wrap gap-5 items-center">
-            {project.stealth && (
-              <span className="inline-flex items-center gap-1.5 font-body text-sm text-fade">
-                <Lock className="w-3.5 h-3.5" />
-                building in stealth
-              </span>
-            )}
-            {project.internalUrl && (
-              <Link
-                to={project.internalUrl}
-                className="inline-flex items-center gap-1 font-body text-sm text-ink-accent hover:text-highlight transition-colors group"
-              >
-                explore project
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-              </Link>
-            )}
-            {project.liveUrl && (
-              <a
-                href={project.liveUrl}
-                className="inline-flex items-center gap-1 font-body text-sm text-ink-accent hover:text-highlight transition-colors"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                live site
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            )}
-            {project.githubUrl && (
-              <a
-                href={project.githubUrl}
-                className="inline-flex items-center gap-1 font-body text-sm text-ink-accent hover:text-highlight transition-colors"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Github className="w-3.5 h-3.5" />
-                github
-              </a>
-            )}
-          </div>
+      <div className="flex items-baseline justify-between gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <h3 className="font-handwritten text-lg font-bold text-ink leading-tight truncate">{project.title}</h3>
+          {project.featured && (
+            <Star className="w-3 h-3 fill-current text-highlight shrink-0" />
+          )}
         </div>
+        <p className="font-body text-[11px] text-fade whitespace-nowrap flex-shrink-0">{project.date}</p>
+      </div>
+
+      <p className="font-body text-[13px] text-ink leading-snug line-clamp-2 mt-1">{project.description}</p>
+
+      <p className="font-body text-[11px] text-fade line-clamp-1 mt-1">{project.tech.join(' · ')}</p>
+
+      <div className="flex flex-wrap gap-x-3 gap-y-1 items-center mt-auto pt-1.5">
+        {project.stealth && (
+          <span className="inline-flex items-center gap-1 font-body text-xs text-fade">
+            <Lock className="w-3 h-3" />
+            in stealth
+          </span>
+        )}
+        {project.internalUrl && (
+          <Link
+            to={project.internalUrl}
+            className="inline-flex items-center gap-1 font-body text-xs text-ink-accent hover:text-highlight transition-colors group"
+          >
+            explore
+            <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+        )}
+        {project.liveUrl && (
+          <a
+            href={project.liveUrl}
+            className="inline-flex items-center gap-1 font-body text-xs text-ink-accent hover:text-highlight transition-colors"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            live site
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        )}
+        {project.githubUrl && (
+          <a
+            href={project.githubUrl}
+            className="inline-flex items-center gap-1 font-body text-xs text-ink-accent hover:text-highlight transition-colors"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Github className="w-3 h-3" />
+            github
+          </a>
+        )}
       </div>
     </motion.div>
   );
 };
 
 const Projects = () => {
-  const featuredProjects = projectsData.filter(p => p.featured);
-  const regularProjects = projectsData.filter(p => !p.featured);
-
   return (
-    <section className="py-1 pb-12 max-w-5xl mx-auto w-full px-1 sm:px-2">
-      {/* Featured Projects */}
-      {featuredProjects.length > 0 && (
-        <div className="space-y-4 mb-8">
-          {featuredProjects.map((project, index) => (
-            <ProjectCard key={index} project={project} index={index} isFeatured={true} />
-          ))}
-        </div>
-      )}
-
-      {/* Regular Projects - Two Column Grid */}
-      {regularProjects.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {regularProjects.map((project, index) => (
-            <ProjectCard key={index + featuredProjects.length} project={project} index={index + featuredProjects.length} isFeatured={false} />
-          ))}
-        </div>
-      )}
-    </section>
+    <div className="h-full grid grid-cols-1 sm:grid-cols-2 auto-rows-fr gap-3">
+      {projectsData.map((project, index) => (
+        <ProjectCard key={index} project={project} index={index} />
+      ))}
+    </div>
   );
 };
 
