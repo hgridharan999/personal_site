@@ -6,11 +6,8 @@
 body {
   margin: 0;
   padding: 0;
-  background:
-    radial-gradient(circle at 12% 10%, rgba(198, 123, 92, 0.07), transparent 42%),
-    radial-gradient(circle at 88% 82%, rgba(107, 122, 92, 0.07), transparent 44%),
-    #F5F1E8;
-  color: #2C2C2C;
+  background: #0B0A0A;
+  color: #EDE7DA;
   font-family: 'Newsreader', Georgia, serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -88,14 +85,14 @@ body::before {
 }
 
 /* Reduce motion support */
+/* Reduce transitions (hover micro-interactions) under reduced-motion, but keep
+   the ambient background + hero keyframe animations — they are the core of the
+   experience and the site owner has explicitly asked for them. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-    will-change: auto !important;
   }
 }
 

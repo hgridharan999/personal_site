@@ -23,7 +23,10 @@ const NAME_END = 0.2 + NAME.length * 0.05; // when the letter cascade finishes
 export default function HomePage() {
   return (
     <div className="h-[100dvh] w-full overflow-hidden flex items-start justify-start px-7 sm:px-12 lg:px-16 pt-6 sm:pt-9">
-      <div className="font-display w-full max-w-sm flex flex-col gap-3">
+      <div
+        className="font-display w-full max-w-sm flex flex-col gap-3"
+        style={{ textShadow: '0 1px 16px rgba(0,0,0,0.55)' }}
+      >
 
         {/* Identity — face-cropped portrait + credential */}
         <div className="flex items-center gap-4 hero-fade" style={{ animationDelay: '0.05s' }}>
@@ -39,14 +42,14 @@ export default function HomePage() {
               backgroundColor: '#E8E2D6',
             }}
           />
-          <p className="font-display text-[13px] uppercase tracking-[0.26em] text-ink-accent leading-relaxed">
+          <p className="font-display text-[13px] uppercase tracking-[0.26em] text-paper/75 leading-relaxed">
             Cornell Dyson ’29<br />Dyson Scholar
           </p>
         </div>
 
         {/* Name — CSS letter cascade */}
         <h1
-          className="font-signature text-5xl sm:text-6xl text-ink leading-[0.9]"
+          className="font-signature text-5xl sm:text-6xl text-paper leading-[0.9]"
           style={{ display: 'flex', flexWrap: 'wrap' }}
           aria-label={NAME}
         >
@@ -62,7 +65,7 @@ export default function HomePage() {
           ))}
         </h1>
 
-        <p className="font-display text-base tracking-wide text-ink/80 leading-snug hero-fade" style={{ animationDelay: `${NAME_END}s` }}>
+        <p className="font-display text-base tracking-wide text-paper/80 leading-snug hero-fade" style={{ animationDelay: `${NAME_END}s` }}>
           Founder · AI · Consulting
         </p>
 
@@ -75,10 +78,10 @@ export default function HomePage() {
               className="section-link group flex items-center justify-between py-1 hero-fade"
               style={{ animationDelay: `${NAME_END + 0.1 + i * 0.07}s` }}
             >
-              <span className="font-display text-2xl sm:text-[1.75rem] font-medium text-ink leading-none transition-colors group-hover:text-highlight">
+              <span className="font-display text-2xl sm:text-[1.75rem] font-medium text-paper leading-none transition-colors group-hover:text-highlight">
                 {s.label}
               </span>
-              <ArrowUpRight className="w-5 h-5 text-fade shrink-0 transition-all duration-300 group-hover:text-highlight group-hover:translate-x-1 group-hover:-translate-y-1" />
+              <ArrowUpRight className="w-5 h-5 text-paper/50 shrink-0 transition-all duration-300 group-hover:text-highlight group-hover:translate-x-1 group-hover:-translate-y-1" />
             </Link>
           ))}
         </nav>
@@ -93,7 +96,7 @@ export default function HomePage() {
               download={download}
               target={download ? undefined : '_blank'}
               rel="noopener noreferrer"
-              className="text-ink/70 hover:text-highlight transition-colors"
+              className="text-paper/70 hover:text-highlight transition-colors"
             >
               <Icon className="w-[18px] h-[18px]" />
             </a>

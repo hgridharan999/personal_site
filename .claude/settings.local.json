@@ -24,7 +24,23 @@
       "Bash(find c:Usershgridjournal_portfoliosrc -type f -name *.jsx -o -name *.js -o -name *.tsx -o -name *.ts)",
       "Bash(grep -l \"chat\\\\|bot\\\\|ChatWidget\\\\|AxolotlIcon\" \"c:\\\\Users\\\\hgrid\\\\journal_portfolio\\\\src\\\\pages\"/*.jsx)",
       "Bash([ -f \"$f\" ])",
-      "Bash(python -c \"from PIL import Image; print\\(Image.open\\('public/panorama.png'\\).size\\)\")"
+      "Bash(python -c \"from PIL import Image; print\\(Image.open\\('public/panorama.png'\\).size\\)\")",
+      "Bash(ls -la \"C:\\\\Users\\\\hgrid\\\\Downloads\\\\screen-capture.webm\" && echo \"---\" && which ffmpeg ffprobe 2>/dev/null || echo \"no ffmpeg on PATH\")",
+      "Bash(node -e ' *)",
+      "Bash(kill %1)",
+      "Bash(node -e 'const s=require\\('\\\\''fs'\\\\''\\).statSync\\('\\\\''C:/Users/hgrid/AppData/Local/Temp/claude/C--Users-hgrid-journal-portfolio/5ce06b17-34af-4f9a-ac2c-b4db48fd7fdb/scratchpad/hiker.png'\\\\''\\);console.log\\('\\\\''copied hiker.png'\\\\'', s.size,'\\\\''bytes'\\\\''\\)')",
+      "Bash(node -e \"const http=require\\('http'\\),fs=require\\('fs'\\),path=require\\('path'\\);const root=process.cwd\\(\\);const t={'.html':'text/html','.png':'image/png','.webm':'video/webm'};http.createServer\\(\\(rq,rs\\)=>{let f=path.join\\(root,decodeURIComponent\\(rq.url.split\\('?'\\)[0]\\)\\);if\\(rq.url==='/'\\)f=path.join\\(root,'hiker-demo.html'\\);fs.readFile\\(f,\\(e,d\\)=>{if\\(e\\){rs.writeHead\\(404\\);rs.end\\('nf'\\);return;}rs.writeHead\\(200,{'Content-Type':t[path.extname\\(f\\)]||'application/octet-stream'}\\);rs.end\\(d\\);}\\);}\\).listen\\(8792,\\(\\)=>console.log\\('serving 8792'\\)\\);\")",
+      "Bash(powershell -NoProfile -Command 'Get-NetTCPConnection -LocalPort 8792 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }')",
+      "Bash(ls .claude/launch.json)",
+      "Skill(remotion-render)",
+      "Skill(remotion-render:*)",
+      "Bash(rm -f public/_tmp_hiker_src.png)",
+      "Bash(rm -f public/hiker-storm.jpg)",
+      "Bash(rm -f public/_scene_src2.png)",
+      "Bash(node -e \"const p=require\\('./package.json'\\).dependencies; console.log\\('gsap',p.gsap,'| @gsap/react',p['@gsap/react'],'| lenis',p.lenis,'| framer-motion',p['framer-motion']\\)\")",
+      "Bash(node -e \"console.log\\('leaflet', require\\('./package.json'\\).dependencies.leaflet\\)\")",
+      "Bash(powershell -NoProfile -Command 'Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }')",
+      "Bash(python -c ' *)"
     ]
   }
 }

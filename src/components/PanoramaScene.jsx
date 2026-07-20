@@ -95,14 +95,28 @@ export default function PanoramaScene() {
           />
 
           {/* ── Ambient life, positioned over the image in image-% ── */}
-          <div className="amb cloud" style={{ left: '20%', top: '8%',  width: '18vw', height: '5vw' }} />
-          <div className="amb cloud c2" style={{ left: '4%',  top: '20%', width: '12vw', height: '3.5vw' }} />
-          <div className="amb cloud c3" style={{ left: '60%', top: '4%',  width: '14vw', height: '4vw' }} />
-          <div className="amb cloud c4" style={{ left: '78%', top: '14%', width: '10vw', height: '3vw' }} />
-          <div className="amb mist" style={{ left: '40%', top: '56%', width: '34vw', height: '9vw' }} />
+          <div className="amb cloud"    style={{ left: '14%', top: '9%',  width: '20vw', height: '5.5vw' }} />
+          <div className="amb cloud c2" style={{ left: '2%',  top: '22%', width: '13vw', height: '3.6vw' }} />
+          <div className="amb cloud c3" style={{ left: '54%', top: '5%',  width: '15vw', height: '4vw' }} />
+
+          {/* a flock of birds crossing the sky */}
+          <div className="amb birds" style={{ top: '16%' }}>
+            <svg viewBox="0 0 90 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 16 Q10 8 16 16 Q22 8 28 16"   stroke="#3b3a36" strokeWidth="2"   strokeLinecap="round" />
+              <path d="M40 10 Q45 4 50 10 Q55 4 60 10"  stroke="#3b3a36" strokeWidth="1.6" strokeLinecap="round" />
+              <path d="M58 24 Q62 19 66 24 Q70 19 74 24" stroke="#3b3a36" strokeWidth="1.4" strokeLinecap="round" />
+            </svg>
+          </div>
+
+          {/* valley mist */}
+          <div className="amb mist" style={{ left: '38%', top: '55%', width: '36vw', height: '10vw' }} />
+          {/* lake shimmer */}
           <div className="amb shimmer" style={{ left: '1%', top: '70%', width: '20vw', height: '6vw' }} />
-          <div className="amb smoke" style={{ left: '61.5%', top: '76%' }} />
-          <div className="amb smoke s2" style={{ left: '63%', top: '77%' }} />
+          {/* cabin smoke */}
+          <div className="amb smoke" style={{ left: '61.5%', top: '74%' }} />
+          <div className="amb smoke s2" style={{ left: '63%', top: '75%' }} />
+          {/* warm glow breathing on the peak */}
+          <div className="amb glow" style={{ left: '70%', top: '10%', width: '24vw', height: '24vw' }} />
         </motion.div>
       </div>
 
@@ -119,39 +133,50 @@ export default function PanoramaScene() {
       />
 
       <style>{`
+        /* Ambient background motion is the centerpiece of the design — it runs
+           with !important so it survives the global reduced-motion override. */
         .amb { position: absolute; pointer-events: none; will-change: transform, opacity; }
         .cloud {
-          background: radial-gradient(closest-side, rgba(255,252,245,0.85), rgba(255,252,245,0) 72%);
-          border-radius: 50%; filter: blur(2px); opacity: 0.6;
-          animation: ambDriftR 60s linear infinite;
+          background: radial-gradient(closest-side, rgba(255,253,247,0.95), rgba(255,253,247,0) 70%);
+          border-radius: 50%; filter: blur(3px); opacity: 0.85;
+          animation: cloudDrift 30s ease-in-out infinite !important;
         }
-        .cloud.c2 { opacity: 0.45; animation: ambDriftR 82s linear infinite; animation-delay: -20s; }
-        .cloud.c3 { opacity: 0.5;  animation: ambDriftR 70s linear infinite; animation-delay: -35s; }
-        .cloud.c4 { opacity: 0.4;  animation: ambDriftL 90s linear infinite; }
+        .cloud.c2 { opacity: 0.7; animation: cloudDrift 38s ease-in-out infinite !important; animation-delay: -12s; }
+        .cloud.c3 { opacity: 0.75; animation: cloudDrift 34s ease-in-out infinite !important; animation-delay: -6s; }
+        .birds { left: -14vw; opacity: 0.55; animation: birdsFly 22s linear infinite !important; }
+        .birds svg { width: 7vw; height: auto; display: block; }
         .mist {
-          background: radial-gradient(closest-side, rgba(228,224,210,0.5), rgba(228,224,210,0) 75%);
-          filter: blur(6px); opacity: 0.45; animation: ambMist 34s ease-in-out infinite;
+          background: radial-gradient(closest-side, rgba(230,226,214,0.6), rgba(230,226,214,0) 74%);
+          filter: blur(7px); opacity: 0.5; animation: ambMist 20s ease-in-out infinite !important;
         }
         .shimmer {
-          background: linear-gradient(0deg, rgba(255,250,240,0), rgba(255,250,240,0.5) 50%, rgba(255,250,240,0));
-          filter: blur(3px); opacity: 0.3; animation: ambShimmer 9s ease-in-out infinite;
+          background: linear-gradient(0deg, rgba(255,250,240,0), rgba(255,250,240,0.6) 50%, rgba(255,250,240,0));
+          filter: blur(3px); opacity: 0.35; animation: ambShimmer 6s ease-in-out infinite !important;
         }
         .smoke {
-          width: 0.5vw; height: 6vw;
-          background: linear-gradient(0deg, rgba(230,225,215,0.55), rgba(230,225,215,0) 85%);
+          width: 0.6vw; height: 7vw;
+          background: linear-gradient(0deg, rgba(235,230,220,0.8), rgba(235,230,220,0) 88%);
           filter: blur(3px); border-radius: 40%; transform-origin: bottom center;
-          animation: ambSmoke 11s ease-in-out infinite;
+          animation: ambSmoke 8s ease-in-out infinite !important;
         }
-        .smoke.s2 { height: 5vw; opacity: 0.7; animation: ambSmoke 13s ease-in-out infinite; animation-delay: -4s; }
-        @keyframes ambDriftR { from { transform: translateX(-6vw); } to { transform: translateX(10vw); } }
-        @keyframes ambDriftL { from { transform: translateX(8vw); }  to { transform: translateX(-8vw); } }
-        @keyframes ambMist { 0%,100% { transform: translateX(-3vw); opacity: 0.35; } 50% { transform: translateX(3vw); opacity: 0.55; } }
-        @keyframes ambShimmer { 0%,100% { opacity: 0.16; transform: scaleX(0.98); } 50% { opacity: 0.4; transform: scaleX(1.02); } }
-        @keyframes ambSmoke { 0% { transform: translateY(0) scaleY(0.9); opacity: 0; } 20% { opacity: 0.6; } 100% { transform: translateY(-3vw) scaleY(1.3); opacity: 0; } }
-        @media (prefers-reduced-motion: reduce) {
-          .amb { animation: none !important; }
-          .shimmer, .smoke { opacity: 0.25; }
+        .smoke.s2 { height: 5.5vw; animation: ambSmoke 10s ease-in-out infinite !important; animation-delay: -3s; }
+        .glow {
+          background: radial-gradient(closest-side, rgba(255,204,150,0.4), rgba(255,204,150,0) 70%);
+          mix-blend-mode: screen;
+          animation: ambGlow 7s ease-in-out infinite !important;
         }
+        @keyframes cloudDrift { 0%,100% { transform: translateX(-5vw); } 50% { transform: translateX(8vw); } }
+        @keyframes birdsFly {
+          0%   { transform: translate(0, 0); }
+          25%  { transform: translate(32vw, -2.5vw); }
+          50%  { transform: translate(62vw, 1vw); }
+          75%  { transform: translate(92vw, -1.5vw); }
+          100% { transform: translate(128vw, 0); }
+        }
+        @keyframes ambMist { 0%,100% { transform: translateX(-4vw); opacity: 0.4; } 50% { transform: translateX(4vw); opacity: 0.62; } }
+        @keyframes ambShimmer { 0%,100% { opacity: 0.2; transform: scaleX(0.98); } 50% { opacity: 0.55; transform: scaleX(1.03); } }
+        @keyframes ambSmoke { 0% { transform: translateY(0) scaleY(0.9); opacity: 0; } 25% { opacity: 0.8; } 100% { transform: translateY(-4vw) scaleY(1.4); opacity: 0; } }
+        @keyframes ambGlow { 0%,100% { opacity: 0.45; transform: scale(0.95); } 50% { opacity: 0.9; transform: scale(1.1); } }
       `}</style>
     </div>
   );

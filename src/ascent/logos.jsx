@@ -1,0 +1,49 @@
+/**
+ * Company marks for the Work page, in their correct brand colorways, sitting on
+ * the dark tile. Vector marks keep their real colors; raster logos render as-is.
+ */
+
+const Adobe = ({ s }) => (
+  <svg viewBox="0 0 24 24" style={{ width: s, height: s }} xmlns="http://www.w3.org/2000/svg">
+    <path d="M14.86 3H23v19zM9.14 3H1v19zM11.992 9.998L17.182 22h-3.394l-1.549-3.813h-3.79z" fill="#EB1000" />
+  </svg>
+);
+
+const CornellEC = ({ s }) => (
+  <svg width={s} height={s} viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="82,43 64,76 100,76" fill="#E8B830" />
+    <polygon points="82,43 118,43 100,76" fill="#F7DC6F" />
+    <polygon points="118,43 100,76 136,76" fill="#F0D060" />
+    <polygon points="64,76 46,109 82,109" fill="#D4A84B" />
+    <polygon points="64,76 100,76 82,109" fill="#C8956E" />
+    <polygon points="100,76 136,76 118,109" fill="#B5C96A" />
+    <polygon points="136,76 118,109 154,109" fill="#8CBF78" />
+    <polygon points="46,109 28,142 64,142" fill="#C43A57" />
+    <polygon points="46,109 82,109 64,142" fill="#D95070" />
+    <polygon points="118,109 154,109 136,142" fill="#40B5A0" />
+    <polygon points="154,109 136,142 172,142" fill="#2A9D8F" />
+    <polygon points="28,142 64,142 46,175" fill="#E06070" />
+    <polygon points="64,142 46,175 82,175" fill="#D87580" />
+    <polygon points="64,142 100,142 82,175" fill="#E0A090" />
+    <polygon points="100,142 82,175 118,175" fill="#D8C0A0" />
+    <polygon points="100,142 136,142 118,175" fill="#A0C8A0" />
+    <polygon points="136,142 118,175 154,175" fill="#50B8A0" />
+    <polygon points="136,142 172,142 154,175" fill="#30A090" />
+    <polygon points="100,76 64,142 136,142" fill="#060606" />
+  </svg>
+);
+
+const Raster = ({ src, s }) => (
+  <img src={src} alt="" style={{ width: s, height: s, objectFit: 'contain' }} />
+);
+
+export function CompanyLogo({ company, size = 54 }) {
+  switch (company) {
+    case 'Adobe': return <Adobe s={size} />;
+    case 'Cornell Entrepreneurship Club': return <CornellEC s={size} />;
+    case 'Cornell Armada': return <Raster src="https://armada.build/ship.png" s={size} />;
+    case 'Loadstone Labs': return <Raster src="/loadstonelabs_logo.jpg" s={size} />;
+    case 'Widget Factory': return <Raster src="/widgetfactory_logo.jpg" s={size} />;
+    default: return null;
+  }
+}
