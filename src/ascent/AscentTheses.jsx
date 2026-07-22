@@ -10,8 +10,27 @@ const thesisLink = (
   </Link>
 );
 
+const isEssay = (it) => it.source === 'blog' && it.internalSlug;
+
+function renderItem(it, i) {
+  const internal = isEssay(it);
+  const Comp = internal ? Link : 'a';
+  const linkProps = internal
+    ? { to: `/blog/${it.internalSlug}` }
+    : { href: it.externalUrl || '#', target: '_blank', rel: 'noopener noreferrer' };
+  return (
+    <Comp key={it.id || i} {...linkProps} data-hot className="asc-feed-item">
+      <span className="asc-mono" style={{ color: 'var(--faint)', whiteSpace: 'nowrap' }}>{it.displayDate}</span>
+      <span className="asc-feed-title">{it.title}</span>
+      <ArrowUpRight size={16} style={{ opacity: 0.5, alignSelf: 'center' }} />
+    </Comp>
+  );
+}
+
 export default function AscentTheses() {
   const { items, loading } = useUnifiedFeed();
+  const essays = items.filter(isEssay);
+  const posts = items.filter((it) => !isEssay(it));
 
   return (
     <SubShell index="04" title="Theses" current="Theses" subtitle={thesisLink}>
@@ -30,26 +49,19 @@ export default function AscentTheses() {
           </ol>
         </div>
 
-        {/* right — the feed */}
+        {/* right — essays on top, posts below */}
         <div className="asc-col">
-          <span className="asc-mono asc-amber">Notes &amp; essays</span>
-          <div style={{ marginTop: 12 }}>
-            {loading && <div className="asc-mono" style={{ color: 'var(--faint)', padding: '20px 0' }}>Loading the record…</div>}
-            {items.map((it, i) => {
-              const internal = it.source === 'blog' && it.internalSlug;
-              const Comp = internal ? Link : 'a';
-              const linkProps = internal
-                ? { to: `/blog/${it.internalSlug}` }
-                : { href: it.externalUrl || '#', target: '_blank', rel: 'noopener noreferrer' };
-              return (
-                <Comp key={it.id || i} {...linkProps} data-hot className="asc-feed-item">
-                  <span className="asc-mono" style={{ color: 'var(--faint)', whiteSpace: 'nowrap' }}>{it.displayDate}</span>
-                  <span className="asc-feed-title">{it.title}</span>
-                  <ArrowUpRight size={16} style={{ opacity: 0.5, alignSelf: 'center' }} />
-                </Comp>
-              );
-            })}
-          </div>
+          {loading && <div className="asc-mono" style={{ color: 'var(--faint)', padding: '20px 0' }}>Loading the record…</div>}
+
+          <section>
+            <span className="asc-mono asc-amber">Essays</span>
+            <div style={{ marginTop: 12 }}>{essays.map(renderItem)}</div>
+          </section>
+
+          <section style={{ marginTop: 'clamp(22px, 3.4vh, 40px)' }}>
+            <span className="asc-mono asc-amber">Posts</span>
+            <div style={{ marginTop: 12 }}>{posts.map(renderItem)}</div>
+          </section>
         </div>
       </div>
     </SubShell>

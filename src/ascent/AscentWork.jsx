@@ -9,7 +9,7 @@ export default function AscentWork() {
   const e = EXPERIENCES[sel];
 
   return (
-    <SubShell index="01" title="Work" current="Work" subtitle="Roles, teams, and the things I’ve shipped.">
+    <SubShell index="01" title="Work" current="Work">
       <div className="asc-md">
         <div className="asc-md-list">
           {EXPERIENCES.map((x, i) => (
@@ -32,10 +32,16 @@ export default function AscentWork() {
             <div className="asc-logo-tile"><CompanyLogo company={e.company} size={56} /></div>
             <div>
               <div className="asc-mono" style={{ color: 'var(--faint)', marginBottom: 6 }}>{e.period}</div>
-              <a href={e.url} target="_blank" rel="noopener noreferrer" data-hot className="asc-link"
-                 style={{ color: 'var(--amber)', fontFamily: 'var(--display)', fontWeight: 800, letterSpacing: '-0.01em', fontSize: 'clamp(20px, 2.2vw, 30px)', lineHeight: 1.05, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                {e.company} <ArrowUpRight size={18} />
-              </a>
+              {e.url ? (
+                <a href={e.url} target="_blank" rel="noopener noreferrer" data-hot className="asc-link"
+                   style={{ color: 'var(--amber)', fontFamily: 'var(--display)', fontWeight: 800, letterSpacing: '-0.01em', fontSize: 'clamp(20px, 2.2vw, 30px)', lineHeight: 1.05, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  {e.company} <ArrowUpRight size={18} />
+                </a>
+              ) : (
+                <span style={{ color: 'var(--amber)', fontFamily: 'var(--display)', fontWeight: 800, letterSpacing: '-0.01em', fontSize: 'clamp(20px, 2.2vw, 30px)', lineHeight: 1.05, display: 'inline-block' }}>
+                  {e.company}
+                </span>
+              )}
             </div>
           </div>
           <h2 className="asc-detail-title">{e.title}</h2>

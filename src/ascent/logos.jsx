@@ -37,6 +37,24 @@ const Raster = ({ src, s }) => (
   <img src={src} alt="" style={{ width: s, height: s, objectFit: 'contain' }} />
 );
 
+// Typographic fallback for marks we don't have a verified brand asset for.
+const Monogram = ({ text, s, color }) => (
+  <div style={{
+    width: s, height: s, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontFamily: "'Archivo', system-ui, sans-serif", fontWeight: 800,
+    letterSpacing: '-0.03em', fontSize: s * 0.32, color,
+  }}>{text}</div>
+);
+
+// Stealth — no public mark by definition.
+const Stealth = ({ s }) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="#E8C089" strokeWidth="1.6"
+       strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+    <rect x="4" y="10.5" width="16" height="10" rx="2" />
+    <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
+  </svg>
+);
+
 export function CompanyLogo({ company, size = 54 }) {
   switch (company) {
     case 'Adobe': return <Adobe s={size} />;
@@ -44,6 +62,8 @@ export function CompanyLogo({ company, size = 54 }) {
     case 'Cornell Armada': return <Raster src="https://armada.build/ship.png" s={size} />;
     case 'Loadstone Labs': return <Raster src="/loadstonelabs_logo.jpg" s={size} />;
     case 'Widget Factory': return <Raster src="/widgetfactory_logo.jpg" s={size} />;
+    case 'EXL': return <Monogram text="EXL" s={size} color="#EDE7DA" />;
+    case 'Stealth Startup': return <Stealth s={size} />;
     default: return null;
   }
 }

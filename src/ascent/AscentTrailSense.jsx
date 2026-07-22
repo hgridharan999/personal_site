@@ -14,8 +14,12 @@ const TECH = ['React', 'TypeScript', 'FastAPI', 'PostgreSQL', 'PostGIS', 'TanSta
 
 export default function AscentTrailSense() {
   return (
-    <SubShell title="TrailSense" subtitle="Hiking decision-support — assesses trail feasibility from weather, trail data, and your capability profile. Learns from every hike you log.">
+    <SubShell title="TrailSense">
       <div style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', scrollbarWidth: 'none', display: 'flex', flexDirection: 'column', gap: 'clamp(18px, 3vh, 30px)', borderTop: '1px solid var(--line)', paddingTop: 'clamp(14px, 2.4vh, 26px)' }}>
+
+        <p style={{ color: 'var(--bone)', fontSize: 'clamp(14px, 1.3vw, 17px)', lineHeight: 1.5, margin: 0, maxWidth: '68ch' }}>
+          Hiking decision-support — assesses trail feasibility from weather, trail data, and your capability profile. Learns from every hike you log.
+        </p>
 
         <div className="asc-mono" style={{ color: 'var(--faint)' }}>All 4 phases complete · FastAPI · PostgreSQL · React · TypeScript</div>
 

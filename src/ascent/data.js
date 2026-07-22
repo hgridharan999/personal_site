@@ -2,6 +2,10 @@
 // the wording matches exactly. Logos dropped from the data (handled in logos.jsx).
 
 export const EXPERIENCES = [
+  { title: 'Consultant', company: 'EXL', url: 'https://www.exlservice.com/', location: 'Remote', period: 'Summer 2026',
+    description: 'Managed a portfolio of client contracts valued at $70M+ across Fortune 100 accounts, tracking scope, deliverables, and renewal terms. Built a custom CRM tool to replace manual tracking, administered contract data in Salesforce, and delivered executive-ready decks for global teams.' },
+  { title: 'Operations & Strategy Intern', company: 'Stealth Startup', url: null, location: 'Remote', period: 'Jun 2026 – Jul 2026',
+    description: "Scaled an early-stage mortgage fintech's lender network from 6 to 25+ signed partnerships in under five weeks — roughly 4x, expanding revenue ~300%. Negotiated terms with partner executives, ran user testing, and directed a source-verified technical audit across 12 subsystems." },
   { title: 'AI/Strategy Consultant (Contract)', company: 'Adobe', url: 'https://www.adobe.com/', location: 'Remote', period: 'Jan 2026 – Apr 2026',
     description: 'Advised IT leadership at Fortune 500 firms on AI product strategy tied to $1M+ enterprise contracts. Built market sizing frameworks, UX benchmarks, and positioning analyses; proposed business cases now in suite beta testing.' },
   { title: 'Problem Design Engineer', company: 'Widget Factory', url: 'https://widgetfactory.ai/', location: 'Remote', period: 'Jan 2026 – Apr 2026',

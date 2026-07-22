@@ -9,7 +9,7 @@ export default function AscentProjects() {
   const p = PROJECTS[sel];
 
   return (
-    <SubShell index="02" title="Projects" current="Projects" subtitle="Products & experiments — personal, useful, a little obsessive.">
+    <SubShell index="02" title="Projects" current="Projects">
       <div className="asc-md">
         <div className="asc-md-list">
           {PROJECTS.map((x, i) => (
