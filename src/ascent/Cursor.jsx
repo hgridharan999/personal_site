@@ -18,25 +18,31 @@ export default function Cursor() {
     if (!enabled) return;
     const p = { x: innerWidth / 2, y: innerHeight / 2, cx: innerWidth / 2, cy: innerHeight / 2 };
 
-    const onMove = (e) => { p.x = e.clientX; p.y = e.clientY; };
+    let raf = null;
+    const loop = () => {
+      p.cx += (p.x - p.cx) * 0.18;
+      p.cy += (p.y - p.cy) * 0.18;
+      if (dot.current) dot.current.style.transform = `translate(${p.cx}px, ${p.cy}px) translate(-50%, -50%)`;
+      // stop looping once the ring has settled on the pointer — restart on move
+      if (Math.abs(p.x - p.cx) > 0.1 || Math.abs(p.y - p.cy) > 0.1) {
+        raf = requestAnimationFrame(loop);
+      } else {
+        raf = null;
+      }
+    };
+    const kick = () => { if (raf === null && !document.hidden) raf = requestAnimationFrame(loop); };
+
+    const onMove = (e) => { p.x = e.clientX; p.y = e.clientY; kick(); };
     const onOver = (e) => {
       const hot = e.target.closest && e.target.closest('[data-hot]');
       dot.current && dot.current.classList.toggle('is-hot', !!hot);
     };
     window.addEventListener('mousemove', onMove, { passive: true });
     window.addEventListener('mouseover', onOver, { passive: true });
-
-    let raf;
-    const loop = () => {
-      p.cx += (p.x - p.cx) * 0.18;
-      p.cy += (p.y - p.cy) * 0.18;
-      if (dot.current) dot.current.style.transform = `translate(${p.cx}px, ${p.cy}px) translate(-50%, -50%)`;
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
+    kick();
 
     return () => {
-      cancelAnimationFrame(raf);
+      if (raf !== null) cancelAnimationFrame(raf);
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseover', onOver);
     };

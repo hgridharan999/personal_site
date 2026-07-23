@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { gsap, useGSAP } from '../lib/gsap';
 import Cursor from './Cursor';
+import ScrambleText from './ScrambleText';
+import PageInstrument from './PageInstrument';
 import './ascent.css';
 
 /**
@@ -10,7 +12,7 @@ import './ascent.css';
  * scroll) frame: back bar, compact mask-rise header, a flex body slot the page
  * fills (master ⇄ detail), and a thin footer. Custom cursor + entrance only.
  */
-export default function SubShell({ index, title, current, subtitle, children }) {
+export default function SubShell({ index, title, current, subtitle, instrument, instrumentCtl, children }) {
   const root = useRef(null);
 
   useEffect(() => {
@@ -25,8 +27,17 @@ export default function SubShell({ index, title, current, subtitle, children }) 
     gsap.set(q('.asc-in'), { opacity: 0, y: 12 });
     gsap.timeline({ delay: 0.1 })
       .to(q('.asc-rise'), { yPercent: 0, duration: 1, ease: 'expo.out' }, 0)
-      .to(q('.asc-in'), { opacity: 1, y: 0, duration: 0.7, ease: 'expo.out', stagger: 0.05 }, 0.15);
+      .to(q('.asc-in'), { opacity: 1, y: 0, duration: 0.6, ease: 'expo.out', stagger: 0.045 }, 0.1);
   }, { scope: root });
+
+  // Fail-safe: content is never left hidden if the entrance stalls mid-transition.
+  useEffect(() => {
+    const el = root.current;
+    const id = setTimeout(() => {
+      el?.querySelectorAll('.asc-in, .asc-rise').forEach((n) => { n.style.opacity = '1'; n.style.transform = 'none'; });
+    }, 1400);
+    return () => clearTimeout(id);
+  }, []);
 
   return (
     <div ref={root} className="asc asc-sub">
@@ -36,12 +47,17 @@ export default function SubShell({ index, title, current, subtitle, children }) 
         <Link to="/" data-hot className="asc-back asc-mono asc-in">
           <ArrowLeft size={14} /> <span className="b-name">Hari Gridharan</span>
         </Link>
+        {instrument && (
+          <div className="asc-instrument asc-in">
+            <PageInstrument variant={instrument} ctl={instrumentCtl} size={132} />
+          </div>
+        )}
       </div>
 
       <div className="asc-sub-body">
         <header className="asc-sub-head">
           <h1 className="asc-h asc-sub-title">
-            <span className="asc-line-mask"><span className="asc-rise">{title}</span></span>
+            <ScrambleText text={title} duration={850} delay={120} style={{ display: 'inline-block' }} />
           </h1>
           {subtitle && <p className="asc-sub-sub asc-in">{subtitle}</p>}
         </header>

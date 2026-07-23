@@ -14,7 +14,7 @@ const TECH = ['React', 'TypeScript', 'FastAPI', 'PostgreSQL', 'PostGIS', 'TanSta
 
 export default function AscentTrailSense() {
   return (
-    <SubShell title="TrailSense">
+    <SubShell title="TrailSense" instrument="trailsense">
       <div style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', scrollbarWidth: 'none', display: 'flex', flexDirection: 'column', gap: 'clamp(18px, 3vh, 30px)', borderTop: '1px solid var(--line)', paddingTop: 'clamp(14px, 2.4vh, 26px)' }}>
 
         <p style={{ color: 'var(--bone)', fontSize: 'clamp(14px, 1.3vw, 17px)', lineHeight: 1.5, margin: 0, maxWidth: '68ch' }}>

@@ -1,8 +1,13 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Linkedin, Github, Mail, Download, ArrowUpRight } from 'lucide-react';
 import { gsap, useGSAP } from '../lib/gsap';
 import Cursor from './Cursor';
+import Magnetic from './Magnetic';
+import SplitReveal from './SplitReveal';
+import ScrambleText from './ScrambleText';
+import PageInstrument from './PageInstrument';
+import { useMagnetic } from './useMagnetic';
 import './ascent.css';
 
 /**
@@ -27,6 +32,19 @@ const SOCIAL = [
   { icon: Download, label: 'Resume',   href: '/Gridharan_Hari_Resume.pdf', download: true },
 ];
 
+// Nav row that leans toward the cursor. The magnetic ref sits on the <Link>
+// itself so it stays a direct child of .asc-nav (keeps the border rules intact).
+function MagneticNavLink({ to, n, label, idx }) {
+  const ref = useMagnetic(0.16, 0.32);
+  return (
+    <Link ref={ref} to={to} data-hot className="asc-nav-link asc-in">
+      <span className="asc-nav-link__idx">{n}</span>
+      <ScrambleText className="asc-nav-link__name" text={label} hover delay={360 + idx * 80} duration={460} />
+      <ArrowUpRight className="asc-nav-link__arrow" data-mag-child size={20} />
+    </Link>
+  );
+}
+
 export default function AscentPage() {
   const root = useRef(null);
 
@@ -34,10 +52,20 @@ export default function AscentPage() {
     const q = gsap.utils.selector(root);
     gsap.set(q('.asc-rise'), { yPercent: 120 });
     gsap.set(q('.asc-in'), { opacity: 0, y: 14 });
-    gsap.timeline({ delay: 0.2 })
+    gsap.timeline({ delay: 0.15 })
       .to(q('.asc-rise'), { yPercent: 0, duration: 1.1, ease: 'expo.out', stagger: 0.09 }, 0.05)
-      .to(q('.asc-in'), { opacity: 1, y: 0, duration: 0.7, ease: 'expo.out', stagger: 0.055 }, 0.1);
+      .to(q('.asc-in'), { opacity: 1, y: 0, duration: 0.6, ease: 'expo.out', stagger: 0.05 }, 0.05);
   }, { scope: root });
+
+  // Fail-safe: guarantee the identity is visible even if the entrance stalls
+  // during a fast route transition (setTimeout fires regardless of RAF).
+  useEffect(() => {
+    const el = root.current;
+    const id = setTimeout(() => {
+      el?.querySelectorAll('.asc-in, .asc-rise').forEach((n) => { n.style.opacity = '1'; n.style.transform = 'none'; });
+    }, 1400);
+    return () => clearTimeout(id);
+  }, []);
 
   return (
     <div
@@ -46,6 +74,11 @@ export default function AscentPage() {
       style={{ background: 'transparent', minHeight: '100svh', position: 'relative', overflow: 'hidden' }}
     >
       <Cursor />
+
+      {/* compass — aligned to the identity container's top-right edge */}
+      <div className="asc-in" style={{ position: 'absolute', top: 'clamp(40px, 10vh, 120px)', right: 'max(4vw, calc((100vw - 1440px) / 2))', zIndex: 3, pointerEvents: 'none' }}>
+        <PageInstrument variant="home" size={140} />
+      </div>
 
       {/* identity cluster — top-left, compact */}
       <div style={{ width: 'min(92vw, 1440px)', margin: '0 auto', paddingTop: 'clamp(44px, 11vh, 128px)' }}>
@@ -56,14 +89,19 @@ export default function AscentPage() {
             Cornell Dyson ’29 — Dyson Scholar
           </span>
 
-          {/* name — "Hari" carries the serif accent now */}
+          {/* name — "Hari" carries the serif accent now; letters rise per-glyph */}
           <h1 className="asc-h" style={{ fontSize: 'clamp(38px, 6vw, 80px)', lineHeight: 0.92 }}>
-            <span className="asc-line-mask" style={{ display: 'block' }}>
-              <span className="asc-rise asc-serif-it asc-amber" style={{ fontWeight: 400, letterSpacing: '0', textTransform: 'none' }}>Hari</span>
-            </span>
-            <span className="asc-line-mask" style={{ display: 'block' }}>
-              <span className="asc-rise" style={{ textTransform: 'uppercase' }}>Gridharan</span>
-            </span>
+            <SplitReveal
+              text="Hari"
+              className="asc-serif-it asc-amber"
+              delay={250}
+              style={{ display: 'block', fontWeight: 400, letterSpacing: '0', textTransform: 'none' }}
+            />
+            <SplitReveal
+              text="Gridharan"
+              delay={430}
+              style={{ display: 'block', textTransform: 'uppercase' }}
+            />
           </h1>
 
           {/* tagline */}
@@ -71,31 +109,29 @@ export default function AscentPage() {
 
           {/* section index */}
           <nav className="asc-nav" style={{ marginTop: 'clamp(4px, 1vh, 12px)' }}>
-            {NAV.map((s) => (
-              <Link key={s.to} to={s.to} data-hot className="asc-nav-link asc-in">
-                <span className="asc-nav-link__idx">{s.n}</span>
-                <span className="asc-nav-link__name">{s.label}</span>
-                <ArrowUpRight className="asc-nav-link__arrow" size={20} />
-              </Link>
+            {NAV.map((s, i) => (
+              <MagneticNavLink key={s.to} to={s.to} n={s.n} label={s.label} idx={i} />
             ))}
           </nav>
 
           {/* socials */}
-          <div className="asc-in" style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 4 }}>
+          <div className="asc-in" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, marginLeft: -10 }}>
             {SOCIAL.map(({ icon: Icon, label, href, download }) => (
-              <a
-                key={label}
-                href={href}
-                download={download}
-                target={download ? undefined : '_blank'}
-                rel="noopener noreferrer"
-                aria-label={label}
-                data-hot
-                className="asc-link"
-                style={{ color: 'var(--muted)', display: 'inline-flex' }}
-              >
-                <Icon size={18} />
-              </a>
+              <Magnetic key={label} strength={0.45} childStrength={0.7} style={{ borderRadius: '50%' }}>
+                <a
+                  href={href}
+                  download={download}
+                  target={download ? undefined : '_blank'}
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  data-hot
+                  style={{ color: 'var(--muted)', display: 'inline-flex', padding: 10, transition: 'color 0.3s var(--ease)' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--amber)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--muted)')}
+                >
+                  <Icon data-mag-child size={18} />
+                </a>
+              </Magnetic>
             ))}
           </div>
         </div>

@@ -1,20 +1,23 @@
 // Content for the Ascent redesign — copied VERBATIM from the original pages so
 // the wording matches exactly. Logos dropped from the data (handled in logos.jsx).
 
+// Work is grouped by three lenses: Ventures · Strategy · Engineering.
+export const WORK_LENSES = ['Ventures', 'Strategy', 'Engineering'];
+
 export const EXPERIENCES = [
-  { title: 'Consultant', company: 'EXL', url: 'https://www.exlservice.com/', location: 'Remote', period: 'Summer 2026',
+  { title: 'Consultant', company: 'EXL', category: 'Strategy', url: 'https://www.exlservice.com/', location: 'Remote', period: 'Summer 2026',
     description: 'Managed a portfolio of client contracts valued at $70M+ across Fortune 100 accounts, tracking scope, deliverables, and renewal terms. Built a custom CRM tool to replace manual tracking, administered contract data in Salesforce, and delivered executive-ready decks for global teams.' },
-  { title: 'Operations & Strategy Intern', company: 'Stealth Startup', url: null, location: 'Remote', period: 'Jun 2026 – Jul 2026',
+  { title: 'Operations & Strategy Intern', company: 'Stealth Startup', category: 'Ventures', url: null, location: 'Remote', period: 'Jun 2026 – Jul 2026',
     description: "Scaled an early-stage mortgage fintech's lender network from 6 to 25+ signed partnerships in under five weeks — roughly 4x, expanding revenue ~300%. Negotiated terms with partner executives, ran user testing, and directed a source-verified technical audit across 12 subsystems." },
-  { title: 'AI/Strategy Consultant (Contract)', company: 'Adobe', url: 'https://www.adobe.com/', location: 'Remote', period: 'Jan 2026 – Apr 2026',
+  { title: 'AI/Strategy Consultant (Contract)', company: 'Adobe', category: 'Strategy', url: 'https://www.adobe.com/', location: 'Remote', period: 'Jan 2026 – Apr 2026',
     description: 'Advised IT leadership at Fortune 500 firms on AI product strategy tied to $1M+ enterprise contracts. Built market sizing frameworks, UX benchmarks, and positioning analyses; proposed business cases now in suite beta testing.' },
-  { title: 'Problem Design Engineer', company: 'Widget Factory', url: 'https://widgetfactory.ai/', location: 'Remote', period: 'Jan 2026 – Apr 2026',
+  { title: 'Problem Design Engineer', company: 'Widget Factory', category: 'Engineering', url: 'https://widgetfactory.ai/', location: 'Remote', period: 'Jan 2026 – Apr 2026',
     description: 'Designed complex real-world problem sets used to evaluate frontier AI models in training environments. Benchmarked agent behavior and coordinated engineer feedback into production deployment improvements.' },
-  { title: 'Builder', company: 'Cornell Armada', url: 'https://armada.build/', location: 'Ithaca, NY', period: 'Jan 2026 – Present',
+  { title: 'Builder', company: 'Cornell Armada', category: 'Engineering', url: 'https://armada.build/', location: 'Ithaca, NY', period: 'Jan 2026 – Present',
     description: 'Led high-agency projects across an AI-native suite, partnering with VCs ($200M+ AUM) at a YC-backed startup community. Built ML apps, code optimizers, full-stack platforms, drone sync systems, and the Cornell founder directory.' },
-  { title: 'President', company: 'Cornell Entrepreneurship Club', url: 'https://www.cornellentrepreneurship.com/', location: 'Ithaca, NY', period: 'Sep 2025 – Present',
+  { title: 'President', company: 'Cornell Entrepreneurship Club', category: 'Ventures', url: 'https://www.cornellentrepreneurship.com/', location: 'Ithaca, NY', period: 'Sep 2025 – Present',
     description: 'Running YC speaker series for 150+ attendees, coordinating directly with founders and VC firms. Generated 500,000+ views on Instagram/LinkedIn and scouting student startups to develop investment theses.' },
-  { title: 'Co-Founder', company: 'Loadstone Labs', url: 'https://loadstonelabs.com', location: 'Ithaca, NY', period: 'Feb 2026 – Present',
+  { title: 'Co-Founder', company: 'Loadstone Labs', category: 'Ventures', url: 'https://loadstonelabs.com', location: 'Ithaca, NY', period: 'Feb 2026 – Present',
     description: 'Building the data and operating layer for Western water rights, including workflow, basin intelligence, and transaction infrastructure.' },
 ];
 
@@ -68,6 +71,21 @@ export const HIKES = [
     photos: [],
     review: 'Starts light, then a crazy river crossing, then a 60° incline up a mountain, then a 70–85° cable-assisted descent to the actual falls. From there, climbed another mountain to see all seven falls together. Genuinely technical.',
     highlights: ['85° incline', 'Cable descent', 'Technical climb'] },
+  { name: 'Glacier Lake', location: 'Guanella Pass, Colorado', date: 'June 2026', elevation: '12,000 ft', distance: '—', difficulty: 'Moderate',
+    coords: [39.5936, -105.7272],
+    photos: [],
+    review: 'Great 12,000 foot hike with sweeping valley views. Crazy fun snow crossings. Went insanely off trail to get some good pictures and a cold one at the top.',
+    highlights: ['Snow crossings', 'Valley views', 'Way off trail'] },
+  { name: 'Quandary Peak', location: 'Breckenridge, Colorado', date: 'July 2026', elevation: '14,265 ft', distance: '6.7 mi', difficulty: 'Hard',
+    coords: [39.3973, -106.1064],
+    photos: [],
+    review: 'first fourteener sub 4:30 total time. Phenomenal summit views but nearly caught by a storm right after our descent. Met so many cool people on the trail. Feet were on fire because of terrain.',
+    highlights: ['Sub-4:30 round trip', 'Storm on descent', 'Trail friends'] },
+  { name: 'Chief Mountain', location: 'Squaw Pass, Colorado', date: 'July 2026', elevation: '11,709 ft', distance: '3.0 mi', difficulty: 'Easy',
+    coords: [39.6725, -105.6106],
+    photos: [],
+    review: 'very short thirteener. Great views for how short it was. Nearly got the car stuck in the parking off the side of the road.',
+    highlights: ['Short summit', 'Big views', 'Roadside parking'] },
 ];
 
 export const THESIS = {

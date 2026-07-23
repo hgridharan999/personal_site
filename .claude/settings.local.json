@@ -40,7 +40,13 @@
       "Bash(node -e \"const p=require\\('./package.json'\\).dependencies; console.log\\('gsap',p.gsap,'| @gsap/react',p['@gsap/react'],'| lenis',p.lenis,'| framer-motion',p['framer-motion']\\)\")",
       "Bash(node -e \"console.log\\('leaflet', require\\('./package.json'\\).dependencies.leaflet\\)\")",
       "Bash(powershell -NoProfile -Command 'Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }')",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "Bash(node -e \"const p=require\\('./package.json'\\);console.log\\('motion',p.dependencies.motion,'animejs',p.dependencies.animejs\\)\")",
+      "Bash(npm ls *)",
+      "Bash(npm uninstall *)",
+      "mcp__visualize__read_me",
+      "mcp__visualize__show_widget",
+      "Bash(pkill -f \"vite preview\")"
     ]
   }
 }

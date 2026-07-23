@@ -99,9 +99,14 @@
 /* ============================================================
    SUBPAGES — single screen, no page scroll (master ⇄ detail)
    ============================================================ */
-.asc-sub { background: var(--bg); height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
+.asc-sub { background: var(--bg); height: 100dvh; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+/* 3D page instrument floats in the top-right corner — zero layout cost, so it
+   never eats into the single-screen height. */
+/* right edge aligns with the .asc-sub-body content container (min(92vw,1440px)) */
+.asc-instrument { position: absolute; top: 6px; right: max(4vw, calc((100vw - 1440px) / 2)); z-index: 4; pointer-events: none; opacity: 0.96; }
+@media (max-width: 720px) { .asc-instrument { display: none; } }
 
-.asc-topbar { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 16px max(4vw, 22px); }
+.asc-topbar { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 16px max(4vw, calc((100vw - 1440px) / 2)); }
 .asc-back { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: var(--bone); }
 .asc-back .b-name { transition: color 0.4s var(--ease); }
 .asc-back:hover .b-name { color: var(--amber); }
@@ -116,6 +121,18 @@
 .asc-md { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: clamp(20px, 4vw, 72px); border-top: 1px solid var(--line); }
 .asc-md-list { min-height: 0; overflow-y: auto; display: flex; flex-direction: column; scrollbar-width: none; }
 .asc-md-list::-webkit-scrollbar { display: none; }
+
+/* left column with lens filter above the scrolling list */
+.asc-md-left { min-height: 0; display: flex; flex-direction: column; gap: clamp(10px, 1.6vh, 16px); }
+.asc-lens-row { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 7px; }
+.asc-lens { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--faint); background: none; border: 1px solid var(--line-2); padding: 5px 11px; cursor: pointer;
+  transition: color 0.3s var(--ease), border-color 0.3s var(--ease); position: relative; }
+.asc-lens:hover { color: var(--bone); }
+.asc-lens.is-on { color: var(--bg); }
+.asc-lens-fill { position: absolute; inset: 0; background: var(--amber); z-index: -1; }
+.asc-lens__label { position: relative; z-index: 1; }
+.asc-lens-count { margin-left: 6px; opacity: 0.6; }
 .asc-md-item {
   position: relative; display: flex; align-items: center; gap: 16px; width: 100%; text-align: left;
   background: none; border: 0; border-bottom: 1px solid var(--line-2);
@@ -124,7 +141,9 @@
 }
 .asc-md-item:hover { color: var(--bone); padding-left: 8px; }
 .asc-md-item.is-active { color: var(--bone); }
-.asc-md-item.is-active::before { content: ''; position: absolute; left: -12px; top: 24%; bottom: 24%; width: 2px; background: var(--amber); }
+/* Active indicator is a framer-motion layoutId bar (.asc-md-bar) that slides
+   between rows; a CSS fallback bar covers the no-JS / reduced-motion case. */
+.asc-md-bar { position: absolute; left: -12px; top: 22%; bottom: 22%; width: 2px; background: var(--amber); border-radius: 2px; }
 .asc-md-idx { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; color: var(--faint); width: 2.4ch; flex-shrink: 0; }
 .asc-md-item.is-active .asc-md-idx { color: var(--amber); }
 .asc-md-name { font-family: var(--display); font-weight: 700; letter-spacing: -0.02em; font-size: clamp(17px, 1.9vw, 26px); line-height: 1.05; }
@@ -201,7 +220,14 @@
 .asc-hike-map { flex: 0 0 auto; height: clamp(170px, 32vh, 300px); position: relative; border: 1px solid var(--line); overflow: hidden; background: #131211; }
 .asc-hike-right { min-height: 0; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: clamp(8px, 1.3vh, 14px); }
 .asc-hike-right::-webkit-scrollbar { display: none; }
-.asc-hike-info { flex: 0 0 auto; display: flex; flex-direction: column; gap: clamp(8px, 1.3vh, 14px); padding-bottom: 2px; }
+.asc-hike-info { flex: 0 0 auto; display: flex; flex-direction: column; gap: clamp(7px, 1.1vh, 12px); padding-bottom: 2px; }
+
+/* Hike photo — show the WHOLE frame (contain), never crop it. Give it a real
+   minimum height so the picture dominates the panel; the image is centred. */
+.asc-hike-media { flex: 1 1 auto; min-height: clamp(220px, 34vh, 360px); border: 1px solid var(--line); background: var(--bg-2);
+  display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.asc-hike-media img { display: block; max-width: 100%; max-height: 100%; width: auto; height: auto;
+  object-fit: contain; filter: grayscale(0.25) contrast(1.05); }
 @media (max-width: 820px) {
   .asc-hike-layout { grid-template-columns: 1fr; overflow-y: auto; }
   .asc-hike-map { height: 240px; }

@@ -7,7 +7,7 @@ import { THESIS } from './data';
  */
 export default function AscentThesis() {
   return (
-    <SubShell title="Investment Thesis">
+    <SubShell title="Investment Thesis" instrument="thesis">
       <div style={{ flex: '1 1 auto', minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 'clamp(16px, 2.4vh, 30px)', borderTop: '1px solid var(--line)', paddingTop: 'clamp(16px, 3vh, 40px)' }}>
         <span className="asc-mono asc-amber">{THESIS.headline}</span>
         <ol className="asc-thesis-list">

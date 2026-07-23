@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { ArrowUpRight, Github, Lock, Star } from 'lucide-react';
 import SubShell from './SubShell';
 import { PROJECTS } from './data';
+
+const BAR = { type: 'spring', stiffness: 600, damping: 44 };
 
 export default function AscentProjects() {
   const [sel, setSel] = useState(0);
   const p = PROJECTS[sel];
 
   return (
-    <SubShell index="02" title="Projects" current="Projects">
+    <SubShell index="02" title="Projects" current="Projects" instrument="projects">
       <div className="asc-md">
         <div className="asc-md-list">
           {PROJECTS.map((x, i) => (
@@ -20,6 +23,7 @@ export default function AscentProjects() {
               onClick={() => setSel(i)}
               onMouseEnter={() => setSel(i)}
             >
+              {i === sel && <motion.span layoutId="md-bar" className="asc-md-bar" transition={BAR} />}
               <span className="asc-md-idx">{String(i + 1).padStart(2, '0')}</span>
               <span className="asc-md-name">{x.title}</span>
               <span className="asc-md-sub">

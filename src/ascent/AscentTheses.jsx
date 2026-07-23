@@ -33,12 +33,15 @@ export default function AscentTheses() {
   const posts = items.filter((it) => !isEssay(it));
 
   return (
-    <SubShell index="04" title="Theses" current="Theses" subtitle={thesisLink}>
+    <SubShell index="04" title="Theses" current="Theses" instrument="theses">
       <div className="asc-theses">
 
         {/* left — me in 10 bullet points */}
         <div className="asc-col" style={{ overflow: 'hidden' }}>
-          <span className="asc-mono asc-amber">Me in 10 bullet points</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+            <span className="asc-mono asc-amber">Me in 10 bullet points</span>
+            {thesisLink}
+          </div>
           <ol style={{ marginTop: 12, listStyle: 'none', padding: 0 }}>
             {PRINCIPLES.map((p, i) => (
               <li key={i} style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: 16, borderTop: '1px solid var(--line-2)', padding: 'clamp(6px, 1vh, 10px) 0' }}>
