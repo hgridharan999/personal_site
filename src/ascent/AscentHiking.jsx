@@ -6,6 +6,9 @@ import { HIKES } from './data';
 
 const BAR = { type: 'spring', stiffness: 600, damping: 44 };
 
+// 240px thumbnails live alongside the 1600px display images
+const thumbOf = (src) => src.replace('/hikes/', '/hikes/t/');
+
 export default function AscentHiking() {
   const [sel, setSel] = useState(0);
   const [pi, setPi] = useState(0);
@@ -47,7 +50,7 @@ export default function AscentHiking() {
         <div className="asc-hike-right">
           <div className="asc-hike-media">
             {photos.length > 0 ? (
-              <img key={`${sel}-${pi}`} src={photos[pi]} alt={h.name} />
+              <img key={`${sel}-${pi}`} src={photos[pi]} alt={h.name} decoding="async" fetchpriority="high" />
             ) : (
               <span className="asc-mono" style={{ color: 'var(--faint)' }}>No photos — you had to be there</span>
             )}
@@ -65,7 +68,7 @@ export default function AscentHiking() {
                     onMouseEnter={() => setPi(idx)}
                     style={{ width: 58, height: 38, border: `1px solid ${idx === pi ? 'var(--amber)' : 'var(--line)'}`, padding: 0, overflow: 'hidden', background: 'none', opacity: idx === pi ? 1 : 0.5, transition: 'opacity .3s, border-color .3s' }}
                   >
-                    <img src={p} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={thumbOf(p)} alt="" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </button>
                 ))}
               </div>

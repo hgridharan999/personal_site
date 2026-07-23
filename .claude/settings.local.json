@@ -46,7 +46,11 @@
       "Bash(npm uninstall *)",
       "mcp__visualize__read_me",
       "mcp__visualize__show_widget",
-      "Bash(pkill -f \"vite preview\")"
+      "Bash(pkill -f \"vite preview\")",
+      "Bash(awk '{printf \"%-22s %8.2f MB\\\\n\", $9, $5/1048576}')",
+      "Bash(awk '{printf \"%-34s %8.2f MB\\\\n\", $9, $5/1048576}')",
+      "Bash(mkdir -p photos-original/misc)",
+      "Bash(mv public/*.zip public/*.HEIC public/*.heic public/seven public/mountains-pixel-*.png photos-original/misc/)"
     ]
   }
 }

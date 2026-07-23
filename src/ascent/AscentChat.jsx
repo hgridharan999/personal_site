@@ -18,7 +18,7 @@ const OPENING = {
 function Avatar({ size, fill }) {
   const style = {
     borderRadius: '50%', backgroundColor: '#0B0A0A',
-    backgroundImage: 'url(/profile.jpg)', backgroundSize: '360%', backgroundPosition: '19% 37%',
+    backgroundImage: 'url(/profile-sm.jpg)', backgroundSize: '360%', backgroundPosition: '19% 37%',
     ...(fill ? { position: 'absolute', inset: 0 } : { width: size, height: size, flexShrink: 0, border: `1px solid ${LINE}` }),
   };
   return <div aria-hidden="true" style={style} />;
