@@ -50,7 +50,11 @@
       "Bash(awk '{printf \"%-22s %8.2f MB\\\\n\", $9, $5/1048576}')",
       "Bash(awk '{printf \"%-34s %8.2f MB\\\\n\", $9, $5/1048576}')",
       "Bash(mkdir -p photos-original/misc)",
-      "Bash(mv public/*.zip public/*.HEIC public/*.heic public/seven public/mountains-pixel-*.png photos-original/misc/)"
+      "Bash(mv public/*.zip public/*.HEIC public/*.heic public/seven public/mountains-pixel-*.png photos-original/misc/)",
+      "Bash(mkdir -p /tmp/hikezip)",
+      "Bash(python -c \"import pillow_heif; print\\('pillow_heif OK'\\)\")",
+      "Bash(pip install *)",
+      "Bash(python -c \"import pillow_heif; print\\('pillow_heif OK', pillow_heif.__version__\\)\")"
     ]
   }
 }
