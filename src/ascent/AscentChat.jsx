@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const AMBER = '#E8C089';
 const BONE = '#EDE7DA';
@@ -120,6 +121,12 @@ export default function AscentChat() {
                 <Send size={16} />
               </button>
             </form>
+            <div style={{ padding: '0 16px 14px', fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(237,231,218,0.45)' }}>
+              Messages may be processed by AI services.{' '}
+              <Link to="/privacy" style={{ color: AMBER, textDecoration: 'underline' }}>
+                Privacy notice
+              </Link>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

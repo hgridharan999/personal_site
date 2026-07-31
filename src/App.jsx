@@ -10,6 +10,8 @@ import AscentTheses from './ascent/AscentTheses';
 import AscentThesis from './ascent/AscentThesis';
 import AscentPost from './ascent/AscentPost';
 import AscentChat from './ascent/AscentChat';
+import CookieConsentBanner from './components/CookieConsentBanner';
+import LegalPage from './pages/LegalPage';
 
 // Routes render directly — each page owns its entrance animation. (No
 // AnimatePresence crossfade: mode="wait" could block the incoming page from
@@ -30,6 +32,9 @@ function AnimatedRoutes() {
 
       <Route path="/trailsense" element={<AscentTrailSense />} />
       <Route path="/climate-search" element={<div className="asc-climate"><ClimateSearchPage /></div>} />
+      <Route path="/privacy" element={<LegalPage />} />
+      <Route path="/terms" element={<LegalPage />} />
+      <Route path="/legal" element={<LegalPage />} />
 
       {/* Legacy aliases — same components at old paths. */}
       <Route path="/climbing" element={<AscentHiking />} />
@@ -58,6 +63,7 @@ function App() {
       <GlobalChrome />
       <AnimatedRoutes />
       <AscentChat />
+      <CookieConsentBanner />
     </Router>
   );
 }
