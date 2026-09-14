@@ -12,6 +12,9 @@ import AscentPost from './ascent/AscentPost';
 import AscentChat from './ascent/AscentChat';
 import CookieConsentBanner from './components/CookieConsentBanner';
 import LegalPage from './pages/LegalPage';
+import LoginPage from './private/LoginPage';
+import PrivateHome from './private/PrivateHome';
+import RequireAuth from './private/RequireAuth';
 
 // Routes render directly — each page owns its entrance animation. (No
 // AnimatePresence crossfade: mode="wait" could block the incoming page from
@@ -35,6 +38,10 @@ function AnimatedRoutes() {
       <Route path="/privacy" element={<LegalPage />} />
       <Route path="/terms" element={<LegalPage />} />
       <Route path="/legal" element={<LegalPage />} />
+
+      {/* Private area — reached via the hidden link on the home page. */}
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/me" element={<RequireAuth>{({ logout }) => <PrivateHome onLogout={logout} />}</RequireAuth>} />
 
       {/* Legacy aliases — same components at old paths. */}
       <Route path="/climbing" element={<AscentHiking />} />

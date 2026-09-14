@@ -1,0 +1,55 @@
+/* ============================================================
+   PRIVATE AREA — login + personal home. Builds on the .asc tokens.
+   ============================================================ */
+.prv { min-height: 100dvh; }
+.prv-center { display: flex; align-items: center; justify-content: center; padding: 24px; }
+.prv-corner { position: absolute; top: 16px; left: max(4vw, calc((100vw - 1440px) / 2)); }
+
+.prv-title { font-size: clamp(40px, 7vw, 88px); text-transform: uppercase; }
+.prv-title .asc-serif-it { text-transform: none; letter-spacing: 0; }
+
+/* ---- login ----------------------------------------------- */
+.prv-login { width: min(100%, 420px); display: flex; flex-direction: column; gap: 14px; }
+.prv-label { color: var(--muted); margin-top: 18px; }
+.prv-field { display: flex; align-items: stretch; border-bottom: 1px solid var(--line); transition: border-color 0.4s var(--ease); }
+.prv-field:focus-within { border-color: var(--amber); }
+.prv-field input {
+  flex: 1 1 auto; min-width: 0; background: none; border: 0; outline: none;
+  color: var(--bone); font-family: var(--mono); font-size: 18px; letter-spacing: 0.2em; padding: 12px 0;
+}
+.prv-field button {
+  background: none; border: 0; color: var(--muted); padding: 0 4px 0 12px; display: inline-flex; align-items: center;
+  transition: color 0.3s var(--ease), transform 0.4s var(--ease);
+}
+.prv-field button:not(:disabled):hover { color: var(--amber); transform: translateX(4px); }
+.prv-field button:disabled { opacity: 0.35; }
+.prv-field button:focus-visible, .prv-logout:focus-visible, .prv-item:focus-visible { outline: 1px solid var(--amber); outline-offset: 4px; }
+.prv-error { min-height: 1.4em; margin: 0; color: #F0A38B; font-size: 14px; }
+.prv-status { display: flex; flex-direction: column; align-items: center; gap: 14px; color: var(--muted); }
+
+.prv-logout {
+  display: inline-flex; align-items: center; gap: 8px; background: none; border: 1px solid var(--line-2);
+  color: var(--muted); padding: 7px 12px; transition: color 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+.prv-logout:hover { color: var(--amber); border-color: var(--amber); }
+
+/* ---- home ------------------------------------------------ */
+.prv-home { padding: clamp(12px, 4vh, 48px) 0 64px; }
+.prv-home-head { display: flex; flex-direction: column; gap: 12px; margin-bottom: clamp(28px, 6vh, 64px); }
+.prv-grid { display: grid; grid-template-columns: 1fr; gap: clamp(28px, 4vw, 56px); }
+@media (min-width: 768px) { .prv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.prv-section { border-top: 1px solid var(--line); padding-top: 16px; }
+.prv-section__title {
+  display: flex; align-items: baseline; gap: 14px; margin: 0 0 16px;
+  font-family: var(--display); font-weight: 700; letter-spacing: -0.02em; font-size: clamp(22px, 2.5vw, 34px);
+}
+.prv-empty { color: var(--faint); padding: 18px 0; border-bottom: 1px solid var(--line-2); margin: 0; }
+.prv-list { display: flex; flex-direction: column; }
+.prv-item {
+  display: flex; flex-direction: column; gap: 4px; padding: 14px 0; text-decoration: none; color: var(--bone);
+  border-bottom: 1px solid var(--line-2); transition: color 0.35s var(--ease), padding-left 0.35s var(--ease);
+}
+.prv-item:hover { color: var(--amber); padding-left: 8px; }
+.prv-item__name { font-weight: 700; font-size: clamp(17px, 1.6vw, 22px); }
+.prv-item__desc { color: var(--muted); font-size: 14px; }

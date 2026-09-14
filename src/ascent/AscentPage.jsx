@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Linkedin, Github, Mail, Download, ArrowUpRight } from 'lucide-react';
+import { Linkedin, Github, Mail, Download, ArrowUpRight, Triangle } from 'lucide-react';
 import { gsap, useGSAP } from '../lib/gsap';
 import Cursor from './Cursor';
 import Magnetic from './Magnetic';
@@ -136,6 +136,11 @@ export default function AscentPage() {
           </div>
         </div>
       </div>
+
+      {/* hidden entry to the private area — near-invisible until hovered/focused */}
+      <Link to="/me" data-hot className="asc-hidden-link" aria-label="Private area" title="">
+        <Triangle size={11} strokeWidth={1.5} />
+      </Link>
     </div>
   );
 }

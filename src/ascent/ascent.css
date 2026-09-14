@@ -96,6 +96,14 @@
 .asc-nav-link:hover .asc-nav-link__idx { color: var(--amber); }
 .asc-nav-link:hover .asc-nav-link__arrow { transform: translate(4px, -4px); opacity: 1; }
 
+/* hidden entry to the private area (bottom-left of home; bottom-right is the chat bubble) */
+.asc-hidden-link {
+  position: absolute; left: max(4vw, calc((100vw - 1440px) / 2)); bottom: 18px; z-index: 3;
+  display: inline-flex; padding: 10px; color: var(--bone); opacity: 0.08;
+  transition: opacity 0.6s var(--ease), color 0.4s var(--ease);
+}
+.asc-hidden-link:hover, .asc-hidden-link:focus-visible { opacity: 0.9; color: var(--amber); outline: none; }
+
 /* ============================================================
    SUBPAGES — single screen, no page scroll (master ⇄ detail)
    ============================================================ */

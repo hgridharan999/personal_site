@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import apiDevServer from './vite.api-dev.js'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), apiDevServer()],
   assetsInclude: ['**/*.md'],
   define: {
     'global': 'globalThis',
