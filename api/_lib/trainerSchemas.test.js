@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sessionPayload, statsQuery, idQuery, QTYPES } from './trainerSchemas.js';
+import { sessionPayload, statsQuery, idQuery, QTYPES, MAX_ATTEMPTS } from './trainerSchemas.js';
 import { zetamacPayload } from './testing.js';
 
 describe('sessionPayload', () => {
@@ -30,12 +30,20 @@ describe('sessionPayload', () => {
     expect(sessionPayload.safeParse(optiver).success).toBe(false);
     expect(sessionPayload.safeParse(zetamacPayload({ session: { profileVersion: 1 } })).success).toBe(false);
   });
-  it('rejects more than 1000 attempts and bad ids', () => {
-    const many = Array.from({ length: 1001 }, (_, i) => ({
+  it('rejects more than MAX_ATTEMPTS (3000) attempts and bad ids', () => {
+    expect(MAX_ATTEMPTS).toBe(3000);
+    const many = Array.from({ length: 3001 }, (_, i) => ({
       idx: i, qtype: 'z.add', factKey: null, prompt: '1 + 1', answer: '2', response: null, isCorrect: false, timeMs: null, corrections: 0,
     }));
     expect(sessionPayload.safeParse(zetamacPayload({ attempts: many, session: { correct: 0, score: 0 } })).success).toBe(false);
     expect(sessionPayload.safeParse(zetamacPayload({ session: { id: 'nope' } })).success).toBe(false);
+  });
+  it('accepts a long custom game with 1500 attempts', () => {
+    const many = Array.from({ length: 1500 }, (_, i) => ({
+      idx: i, qtype: 'z.add', factKey: 'add:0+1', prompt: '0 + 1', answer: '1', response: '1', isCorrect: true, timeMs: 300, corrections: 0,
+    }));
+    const p = zetamacPayload({ attempts: many, session: { mode: 'custom', durationMs: 600000, correct: 1500, score: 1500 } });
+    expect(sessionPayload.safeParse(p).success).toBe(true);
   });
   it('lists all qtypes', () => {
     expect(QTYPES).toContain('z.div');

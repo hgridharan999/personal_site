@@ -43,6 +43,13 @@ describe('tracker', () => {
     expect(unfinishedAttempt(s, '')).toMatchObject({ response: null });
   });
 
+  it('unfinishedAttempt caps the leftover response at 32 characters (server limit)', () => {
+    const s = startProblem(problem, 7, 0);
+    const leftover = '5'.repeat(40);
+    expect(unfinishedAttempt(s, ` ${leftover} `).response).toBe('5'.repeat(32));
+    expect(unfinishedAttempt(s, '   ').response).toBeNull();
+  });
+
   it('zetamacTotals counts correct answers only', () => {
     const attempts = [{ isCorrect: true }, { isCorrect: true }, { isCorrect: false }];
     expect(zetamacTotals(attempts)).toEqual({ correct: 2, wrong: 0, unanswered: 0, score: 2 });

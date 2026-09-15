@@ -35,8 +35,13 @@ export function handleDeleteKey(state) {
   return { ...state, corrections: state.corrections + 1 };
 }
 
+// The server caps attempt.response at this length. The input itself stays
+// uncapped (faithful to Zetamac); only the stored leftover is truncated, so a
+// key held down at the buzzer can never make the whole game unsaveable.
+export const MAX_RESPONSE_CHARS = 32;
+
 export function unfinishedAttempt(state, value) {
-  return toAttempt(state, value.trim() || null, false, null);
+  return toAttempt(state, value.trim().slice(0, MAX_RESPONSE_CHARS) || null, false, null);
 }
 
 export function zetamacTotals(attempts) {

@@ -9,11 +9,15 @@ export const QTYPES = [
   'o.frac.of', 'o.frac.addsub', 'o.frac.muldiv',
 ];
 
+// Generous enough for a 600 s custom Zetamac game with trivial ranges; a valid
+// game the server rejects would sit in the outbox as permanently failed.
+export const MAX_ATTEMPTS = 3000;
+
 const configKey = z.string().regex(/^[0-9a-f]{64}$/);
-const count = z.int().min(0).max(1000);
+const count = z.int().min(0).max(MAX_ATTEMPTS);
 
 const attempt = z.object({
-  idx: z.int().min(0).max(999),
+  idx: z.int().min(0).max(MAX_ATTEMPTS - 1),
   qtype: z.enum(QTYPES),
   factKey: z.string().max(64).nullable(),
   prompt: z.string().min(1).max(64),
@@ -38,9 +42,9 @@ export const sessionPayload = z
       correct: count,
       wrong: count,
       unanswered: count,
-      score: z.int().min(-1000).max(1000),
+      score: z.int().min(-MAX_ATTEMPTS).max(MAX_ATTEMPTS),
     }),
-    attempts: z.array(attempt).max(1000),
+    attempts: z.array(attempt).max(MAX_ATTEMPTS),
   })
   .superRefine(({ session, attempts }, ctx) => {
     const issue = (message, path) => ctx.addIssue({ code: 'custom', message, path });
