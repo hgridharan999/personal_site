@@ -14,6 +14,8 @@
 .trn-tab:focus-visible, .trn-btn:focus-visible { outline: 1px solid var(--amber); outline-offset: 3px; }
 .trn-sync { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; color: var(--faint); margin-top: 10px; }
 .trn-sync--failed { color: #F0A38B; }
+.trn-failed { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 10px; }
+.trn-failed .trn-sync { margin-top: 0; }
 .trn-body { padding-top: clamp(20px, 4vh, 40px); }
 .trn-muted { color: var(--faint); }
 .trn-btn { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;

@@ -2,15 +2,38 @@ import { ApiError } from './api.js';
 
 // Durable queue for finished games: a game is never lost to a failed request.
 // Entries persist in localStorage (memory fallback) until the server accepts them.
+// Several tabs can share one storage key: every mutation re-reads storage and
+// applies its change to that fresh list, so tabs never erase each other's games.
 
 export const OUTBOX_KEY = 'trn-outbox-v1';
+export const MAX_ERROR_CHARS = 240;
+const MAX_ERROR_DETAILS = 3;
 const AUTH_RETRY_MS = 60000;
 const FLUSH_ERROR_RETRY_MS = 60000;
+const STATUSES = ['pending', 'failed'];
 
 // Safely derives a message from anything a rejected promise might carry,
 // including undefined/null, so a malformed rejection can never crash a caller.
 function errorMessage(err) {
   return err instanceof Error ? err.message : String(err);
+}
+
+// Messages from a z.flattenError() shape: { formErrors: string[], fieldErrors: { field: string[] } }.
+function detailMessages(details) {
+  if (!details || typeof details !== 'object') return [];
+  const form = Array.isArray(details.formErrors) ? details.formErrors.filter((m) => typeof m === 'string') : [];
+  const fieldErrors = details.fieldErrors && typeof details.fieldErrors === 'object' ? details.fieldErrors : {};
+  const fields = Object.entries(fieldErrors).flatMap(([field, messages]) =>
+    (Array.isArray(messages) ? messages.filter((m) => typeof m === 'string').map((m) => `${field}: ${m}`) : []));
+  return [...form, ...fields];
+}
+
+/** Concise, bounded description of a send failure, including validation details when present. */
+export function describeError(err) {
+  const message = errorMessage(err);
+  const parts = err instanceof ApiError ? detailMessages(err.details).slice(0, MAX_ERROR_DETAILS) : [];
+  const text = parts.length > 0 ? `${message} (${parts.join('; ')})` : message;
+  return text.length > MAX_ERROR_CHARS ? `${text.slice(0, MAX_ERROR_CHARS - 1)}…` : text;
 }
 
 export function memoryStorage() {
@@ -28,19 +51,47 @@ export function isPermanentError(err) {
   return err instanceof ApiError && err.status >= 400 && err.status < 500 && ![401, 408, 429].includes(err.status);
 }
 
+const isCount = (n) => Number.isFinite(n) && n >= 0;
+
+function isValidEntry(e) {
+  return (
+    e !== null && typeof e === 'object'
+    && typeof e.id === 'string'
+    && e.payload?.session?.id === e.id
+    && isCount(e.attempts)
+    && isCount(e.nextAt)
+    && STATUSES.includes(e.status)
+    && (e.lastError === null || typeof e.lastError === 'string')
+  );
+}
+
 export function createOutbox({ storage, send, now = Date.now, key = OUTBOX_KEY }) {
-  let entries = load();
-  let snap = buildSnapshot();
+  let entries = [];
+  // After a failed write (storage full or blocked) storage is stale, so the
+  // in-memory list stays authoritative until a write succeeds again.
+  let writeFailed = false;
   let inFlight = null;
   const listeners = new Set();
 
-  function load() {
+  // Stored entries, keeping only well-formed ones; null when storage can't be read.
+  function readStored() {
+    let raw;
     try {
-      const parsed = JSON.parse(storage.getItem(key) || '[]');
-      return Array.isArray(parsed) ? parsed : [];
+      raw = storage.getItem(key);
+    } catch {
+      return null;
+    }
+    try {
+      const parsed = JSON.parse(raw || '[]');
+      return Array.isArray(parsed) ? parsed.filter(isValidEntry) : [];
     } catch {
       return [];
     }
+  }
+
+  function load() {
+    const stored = writeFailed ? null : readStored();
+    return stored ?? entries;
   }
 
   function buildSnapshot() {
@@ -50,25 +101,45 @@ export function createOutbox({ storage, send, now = Date.now, key = OUTBOX_KEY }
     };
   }
 
-  function commit(next) {
+  entries = load();
+  let snap = buildSnapshot();
+
+  function publish(next) {
     entries = next;
-    try {
-      storage.setItem(key, JSON.stringify(entries));
-    } catch {
-      // storage blocked or full: keep the in-memory queue for this page's lifetime
-    }
     snap = buildSnapshot();
     listeners.forEach((l) => l());
   }
 
-  function update(id, patch) {
-    commit(entries.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+  // Applies fn to the freshest list, persists it, then updates memory + subscribers.
+  function mutate(fn) {
+    const next = fn(load());
+    try {
+      storage.setItem(key, JSON.stringify(next));
+      writeFailed = false;
+    } catch {
+      // storage blocked or full: keep the in-memory queue for this page's lifetime
+      writeFailed = true;
+    }
+    publish(next);
+  }
+
+  function refresh() {
+    publish(load());
+  }
+
+  function update(id, patchFn) {
+    mutate((list) => list.map((e) => (e.id === id ? { ...e, ...patchFn(e) } : e)));
   }
 
   function enqueue(payload) {
     const id = payload.session.id;
-    if (entries.some((e) => e.id === id)) return;
-    commit([...entries, { id, payload, attempts: 0, nextAt: 0, status: 'pending', lastError: null }]);
+    mutate((list) => (list.some((e) => e.id === id)
+      ? list
+      : [...list, { id, payload, attempts: 0, nextAt: 0, status: 'pending', lastError: null }]));
+  }
+
+  function discard(id) {
+    mutate((list) => list.filter((e) => !(e.id === id && e.status === 'failed')));
   }
 
   async function runFlush() {
@@ -76,15 +147,15 @@ export function createOutbox({ storage, send, now = Date.now, key = OUTBOX_KEY }
     for (const entry of entries.filter((e) => e.status === 'pending' && e.nextAt <= now())) {
       try {
         await send(entry.payload);
-        commit(entries.filter((e) => e.id !== entry.id));
+        mutate((list) => list.filter((e) => e.id !== entry.id));
         sent += 1;
       } catch (err) {
         if (err instanceof ApiError && err.status === 401) return { sent, authRequired: true };
+        const lastError = describeError(err);
         if (isPermanentError(err)) {
-          update(entry.id, { status: 'failed', lastError: errorMessage(err) });
+          update(entry.id, () => ({ status: 'failed', lastError }));
         } else {
-          const attempts = entry.attempts + 1;
-          update(entry.id, { attempts, nextAt: now() + backoffMs(attempts), lastError: errorMessage(err) });
+          update(entry.id, (e) => ({ attempts: e.attempts + 1, nextAt: now() + backoffMs(e.attempts + 1), lastError }));
         }
       }
     }
@@ -105,6 +176,8 @@ export function createOutbox({ storage, send, now = Date.now, key = OUTBOX_KEY }
   return {
     enqueue,
     flush,
+    discard,
+    refresh,
     nextDueIn,
     snapshot: () => snap,
     subscribe(listener) {
@@ -165,7 +238,15 @@ export function startOutboxWorker(outbox, { win = window, setTimeoutImpl = setTi
     return inFlightRun;
   }
 
+  // Another tab changed the outbox: show its entries here and send anything due.
+  function onStorage(event) {
+    if (event.key !== OUTBOX_KEY) return;
+    outbox.refresh();
+    run();
+  }
+
   win.addEventListener('online', run);
+  win.addEventListener('storage', onStorage);
   run();
 
   return {
@@ -173,6 +254,7 @@ export function startOutboxWorker(outbox, { win = window, setTimeoutImpl = setTi
     stop() {
       stopped = true;
       win.removeEventListener('online', run);
+      win.removeEventListener('storage', onStorage);
       clearTimer();
     },
   };

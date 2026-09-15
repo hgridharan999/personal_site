@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ApiError } from './api.js';
-import { OUTBOX_KEY, memoryStorage, backoffMs, isPermanentError, createOutbox, startOutboxWorker } from './outbox.js';
+import {
+  OUTBOX_KEY, MAX_ERROR_CHARS, memoryStorage, backoffMs, isPermanentError, describeError, createOutbox, startOutboxWorker,
+} from './outbox.js';
 
 const payload = (id) => ({ session: { id }, attempts: [] });
 
@@ -128,7 +130,144 @@ describe('createOutbox', () => {
   });
 });
 
+describe('multi-tab safety', () => {
+  function twoTabs(sendA = vi.fn(async () => ({ saved: true }))) {
+    const storage = memoryStorage();
+    const a = createOutbox({ storage, send: sendA, now: () => 1000 });
+    const b = createOutbox({ storage, send: vi.fn(async () => ({ saved: true })), now: () => 1000 });
+    return { storage, a, b, sendA };
+  }
+  const storedIds = (storage) => JSON.parse(storage.getItem(OUTBOX_KEY)).map((e) => e.id);
+
+  it('two instances enqueueing never erase each other', () => {
+    const { storage, a, b } = twoTabs();
+    a.enqueue(payload('g1'));
+    b.enqueue(payload('g2')); // b was created before a wrote g1
+    expect(storedIds(storage)).toEqual(['g1', 'g2']);
+  });
+
+  it('a successful flush in one tab keeps the other tab\'s entry', async () => {
+    const { storage, a, b, sendA } = twoTabs();
+    a.enqueue(payload('g1'));
+    b.enqueue(payload('g2'));
+    await a.flush();
+    expect(sendA).toHaveBeenCalledWith(payload('g1'));
+    expect(storedIds(storage)).toEqual(['g2']);
+  });
+
+  it('refresh() picks up entries written by another instance and notifies', () => {
+    const { a, b } = twoTabs();
+    const listener = vi.fn();
+    a.subscribe(listener);
+    b.enqueue(payload('g3'));
+    expect(a.snapshot().pendingIds).toEqual([]);
+    a.refresh();
+    expect(a.snapshot().pendingIds).toEqual(['g3']);
+    expect(listener).toHaveBeenCalled();
+  });
+});
+
+describe('stored entry validation', () => {
+  it('drops malformed entries and keeps valid ones', () => {
+    const valid = { id: 'ok', payload: payload('ok'), attempts: 2, nextAt: 5000, status: 'pending', lastError: 'offline' };
+    const failed = { id: 'bad-payload', payload: payload('bad-payload'), attempts: 0, nextAt: 0, status: 'failed', lastError: null };
+    const json = JSON.stringify([
+      valid,
+      failed,
+      null,
+      'nope',
+      { ...valid, id: 7 },
+      { ...valid, id: 'mismatch' },
+      { ...valid, id: 'no-payload', payload: undefined },
+      { ...valid, attempts: -1 },
+      { ...valid, attempts: '1' },
+      { ...valid, nextAt: null },
+      { ...valid, status: 'sent' },
+      { ...valid, lastError: 5 },
+    ]);
+    // JSON.stringify cannot emit Infinity, but JSON.parse turns 1e999 into it.
+    const raw = `${json.slice(0, -1)},{"id":"inf","payload":{"session":{"id":"inf"}},"attempts":0,"nextAt":1e999,"status":"pending","lastError":null}]`;
+    const storage = memoryStorage();
+    storage.setItem(OUTBOX_KEY, raw);
+    const { outbox } = setup({ storage });
+    expect(outbox.snapshot()).toEqual({ pendingIds: ['ok'], failed: [{ id: 'bad-payload', lastError: null }] });
+    expect(Number.isFinite(outbox.nextDueIn())).toBe(true);
+  });
+});
+
+describe('failed entry details and discard', () => {
+  it('describeError summarizes flattened validation details, bounded', () => {
+    const details = { formErrors: [], fieldErrors: { session: ['correct does not match attempts'] } };
+    expect(describeError(new ApiError(400, 'VALIDATION_ERROR', 'Invalid session payload', details)))
+      .toBe('Invalid session payload (session: correct does not match attempts)');
+    const many = { formErrors: ['top'], fieldErrors: { session: ['a', 'b'], attempts: ['c', 'd'] } };
+    expect(describeError(new ApiError(400, 'VALIDATION_ERROR', 'Invalid', many))).toBe('Invalid (top; session: a; session: b)');
+    const long = { formErrors: ['x'.repeat(1000)], fieldErrors: {} };
+    const text = describeError(new ApiError(400, 'VALIDATION_ERROR', 'Invalid', long));
+    expect(text.length).toBeLessThanOrEqual(MAX_ERROR_CHARS);
+    expect(text.startsWith('Invalid (xxx')).toBe(true);
+    expect(describeError(new ApiError(400, 'X', 'Plain'))).toBe('Plain');
+    expect(describeError(new ApiError(400, 'X', 'Odd', { formErrors: 'no', fieldErrors: null }))).toBe('Odd');
+    expect(describeError(new TypeError('Failed to fetch'))).toBe('Failed to fetch');
+    expect(describeError(undefined)).toBe('undefined');
+  });
+
+  it('stores the detailed message on a failed entry', async () => {
+    const details = { formErrors: [], fieldErrors: { session: ['correct does not match attempts'] } };
+    const send = vi.fn(async () => { throw new ApiError(400, 'VALIDATION_ERROR', 'Invalid session payload', details); });
+    const { outbox } = setup({ send });
+    outbox.enqueue(payload('a'));
+    await outbox.flush();
+    expect(outbox.snapshot().failed).toEqual([{ id: 'a', lastError: 'Invalid session payload (session: correct does not match attempts)' }]);
+  });
+
+  it('discard removes only that failed entry and notifies', async () => {
+    const send = vi.fn(async (p) => {
+      if (p.session.id === 'bad') throw new ApiError(400, 'VALIDATION_ERROR', 'Invalid session payload');
+      throw new TypeError('offline');
+    });
+    const { outbox, storage } = setup({ send });
+    outbox.enqueue(payload('bad'));
+    outbox.enqueue(payload('b'));
+    await outbox.flush();
+    const listener = vi.fn();
+    outbox.subscribe(listener);
+    outbox.discard('b'); // pending, not failed: kept
+    expect(outbox.snapshot().pendingIds).toEqual(['b']);
+    outbox.discard('bad');
+    expect(outbox.snapshot()).toEqual({ pendingIds: ['b'], failed: [] });
+    expect(JSON.parse(storage.getItem(OUTBOX_KEY)).map((e) => e.id)).toEqual(['b']);
+    expect(listener).toHaveBeenCalled();
+  });
+});
+
 describe('startOutboxWorker', () => {
+  it('reloads and runs on a storage event for the outbox key, and stop() removes that listener', async () => {
+    const send = vi.fn(async () => ({ saved: true }));
+    const storage = memoryStorage();
+    const { outbox } = setup({ send, storage });
+    const other = createOutbox({ storage, send: vi.fn(), now: () => 1000 });
+    const listeners = {};
+    const win = { addEventListener: vi.fn((e, fn) => { listeners[e] = fn; }), removeEventListener: vi.fn() };
+    const { setTimeoutImpl, clearTimeoutImpl } = fakeTimers();
+    const worker = startOutboxWorker(outbox, { win, setTimeoutImpl, clearTimeoutImpl });
+    await worker.run();
+    expect(typeof listeners.storage).toBe('function');
+
+    other.enqueue(payload('from-other-tab'));
+    listeners.storage({ key: 'unrelated' });
+    await worker.run();
+    expect(send).not.toHaveBeenCalled();
+
+    listeners.storage({ key: OUTBOX_KEY });
+    await worker.run();
+    expect(send).toHaveBeenCalledWith(payload('from-other-tab'));
+
+    worker.stop();
+    expect(win.removeEventListener).toHaveBeenCalledWith('storage', listeners.storage);
+    expect(win.removeEventListener).toHaveBeenCalledWith('online', listeners.online);
+  });
+
   it('flushes on start, on online, and schedules the next retry', async () => {
     const send = vi.fn(async () => { throw new TypeError('offline'); });
     const { outbox } = setup({ send });

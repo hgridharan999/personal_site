@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-r
 import { ArrowLeft } from 'lucide-react';
 import PrivateShell from '../PrivateShell';
 import { useOutboxStatus } from './lib/useOutboxStatus';
+import { outbox } from './lib/outboxInstance';
 import './trainers.css';
 
 const TRAINERS = {
@@ -20,6 +21,7 @@ const TRAINERS = {
 
 const TABS = ['play', 'stats'];
 const LEAVE_MESSAGE = "Leave this game? It won't be saved.";
+const DISCARD_MESSAGE = 'Discard this game? The server rejected it, so it can never be saved.';
 
 export default function TrainerPage() {
   const { trainer } = useParams();
@@ -52,6 +54,10 @@ export default function TrainerPage() {
     setParams(next === 'play' ? {} : { tab: next }, { replace: true });
   };
 
+  const onDiscard = (id) => {
+    if (window.confirm(DISCARD_MESSAGE)) outbox.discard(id);
+  };
+
   const onBack = (e) => {
     e.preventDefault();
     if (!confirmLeave()) return;
@@ -77,9 +83,20 @@ export default function TrainerPage() {
               <p className="trn-sync" role="status">{pendingIds.length} game{pendingIds.length === 1 ? '' : 's'} waiting to sync</p>
             )}
             {failed.length > 0 && (
-              <p className="trn-sync trn-sync--failed" role="alert">
-                {failed.length} game{failed.length === 1 ? '' : 's'} could not be saved: {failed[0].lastError}
-              </p>
+              <div className="trn-failed">
+                <p className="trn-sync trn-sync--failed" role="alert">
+                  {failed.length} game{failed.length === 1 ? '' : 's'} could not be saved: {failed[0].lastError}
+                </p>
+                <button
+                  type="button"
+                  data-hot
+                  className="trn-btn"
+                  aria-label="Discard failed game"
+                  onClick={() => onDiscard(failed[0].id)}
+                >
+                  Discard
+                </button>
+              </div>
             )}
           </div>
           <div className="trn-tabs" role="tablist" aria-label={`${title} views`}>
