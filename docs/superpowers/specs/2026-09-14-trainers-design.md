@@ -116,7 +116,7 @@ CREATE INDEX attempts_qtype ON attempts (qtype);
 - `POST /api/trainers/sessions` — body `{ session, attempts[] }`, max 3000 attempts; `config` serializes to at most 2000 characters. Saves the session and its attempts in one atomic SQL statement: the session insert uses `ON CONFLICT (id) DO NOTHING`, and the attempts insert only runs for a session row that statement actually inserted, so a retry or replay of an existing id inserts nothing. Returns `{ id, saved: true, duplicate }`.
 - `GET /api/trainers/sessions?id=` — one game's detail, including attempts.
 - `GET /api/trainers/stats?trainer=&mode=&configKey=` — filters on the pair (`mode`, `configKey`). `mode` defaults to `standard`, and `configKey` defaults to the newest config played in that mode. Returns:
-  - `configs`: one row per (`configKey`, `mode`) for the trainer, with `games`, `lastPlayed` and the newest `config`, for a settings picker
+  - `configs`: one row per (`configKey`, `mode`) for the trainer, with `games`, `lastPlayed`, `profileVersion` and the newest `config`, for a settings picker
   - `configKey`: the key the rest of the response describes (null when there are no games)
   - `series`: `[{id, startedAt, score, correct, wrong, unanswered, durationMs}]`
   - `byType`: `[{qtype, n, accuracy, medianMs, p90Ms, avgCorrections}]`
@@ -241,9 +241,10 @@ Server SQL does the aggregation. Client-side pure functions (`core/stats.js`) co
 - **Empty:** "No games yet — play one to see stats," with a Play button. Individual charts show their own empty message when their data is too thin (e.g. trend needs ≥ 5 games).
 - **Error:** an inline message with Retry. A 401 redirects to `/login`.
 - **Saving:**
-  - The results screen shows `Saved` or `Saving… (will retry)`.
-  - Unsent games stay in the outbox across reloads. The trainer page shows "N games waiting to sync."
-  - The outbox never drops an entry. Only a 4xx validation error flags it as failed, and failed entries are shown with details.
+  - Unsent games stay in the outbox across reloads and across tabs, and retry automatically.
+  - A game is removed only when the server accepts it, or when you discard a failed save (only failed entries can be discarded).
+  - A failed entry shows its error details and has a Discard button, which asks for confirmation.
+  - A game discarded while its results screen is open shows `Not saved (discarded)`.
 - **Mid-game navigation:** leaving asks for confirmation. An abandoned game is not saved.
 - **Focus:** the game keeps focus in the answer box, and clicking elsewhere re-focuses it.
 - **Accessibility:** results and stats have text equivalents (chart summaries as visually hidden text), and all controls are keyboard reachable.

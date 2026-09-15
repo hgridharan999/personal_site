@@ -75,8 +75,8 @@ The public site needs none. The private trainers need `DATABASE_URL`, `ADMIN_PAS
 The private Zetamac and 80-in-8 trainers under `/me` store every game in Neon Postgres.
 
 1. **Connect Neon.** In the Vercel dashboard, open **Storage / Marketplace**, add **Neon**, and connect it to this project. This sets `DATABASE_URL` for the project.
-2. **Local development.** Run `vercel env pull .env.local`, or paste `DATABASE_URL` into `.env.local` by hand. `.env.local` must never be committed.
-3. **Run the migrations.** Run `npm run db:migrate` (needs Node ≥ 22.12) before, or right after, the first deploy. Until the migrations have run:
+2. **Local development.** Run `vercel link` once before `vercel env pull .env.local`, or paste `DATABASE_URL` into `.env.local` by hand. `.env.local` must never be committed.
+3. **Run the migrations.** Run `npm run db:migrate` (needs Node ≥ 22.12) before, or right after, the first deploy. Migrations must run against every database a deployment uses. With Neon's branch-per-preview integration, that includes each preview branch database. Run `DATABASE_URL=<that branch's URL> npm run db:migrate` for each one. Until the migrations have run:
    - the stats pages show "Database is not configured" or an error;
    - finished games wait in the browser outbox and retry, so nothing is lost.
 4. **Auth variables.** `ADMIN_PASSWORD` (12+ characters) and `SESSION_SECRET` (32+ characters) must also be set.
