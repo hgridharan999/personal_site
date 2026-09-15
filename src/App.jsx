@@ -20,6 +20,7 @@ import RequireAuth from './private/RequireAuth';
 
 // Trainer code is lazy-loaded: public visitors never download it.
 const TrainerPage = lazy(() => import('./private/trainers/TrainerPage'));
+const GameDetail = lazy(() => import('./private/trainers/stats/GameDetail'));
 
 const privateFallback = (
   <PrivateShell className="prv-center">
@@ -56,6 +57,10 @@ function AnimatedRoutes() {
       <Route
         path="/me/:trainer"
         element={<RequireAuth>{() => <Suspense fallback={privateFallback}><TrainerPage /></Suspense>}</RequireAuth>}
+      />
+      <Route
+        path="/me/:trainer/game/:id"
+        element={<RequireAuth>{() => <Suspense fallback={privateFallback}><GameDetail /></Suspense>}</RequireAuth>}
       />
 
       {/* Legacy aliases — same components at old paths. */}

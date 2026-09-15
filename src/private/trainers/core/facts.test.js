@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseFactKey, countCarries, rankWeakFacts, DRILL_UNLOCK_GAMES, DRILL_RECENT_GAMES, DRILL_POOL_SIZE } from './facts.js';
+import { parseFactKey, countCarries, rankWeakFacts, DRILL_UNLOCK_GAMES, DRILL_RECENT_GAMES, DRILL_POOL_SIZE, factPrompt } from './facts.js';
 
 describe('parseFactKey', () => {
   it.each([
@@ -38,5 +38,17 @@ describe('rankWeakFacts', () => {
   it('applies the limit and exposes constants', () => {
     expect(rankWeakFacts(rows, 2)).toHaveLength(2);
     expect([DRILL_UNLOCK_GAMES, DRILL_RECENT_GAMES, DRILL_POOL_SIZE]).toEqual([3, 20, 40]);
+  });
+});
+
+describe('factPrompt', () => {
+  it.each([
+    ['add:37+58', '37 + 58'],
+    ['sub:95-37', '95 – 37'],
+    ['mul:7x83', '7 × 83'],
+    ['div:581/7', '581 ÷ 7'],
+    ['bogus', 'bogus'],
+  ])('%s → %s', (key, prompt) => {
+    expect(factPrompt(key)).toBe(prompt);
   });
 });

@@ -53,3 +53,16 @@ export function rankWeakFacts(rows, limit = DRILL_POOL_SIZE) {
     .sort((x, y) => y.weakness - x.weakness)
     .slice(0, limit);
 }
+
+// Display form of a fact key, matching the Zetamac prompt format (en dash for subtraction).
+export function factPrompt(key) {
+  const f = parseFactKey(key);
+  if (!f) return key;
+  const { a, b } = f;
+  switch (f.op) {
+    case 'add': return `${a} + ${b}`;
+    case 'sub': return `${a + b} – ${a}`;
+    case 'mul': return `${a} × ${b}`;
+    default: return `${a * b} ÷ ${a}`;
+  }
+}

@@ -98,3 +98,15 @@
 .trn-barlist-fill { display: block; height: 100%; background: var(--amber); }
 .trn-barlist-value { font-variant-numeric: tabular-nums; font-size: 14px; }
 .trn-barlist-hint { grid-column: 2 / -1; font-size: 12px; }
+
+/* ---- stats ------------------------------------------------ */
+.trn-stats { display: flex; flex-direction: column; gap: clamp(32px, 5vh, 56px); }
+.trn-section { display: flex; flex-direction: column; gap: 14px; border-top: 1px solid var(--line); padding-top: 16px; }
+.trn-subhead--sm { font-size: 11px; margin: 14px 0 2px; }
+.trn-note { font-size: 13px; margin: 0; }
+.trn-legend { font-size: 10.5px; margin: 0; }
+.trn-picker { align-self: flex-start; color: var(--muted); }
+.trn-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+a.trn-btn { text-decoration: none; display: inline-block; }
+.trn-bands { display: flex; flex-wrap: wrap; gap: 16px; list-style: none; margin: 0; padding: 0; font-family: var(--mono); }
+.trn-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
