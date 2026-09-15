@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { extent, linearScale, niceStep, niceTicks } from './scale.js';
+import {
+  extent, linearScale, niceStep, niceTicks, isFiniteNumber, barPercent,
+} from './scale.js';
 
 describe('scale', () => {
   it('extent', () => {
@@ -24,5 +26,25 @@ describe('scale', () => {
     expect(niceTicks(0, 1)).toEqual([0, 0.5, 1]);
     expect(niceTicks(40, 40)).toEqual([0, 20, 40, 60, 80]);
     expect(niceTicks(-12, 9)).toEqual([-20, -10, 0, 10]);
+  });
+  it('isFiniteNumber accepts finite numbers only', () => {
+    expect(isFiniteNumber(0)).toBe(true);
+    expect(isFiniteNumber(-3.5)).toBe(true);
+    expect(isFiniteNumber(42)).toBe(true);
+    expect(isFiniteNumber(null)).toBe(false);
+    expect(isFiniteNumber(undefined)).toBe(false);
+    expect(isFiniteNumber(NaN)).toBe(false);
+    expect(isFiniteNumber(Infinity)).toBe(false);
+    expect(isFiniteNumber('5')).toBe(false);
+  });
+  it('barPercent clamps to a valid CSS percentage', () => {
+    expect(barPercent(5, 10)).toBe(50);
+    expect(barPercent(10, 10)).toBe(100);
+    expect(barPercent(-12, 40)).toBe(0);
+    expect(barPercent(15, 10)).toBe(100);
+    expect(barPercent(3, 0)).toBe(0);
+    expect(barPercent(3, -5)).toBe(0);
+    expect(barPercent(null, 10)).toBe(0);
+    expect(barPercent(NaN, 10)).toBe(0);
   });
 });

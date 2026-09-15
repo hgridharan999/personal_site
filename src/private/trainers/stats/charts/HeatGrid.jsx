@@ -1,4 +1,4 @@
-import { extent, linearScale } from './scale';
+import { extent, linearScale, isFiniteNumber } from './scale';
 import { formatSeconds } from '../../core/format';
 
 const CELL = 26;
@@ -7,7 +7,8 @@ const TOP = 22;
 
 export default function HeatGrid({ cells, rows, cols, label }) {
   const byFact = new Map(cells.map((c) => [`${c.a}x${c.b}`, c]));
-  const [lo, hi] = extent(cells.map((c) => c.medianMs)) ?? [0, 1];
+  const seenCells = cells.filter((c) => isFiniteNumber(c.medianMs));
+  const [lo, hi] = extent(seenCells.map((c) => c.medianMs)) ?? [0, 1];
   const brightness = linearScale([lo, hi], [0.15, 1]);
   const width = LEFT + cols.length * CELL;
   const height = TOP + rows.length * CELL;
@@ -22,7 +23,8 @@ export default function HeatGrid({ cells, rows, cols, label }) {
           <g key={a}>
             <text className="trn-axis" x={LEFT - 8} y={TOP + i * CELL + CELL / 2} textAnchor="end" dominantBaseline="middle">{a}</text>
             {cols.map((b, j) => {
-              const cell = byFact.get(`${a}x${b}`);
+              const rawCell = byFact.get(`${a}x${b}`);
+              const cell = rawCell && isFiniteNumber(rawCell.medianMs) ? rawCell : null;
               return (
                 <rect
                   key={b}

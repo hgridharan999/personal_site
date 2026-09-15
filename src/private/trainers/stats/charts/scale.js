@@ -32,3 +32,11 @@ export function niceTicks(min, max, count = 4) {
   for (let v = start; v <= end + step / 2; v += step) ticks.push(Math.round(v * 1e9) / 1e9);
   return ticks;
 }
+
+export const isFiniteNumber = (v) => typeof v === 'number' && Number.isFinite(v);
+
+// Width of a bar as a CSS-safe percentage in [0, 100].
+export function barPercent(value, max) {
+  if (!isFiniteNumber(value) || !isFiniteNumber(max) || max <= 0) return 0;
+  return Math.min(100, Math.max(0, (value / max) * 100));
+}
