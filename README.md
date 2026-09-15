@@ -42,6 +42,10 @@ Build for production:
 npm run build
 ```
 
+### Trainers database
+
+The private trainers under `/me` need a Neon Postgres database (`DATABASE_URL`), migrations (`npm run db:migrate`, Node ≥ 22.12), and the `ADMIN_PASSWORD` and `SESSION_SECRET` variables. See [Trainers database (Neon)](DEPLOYMENT.md#trainers-database-neon) in `DEPLOYMENT.md`.
+
 ## Customization
 
 ### Replace Placeholder Content

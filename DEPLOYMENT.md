@@ -68,7 +68,20 @@ Vercel will automatically detect your Vite project and configure:
 4. Update your DNS settings as instructed
 
 ### Environment variables
-No environment variables are required for this project currently.
+The public site needs none. The private trainers need `DATABASE_URL`, `ADMIN_PASSWORD` and `SESSION_SECRET`; see [Trainers database (Neon)](#trainers-database-neon).
+
+## Trainers database (Neon)
+
+The private Zetamac and 80-in-8 trainers under `/me` store every game in Neon Postgres.
+
+1. **Connect Neon.** In the Vercel dashboard, open **Storage / Marketplace**, add **Neon**, and connect it to this project. This sets `DATABASE_URL` for the project.
+2. **Local development.** Run `vercel env pull .env.local`, or paste `DATABASE_URL` into `.env.local` by hand. `.env.local` must never be committed.
+3. **Run the migrations.** Run `npm run db:migrate` (needs Node ≥ 22.12) before, or right after, the first deploy. Until the migrations have run:
+   - the stats pages show "Database is not configured" or an error;
+   - finished games wait in the browser outbox and retry, so nothing is lost.
+4. **Auth variables.** `ADMIN_PASSWORD` (12+ characters) and `SESSION_SECRET` (32+ characters) must also be set.
+5. **Preview deployments.** Unless Neon's branch-per-preview integration is enabled, preview deployments write to the same database as production.
+6. **Signing out everyone.** Rotating `SESSION_SECRET` or changing `ADMIN_PASSWORD` signs everyone out.
 
 ### Before you go live
 

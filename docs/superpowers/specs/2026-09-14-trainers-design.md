@@ -90,7 +90,7 @@ CREATE TABLE sessions (
   score           int NOT NULL,                -- Zetamac: correct; Optiver: correct − wrong
   created_at      timestamptz NOT NULL DEFAULT now()
 );
-CREATE INDEX sessions_series ON sessions (trainer, config_key, started_at);
+CREATE INDEX sessions_series ON sessions (trainer, mode, config_key, started_at);
 
 CREATE TABLE attempts (
   session_id  uuid NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
@@ -113,17 +113,21 @@ CREATE INDEX attempts_qtype ON attempts (qtype);
 - `config_key` = SHA-256 of the canonical, key-sorted JSON of `{trainer, config, profile_version}`. It deliberately excludes `mode`, so a drill and a standard game can share a key. Stats therefore always filter on the pair (`mode`, `config_key`), and a drill never mixes into the standard series.
 
 ### 3.3 API (Vercel Node functions, ESM; limits from Zod schemas)
-- `POST /api/trainers/sessions` — body `{ session, attempts[] }`, max 1000 attempts. Inserts the session and its attempts in one transaction, with `ON CONFLICT (id) DO NOTHING` so retries are safe. Returns `{ id, saved: true }`.
+- `POST /api/trainers/sessions` — body `{ session, attempts[] }`, max 3000 attempts; `config` serializes to at most 2000 characters. Saves the session and its attempts in one atomic SQL statement: the session insert uses `ON CONFLICT (id) DO NOTHING`, and the attempts insert only runs for a session row that statement actually inserted, so a retry or replay of an existing id inserts nothing. Returns `{ id, saved: true, duplicate }`.
 - `GET /api/trainers/sessions?id=` — one game's detail, including attempts.
-- `GET /api/trainers/stats?trainer=&config_key=` — returns:
-  - `series`: `[{id, started_at, score, correct, wrong, unanswered}]`
-  - `byType`: `[{qtype, n, accuracy, median_ms, p90_ms, avg_corrections}]`
-  - `pace`: average `time_ms` by `idx` bucket (Zetamac: buckets of 5 problems; Optiver: buckets of 10 questions)
-  - `timeHistogram`: bins of `time_ms`
+- `GET /api/trainers/stats?trainer=&mode=&configKey=` — filters on the pair (`mode`, `configKey`). `mode` defaults to `standard`, and `configKey` defaults to the newest config played in that mode. Returns:
+  - `configs`: one row per (`configKey`, `mode`) for the trainer, with `games`, `lastPlayed` and the newest `config`, for a settings picker
+  - `configKey`: the key the rest of the response describes (null when there are no games)
+  - `series`: `[{id, startedAt, score, correct, wrong, unanswered, durationMs}]`
+  - `byType`: `[{qtype, n, accuracy, medianMs, p90Ms, avgCorrections}]`
+  - `pace`: `{ bucketSize, rows }`, median `time_ms` by `idx` bucket (Zetamac: buckets of 5 problems; Optiver: buckets of 10 questions)
+  - `histogram`: `{ binWidthMs, bins }` of `time_ms`
+  - `overall`: `{ n, medianMs, p90Ms }` across all timed attempts
   - `slowest`: top 20 attempts by `time_ms`
-  - `facts`: per-`fact_key` median time, accuracy, corrections and count
+  - `timesGrid` (Zetamac): median time per multiplication fact, for the heat grid
+  - `slowFacts` (Zetamac): the 20 slowest facts with ≥ 2 observations
+  - `carries` (Zetamac): +/− time split by carry/borrow count
   - `wrongLog` (Optiver): the latest 50 wrong attempts
-  - `configs`: every `config_key` for the trainer, with its game count and a label, for a settings picker
 - `GET /api/trainers/drill` — weakest Zetamac facts from the last 20 standard games (see 4.4).
 - Every handler: `verifySession()` (401 otherwise), `Cache-Control: no-store`, and the standard error shape `{ error, code, details? }`.
 - The dev shim `vite.api-dev.js` gets extended to nested paths (`trainers/stats`); it still refuses `..`, `_` prefixes, and anything outside `api/`.
@@ -175,7 +179,7 @@ A game whose settings equal the defaults is saved with `mode: 'standard'`.
 - **Source data:** attempts from the last 20 standard games that have `fact_key` and `time_ms`.
 - **Weakness score per fact** (a fact needs ≥ 2 observations): `z(median_ms within its operation) + 1.5 × corrections_rate`.
 - The top 40 facts by weakness become the drill pool.
-- **Game:** each problem is a weak fact with probability 0.7 (sampled from the pool weighted by weakness) and a normal standard problem with probability 0.3. Timer, input and scoring are identical to a standard game. Duration is chosen from the standard options (default 120 s).
+- **Game:** each problem is a weak fact with probability 0.7 (sampled from the pool weighted by weakness) and a normal standard problem with probability 0.3. Timer, input and scoring are identical to a standard game. Duration is fixed at 120 s (the standard defaults), so drill games share the standard `config_key` and their attempts feed the standard per-fact stats.
 - **Availability:** drills unlock after 3 standard games; before that the button is disabled with an explanation.
 - **Stats:** drill games have `mode: 'drill'`. Their attempts count toward per-fact mastery (`facts`) but not toward the standard score series.
 
