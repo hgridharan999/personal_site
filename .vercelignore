@@ -1,0 +1,4 @@
+# Tests and test-only helpers must not become serverless functions
+**/*.test.js
+api/_lib/testing.js
+docs/
