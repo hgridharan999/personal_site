@@ -178,7 +178,7 @@ describe('startOutboxWorker', () => {
 
   it('ignores a stray timer callback that fires after stop()', async () => {
     const send = vi.fn(async () => { throw new TypeError('offline'); });
-    const { outbox } = setup({ send });
+    const { outbox, clock } = setup({ send });
     outbox.enqueue(payload('a'));
     const win = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
     const { setTimeoutImpl, clearTimeoutImpl, calls } = fakeTimers();
@@ -187,6 +187,7 @@ describe('startOutboxWorker', () => {
     expect(send).toHaveBeenCalledTimes(1);
     const mostRecent = calls[calls.length - 1];
     worker.stop();
+    clock.advance(1000);
     mostRecent.fn();
     expect(send).toHaveBeenCalledTimes(1);
   });
