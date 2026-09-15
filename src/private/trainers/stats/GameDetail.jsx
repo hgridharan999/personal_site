@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import PrivateShell from '../../PrivateShell';
 import { ApiError, getSession } from '../lib/api';
@@ -62,6 +62,7 @@ function OptiverDetail({ session, attempts }) {
 export default function GameDetail() {
   const { trainer, id } = useParams();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [state, setState] = useState({ status: 'loading', data: null, error: null });
   const [nonce, setNonce] = useState(0);
   const valid = TRAINERS.includes(trainer);
@@ -77,14 +78,14 @@ export default function GameDetail() {
       .catch((err) => {
         if (!live) return;
         if (err instanceof ApiError && err.status === 401) {
-          navigate('/login', { replace: true });
+          navigate('/login', { replace: true, state: { from: pathname } });
           return;
         }
         const notFound = err instanceof ApiError && (err.status === 404 || err.status === 400);
         setState({ status: 'error', data: null, error: notFound ? 'This game was not found.' : (err.message || 'Request failed') });
       });
     return () => { live = false; };
-  }, [valid, id, nonce, navigate]);
+  }, [valid, id, nonce, navigate, pathname]);
 
   if (!valid) return <Navigate to="/me" replace />;
 
