@@ -18,9 +18,13 @@ export default function apiDevServer() {
     },
     configureServer(server) {
       server.middlewares.use('/api', async (req, res, next) => {
-        const name = (req.url || '').split('?')[0].replace(/^\/+|\/+$/g, '');
+        const url = new URL(req.url || '/', 'http://localhost');
+        const name = url.pathname.replace(/^\/+|\/+$/g, '');
+        // Segments of [a-z0-9-] only: blocks '..', '_lib', dotted files like '*.test'.
+        if (!/^[a-z0-9-]+(\/[a-z0-9-]+)*$/i.test(name)) return next();
         const file = path.resolve(server.config.root, 'api', `${name}.js`);
-        if (!/^[a-z0-9-]+$/i.test(name) || !fs.existsSync(file)) return next();
+        if (!fs.existsSync(file)) return next();
+        req.query = Object.fromEntries(url.searchParams);
 
         try {
           const chunks = [];

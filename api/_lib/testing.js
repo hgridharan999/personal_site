@@ -20,14 +20,17 @@ export function authedReq({ method = 'GET', body, query = {}, authed = true } = 
   return { method, body, query, headers: { cookie } };
 }
 
-export function mockSql(results = []) {
-  const queue = [...results];
+export function mockSql(resultsOrResolver = []) {
+  const resolver = typeof resultsOrResolver === 'function' ? resultsOrResolver : null;
+  const queue = resolver ? [] : [...resultsOrResolver];
   const queries = [];
   const sql = (strings, ...values) => {
+    const text = strings.join('?');
     const q = {
-      text: strings.join('?'),
+      text,
       values,
-      then: (resolve, reject) => Promise.resolve(queue.shift() ?? []).then(resolve, reject),
+      then: (resolve, reject) =>
+        Promise.resolve(resolver ? resolver(text, values) : (queue.shift() ?? [])).then(resolve, reject),
     };
     queries.push(q);
     return q;
