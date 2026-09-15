@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { gsap, useGSAP } from '../lib/gsap';
 import Cursor from './Cursor';
-import ScrambleText from './ScrambleText';
 import PageInstrument from './PageInstrument';
 import './ascent.css';
 
@@ -27,7 +26,7 @@ export default function SubShell({ index, title, current, subtitle, instrument, 
     gsap.set(q('.asc-in'), { opacity: 0, y: 12 });
     gsap.timeline({ delay: 0.1 })
       .to(q('.asc-rise'), { yPercent: 0, duration: 1, ease: 'expo.out' }, 0)
-      .to(q('.asc-in'), { opacity: 1, y: 0, duration: 0.6, ease: 'expo.out', stagger: 0.045 }, 0.1);
+      .to(q('.asc-in'), { opacity: 1, y: 0, duration: 0.6, ease: 'expo.out', stagger: 0.045, clearProps: 'transform,opacity' }, 0.1);
   }, { scope: root });
 
   // Fail-safe: content is never left hidden if the entrance stalls mid-transition.
@@ -56,9 +55,7 @@ export default function SubShell({ index, title, current, subtitle, instrument, 
 
       <div className="asc-sub-body">
         <header className="asc-sub-head">
-          <h1 className="asc-h asc-sub-title">
-            <ScrambleText text={title} duration={850} delay={120} style={{ display: 'inline-block' }} />
-          </h1>
+          <h1 className="asc-h asc-sub-title asc-in">{title}</h1>
           {subtitle && <p className="asc-sub-sub asc-in">{subtitle}</p>}
         </header>
 

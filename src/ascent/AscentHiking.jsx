@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import SubShell from './SubShell';
 import HikeMap from './HikeMap';
-import { HIKES } from './data';
+import { HIKES, HIKES_BY_STATE } from './data';
 
-const BAR = { type: 'spring', stiffness: 600, damping: 44 };
+// Selection bar — an unhurried, non-bouncy glide (~0.8s) rather than a snap.
+const BAR = { type: 'spring', stiffness: 170, damping: 30 };
+// Group expand/collapse. A tween, not a spring: height:auto costs a layout pass
+// per frame, so a fixed, short-and-known curve is both calmer and cheaper.
+const GROUP = { type: 'tween', duration: 0.55, ease: [0.22, 1, 0.36, 1] };
 
 // 240px thumbnails live alongside the 1600px display images
 const thumbOf = (src) => src.replace('/hikes/', '/hikes/t/');
@@ -12,11 +16,25 @@ const thumbOf = (src) => src.replace('/hikes/', '/hikes/t/');
 export default function AscentHiking() {
   const [sel, setSel] = useState(0);
   const [pi, setPi] = useState(0);
+  const [openGroups, setOpenGroups] = useState(() => {
+    const init = {};
+    HIKES_BY_STATE.forEach((g) => { init[g.state] = false; });
+    return init;
+  });
 
   const h = HIKES[sel];
   const photos = h.photos || [];
 
   useEffect(() => { setPi(0); }, [sel]);
+
+  // prepare stable global indices for groups and visible indices for the map
+  let _idx = 0;
+  const groups = HIKES_BY_STATE.map((g) => {
+    const indices = g.hikes.map(() => _idx++);
+    return { ...g, indices };
+  });
+  const visibleIndices = new Set();
+  groups.forEach((g) => { if (openGroups[g.state]) g.indices.forEach((i) => visibleIndices.add(i)); });
 
   return (
     <SubShell index="03" title="Hiking" current="Hiking" instrument="hiking">
@@ -25,23 +43,57 @@ export default function AscentHiking() {
         {/* LEFT — scrollable hike list + map beneath it */}
         <div className="asc-hike-left">
           <div className="asc-hike-list">
-            {HIKES.map((x, i) => (
-              <button
-                key={i}
-                className={`asc-md-item ${i === sel ? 'is-active' : ''}`}
-                data-hot
-                onClick={() => setSel(i)}
-              >
-                {i === sel && <motion.span layoutId="hike-bar" className="asc-md-bar" transition={BAR} />}
-                <span className="asc-md-idx">{String(i + 1).padStart(2, '0')}</span>
-                <span className="asc-md-name">{x.name}</span>
-                <span className="asc-md-sub">{x.location}</span>
-              </button>
-            ))}
+            {(() => {
+              return groups.map((group) => {
+                const open = !!openGroups[group.state];
+                return (
+                  <div key={group.state} className="asc-hike-group">
+                    <button
+                      className={`asc-hike-group-header ${open ? 'is-open' : 'is-closed'}`}
+                      onClick={() => setOpenGroups((s) => ({ ...s, [group.state]: !s[group.state] }))}
+                      aria-expanded={open}
+                    >
+                      <span className="asc-hike-group-chevron">{open ? '▾' : '▸'}</span>
+                      <span>{group.state}</span>
+                    </button>
+
+                    <AnimatePresence initial={false}>
+                      {open && (
+                        <motion.div
+                          key="list"
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={GROUP}
+                          style={{ overflow: 'hidden' }}
+                        >
+                          {group.hikes.map((x, idxInGroup) => {
+                            const global = group.indices[idxInGroup];
+                            return (
+                              <button
+                                key={global}
+                                className={`asc-md-item ${global === sel ? 'is-active' : ''}`}
+                                data-hot
+                                onClick={() => setSel(global)}
+                              >
+                                {global === sel && <motion.span layoutId="hike-bar" className="asc-md-bar" transition={BAR} />}
+                                <span className="asc-md-idx">{String(global + 1).padStart(2, '0')}</span>
+                                <span className="asc-md-name">{x.name}</span>
+                                <span className="asc-md-sub">{x.location}</span>
+                              </button>
+                            );
+                          })}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              });
+            })()}
           </div>
 
           <div className="asc-hike-map">
-            <HikeMap hikes={HIKES} active={sel} onSelect={setSel} />
+            <HikeMap hikes={HIKES} active={sel} onSelect={setSel} visibleIndices={visibleIndices} />
             <span className="asc-map-credit asc-mono">Click a pin</span>
           </div>
         </div>
@@ -50,7 +102,7 @@ export default function AscentHiking() {
         <div className="asc-hike-right">
           <div className="asc-hike-media">
             {photos.length > 0 ? (
-              <img key={`${sel}-${pi}`} src={photos[pi]} alt={h.name} decoding="async" fetchpriority="high" />
+              <img src={photos[pi]} alt={h.name} decoding="async" fetchpriority="high" />
             ) : (
               <span className="asc-mono" style={{ color: 'var(--faint)' }}>No photos — you had to be there</span>
             )}

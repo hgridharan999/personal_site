@@ -77,8 +77,7 @@
 .asc-cursor.is-hot { width: 34px; height: 34px; background: var(--bone); border-color: transparent; }
 
 /* ---- entrance helpers ------------------------------------ */
-.asc-rise { display: block; will-change: transform; }
-.asc-in { will-change: transform, opacity; }
+.asc-rise { display: block; }
 
 /* ---- home identity nav ----------------------------------- */
 .asc-nav { display: flex; flex-direction: column; }
@@ -157,7 +156,7 @@
 .asc-md-name { font-family: var(--display); font-weight: 700; letter-spacing: -0.02em; font-size: clamp(17px, 1.9vw, 26px); line-height: 1.05; }
 .asc-md-sub { margin-left: auto; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); white-space: nowrap; }
 
-.asc-md-detail { min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: clamp(14px, 2.3vh, 22px); padding: clamp(6px, 2vh, 22px) 0; animation: ascFade 0.5s var(--ease); }
+.asc-md-detail { min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: clamp(14px, 2.3vh, 22px); padding: clamp(6px, 2vh, 22px) 0; animation: ascFade 0.75s var(--ease); }
 @keyframes ascFade { from { opacity: 0; } to { opacity: 1; } }
 .asc-logo-tile { width: 92px; height: 92px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--line); background: #060606; flex-shrink: 0; padding: 12px; }
 .asc-detail-title { font-family: var(--display); font-weight: 900; letter-spacing: -0.03em; line-height: 0.98; font-size: clamp(30px, 4.4vw, 60px); }
@@ -177,7 +176,7 @@
 .asc-state { fill: rgba(237,231,218,0.035); stroke: rgba(237,231,218,0.55); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
 .asc-map-label { fill: var(--faint); font-family: var(--mono); font-size: 30px; letter-spacing: 4px; text-transform: uppercase; }
 .asc-svgpin { cursor: pointer; }
-.asc-svgpin circle { fill: rgba(11,10,10,0.92); stroke: var(--amber); stroke-width: 4; opacity: 0.78; transition: opacity 0.3s var(--ease), fill 0.3s var(--ease); }
+.asc-svgpin circle { fill: rgba(11,10,10,0.92); stroke: var(--amber); stroke-width: 4; opacity: 0.78; transition: opacity 0.5s var(--ease), fill 0.5s var(--ease); }
 .asc-svgpin text { fill: var(--amber); font-family: var(--mono); font-size: 34px; font-weight: 700; }
 .asc-svgpin:hover circle { opacity: 1; }
 .asc-svgpin.is-active circle { fill: var(--amber); opacity: 1; }
@@ -190,7 +189,7 @@
   transition: transform 0.3s var(--ease), opacity 0.3s var(--ease), background 0.3s var(--ease), box-shadow 0.3s var(--ease); }
 .asc-pin.is-active i { background: var(--amber); color: #0B0A0A; opacity: 1; transform: scale(1.3);
   box-shadow: 0 0 0 4px rgba(232,192,137,0.28), 0 0 18px rgba(232,192,137,0.9); }
-.asc-fade { animation: ascFade 0.45s var(--ease); }
+.asc-fade { animation: ascFade 0.7s var(--ease); }
 
 /* long-form blog prose */
 .asc-prose { font-family: var(--serif); color: rgba(237,231,218,0.86); font-size: clamp(17px, 1.35vw, 21px); line-height: 1.7; }

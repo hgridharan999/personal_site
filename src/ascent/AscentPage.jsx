@@ -3,11 +3,8 @@ import { Link } from 'react-router-dom';
 import { Linkedin, Github, Mail, Download, ArrowUpRight, Triangle } from 'lucide-react';
 import { gsap, useGSAP } from '../lib/gsap';
 import Cursor from './Cursor';
-import Magnetic from './Magnetic';
 import SplitReveal from './SplitReveal';
-import ScrambleText from './ScrambleText';
 import PageInstrument from './PageInstrument';
-import { useMagnetic } from './useMagnetic';
 import './ascent.css';
 
 /**
@@ -32,15 +29,14 @@ const SOCIAL = [
   { icon: Download, label: 'Resume',   href: '/Gridharan_Hari_Resume.pdf', download: true },
 ];
 
-// Nav row that leans toward the cursor. The magnetic ref sits on the <Link>
-// itself so it stays a direct child of .asc-nav (keeps the border rules intact).
-function MagneticNavLink({ to, n, label, idx }) {
-  const ref = useMagnetic(0.16, 0.32);
+// Nav row. Static apart from the CSS hover transitions — no cursor-following
+// transform, so a hover costs nothing beyond a compositor-friendly colour change.
+function NavLink({ to, n, label }) {
   return (
-    <Link ref={ref} to={to} data-hot className="asc-nav-link asc-in">
+    <Link to={to} data-hot className="asc-nav-link asc-in">
       <span className="asc-nav-link__idx">{n}</span>
-      <ScrambleText className="asc-nav-link__name" text={label} hover delay={360 + idx * 80} duration={460} />
-      <ArrowUpRight className="asc-nav-link__arrow" data-mag-child size={20} />
+      <span className="asc-nav-link__name">{label}</span>
+      <ArrowUpRight className="asc-nav-link__arrow" size={20} />
     </Link>
   );
 }
@@ -54,7 +50,7 @@ export default function AscentPage() {
     gsap.set(q('.asc-in'), { opacity: 0, y: 14 });
     gsap.timeline({ delay: 0.15 })
       .to(q('.asc-rise'), { yPercent: 0, duration: 1.1, ease: 'expo.out', stagger: 0.09 }, 0.05)
-      .to(q('.asc-in'), { opacity: 1, y: 0, duration: 0.6, ease: 'expo.out', stagger: 0.05 }, 0.05);
+      .to(q('.asc-in'), { opacity: 1, y: 0, duration: 0.6, ease: 'expo.out', stagger: 0.05, clearProps: 'transform,opacity' }, 0.05);
   }, { scope: root });
 
   // Fail-safe: guarantee the identity is visible even if the entrance stalls
@@ -109,29 +105,28 @@ export default function AscentPage() {
 
           {/* section index */}
           <nav className="asc-nav" style={{ marginTop: 'clamp(4px, 1vh, 12px)' }}>
-            {NAV.map((s, i) => (
-              <MagneticNavLink key={s.to} to={s.to} n={s.n} label={s.label} idx={i} />
+            {NAV.map((s) => (
+              <NavLink key={s.to} to={s.to} n={s.n} label={s.label} />
             ))}
           </nav>
 
           {/* socials */}
           <div className="asc-in" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, marginLeft: -10 }}>
             {SOCIAL.map(({ icon: Icon, label, href, download }) => (
-              <Magnetic key={label} strength={0.45} childStrength={0.7} style={{ borderRadius: '50%' }}>
-                <a
-                  href={href}
-                  download={download}
-                  target={download ? undefined : '_blank'}
-                  rel="noopener noreferrer"
-                  aria-label={label}
-                  data-hot
-                  style={{ color: 'var(--muted)', display: 'inline-flex', padding: 10, transition: 'color 0.3s var(--ease)' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--amber)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--muted)')}
-                >
-                  <Icon data-mag-child size={18} />
-                </a>
-              </Magnetic>
+              <a
+                key={label}
+                href={href}
+                download={download}
+                target={download ? undefined : '_blank'}
+                rel="noopener noreferrer"
+                aria-label={label}
+                data-hot
+                style={{ color: 'var(--muted)', display: 'inline-flex', padding: 10, transition: 'color 0.3s var(--ease)' }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--amber)')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--muted)')}
+              >
+                <Icon size={18} />
+              </a>
             ))}
           </div>
         </div>

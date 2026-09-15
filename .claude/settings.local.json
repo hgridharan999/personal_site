@@ -54,7 +54,11 @@
       "Bash(mkdir -p /tmp/hikezip)",
       "Bash(python -c \"import pillow_heif; print\\('pillow_heif OK'\\)\")",
       "Bash(pip install *)",
-      "Bash(python -c \"import pillow_heif; print\\('pillow_heif OK', pillow_heif.__version__\\)\")"
+      "Bash(python -c \"import pillow_heif; print\\('pillow_heif OK', pillow_heif.__version__\\)\")",
+      "WebSearch",
+      "WebFetch(domain:forecast.weather.gov)",
+      "WebFetch(domain:api.sunrise-sunset.org)",
+      "WebFetch(domain:www.coloradounited.com)"
     ]
   }
 }
