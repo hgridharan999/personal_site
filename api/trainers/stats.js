@@ -24,12 +24,23 @@ function emptyStats(trainer, configs, configKey) {
 const NO_OVERALL = Object.freeze({ n: 0, medianMs: null, p90Ms: null });
 
 async function loadStats(sql, { trainer, mode, configKey }) {
+  // Newest config per (config_key, mode) via DISTINCT ON, joined to per-group
+  // counts, so only one config document per group is ever loaded.
   const configs = await sql`
-    SELECT config_key AS "configKey", mode, count(*)::int AS games, max(started_at) AS "lastPlayed",
-           max(profile_version) AS "profileVersion",
-           (array_agg(config ORDER BY started_at DESC))[1] AS config
-    FROM sessions WHERE trainer = ${trainer}
-    GROUP BY config_key, mode ORDER BY max(started_at) DESC`;
+    SELECT latest."configKey", latest.mode, totals.games, totals."lastPlayed",
+           latest."profileVersion", latest.config
+    FROM (
+      SELECT DISTINCT ON (config_key, mode)
+             config_key AS "configKey", mode, profile_version AS "profileVersion", config
+      FROM sessions WHERE trainer = ${trainer}
+      ORDER BY config_key, mode, started_at DESC
+    ) latest
+    JOIN (
+      SELECT config_key, mode, count(*)::int AS games, max(started_at) AS "lastPlayed"
+      FROM sessions WHERE trainer = ${trainer}
+      GROUP BY config_key, mode
+    ) totals ON totals.config_key = latest."configKey" AND totals.mode = latest.mode
+    ORDER BY totals."lastPlayed" DESC`;
   const key = configKey ?? configs.find((c) => c.mode === mode)?.configKey ?? null;
   if (!key) return emptyStats(trainer, configs, null);
 

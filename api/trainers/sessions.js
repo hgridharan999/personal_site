@@ -26,20 +26,27 @@ async function save(sql, req, res) {
     corrections: a.corrections,
   }));
 
-  const [inserted] = await sql.transaction([
-    sql`INSERT INTO sessions (id, trainer, mode, config, config_key, profile_version, started_at, duration_ms, correct, wrong, unanswered, score)
-        VALUES (${s.id}, ${s.trainer}, ${s.mode}, ${JSON.stringify(s.config)}::jsonb, ${s.configKey}, ${s.profileVersion},
-                ${s.startedAt}, ${s.durationMs}, ${s.correct}, ${s.wrong}, ${s.unanswered}, ${s.score})
-        ON CONFLICT (id) DO NOTHING
-        RETURNING id`,
-    sql`INSERT INTO attempts (session_id, idx, qtype, fact_key, prompt, answer, response, is_correct, time_ms, corrections)
-        SELECT * FROM jsonb_to_recordset(${JSON.stringify(rows)}::jsonb)
-          AS x(session_id uuid, idx int, qtype text, fact_key text, prompt text, answer text,
-               response text, is_correct boolean, time_ms int, corrections int)
-        ON CONFLICT (session_id, idx) DO NOTHING`,
-  ]);
+  // One statement, so it is atomic on its own (no transaction needed). The
+  // attempts insert joins on the session row this statement actually inserted:
+  // replaying an existing id inserts nothing at all, not even new idx values.
+  const [{ inserted }] = await sql`
+    WITH s AS (
+      INSERT INTO sessions (id, trainer, mode, config, config_key, profile_version, started_at, duration_ms, correct, wrong, unanswered, score)
+      VALUES (${s.id}, ${s.trainer}, ${s.mode}, ${JSON.stringify(s.config)}::jsonb, ${s.configKey}, ${s.profileVersion},
+              ${s.startedAt}, ${s.durationMs}, ${s.correct}, ${s.wrong}, ${s.unanswered}, ${s.score})
+      ON CONFLICT (id) DO NOTHING
+      RETURNING id
+    ), a AS (
+      INSERT INTO attempts (session_id, idx, qtype, fact_key, prompt, answer, response, is_correct, time_ms, corrections)
+      SELECT x.session_id, x.idx, x.qtype, x.fact_key, x.prompt, x.answer, x.response, x.is_correct, x.time_ms, x.corrections
+      FROM jsonb_to_recordset(${JSON.stringify(rows)}::jsonb)
+        AS x(session_id uuid, idx int, qtype text, fact_key text, prompt text, answer text,
+             response text, is_correct boolean, time_ms int, corrections int)
+      JOIN s ON s.id = x.session_id
+    )
+    SELECT count(*)::int AS inserted FROM s`;
 
-  return res.status(200).json({ id: s.id, saved: true, duplicate: inserted.length === 0 });
+  return res.status(200).json({ id: s.id, saved: true, duplicate: inserted === 0 });
 }
 
 async function read(sql, req, res) {

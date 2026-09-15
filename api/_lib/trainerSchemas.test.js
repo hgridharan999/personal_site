@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sessionPayload, statsQuery, idQuery, QTYPES, MAX_ATTEMPTS } from './trainerSchemas.js';
+import { sessionPayload, statsQuery, idQuery, QTYPES, MAX_ATTEMPTS, MAX_CONFIG_CHARS } from './trainerSchemas.js';
 import { zetamacPayload } from './testing.js';
 
 describe('sessionPayload', () => {
@@ -44,6 +44,20 @@ describe('sessionPayload', () => {
     }));
     const p = zetamacPayload({ attempts: many, session: { mode: 'custom', durationMs: 600000, correct: 1500, score: 1500 } });
     expect(sessionPayload.safeParse(p).success).toBe(true);
+  });
+  it('rejects an oversized config and accepts a normal one', () => {
+    expect(MAX_CONFIG_CHARS).toBe(2000);
+    const big = zetamacPayload({ session: { config: { note: 'x'.repeat(MAX_CONFIG_CHARS) } } });
+    expect(sessionPayload.safeParse(big).success).toBe(false);
+    const normal = zetamacPayload({
+      session: {
+        config: {
+          add: true, sub: true, mul: true, div: true, add_left_min: 2, add_left_max: 100, add_right_min: 2, add_right_max: 100,
+          mul_left_min: 2, mul_left_max: 12, mul_right_min: 2, mul_right_max: 100, duration: 120,
+        },
+      },
+    });
+    expect(sessionPayload.safeParse(normal).success).toBe(true);
   });
   it('lists all qtypes', () => {
     expect(QTYPES).toContain('z.div');

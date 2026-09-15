@@ -12,6 +12,8 @@ export const QTYPES = [
 // Generous enough for a 600 s custom Zetamac game with trivial ranges; a valid
 // game the server rejects would sit in the outbox as permanently failed.
 export const MAX_ATTEMPTS = 3000;
+// Real configs serialize to ~250 characters; this bounds what a client can store.
+export const MAX_CONFIG_CHARS = 2000;
 
 const configKey = z.string().regex(/^[0-9a-f]{64}$/);
 const count = z.int().min(0).max(MAX_ATTEMPTS);
@@ -34,7 +36,9 @@ export const sessionPayload = z
       id: z.uuid(),
       trainer: z.enum(TRAINERS),
       mode: z.enum(MODES),
-      config: z.record(z.string(), z.unknown()),
+      config: z.record(z.string(), z.unknown()).refine((c) => JSON.stringify(c).length <= MAX_CONFIG_CHARS, {
+        message: `config must serialize to at most ${MAX_CONFIG_CHARS} characters`,
+      }),
       configKey,
       profileVersion: z.int().min(1).nullable(),
       startedAt: z.iso.datetime(),

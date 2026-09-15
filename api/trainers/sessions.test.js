@@ -36,29 +36,35 @@ describe('api/trainers/sessions', () => {
     expect(res.body.details).toBeDefined();
   });
 
-  it('saves session + attempts in one transaction', async () => {
-    const sql = mockSql();
-    sql.transactionResult = [[{ id: ID }], []];
+  it('saves session + attempts in one atomic statement gated on the session insert', async () => {
+    const sql = mockSql([[{ inserted: 1 }]]);
     const res = mockRes();
     await make(sql)(authedReq({ method: 'POST', body: zetamacPayload() }), res);
     expect(res.statusCode).toBe(200);
     expect(res.body).toEqual({ id: ID, saved: true, duplicate: false });
-    expect(sql.transactions).toHaveLength(1);
-    const [insertSession, insertAttempts] = sql.transactions[0];
-    expect(insertSession.text).toMatch(/INSERT INTO sessions/);
-    expect(insertSession.text).toMatch(/ON CONFLICT \(id\) DO NOTHING/);
-    expect(insertSession.values[0]).toBe(ID);
-    expect(insertAttempts.text).toMatch(/jsonb_to_recordset/);
-    const rows = JSON.parse(insertAttempts.values[0]);
-    expect(rows[0]).toMatchObject({ session_id: ID, idx: 0, fact_key: 'mul:7x83', is_correct: true, time_ms: 2140 });
+    expect(sql.transactions).toHaveLength(0);
+    expect(sql.queries).toHaveLength(1);
+    const [save] = sql.queries;
+    for (const fragment of ['WITH s AS', 'INSERT INTO sessions', 'ON CONFLICT (id) DO NOTHING', 'RETURNING id', 'INSERT INTO attempts', 'jsonb_to_recordset', 'JOIN s']) {
+      expect(save.text).toContain(fragment);
+    }
+    expect(save.values[0]).toBe(ID);
+    const rowsParam = save.values.find((v) => typeof v === 'string' && v.startsWith('['));
+    const rows = JSON.parse(rowsParam);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toEqual({
+      session_id: ID, idx: 0, qtype: 'z.mul', fact_key: 'mul:7x83', prompt: '7 × 83', answer: '581',
+      response: '581', is_correct: true, time_ms: 2140, corrections: 0,
+    });
   });
 
-  it('reports a duplicate retry', async () => {
-    const sql = mockSql();
-    sql.transactionResult = [[], []];
+  it('reports a duplicate retry without inserting attempts', async () => {
+    const sql = mockSql([[{ inserted: 0 }]]);
     const res = mockRes();
     await make(sql)(authedReq({ method: 'POST', body: zetamacPayload() }), res);
+    expect(res.statusCode).toBe(200);
     expect(res.body).toEqual({ id: ID, saved: true, duplicate: true });
+    expect(sql.queries).toHaveLength(1);
   });
 
   it('GET 400 without a valid id, 404 when missing, 200 with attempts', async () => {
@@ -79,8 +85,7 @@ describe('api/trainers/sessions', () => {
   });
 
   it('500 INTERNAL when the database throws', async () => {
-    const sql = mockSql();
-    sql.transaction = async () => { throw new Error('boom'); };
+    const sql = mockSql(() => Promise.reject(new Error('boom')));
     const res = mockRes();
     await make(sql)(authedReq({ method: 'POST', body: zetamacPayload() }), res);
     expect(res.statusCode).toBe(500);

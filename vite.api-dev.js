@@ -30,7 +30,8 @@ export default function apiDevServer() {
           const chunks = [];
           for await (const chunk of req) chunks.push(chunk);
           const raw = Buffer.concat(chunks).toString();
-          req.body = raw && (req.headers['content-type'] || '').includes('application/json') ? JSON.parse(raw) : undefined;
+          const mediaType = (req.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
+          req.body = raw && mediaType === 'application/json' ? JSON.parse(raw) : undefined;
 
           res.status = (code) => { res.statusCode = code; return res; };
           res.json = (obj) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(obj)); return res; };

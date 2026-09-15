@@ -56,6 +56,20 @@ describe('api/trainers/stats', () => {
     expect(seriesQuery.values).toEqual(['zetamac', 'standard', KEY]);
   });
 
+  it('loads the newest config per (config_key, mode) without aggregating every config', async () => {
+    const sql = mockSql(() => []);
+    await make(sql)(authedReq({ query: { trainer: 'zetamac' } }), mockRes());
+    const configsQuery = sql.queries.find((q) => q.text.includes('GROUP BY config_key, mode'));
+    expect(configsQuery).toBeDefined();
+    expect(configsQuery.text).not.toContain('array_agg');
+    expect(configsQuery.text).toContain('DISTINCT ON (config_key, mode)');
+    expect(configsQuery.text).toContain('ORDER BY config_key, mode, started_at DESC');
+    for (const alias of ['"configKey"', 'mode', 'games', '"lastPlayed"', 'config']) {
+      expect(configsQuery.text).toContain(alias);
+    }
+    expect(configsQuery.values).toEqual(['zetamac', 'zetamac']);
+  });
+
   it('honors an explicit configKey', async () => {
     const other = 'd'.repeat(64);
     const sql = mockSql(() => []);
