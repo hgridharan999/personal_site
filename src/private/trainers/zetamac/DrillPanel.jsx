@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getDrill } from '../lib/api';
-import { DRILL_UNLOCK_GAMES, DRILL_RECENT_GAMES } from '../core/facts';
-import { makeDrillSource, problemFromFact } from './drill';
+import { DRILL_UNLOCK_GAMES, DRILL_RECENT_GAMES, factPrompt, parseFactKey } from '../core/facts';
+import { makeDrillSource } from './drill';
 
 export default function DrillPanel({ onStart }) {
   const [state, setState] = useState({ status: 'loading', data: null, error: null });
@@ -56,8 +56,8 @@ export default function DrillPanel({ onStart }) {
       </p>
       <ul className="trn-chips" aria-label="Weakest facts">
         {facts.slice(0, 6).map((f) => {
-          const p = problemFromFact(f.factKey);
-          return p ? <li key={f.factKey} className="trn-chip">{p.prompt}</li> : null;
+          const isValid = parseFactKey(f.factKey);
+          return isValid ? <li key={f.factKey} className="trn-chip">{factPrompt(f.factKey)}</li> : null;
         })}
       </ul>
     </div>

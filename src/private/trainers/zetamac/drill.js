@@ -1,4 +1,4 @@
-import { parseFactKey } from '../core/facts.js';
+import { parseFactKey, factPrompt } from '../core/facts.js';
 import { weightedPick } from '../core/rng.js';
 import { makeZetamacGenerator } from './generator.js';
 
@@ -14,15 +14,16 @@ export function problemFromFact(factKey) {
   const f = parseFactKey(factKey);
   if (!f) return null;
   const { a, b } = f;
+  const prompt = factPrompt(factKey);
   switch (f.op) {
     case 'add':
-      return { qtype: 'z.add', prompt: `${a} + ${b}`, answer: a + b, factKey: `add:${Math.min(a, b)}+${Math.max(a, b)}`, a, b };
+      return { qtype: 'z.add', prompt, answer: a + b, factKey: `add:${Math.min(a, b)}+${Math.max(a, b)}`, a, b };
     case 'sub':
-      return { qtype: 'z.sub', prompt: `${a + b} – ${a}`, answer: b, factKey: `sub:${a + b}-${a}`, a, b };
+      return { qtype: 'z.sub', prompt, answer: b, factKey: `sub:${a + b}-${a}`, a, b };
     case 'mul':
-      return { qtype: 'z.mul', prompt: `${a} × ${b}`, answer: a * b, factKey: `mul:${a}x${b}`, a, b };
+      return { qtype: 'z.mul', prompt, answer: a * b, factKey: `mul:${a}x${b}`, a, b };
     case 'div':
-      return { qtype: 'z.div', prompt: `${a * b} ÷ ${a}`, answer: b, factKey: `div:${a * b}/${a}`, a, b };
+      return { qtype: 'z.div', prompt, answer: b, factKey: `div:${a * b}/${a}`, a, b };
     default:
       return null;
   }
