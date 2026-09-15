@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import ClimateSearchPage from './pages/ClimateSearchPage';
 import AscentTrailSense from './ascent/AscentTrailSense';
@@ -14,7 +15,17 @@ import CookieConsentBanner from './components/CookieConsentBanner';
 import LegalPage from './pages/LegalPage';
 import LoginPage from './private/LoginPage';
 import PrivateHome from './private/PrivateHome';
+import PrivateShell from './private/PrivateShell';
 import RequireAuth from './private/RequireAuth';
+
+// Trainer code is lazy-loaded: public visitors never download it.
+const TrainerPage = lazy(() => import('./private/trainers/TrainerPage'));
+
+const privateFallback = (
+  <PrivateShell className="prv-center">
+    <span className="asc-mono prv-status" role="status">Loading…</span>
+  </PrivateShell>
+);
 
 // Routes render directly — each page owns its entrance animation. (No
 // AnimatePresence crossfade: mode="wait" could block the incoming page from
@@ -42,6 +53,10 @@ function AnimatedRoutes() {
       {/* Private area — reached via the hidden link on the home page. */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/me" element={<RequireAuth>{({ logout }) => <PrivateHome onLogout={logout} />}</RequireAuth>} />
+      <Route
+        path="/me/:trainer"
+        element={<RequireAuth>{() => <Suspense fallback={privateFallback}><TrainerPage /></Suspense>}</RequireAuth>}
+      />
 
       {/* Legacy aliases — same components at old paths. */}
       <Route path="/climbing" element={<AscentHiking />} />

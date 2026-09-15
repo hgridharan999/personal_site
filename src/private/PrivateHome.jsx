@@ -9,7 +9,15 @@ import PrivateShell from './PrivateShell';
 // that checks verifySession().
 const SECTIONS = [
   { key: 'apps', n: '01', title: 'Applications', items: [] },
-  { key: 'trainers', n: '02', title: 'Trainers', items: [] },
+  {
+    key: 'trainers',
+    n: '02',
+    title: 'Trainers',
+    items: [
+      { name: 'Zetamac', desc: 'Arithmetic sprint · auto-advance · drills', to: '/me/zetamac' },
+      { name: 'Optiver 80 in 8', desc: '80 questions · 8 minutes · +1 / −1', to: '/me/optiver' },
+    ],
+  },
 ];
 
 function SectionItem({ name, desc, to }) {
