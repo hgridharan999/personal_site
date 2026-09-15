@@ -114,6 +114,18 @@ describe('createOutbox', () => {
     expect(listener).toHaveBeenCalled();
     unsubscribe();
   });
+
+  it('does not wedge on a rejection reason without a message, and still retries', async () => {
+    const send = vi.fn(async () => { throw undefined; });
+    const { outbox, clock } = setup({ send });
+    outbox.enqueue(payload('a'));
+    await expect(outbox.flush()).resolves.toEqual({ sent: 0, authRequired: false });
+    expect(outbox.snapshot().pendingIds).toEqual(['a']);
+    expect(outbox.nextDueIn()).toBe(1000);
+    clock.advance(1000);
+    await outbox.flush();
+    expect(send).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('startOutboxWorker', () => {
@@ -132,5 +144,59 @@ describe('startOutboxWorker', () => {
     expect(typeof listeners.online).toBe('function');
     worker.stop();
     expect(win.removeEventListener).toHaveBeenCalledWith('online', listeners.online);
+  });
+
+  function fakeTimers() {
+    let nextId = 1;
+    const calls = [];
+    const cleared = new Set();
+    const setTimeoutImpl = vi.fn((fn, delay) => {
+      const id = nextId++;
+      calls.push({ id, fn, delay });
+      return id;
+    });
+    const clearTimeoutImpl = vi.fn((id) => { cleared.add(id); });
+    return { setTimeoutImpl, clearTimeoutImpl, calls, cleared };
+  }
+
+  it('coalesces concurrent run() calls into a single flush, leaving only one live timer', async () => {
+    let reject;
+    const send = vi.fn(() => new Promise((_resolve, rej) => { reject = rej; }));
+    const { outbox } = setup({ send });
+    outbox.enqueue(payload('a'));
+    const win = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const { setTimeoutImpl, clearTimeoutImpl, calls, cleared } = fakeTimers();
+    const worker = startOutboxWorker(outbox, { win, setTimeoutImpl, clearTimeoutImpl });
+    const p1 = worker.run();
+    const p2 = worker.run();
+    reject(new TypeError('offline'));
+    await Promise.all([p1, p2]);
+    expect(send).toHaveBeenCalledTimes(1);
+    const liveTimers = calls.filter((c) => !cleared.has(c.id));
+    expect(liveTimers).toHaveLength(1);
+  });
+
+  it('ignores a stray timer callback that fires after stop()', async () => {
+    const send = vi.fn(async () => { throw new TypeError('offline'); });
+    const { outbox } = setup({ send });
+    outbox.enqueue(payload('a'));
+    const win = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const { setTimeoutImpl, clearTimeoutImpl, calls } = fakeTimers();
+    const worker = startOutboxWorker(outbox, { win, setTimeoutImpl, clearTimeoutImpl });
+    await worker.run();
+    expect(send).toHaveBeenCalledTimes(1);
+    const mostRecent = calls[calls.length - 1];
+    worker.stop();
+    mostRecent.fn();
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+
+  it('schedules a 60000ms retry when flush rejects unexpectedly', async () => {
+    const brokenOutbox = { flush: () => Promise.reject(new Error('boom')), nextDueIn: () => null };
+    const win = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const { setTimeoutImpl, clearTimeoutImpl } = fakeTimers();
+    const worker = startOutboxWorker(brokenOutbox, { win, setTimeoutImpl, clearTimeoutImpl });
+    await expect(worker.run()).resolves.toBeUndefined();
+    expect(setTimeoutImpl).toHaveBeenLastCalledWith(expect.any(Function), 60000);
   });
 });

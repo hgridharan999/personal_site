@@ -5,6 +5,13 @@ import { ApiError } from './api.js';
 
 export const OUTBOX_KEY = 'trn-outbox-v1';
 const AUTH_RETRY_MS = 60000;
+const FLUSH_ERROR_RETRY_MS = 60000;
+
+// Safely derives a message from anything a rejected promise might carry,
+// including undefined/null, so a malformed rejection can never crash a caller.
+function errorMessage(err) {
+  return err instanceof Error ? err.message : String(err);
+}
 
 export function memoryStorage() {
   const map = new Map();
@@ -74,10 +81,10 @@ export function createOutbox({ storage, send, now = Date.now, key = OUTBOX_KEY }
       } catch (err) {
         if (err instanceof ApiError && err.status === 401) return { sent, authRequired: true };
         if (isPermanentError(err)) {
-          update(entry.id, { status: 'failed', lastError: err.message });
+          update(entry.id, { status: 'failed', lastError: errorMessage(err) });
         } else {
           const attempts = entry.attempts + 1;
-          update(entry.id, { attempts, nextAt: now() + backoffMs(attempts), lastError: err.message || String(err) });
+          update(entry.id, { attempts, nextAt: now() + backoffMs(attempts), lastError: errorMessage(err) });
         }
       }
     }
@@ -109,13 +116,53 @@ export function createOutbox({ storage, send, now = Date.now, key = OUTBOX_KEY }
 
 export function startOutboxWorker(outbox, { win = window, setTimeoutImpl = setTimeout, clearTimeoutImpl = clearTimeout } = {}) {
   let timer = null;
+  let stopped = false;
+  // Concurrent run() calls (from online, a due timer, and every submitGame)
+  // share this single promise so they can never race each other into
+  // scheduling two live timers.
+  let inFlightRun = null;
 
-  async function run() {
+  function clearTimer() {
     clearTimeoutImpl(timer);
     timer = null;
-    const { authRequired } = await outbox.flush();
-    const due = authRequired ? AUTH_RETRY_MS : outbox.nextDueIn();
-    if (due !== null) timer = setTimeoutImpl(run, due);
+  }
+
+  function scheduleNext(due) {
+    clearTimer();
+    if (due !== null && !stopped) {
+      timer = setTimeoutImpl(onTimerDue, due);
+    }
+  }
+
+  function onTimerDue() {
+    timer = null;
+    if (stopped) return;
+    run();
+  }
+
+  async function runOnce() {
+    clearTimer();
+    let due;
+    try {
+      const { authRequired } = await outbox.flush();
+      due = authRequired ? AUTH_RETRY_MS : outbox.nextDueIn();
+    } catch {
+      // Defensive: flush() is documented to always resolve, but if it ever
+      // rejects anyway, don't let the worker die - just retry later.
+      due = FLUSH_ERROR_RETRY_MS;
+    }
+    if (stopped) return;
+    scheduleNext(due);
+  }
+
+  function run() {
+    if (stopped) return Promise.resolve();
+    if (!inFlightRun) {
+      inFlightRun = runOnce().finally(() => {
+        inFlightRun = null;
+      });
+    }
+    return inFlightRun;
   }
 
   win.addEventListener('online', run);
@@ -124,8 +171,9 @@ export function startOutboxWorker(outbox, { win = window, setTimeoutImpl = setTi
   return {
     run,
     stop() {
+      stopped = true;
       win.removeEventListener('online', run);
-      clearTimeoutImpl(timer);
+      clearTimer();
     },
   };
 }
