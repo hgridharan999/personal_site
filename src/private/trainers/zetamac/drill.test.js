@@ -25,14 +25,30 @@ describe('makeDrillSource', () => {
   ];
   const weakPrompts = new Set(facts.map((f) => problemFromFact(f.factKey).prompt));
 
-  it('draws ~70% weak facts, weighted toward the weakest', () => {
-    const next = makeDrillSource(facts, mulberry32(11))({ ...ZETAMAC_DEFAULTS });
+  it('draws ~70% weak facts from a realistic pool', () => {
+    const realisticFacts = [
+      { factKey: 'mul:7x83', weakness: 2.5 },
+      { factKey: 'mul:12x97', weakness: 2.0 },
+      { factKey: 'sub:150-68', weakness: 1.6 },
+      { factKey: 'mul:8x76', weakness: 1.2 },
+      { factKey: 'mul:9x64', weakness: 0.9 },
+      { factKey: 'add:57+86', weakness: 0.6 },
+      { factKey: 'sub:141-59', weakness: 0.3 },
+      { factKey: 'div:1164/12', weakness: 0.2 },
+      { factKey: 'mul:6x93', weakness: 0.0 },
+      { factKey: 'add:48+75', weakness: -0.2 },
+      { factKey: 'div:952/8', weakness: -0.3 },
+      { factKey: 'mul:11x87', weakness: -0.4 },
+    ];
+    const realisticWeakPrompts = new Set(realisticFacts.map((f) => problemFromFact(f.factKey).prompt));
+
+    const next = makeDrillSource(realisticFacts, mulberry32(11))({ ...ZETAMAC_DEFAULTS });
     const counts = new Map();
     let weak = 0;
     const N = 10000;
     for (let i = 0; i < N; i += 1) {
       const p = next();
-      if (weakPrompts.has(p.prompt)) {
+      if (realisticWeakPrompts.has(p.prompt)) {
         weak += 1;
         counts.set(p.prompt, (counts.get(p.prompt) || 0) + 1);
       }
@@ -40,6 +56,17 @@ describe('makeDrillSource', () => {
     expect(DRILL_WEAK_SHARE).toBe(0.7);
     expect(weak / N).toBeGreaterThan(0.55);
     expect(weak / N).toBeLessThan(0.72);
+    expect(counts.get('7 × 83')).toBeGreaterThan(counts.get('11 × 87'));
+  });
+
+  it('weights draws toward the weakest facts', () => {
+    const next = makeDrillSource(facts, mulberry32(11))({ ...ZETAMAC_DEFAULTS });
+    const counts = new Map();
+    const N = 10000;
+    for (let i = 0; i < N; i += 1) {
+      const p = next();
+      if (weakPrompts.has(p.prompt)) counts.set(p.prompt, (counts.get(p.prompt) || 0) + 1);
+    }
     expect(counts.get('7 × 83')).toBeGreaterThan(counts.get('12 × 97'));
     expect(counts.get('12 × 97')).toBeGreaterThan(counts.get('150 – 68'));
   });
