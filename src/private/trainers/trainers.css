@@ -71,3 +71,7 @@
 .trn-save--saved { color: #9BD3A1; }
 .trn-save--failed, .trn-save--error { color: #F0A38B; }
 .trn-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ---- optiver intro ---------------------------------------- */
+.trn-intro { display: flex; flex-direction: column; align-items: flex-start; gap: 18px; max-width: 64ch; }
+.trn-rules { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; color: var(--muted); line-height: 1.55; }
