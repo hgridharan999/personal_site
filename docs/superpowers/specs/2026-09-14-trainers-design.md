@@ -225,7 +225,7 @@ Stats always filter by trainer, mode and `config_key` (and so by profile version
 | Section | Zetamac | Optiver |
 |---|---|---|
 | **Progress** | score per game over time; 10-game rolling average; personal best; best per day; trend (least-squares slope, shown as "+x / week", only with ≥ 5 games over ≥ 3 days) | same, using net score |
-| **Weak spots** | per operation: accuracy, median time, average corrections; times-table heat grid for 2–12 × 2–20 colored by median time (gray when no data); 20 slowest facts (≥ 2 observations); +/− split by carry/borrow count | per `qtype`: accuracy, median time; most-missed types; wrong-answer log (prompt, your answer, correct answer, date) |
+| **Weak spots** | per operation: median time, p90, average corrections (no accuracy: a Zetamac problem only ends on a correct answer, so corrections are the error signal); times-table heat grid for 2–12 × 2–20 colored by median time (gray when no data); 20 slowest facts (≥ 2 observations); +/− split by carry/borrow count | per `qtype`: accuracy, median time; most-missed types; wrong-answer log (prompt, your answer, correct answer, date) |
 | **Speed** | time histogram with median and p90; pace curve (median time by 5-problem bucket); slowest questions ever | histogram; pace curve by 10-question bucket; slowest questions |
 | **Readiness** | recent scores beside community benchmarks, labeled "unofficial — sources disagree" (bands shown: 30 / 40 / 50 / 70) | last 10 net scores vs the 55 line; share of those ≥ 55; std dev of the last 10; average questions reached |
 | **Game detail** | every problem: prompt, time, corrections | every question: prompt, your answer, correct answer, ✓/✗, time |
