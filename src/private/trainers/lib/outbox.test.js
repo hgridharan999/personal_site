@@ -40,7 +40,7 @@ describe('createOutbox', () => {
     outbox.enqueue(payload('a'));
     await expect(outbox.flush()).resolves.toEqual({ sent: 1, authRequired: false });
     expect(send).toHaveBeenCalledWith(payload('a'));
-    expect(outbox.snapshot()).toEqual({ pendingIds: [], failed: [] });
+    expect(outbox.snapshot()).toEqual({ pendingIds: [], failed: [], discardedIds: [] });
     expect(outbox.nextDueIn()).toBeNull();
   });
 
@@ -65,7 +65,7 @@ describe('createOutbox', () => {
     const { outbox, clock } = setup({ send });
     outbox.enqueue(payload('a'));
     await outbox.flush();
-    expect(outbox.snapshot()).toEqual({ pendingIds: [], failed: [{ id: 'a', lastError: 'Invalid session payload' }] });
+    expect(outbox.snapshot()).toEqual({ pendingIds: [], failed: [{ id: 'a', lastError: 'Invalid session payload' }], discardedIds: [] });
     clock.advance(120000);
     await outbox.flush();
     expect(send).toHaveBeenCalledTimes(1);
@@ -190,7 +190,7 @@ describe('stored entry validation', () => {
     const storage = memoryStorage();
     storage.setItem(OUTBOX_KEY, raw);
     const { outbox } = setup({ storage });
-    expect(outbox.snapshot()).toEqual({ pendingIds: ['ok'], failed: [{ id: 'bad-payload', lastError: null }] });
+    expect(outbox.snapshot()).toEqual({ pendingIds: ['ok'], failed: [{ id: 'bad-payload', lastError: null }], discardedIds: [] });
     expect(Number.isFinite(outbox.nextDueIn())).toBe(true);
   });
 });
@@ -235,9 +235,23 @@ describe('failed entry details and discard', () => {
     outbox.discard('b'); // pending, not failed: kept
     expect(outbox.snapshot().pendingIds).toEqual(['b']);
     outbox.discard('bad');
-    expect(outbox.snapshot()).toEqual({ pendingIds: ['b'], failed: [] });
+    expect(outbox.snapshot()).toEqual({ pendingIds: ['b'], failed: [], discardedIds: ['bad'] });
     expect(JSON.parse(storage.getItem(OUTBOX_KEY)).map((e) => e.id)).toEqual(['b']);
     expect(listener).toHaveBeenCalled();
+  });
+
+  it('discard tracks the id in discardedIds in memory, changing snapshot identity exactly once', async () => {
+    const send = vi.fn(async () => { throw new ApiError(400, 'VALIDATION_ERROR', 'Invalid session payload'); });
+    const { outbox } = setup({ send });
+    outbox.enqueue(payload('bad'));
+    await outbox.flush();
+    const before = outbox.snapshot();
+    outbox.discard('bad');
+    const after1 = outbox.snapshot();
+    const after2 = outbox.snapshot();
+    expect(after1).not.toBe(before);
+    expect(after1.discardedIds).toEqual(['bad']);
+    expect(after2).toBe(after1);
   });
 });
 
@@ -266,6 +280,25 @@ describe('startOutboxWorker', () => {
     worker.stop();
     expect(win.removeEventListener).toHaveBeenCalledWith('storage', listeners.storage);
     expect(win.removeEventListener).toHaveBeenCalledWith('online', listeners.online);
+  });
+
+  it('treats a null storage key (localStorage.clear() in another tab) as a refresh trigger', async () => {
+    const send = vi.fn(async () => ({ saved: true }));
+    const storage = memoryStorage();
+    const { outbox } = setup({ send, storage });
+    const other = createOutbox({ storage, send: vi.fn(), now: () => 1000 });
+    const listeners = {};
+    const win = { addEventListener: vi.fn((e, fn) => { listeners[e] = fn; }), removeEventListener: vi.fn() };
+    const { setTimeoutImpl, clearTimeoutImpl } = fakeTimers();
+    const worker = startOutboxWorker(outbox, { win, setTimeoutImpl, clearTimeoutImpl });
+    await worker.run();
+
+    other.enqueue(payload('from-other-tab'));
+    listeners.storage({ key: null });
+    await worker.run();
+    expect(send).toHaveBeenCalledWith(payload('from-other-tab'));
+
+    worker.stop();
   });
 
   it('flushes on start, on online, and schedules the next retry', async () => {

@@ -2,7 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { sessionPayload } from './trainerSchemas.js';
 import { mulberry32 } from '../../src/private/trainers/core/rng.js';
 import { makeZetamacGenerator, ZETAMAC_DEFAULTS } from '../../src/private/trainers/zetamac/generator.js';
-import { startProblem, handleInput, unfinishedAttempt } from '../../src/private/trainers/zetamac/tracker.js';
+import {
+  startProblem, handleInput, handleDeleteKey, unfinishedAttempt,
+} from '../../src/private/trainers/zetamac/tracker.js';
 import { buildZetamacPayload } from '../../src/private/trainers/zetamac/payload.js';
 import { generateOptiverTest } from '../../src/private/trainers/optiver/generator.js';
 import { PROFILE_V1 } from '../../src/private/trainers/optiver/profile-v1.js';
@@ -49,6 +51,18 @@ describe('client payloads round-trip through sessionPayload', () => {
     const attempts = playZetamac({ solved: 0, leftover: '12' });
     const payload = await buildZetamacPayload({ id: ID, options: { ...ZETAMAC_DEFAULTS }, mode: 'standard', startedAt: STARTED_AT, attempts });
     expect(payload.attempts).toHaveLength(1);
+    expectValid(payload);
+  });
+
+  it('zetamac game with 1500 delete presses on one problem (corrections clamp)', async () => {
+    const next = makeZetamacGenerator(ZETAMAC_DEFAULTS, mulberry32(1));
+    let state = startProblem(next(), 0, 0);
+    for (let i = 0; i < 1500; i += 1) state = handleDeleteKey(state);
+    const { attempt } = handleInput(state, String(state.problem.answer), 1500);
+    expect(attempt.corrections).toBe(1000);
+    const payload = await buildZetamacPayload({
+      id: ID, options: { ...ZETAMAC_DEFAULTS }, mode: 'standard', startedAt: STARTED_AT, attempts: [attempt],
+    });
     expectValid(payload);
   });
 

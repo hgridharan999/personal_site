@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MAX_CORRECTIONS } from '../../src/private/trainers/zetamac/tracker.js';
 
 export const TRAINERS = ['zetamac', 'optiver'];
 export const MODES = ['standard', 'custom', 'drill'];
@@ -27,7 +28,7 @@ const attempt = z.object({
   response: z.string().max(32).nullable(),
   isCorrect: z.boolean(),
   timeMs: z.int().min(0).max(3600000).nullable(),
-  corrections: z.int().min(0).max(1000),
+  corrections: z.int().min(0).max(MAX_CORRECTIONS),
 });
 
 export const sessionPayload = z

@@ -6,7 +6,7 @@ import { useOutboxStatus } from './useOutboxStatus.js';
 export function useGameSubmission() {
   const [id, setId] = useState(null);
   const [error, setError] = useState(null);
-  const { pendingIds, failed } = useOutboxStatus();
+  const { pendingIds, failed, discardedIds } = useOutboxStatus();
 
   const submit = useCallback(async (buildPayload) => {
     setError(null);
@@ -27,6 +27,7 @@ export function useGameSubmission() {
 
   let status = 'idle';
   if (error) status = 'error';
+  else if (id && discardedIds.includes(id)) status = 'discarded';
   else if (id && failed.some((f) => f.id === id)) status = 'failed';
   else if (id && pendingIds.includes(id)) status = 'saving';
   else if (id) status = 'saved';

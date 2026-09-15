@@ -1,6 +1,7 @@
 const TEXT = {
   saving: 'Saving… (kept on this device and retried until it goes through)',
   saved: 'Saved',
+  discarded: 'Not saved (discarded)',
   failed: 'Not saved: the server rejected this game (details at the top of the page)',
   error: 'Not saved',
 };

@@ -1,6 +1,12 @@
 // Per-problem input tracking for a Zetamac game. Pure: the UI owns the clock
 // (performance.now()) and passes it in.
 
+// The server caps attempt.corrections at this value. Holding Backspace on one
+// problem for long enough (or a full-length-wrong retype loop) would otherwise
+// exceed the server's limit and get the whole game rejected with a 400,
+// permanently failing an otherwise-valid save.
+export const MAX_CORRECTIONS = 1000;
+
 export function startProblem(problem, idx, now) {
   return { problem, idx, shownAt: now, corrections: 0, wasFullWrong: false };
 }
@@ -27,12 +33,12 @@ export function handleInput(state, value, now) {
     return { state, attempt: toAttempt(state, trimmed, true, Math.round(now - state.shownAt)) };
   }
   const fullWrong = trimmed.length >= answer.length;
-  const corrections = state.corrections + (fullWrong && !state.wasFullWrong ? 1 : 0);
+  const corrections = Math.min(MAX_CORRECTIONS, state.corrections + (fullWrong && !state.wasFullWrong ? 1 : 0));
   return { state: { ...state, corrections, wasFullWrong: fullWrong }, attempt: null };
 }
 
 export function handleDeleteKey(state) {
-  return { ...state, corrections: state.corrections + 1 };
+  return { ...state, corrections: Math.min(MAX_CORRECTIONS, state.corrections + 1) };
 }
 
 // The server caps attempt.response at this length. The input itself stays

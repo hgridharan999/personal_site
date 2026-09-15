@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { startProblem, handleInput, handleDeleteKey, unfinishedAttempt, zetamacTotals } from './tracker.js';
+import {
+  startProblem, handleInput, handleDeleteKey, unfinishedAttempt, zetamacTotals, MAX_CORRECTIONS,
+} from './tracker.js';
 
 const problem = { qtype: 'z.mul', prompt: '7 × 83', answer: 581, factKey: 'mul:7x83', a: 7, b: 83 };
 
@@ -48,6 +50,16 @@ describe('tracker', () => {
     const leftover = '5'.repeat(40);
     expect(unfinishedAttempt(s, ` ${leftover} `).response).toBe('5'.repeat(32));
     expect(unfinishedAttempt(s, '   ').response).toBeNull();
+  });
+
+  it('caps corrections at MAX_CORRECTIONS after excessive Backspace presses', () => {
+    let s = startProblem(problem, 0, 0);
+    for (let i = 0; i < 1500; i += 1) s = handleDeleteKey(s);
+    expect(s.corrections).toBe(MAX_CORRECTIONS);
+    expect(MAX_CORRECTIONS).toBe(1000);
+    const { attempt } = handleInput(s, String(problem.answer), 100);
+    expect(attempt.isCorrect).toBe(true);
+    expect(attempt.corrections).toBe(1000);
   });
 
   it('zetamacTotals counts correct answers only', () => {

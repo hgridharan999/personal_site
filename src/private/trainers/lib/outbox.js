@@ -72,6 +72,10 @@ export function createOutbox({ storage, send, now = Date.now, key = OUTBOX_KEY }
   let writeFailed = false;
   let inFlight = null;
   const listeners = new Set();
+  // Ids discarded during this page's lifetime, kept in memory only (never
+  // persisted): a discarded game must keep reading as discarded here even
+  // after it's gone from storage, instead of falling back to "saved".
+  const discardedIds = new Set();
 
   // Stored entries, keeping only well-formed ones; null when storage can't be read.
   function readStored() {
@@ -98,6 +102,7 @@ export function createOutbox({ storage, send, now = Date.now, key = OUTBOX_KEY }
     return {
       pendingIds: entries.filter((e) => e.status === 'pending').map((e) => e.id),
       failed: entries.filter((e) => e.status === 'failed').map(({ id, lastError }) => ({ id, lastError })),
+      discardedIds: [...discardedIds],
     };
   }
 
@@ -139,7 +144,11 @@ export function createOutbox({ storage, send, now = Date.now, key = OUTBOX_KEY }
   }
 
   function discard(id) {
-    mutate((list) => list.filter((e) => !(e.id === id && e.status === 'failed')));
+    mutate((list) => list.filter((e) => {
+      const remove = e.id === id && e.status === 'failed';
+      if (remove) discardedIds.add(id);
+      return !remove;
+    }));
   }
 
   async function runFlush() {
@@ -238,9 +247,11 @@ export function startOutboxWorker(outbox, { win = window, setTimeoutImpl = setTi
     return inFlightRun;
   }
 
-  // Another tab changed the outbox: show its entries here and send anything due.
+  // Another tab changed the outbox: show its entries here and send anything
+  // due. A null key means the whole storage area was cleared (e.g.
+  // localStorage.clear()), which must also trigger a refresh.
   function onStorage(event) {
-    if (event.key !== OUTBOX_KEY) return;
+    if (event.key !== null && event.key !== OUTBOX_KEY) return;
     outbox.refresh();
     run();
   }
