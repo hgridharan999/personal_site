@@ -75,3 +75,26 @@
 /* ---- optiver intro ---------------------------------------- */
 .trn-intro { display: flex; flex-direction: column; align-items: flex-start; gap: 18px; max-width: 64ch; }
 .trn-rules { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; color: var(--muted); line-height: 1.55; }
+
+/* ---- charts ----------------------------------------------- */
+.trn-chart { margin: 0; }
+.trn-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.trn-heat svg { max-width: 620px; }
+.trn-grid { stroke: var(--line-2); stroke-width: 1; }
+.trn-axis { fill: var(--faint); font-family: var(--mono); font-size: 10px; }
+.trn-ref { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 4; }
+.trn-ref-label { fill: var(--muted); }
+.trn-line { fill: none; stroke: var(--amber); stroke-width: 1.5; opacity: 0.55; }
+.trn-overlay { fill: none; stroke: var(--bone); stroke-width: 2; }
+.trn-dot { fill: var(--amber); }
+.trn-bar { fill: var(--amber); opacity: 0.8; }
+.trn-bar:hover, .trn-dot:hover { opacity: 1; }
+.trn-heat-cell { fill: var(--amber); }
+.trn-heat-empty { fill: var(--bg-2); }
+.trn-barlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.trn-barlist-row { display: grid; grid-template-columns: minmax(90px, 160px) 1fr auto; align-items: center; gap: 4px 12px; }
+.trn-barlist-label { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.trn-barlist-track { height: 8px; background: var(--bg-2); }
+.trn-barlist-fill { display: block; height: 100%; background: var(--amber); }
+.trn-barlist-value { font-variant-numeric: tabular-nums; font-size: 14px; }
+.trn-barlist-hint { grid-column: 2 / -1; font-size: 12px; }
