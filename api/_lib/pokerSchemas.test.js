@@ -134,3 +134,30 @@ describe('handsBatch', () => {
       .toContain('duplicate handNo for a session in batch');
   });
 });
+
+describe('values Postgres would reject', () => {
+  const NUL = `a${String.fromCharCode(0)}b`;
+
+  it('only accepts datetimes from 2000 through 2100', () => {
+    for (const startedAt of ['0000-01-01T00:00:00.000Z', '1999-12-31T23:59:59.999Z', '2101-01-01T00:00:00.000Z']) {
+      expect(pokerSessionOpen.safeParse(pokerSessionBody({ startedAt })).success).toBe(false);
+    }
+    ok(pokerSessionOpen, pokerSessionBody({ startedAt: '2000-01-01T00:00:00.000Z' }));
+    ok(pokerSessionOpen, pokerSessionBody({ startedAt: '2100-12-31T23:59:59.999Z' }));
+    expect(pokerSessionClose.safeParse({ endedAt: '0000-01-01T00:00:00.000Z' }).success).toBe(false);
+    const hand = pokerHandRecord();
+    expect(handItem.safeParse({ hand: { ...hand, playedAt: '0000-01-01T00:00:00.000Z' } }).success).toBe(false);
+  });
+
+  it('rejects NUL characters in free strings', () => {
+    expect(pokerSessionOpen.safeParse(pokerSessionBody({ botVersion: NUL })).success).toBe(false);
+    expect(pokerSessionOpen.safeParse(pokerSessionBody({ lineup: [{ seat: 1, personaId: NUL }] })).success).toBe(false);
+    const hand = findHandRecord(heroActed);
+    const decision = heroDecision(hand);
+    expect(handItem.safeParse({ hand: { ...hand, botVersion: NUL } }).success).toBe(false);
+    expect(handItem.safeParse({ hand: { ...hand, lineup: hand.lineup.map((l) => ({ ...l, personaId: NUL })) } }).success).toBe(false);
+    expect(handItem.safeParse({ hand, decisions: [{ ...decision, spot: NUL }] }).success).toBe(false);
+    const recommended = { ...decision.recommended, evByOption: { [NUL]: 1 } };
+    expect(handItem.safeParse({ hand, decisions: [{ ...decision, recommended }] }).success).toBe(false);
+  });
+});

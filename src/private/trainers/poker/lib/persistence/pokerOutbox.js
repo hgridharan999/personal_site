@@ -10,6 +10,10 @@ export const POKER_OUTBOX_KEY = 'pk-outbox-v1';
 // A hand or close can outrun its session row only briefly; after this many attempts
 // the entry is marked failed so it can be discarded instead of retrying forever.
 export const SESSION_NOT_FOUND_RETRIES = 10;
+// A server error that persists (a row Postgres keeps rejecting) would otherwise hold its whole
+// session group back forever; after this many attempts it is marked failed. Network errors
+// (not an ApiError) are never counted: offline saves wait as long as it takes.
+export const SERVER_ERROR_RETRIES = 20;
 
 export const openEntry = (session) => ({ kind: 'open', id: `open:${session.id}`, sessionId: session.id, body: session });
 
@@ -38,6 +42,9 @@ export function sendPokerPayload(payload, api = pokerApi) {
 export function isPokerPermanentError(err, entry) {
   if (err instanceof ApiError && err.code === 'SESSION_NOT_FOUND') {
     return entry.attempts + 1 >= SESSION_NOT_FOUND_RETRIES;
+  }
+  if (err instanceof ApiError && err.status >= 500) {
+    return entry.attempts + 1 >= SERVER_ERROR_RETRIES;
   }
   return isPermanentError(err);
 }

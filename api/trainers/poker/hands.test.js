@@ -44,6 +44,21 @@ describe('api/trainers/poker/hands', () => {
     expect(res.body.details).toBeDefined();
   });
 
+  it('400 before touching the database for a year-0000 playedAt or a NUL personaId', async () => {
+    const hand = pokerHandRecord();
+    const nul = `x${String.fromCharCode(0)}`;
+    for (const bad of [
+      { ...hand, playedAt: '0000-01-01T00:00:00.000Z' },
+      { ...hand, lineup: hand.lineup.map((l) => ({ ...l, personaId: nul })) },
+    ]) {
+      const sql = db();
+      const res = await call(sql, { method: 'POST', body: { hands: [{ hand: bad }] } });
+      expect(res.statusCode).toBe(400);
+      expect(res.body.code).toBe('VALIDATION_ERROR');
+      expect(sql.queries).toHaveLength(0);
+    }
+  });
+
   it('409 SESSION_NOT_FOUND before inserting anything', async () => {
     const sql = db({ sessions: [] });
     const res = await call(sql, { method: 'POST', body: { hands: [{ hand: pokerHandRecord() }] } });

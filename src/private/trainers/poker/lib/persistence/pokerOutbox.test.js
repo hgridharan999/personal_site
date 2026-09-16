@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { ApiError } from '../../../lib/api.js';
 import { memoryStorage, OUTBOX_KEY } from '../../../lib/outbox.js';
 import {
-  POKER_OUTBOX_KEY, SESSION_NOT_FOUND_RETRIES, openEntry, handEntry, closeEntry, sendPokerPayload,
+  POKER_OUTBOX_KEY, SESSION_NOT_FOUND_RETRIES, SERVER_ERROR_RETRIES, openEntry, handEntry, closeEntry, sendPokerPayload,
   isPokerPermanentError, createPokerOutbox,
 } from './pokerOutbox.js';
 
@@ -113,5 +113,51 @@ describe('createPokerOutbox', () => {
     await outbox.flush();
     expect(api.savePokerHands).toHaveBeenCalledTimes(SESSION_NOT_FOUND_RETRIES);
     expect(outbox.snapshot().failed).toEqual([{ id: 'hand:h1', lastError: 'Session not saved yet' }]);
+  });
+});
+
+describe('server errors', () => {
+  const serverError = new ApiError(500, 'INTERNAL', 'Internal server error');
+
+  it('retries a 5xx until SERVER_ERROR_RETRIES attempts, then treats it as permanent', () => {
+    expect(SERVER_ERROR_RETRIES).toBe(20);
+    expect(isPokerPermanentError(serverError, { attempts: 0 })).toBe(false);
+    expect(isPokerPermanentError(serverError, { attempts: 18 })).toBe(false);
+    expect(isPokerPermanentError(serverError, { attempts: 19 })).toBe(true);
+    expect(isPokerPermanentError(new ApiError(503, 'HTTP_ERROR', 'x'), { attempts: 19 })).toBe(true);
+  });
+
+  it('never treats a network error as permanent', () => {
+    expect(isPokerPermanentError(new TypeError('Failed to fetch'), { attempts: 1000 })).toBe(false);
+  });
+
+  it('marks a hand failed after its 20th 500, so the session group is not wedged', async () => {
+    let t = 1000;
+    const api = fakeApi();
+    api.savePokerHands.mockImplementation(async () => { throw serverError; });
+    const outbox = createPokerOutbox({ storage: memoryStorage(), api, now: () => t });
+    outbox.enqueue(handEntry(handItemFor(1)));
+    for (let i = 0; i < SERVER_ERROR_RETRIES - 1; i += 1) {
+      await outbox.flush();
+      t += 60000;
+    }
+    expect(outbox.snapshot().pendingIds).toEqual(['hand:h1']);
+    await outbox.flush();
+    expect(api.savePokerHands).toHaveBeenCalledTimes(SERVER_ERROR_RETRIES);
+    expect(outbox.snapshot().failed).toEqual([{ id: 'hand:h1', lastError: 'Internal server error' }]);
+  });
+
+  it('keeps retrying a network error past the server error limit', async () => {
+    let t = 1000;
+    const api = fakeApi();
+    api.savePokerHands.mockImplementation(async () => { throw new TypeError('Failed to fetch'); });
+    const outbox = createPokerOutbox({ storage: memoryStorage(), api, now: () => t });
+    outbox.enqueue(handEntry(handItemFor(1)));
+    for (let i = 0; i < SERVER_ERROR_RETRIES + 5; i += 1) {
+      await outbox.flush();
+      t += 60000;
+    }
+    expect(outbox.snapshot().pendingIds).toEqual(['hand:h1']);
+    expect(outbox.snapshot().failed).toEqual([]);
   });
 });

@@ -53,6 +53,17 @@ describe('api/trainers/poker/sessions', () => {
       expect(insert.values).toEqual([ID, 'placeholder', 'random', JSON.stringify(pokerSessionBody().lineup), 0, POKER_STARTED_AT]);
     });
 
+    it('400 before touching the database for a year-0000 start or a NUL string', async () => {
+      const nul = `x${String.fromCharCode(0)}`;
+      for (const bad of [{ startedAt: '0000-01-01T00:00:00.000Z' }, { botVersion: nul }]) {
+        const sql = mockSql();
+        const res = await call(sql, { method: 'POST', body: pokerSessionBody(bad) });
+        expect(res.statusCode).toBe(400);
+        expect(res.body.code).toBe('VALIDATION_ERROR');
+        expect(sql.queries).toHaveLength(0);
+      }
+    });
+
     it('reports a duplicate open', async () => {
       const res = await call(mockSql([[]]), { method: 'POST', body: pokerSessionBody() });
       expect(res.body).toEqual({ id: ID, saved: true, duplicate: true });

@@ -17,9 +17,21 @@ export const MAX_POT = 6 * MAX_STACK;
 export const MAX_HAND_NO = 100_000;
 export const MAX_RECOMMENDED_CHARS = 2000;
 
+export const MIN_YEAR = 2000;
+export const MAX_YEAR = 2100;
+
+// Postgres rejects NUL in text and jsonb and years it can't store, which would surface as a
+// 500 the outbox retries; reject them here as 400 instead.
+const noNul = (s) => !s.includes(String.fromCharCode(0));
+const freeText = (min, max) => z.string().min(min).max(max).refine(noNul, { message: 'must not contain NUL characters' });
+const datetime = z.iso.datetime().refine((s) => {
+  const year = Number(s.slice(0, 4));
+  return year >= MIN_YEAR && year <= MAX_YEAR;
+}, { message: `must be between the years ${MIN_YEAR} and ${MAX_YEAR}` });
+
 const uuid = z.uuid().transform((id) => id.toLowerCase());
 const seat = z.int().min(0).max(5);
-const name = z.string().min(1).max(64);
+const name = freeText(1, 64);
 const card = z.int().min(0).max(51);
 const stack = z.int().min(1).max(MAX_STACK);
 const lineup = z.array(z.object({ seat, personaId: name })).min(1).max(5);
@@ -48,7 +60,7 @@ function checkLineup(entries, heroSeat, issue, path) {
 export const pokerSessionOpen = z
   .object({
     id: uuid,
-    startedAt: z.iso.datetime(),
+    startedAt: datetime,
     botVersion: name,
     tableMode: z.enum(TABLE_MODES),
     lineup,
@@ -57,7 +69,7 @@ export const pokerSessionOpen = z
   .superRefine((s, ctx) => checkLineup(s.lineup, s.heroSeat, issuesFor(ctx), ['lineup']));
 
 // Extra summary keys (id, hands, net, rebuys) are stripped: the server owns those totals.
-export const pokerSessionClose = z.object({ endedAt: z.iso.datetime().nullable() });
+export const pokerSessionClose = z.object({ endedAt: datetime.nullable() });
 
 export const openSessionsQuery = z.object({ status: z.literal('open') });
 
@@ -66,7 +78,7 @@ const handRecord = z.object({
   id: uuid,
   sessionId: uuid,
   handNo: z.int().min(1).max(MAX_HAND_NO),
-  playedAt: z.iso.datetime(),
+  playedAt: datetime,
   botVersion: name,
   heroSeat: seat,
   buttonSeat: seat,
@@ -82,7 +94,7 @@ const decision = z.object({
   idx: z.int().min(0).max(MAX_HAND_EVENTS - 1),
   street: z.enum(STREETS),
   position: z.enum(POSITIONS),
-  spot: z.string().regex(/^[a-z0-9_.]{1,64}$/),
+  spot: freeText(1, 64).regex(/^[a-z0-9_.]+$/),
   action: z.enum(POKER_ACTIONS),
   size: stack.nullable(),
   pot: z.int().min(0).max(MAX_POT),
@@ -93,7 +105,7 @@ const decision = z.object({
     .object({
       action: z.enum(POKER_ACTIONS),
       size: stack.nullable(),
-      evByOption: z.record(z.string().min(1).max(32), z.number()),
+      evByOption: z.record(freeText(1, 32), z.number()),
     })
     .refine((r) => JSON.stringify(r).length <= MAX_RECOMMENDED_CHARS, {
       message: `recommended must serialize to at most ${MAX_RECOMMENDED_CHARS} characters`,
