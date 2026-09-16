@@ -1,18 +1,17 @@
 // src/private/trainers/poker/ui/table/ActionLog.jsx
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { logLines } from '../../lib/actionLog.js';
-import { seatName } from '../../lib/tableView.js';
+import { useEffect, useRef, useState } from 'react';
 
-/** Collapsible log of the current hand, plus the aria-live region that announces each new line. */
+const NO_LINES = [];
+
+/**
+ * Collapsible log of the current hand, plus the aria-live region that announces each new line.
+ * `session` is a hero-safe snapshot (lib/tableSnapshot.js), whose hand carries the log lines.
+ */
 export default function ActionLog({ session, yourTurn }) {
   const [open, setOpen] = useState(true);
   const list = useRef(null);
   const { hand } = session;
-
-  const lines = useMemo(() => {
-    if (!hand) return [];
-    return logLines(hand.events, { nameOf: (seat) => seatName(session, seat), heroSeat: session.heroSeat });
-  }, [session, hand]);
+  const lines = hand ? hand.log : NO_LINES;
 
   useEffect(() => {
     if (list.current) list.current.scrollTop = list.current.scrollHeight;
