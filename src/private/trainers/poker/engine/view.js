@@ -9,7 +9,7 @@ export function viewFor(state, seat) {
     board: state.board.slice(),
     players: state.players.map((p) => ({
       ...p,
-      hole: p.seat === seat || shown.includes(p.seat) ? p.hole.slice() : null,
+      hole: p.hole && (p.seat === seat || shown.includes(p.seat)) ? p.hole.slice() : null,
     })),
     result: state.result ? structuredClone(state.result) : null,
   };

@@ -24,6 +24,11 @@ function makeRng(seed) {
 }
 
 describe('viewFor', () => {
+  it('works before hole cards are dealt', () => {
+    const s = setup([200, 200], []);
+    expect(viewFor(s, 0).players.map((p) => p.hole)).toEqual([null, null]);
+  });
+
   it('keeps the viewer seat hole cards and nulls everyone else mid-hand', () => {
     const s = setup([200, 200, 200, 200, 200, 200], HOLES6);
     const view = viewFor(s, 1);
