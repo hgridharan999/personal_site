@@ -1,0 +1,40 @@
+/* Pixel sprites: bitmaps, cards and the table art. Scoped under .pk. */
+.pk .pk-bitmap { display: block; fill: currentColor; }
+.pk .pk-ink-red { color: var(--pk-red); }
+.pk .pk-ink-black { color: var(--pk-black); }
+
+/* The drop-shadow sits on the wrapper because clip-path on the face would clip a box-shadow. */
+.pk .pk-card { --pk-notch: 3px; position: relative; flex: none; filter: drop-shadow(3px 3px 0 color-mix(in srgb, var(--pk-shadow) 60%, transparent)); }
+.pk .pk-card--board { width: 46px; height: 64px; }
+.pk .pk-card--hero { width: 64px; height: 90px; }
+.pk .pk-card--mini { --pk-notch: 2px; width: 22px; height: 30px; filter: drop-shadow(2px 2px 0 color-mix(in srgb, var(--pk-shadow) 60%, transparent)); }
+.pk .pk-card__face {
+  position: absolute; inset: 0; background: var(--pk-card);
+  clip-path: polygon(
+    0 var(--pk-notch), var(--pk-notch) var(--pk-notch), var(--pk-notch) 0,
+    calc(100% - var(--pk-notch)) 0, calc(100% - var(--pk-notch)) var(--pk-notch), 100% var(--pk-notch),
+    100% calc(100% - var(--pk-notch)), calc(100% - var(--pk-notch)) calc(100% - var(--pk-notch)), calc(100% - var(--pk-notch)) 100%,
+    var(--pk-notch) 100%, var(--pk-notch) calc(100% - var(--pk-notch)), 0 calc(100% - var(--pk-notch))
+  );
+}
+.pk .pk-card__corner { position: absolute; left: 5px; top: 5px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.pk .pk-card__pip { position: absolute; right: 5px; bottom: 6px; }
+.pk .pk-card--hero .pk-card__corner { left: 6px; top: 6px; gap: 3px; }
+.pk .pk-card--hero .pk-card__pip { right: 6px; bottom: 7px; }
+.pk .pk-card--back .pk-card__face::after {
+  content: ''; position: absolute; inset: 4px;
+  background: repeating-conic-gradient(var(--pk-back) 0 25%, var(--pk-back-2) 0 50%) 0 0 / 8px 8px;
+  outline: 2px solid var(--pk-accent-2); outline-offset: -4px;
+}
+.pk .pk-card--mini.pk-card--back .pk-card__face::after { inset: 2px; background-size: 4px 4px; outline-width: 1px; outline-offset: -2px; }
+.pk .pk-card--deal { animation: pk-deal 240ms steps(4, end) both; }
+@keyframes pk-deal { from { transform: translateY(-14px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* Table art tones */
+.pk .pk-table-art { display: block; }
+.pk .pk-t-rail { fill: var(--pk-rail); }
+.pk .pk-t-rail-hi { fill: var(--pk-rail-hi); }
+.pk .pk-t-line { fill: var(--pk-line); }
+.pk .pk-t-felt { fill: var(--pk-felt); }
+.pk .pk-t-felt-dk { fill: var(--pk-felt-dk); }
+.pk .pk-t-felt-hi { fill: var(--pk-felt-hi); }
