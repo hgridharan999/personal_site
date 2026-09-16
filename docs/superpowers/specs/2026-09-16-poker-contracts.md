@@ -122,6 +122,11 @@ Persistence stores amounts as **integer units** (not the spec's `numeric(10,1)` 
   - `idx` indexes into `record.events`.
 - **Hands POST item:** `{ hand: HandRecord, decisions?: DecisionRecord[] (default []), heroAllinEv?: number|null (default null) }`.
 - **`profile` prop:** the table page takes `profile: PlayerProfile|null`, the hero profile loaded at sit-down. During play the table folds each finished hand in with Phase 3's `accumulateProfile` and passes the running profile to bots through `BotContext.profile`.
+- **Phase 2 plan notes:**
+  - The UI also imports `emptyProfile` from `bots/contract.js`, and loads `accumulateProfile` from `bots/profileStats.js` through `import.meta.glob`, so the module is optional until Phase 3 merges.
+  - In `buildHandRecord`, `id` defaults to a random UUID and `state` is recomputed when absent.
+  - The hero is always seat 0.
+- **Phase 4 Task 11:** components rendered by `withPokerPersistence` (save status, profile loading) must render inside `PokerShell`, or be `.pk`-scoped, so the poker styles apply.
 - **`GET /api/trainers/poker/profile`** returns `{ profile: PlayerProfile, hands:number, decisions:number }`.
 - **Session close:** `onSessionEnd(summary)` keeps its shape, but the server trusts only `endedAt`. Server-side totals come from stored hands.
 
