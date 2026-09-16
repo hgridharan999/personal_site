@@ -4,7 +4,7 @@ import { legalActions } from '../engine/handState.js';
 import { listPersonas } from '../bots/personas.js';
 import { createSession, nextStep, startHand } from './tableCore.js';
 import {
-  PACING, BIG_DECISION_FACTOR, isBigDecision, botDelayMs, applyWithFallback, createTableDriver,
+  PACING, BIG_DECISION_FACTOR, DEFAULT_DECIDE_TIMEOUT_MS, isBigDecision, botDelayMs, applyWithFallback, createTableDriver,
 } from './tableDriver.js';
 
 const personas = listPersonas();
@@ -14,7 +14,17 @@ const passive = (legal) => (legal.canCheck ? { action: 'check' } : { action: 'ca
 const quietLogger = { warn: vi.fn(), error: vi.fn() };
 
 const passiveRunner = () => ({ decide: vi.fn(async (ctx) => passive(ctx.legal)), dispose: vi.fn() });
-const instantScheduler = () => ({ wait: vi.fn(async () => {}) });
+/**
+ * Resolves every wait at once, except the decide timeout, which never fires. A timeout that resolved
+ * immediately would win the race against runner.decide (it settles in fewer microtasks), so every
+ * bot would silently fall back to check/fold. `gates` maps a delay in ms to the promise to return.
+ */
+const instantScheduler = (gates = {}) => ({
+  wait: vi.fn((ms) => {
+    if (ms in gates) return gates[ms];
+    return ms === DEFAULT_DECIDE_TIMEOUT_MS ? new Promise(() => {}) : Promise.resolve();
+  }),
+});
 
 function setup(overrides = {}) {
   let n = 0;
@@ -32,7 +42,7 @@ function setup(overrides = {}) {
 const settle = (driver) => vi.waitFor(() => {
   const s = driver.getSession();
   if (s.phase === 'playing' && nextStep(s).type !== 'hero') throw new Error('driver still running');
-});
+}, { interval: 5 });
 
 async function heroPlaysUntil(driver, handsCompleted) {
   for (let guard = 0; guard < 100 && driver.getSession().handsCompleted < handsCompleted; guard += 1) {
@@ -135,7 +145,7 @@ describe('createTableDriver', () => {
   it('gets up at once during the between-hands pause and never deals again', async () => {
     let release;
     const gate = new Promise((resolve) => { release = resolve; });
-    const scheduler = { wait: vi.fn((ms) => (ms === PACING.fast.handPause ? gate : Promise.resolve())) };
+    const scheduler = instantScheduler({ [PACING.fast.handPause]: gate });
     const { driver, onSessionEnd } = setup({ scheduler });
     driver.start();
     await settle(driver);
@@ -159,6 +169,54 @@ describe('createTableDriver', () => {
     const changes = onChange.mock.calls.length;
     driver.act({ action: 'fold' });
     expect(onChange.mock.calls.length).toBe(changes);
+  });
+
+  it('applies the bot runner’s decisions (an always-raise runner raises)', async () => {
+    const aggressive = (legal) => (legal.canRaise ? { action: legal.raiseKind, amount: legal.minRaiseTo } : passive(legal));
+    const runner = { decide: vi.fn(async (ctx) => aggressive(ctx.legal)), dispose: vi.fn() };
+    const { driver, onHandComplete } = setup({ runner });
+    driver.start();
+    await settle(driver);
+    await heroPlaysUntil(driver, 2);
+    const botRaises = onHandComplete.mock.calls
+      .flatMap(([record]) => record.events)
+      .filter((e) => e.type === 'act' && e.seat !== 0 && (e.action === 'raise' || e.action === 'bet'));
+    expect(botRaises.length).toBeGreaterThan(0);
+  });
+
+  it('ignores a decision that arrives after the decide timeout and keeps the fallback', async () => {
+    const dealt = dealtWithBotFirst();
+    const { seat } = nextStep(dealt);
+    let releaseTimeout;
+    let resolveLate;
+    const timeoutGate = new Promise((resolve) => { releaseTimeout = resolve; });
+    // The first decide hangs until after its timeout fires; later bots decide passively.
+    const runner = {
+      decide: vi.fn((ctx) => (ctx.seat === seat && !resolveLate
+        ? new Promise((resolve) => { resolveLate = resolve; })
+        : Promise.resolve(passive(ctx.legal)))),
+      dispose: vi.fn(),
+    };
+    let timeouts = 0;
+    const scheduler = {
+      wait: vi.fn((ms) => {
+        if (ms !== 12345) return Promise.resolve();
+        timeouts += 1;
+        return timeouts === 1 ? timeoutGate : new Promise(() => {});
+      }),
+    };
+    const { driver } = setup({ runner, session: dealt, scheduler, decideTimeoutMs: 12345 });
+    driver.start();
+    await vi.waitFor(() => expect(resolveLate).toBeDefined(), { interval: 5 });
+    releaseTimeout();
+    await settle(driver);
+    const actsOf = () => driver.getSession().hand.events.filter((e) => e.type === 'act' && e.seat === seat);
+    expect(actsOf()[0]).toEqual({ type: 'act', seat, action: 'fold' });
+    const eventsBefore = driver.getSession().hand.events.length;
+    resolveLate({ action: 'raise', amount: 6 });
+    await flushMicrotasks();
+    expect(driver.getSession().hand.events.length).toBe(eventsBefore);
+    expect(actsOf()).toHaveLength(1);
   });
 
   it('falls back to check or fold when the runner rejects', async () => {
@@ -249,7 +307,8 @@ describe('createTableDriver', () => {
   describe('a bot that never decides, or decides badly', () => {
     it('falls back to check or fold when decide() never resolves', async () => {
       const runner = { decide: vi.fn(() => new Promise(() => {})), dispose: vi.fn() };
-      const { driver } = setup({ runner });
+      // This test needs the decide timeout to fire, so every wait resolves at once.
+      const { driver } = setup({ runner, scheduler: { wait: vi.fn(async () => {}) } });
       driver.start();
       await settle(driver);
       const acts = driver.getSession().hand.events.filter((e) => e.type === 'act' && e.seat !== 0);
@@ -270,7 +329,7 @@ describe('createTableDriver', () => {
     it('does not emit onSessionEnd from a late call once disposed', async () => {
       let release;
       const gate = new Promise((resolve) => { release = resolve; });
-      const scheduler = { wait: vi.fn((ms) => (ms === PACING.fast.handPause ? gate : Promise.resolve())) };
+      const scheduler = instantScheduler({ [PACING.fast.handPause]: gate });
       const { driver, onSessionEnd } = setup({ scheduler });
       driver.start();
       await settle(driver);
@@ -290,7 +349,7 @@ describe('createTableDriver', () => {
         decide: vi.fn(() => new Promise((resolve) => { resolveDecide = resolve; })),
         dispose: vi.fn(),
       };
-      const scheduler = { wait: vi.fn((ms) => (ms === 12345 ? new Promise(() => {}) : Promise.resolve())) };
+      const scheduler = instantScheduler({ 12345: new Promise(() => {}) });
       const { driver, onChange } = setup({ runner, session: dealt, scheduler, decideTimeoutMs: 12345 });
       driver.start();
       await vi.waitFor(() => expect(runner.decide).toHaveBeenCalled());
@@ -310,7 +369,7 @@ describe('createTableDriver', () => {
         decide: vi.fn(() => new Promise((resolve) => { resolveDecide = resolve; })),
         dispose: vi.fn(),
       };
-      const scheduler = { wait: vi.fn((ms) => (ms === 12345 ? new Promise(() => {}) : Promise.resolve())) };
+      const scheduler = instantScheduler({ 12345: new Promise(() => {}) });
       const { driver, onChange } = setup({ runner, session: dealt, scheduler, decideTimeoutMs: 12345 });
       driver.start();
       await vi.waitFor(() => expect(runner.decide).toHaveBeenCalled());
@@ -345,7 +404,7 @@ describe('createTableDriver', () => {
     it('dispose() while the scheduler is waiting between hands stops further dealing', async () => {
       let release;
       const gate = new Promise((resolve) => { release = resolve; });
-      const scheduler = { wait: vi.fn((ms) => (ms === PACING.fast.handPause ? gate : Promise.resolve())) };
+      const scheduler = instantScheduler({ [PACING.fast.handPause]: gate });
       const { driver } = setup({ scheduler });
       driver.start();
       await settle(driver);
