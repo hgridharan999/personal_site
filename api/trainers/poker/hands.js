@@ -92,7 +92,7 @@ async function save(sql, req, res) {
              hero_start_stack int, hero_actions int, lineup jsonb, hole_cards jsonb, board text, events jsonb,
              pot int, hero_net int, hero_allin_ev numeric, showdown boolean)
       ON CONFLICT DO NOTHING
-      RETURNING id, session_id, hero_net, hero_allin_ev
+      RETURNING id, session_id, hero_net, hero_allin_ev, played_at
     ), d AS (
       INSERT INTO poker_decisions (hand_id, idx, street, position, spot, action, size, pot, to_call, equity,
                                    needed_equity, recommended, ev_loss, grade, confident, analysis_version)
@@ -104,18 +104,40 @@ async function save(sql, req, res) {
              confident boolean, analysis_version int)
       JOIN ins ON ins.id = y.hand_id
     ), totals AS (
+      -- A hand saved after its session was closed moves ended_at forward; an open session stays NULL.
       UPDATE poker_sessions s
-      SET hands = s.hands + t.n, net = s.net + t.net, allin_adj_net = s.allin_adj_net + t.adj
+      SET hands = s.hands + t.n, net = s.net + t.net, allin_adj_net = s.allin_adj_net + t.adj,
+          ended_at = CASE WHEN s.ended_at IS NULL THEN NULL ELSE GREATEST(s.ended_at, t.last_played_at) END
       FROM (
         SELECT session_id, count(*)::int AS n, sum(hero_net)::int AS net,
-               sum(COALESCE(hero_allin_ev, hero_net)) AS adj
+               sum(COALESCE(hero_allin_ev, hero_net)) AS adj, max(played_at) AS last_played_at
         FROM ins GROUP BY session_id
       ) t
       WHERE s.id = t.session_id
     )
     SELECT count(*)::int AS inserted FROM ins`;
 
+  if (inserted < hands.length) {
+    const conflicts = await findHandNoConflicts(sql, hands);
+    if (conflicts.length > 0) {
+      return sendError(res, 409, 'HAND_NO_CONFLICT', 'handNo is already used by another hand in this session', { handIds: conflicts });
+    }
+  }
   return res.status(200).json({ saved: true, inserted, duplicate: hands.length - inserted });
+}
+
+// Hands the insert skipped are true duplicates only if their id is stored. A hand whose id is
+// absent but whose (session_id, hand_no) is taken collided with a different hand. This read
+// runs only when some hand was skipped, as its own statement so its snapshot also sees rows a
+// concurrent request committed while the insert ran (CTEs in the insert share one snapshot).
+async function findHandNoConflicts(sql, hands) {
+  const keys = hands.map(({ hand }) => ({ id: hand.id, session_id: hand.sessionId, hand_no: hand.handNo }));
+  const rows = await sql`
+    SELECT x.id FROM jsonb_to_recordset(${JSON.stringify(keys)}::jsonb) AS x(id uuid, session_id uuid, hand_no int)
+    WHERE NOT EXISTS (SELECT 1 FROM poker_hands p WHERE p.id = x.id)
+      AND EXISTS (SELECT 1 FROM poker_hands p WHERE p.session_id = x.session_id AND p.hand_no = x.hand_no)`;
+  const conflicting = new Set(rows.map((r) => r.id));
+  return keys.map((k) => k.id).filter((id) => conflicting.has(id));
 }
 
 export function createPokerHandsHandler({ getSql = defaultGetSql, auth = authConfig } = {}) {

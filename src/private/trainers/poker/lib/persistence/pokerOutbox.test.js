@@ -221,3 +221,9 @@ describe('closes', () => {
     expect(outbox.snapshot().pendingIds).toEqual(['stale-close:s1', 'close:s1']);
   });
 });
+
+describe('hand number conflicts', () => {
+  it('are permanent on the first attempt', () => {
+    expect(isPokerPermanentError(new ApiError(409, 'HAND_NO_CONFLICT', 'x', { handIds: ['h1'] }), { attempts: 0 })).toBe(true);
+  });
+});

@@ -16,10 +16,11 @@ async function call(sql, options) {
   return res;
 }
 
-function db({ sessions = [{ id: POKER_SESSION_ID, heroSeat: 0 }], inserted = 1 } = {}) {
+function db({ sessions = [{ id: POKER_SESSION_ID, heroSeat: 0 }], inserted = 1, conflicts = [] } = {}) {
   return mockSql((text) => {
     if (text.includes('jsonb_array_elements_text')) return sessions;
     if (text.includes('WITH ins AS')) return [{ inserted }];
+    if (text.includes('p.hand_no = x.hand_no')) return conflicts.map((id) => ({ id }));
     return [];
   });
 }
@@ -164,6 +165,45 @@ describe('api/trainers/poker/hands', () => {
     const res = await call(db({ inserted: 0 }), { method: 'POST', body: { hands: [{ hand: pokerHandRecord() }] } });
     expect(res.statusCode).toBe(200);
     expect(res.body).toEqual({ saved: true, inserted: 0, duplicate: 1 });
+  });
+
+  it('moves ended_at of a closed session forward to hands that arrive after the close, in the same statement', async () => {
+    const sql = db();
+    await call(sql, { method: 'POST', body: { hands: [{ hand: pokerHandRecord() }] } });
+    const insert = sql.queries[1];
+    for (const fragment of [
+      'RETURNING id, session_id, hero_net, hero_allin_ev, played_at',
+      'max(played_at) AS last_played_at',
+      'ended_at = CASE WHEN s.ended_at IS NULL THEN NULL ELSE GREATEST(s.ended_at, t.last_played_at) END',
+    ]) {
+      expect(insert.text).toContain(fragment);
+    }
+  });
+
+  it('does not look for hand number conflicts when every hand was inserted', async () => {
+    const sql = db({ inserted: 1 });
+    await call(sql, { method: 'POST', body: { hands: [{ hand: pokerHandRecord() }] } });
+    expect(sql.queries).toHaveLength(2);
+  });
+
+  it('409 HAND_NO_CONFLICT when a new hand id reuses a stored (session, handNo)', async () => {
+    const first = pokerHandRecord({ handNo: 1 });
+    const second = pokerHandRecord({ seed: 2, handNo: 2 });
+    const sql = db({ inserted: 0, conflicts: [second.id] });
+    const res = await call(sql, { method: 'POST', body: { hands: [{ hand: first }, { hand: second }] } });
+    expect(res.statusCode).toBe(409);
+    expect(res.body).toEqual({
+      error: 'handNo is already used by another hand in this session',
+      code: 'HAND_NO_CONFLICT',
+      details: { handIds: [second.id] },
+    });
+    expect(sql.queries).toHaveLength(3);
+    const lookup = sql.queries[2];
+    expect(lookup.text).toContain('NOT EXISTS (SELECT 1 FROM poker_hands p WHERE p.id = x.id)');
+    expect(JSON.parse(lookup.values[0])).toEqual([
+      { id: first.id, session_id: POKER_SESSION_ID, hand_no: 1 },
+      { id: second.id, session_id: POKER_SESSION_ID, hand_no: 2 },
+    ]);
   });
 
   it('500 INTERNAL when the database throws', async () => {

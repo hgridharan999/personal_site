@@ -19,6 +19,7 @@ async function call(handler, options) {
 
 describe.skipIf(!RUN)('poker persistence against a real database', () => {
   const sessionId = randomUUID();
+  const openSessionId = randomUUID();
   const sessions = createPokerSessionsHandler({ auth });
   const hands = createPokerHandsHandler({ auth });
 
@@ -29,7 +30,7 @@ describe.skipIf(!RUN)('poker persistence against a real database', () => {
   const batch = { hands: [{ hand: first, decisions: [heroDecision(first)] }, { hand: second }] };
 
   afterAll(async () => {
-    await getSql()`DELETE FROM poker_sessions WHERE id = ${sessionId}`;
+    await getSql()`DELETE FROM poker_sessions WHERE id IN (${sessionId}, ${openSessionId})`;
   });
 
   it('saves, deduplicates, totals, closes and reads back a session', async () => {
@@ -81,7 +82,7 @@ describe.skipIf(!RUN)('poker persistence against a real database', () => {
     expect(after.body.session.hands).toBe(startHands + 1);
   });
 
-  it('a different hand id reusing an existing (session_id, hand_no) counts as a duplicate and leaves totals unchanged', async () => {
+  it('a different hand id reusing an existing (session_id, hand_no) is a 409 HAND_NO_CONFLICT and leaves totals unchanged', async () => {
     const before = await call(sessions, { query: { id: sessionId } });
     const { hands: startHands, net: startNet, allinAdjNet: startAdj } = before.body.session;
 
@@ -89,7 +90,8 @@ describe.skipIf(!RUN)('poker persistence against a real database', () => {
     // (session_id, hand_no) must catch this even though it can't collide on id.
     const clash = pokerHandRecord({ id: randomUUID(), sessionId, handNo: 1, seed: 11, button: 3 });
     const res = await call(hands, { method: 'POST', body: { hands: [{ hand: clash }] } });
-    expect(res.body).toEqual({ saved: true, inserted: 0, duplicate: 1 });
+    expect(res.statusCode).toBe(409);
+    expect(res.body).toMatchObject({ code: 'HAND_NO_CONFLICT', details: { handIds: [clash.id] } });
 
     const after = await call(sessions, { query: { id: sessionId } });
     expect(after.body.session).toMatchObject({ hands: startHands, net: startNet, allinAdjNet: startAdj });
@@ -119,5 +121,26 @@ describe.skipIf(!RUN)('poker persistence against a real database', () => {
     expect(res.statusCode).toBe(409);
     expect(res.body.code).toBe('HERO_SEAT_MISMATCH');
     expect(res.body.details).toEqual({ handIds: [mismatched.id] });
+  });
+
+  it('a hand saved after the close moves ended_at forward, while an open session keeps ended_at NULL', async () => {
+    const before = await call(sessions, { query: { id: sessionId } });
+    const endedAt = Date.parse(before.body.session.endedAt);
+
+    // handNo 90 is played at started_at + 90 minutes, after the 19:00 close.
+    const late = pokerHandRecord({ id: randomUUID(), sessionId, handNo: 90, seed: 41, button: 1 });
+    expect(Date.parse(late.playedAt)).toBeGreaterThan(endedAt);
+    let res = await call(hands, { method: 'POST', body: { hands: [{ hand: late }] } });
+    expect(res.body).toEqual({ saved: true, inserted: 1, duplicate: 0 });
+    let after = await call(sessions, { query: { id: sessionId } });
+    expect(new Date(after.body.session.endedAt).toISOString()).toBe(late.playedAt);
+
+    res = await call(sessions, { method: 'POST', body: pokerSessionBody({ id: openSessionId }) });
+    expect(res.body.saved).toBe(true);
+    const openHand = pokerHandRecord({ id: randomUUID(), sessionId: openSessionId, handNo: 1 });
+    res = await call(hands, { method: 'POST', body: { hands: [{ hand: openHand }] } });
+    expect(res.body).toEqual({ saved: true, inserted: 1, duplicate: 0 });
+    after = await call(sessions, { query: { id: openSessionId } });
+    expect(after.body.session.endedAt).toBeNull();
   });
 });

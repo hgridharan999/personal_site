@@ -55,6 +55,8 @@ export function sendPokerPayload(payload, api = pokerApi) {
 }
 
 export function isPokerPermanentError(err, entry) {
+  // Another hand already holds this handNo: retrying can never succeed.
+  if (err instanceof ApiError && err.code === 'HAND_NO_CONFLICT') return true;
   if (err instanceof ApiError && err.code === 'SESSION_NOT_FOUND') {
     return entry.attempts + 1 >= SESSION_NOT_FOUND_RETRIES;
   }
