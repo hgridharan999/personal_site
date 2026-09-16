@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { mulberry32 } from '../../core/rng.js';
 import { dealHand } from './dealer.js';
-import { reduceHand } from './handState.js';
+import { reduceHand, EngineError } from './handState.js';
 import { nextButton, stacksAfter } from './table.js';
+import { playHand } from './simulate.js';
 
 const seats = [{ seat: 1, stack: 200 }, { seat: 3, stack: 200 }, { seat: 4, stack: 200 }];
 
@@ -25,6 +26,34 @@ describe('dealer', () => {
     const a = dealHand({ seats, button: 1, sb: 1, bb: 2, rng: mulberry32(77) });
     const b = dealHand({ seats, button: 1, sb: 1, bb: 2, rng: mulberry32(77) });
     expect(a.events).toEqual(b.events);
+  });
+
+  it('throws BAD_EVENT if button is not an occupied seat', () => {
+    expect(() => {
+      dealHand({ seats, button: 2, sb: 1, bb: 2, rng: mulberry32(5) });
+    }).toThrow(new EngineError('BAD_EVENT', 'button must be an occupied seat'));
+  });
+
+  it('copies the seats array in the start event', () => {
+    const mutableSeats = [{ seat: 1, stack: 200 }, { seat: 3, stack: 200 }];
+    const { events } = dealHand({ seats: mutableSeats, button: 1, sb: 1, bb: 2, rng: mulberry32(7) });
+    mutableSeats[0].stack = 999;
+    expect(events[0].seats[0].stack).toBe(200);
+  });
+});
+
+describe('playHand', () => {
+  it('terminates when all players fold', () => {
+    const result = playHand({
+      seats: [{ seat: 0, stack: 200 }, { seat: 1, stack: 200 }],
+      button: 0,
+      sb: 1,
+      bb: 2,
+      rng: mulberry32(3),
+      policy: () => ({ action: 'fold' }),
+    });
+    expect(result.state.street).toBe('complete');
+    expect(result.events.filter((e) => e.type === 'act').length).toBe(1);
   });
 });
 
