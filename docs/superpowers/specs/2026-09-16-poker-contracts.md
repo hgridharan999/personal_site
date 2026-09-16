@@ -126,6 +126,13 @@ Persistence stores amounts as **integer units** (not the spec's `numeric(10,1)` 
   - The UI also imports `emptyProfile` from `bots/contract.js`, and loads `accumulateProfile` from `bots/profileStats.js` through `import.meta.glob`, so the module is optional until Phase 3 merges.
   - In `buildHandRecord`, `id` defaults to a random UUID and `state` is recomputed when absent.
   - The hero is always seat 0.
+- **Phase 3 plan additions (accepted):**
+  - `BotContext` gains `heroSeat?: number|null`, the seat the profile belongs to. Bots adapt only when it is set, and Phase 2 passes `heroSeat: 0` alongside `profile`.
+  - `createBrain(persona, options?)` takes optional `{ iterations, budgetMs, now }`. The registry adds `heuristic`, `rawEquity`, `tightPassive`, `always3Bet`, `alwaysCbet` and `alwaysOverbetRiver`.
+  - `createWorkerRunner(options?)` lives in `worker/workerClient.js` with `{ createWorker, timeoutMs = 3000, onTimeout }`. On timeout it returns check if free, otherwise fold.
+  - `Persona.style` is one of `tight-aggressive | loose-aggressive | tight-passive | loose-passive`.
+  - `accumulateProfile` needs a completed hand's full log (every hole card). For anything else it returns the profile unchanged. Stats are not split by position.
+  - `bots/pacing.js` exports `withPacing(runner, …)` and `thinkTimeMs(…)`, an optional additive helper.
 - **Phase 4 Task 11:** components rendered by `withPokerPersistence` (save status, profile loading) must render inside `PokerShell`, or be `.pk`-scoped, so the poker styles apply.
 - **`GET /api/trainers/poker/profile`** returns `{ profile: PlayerProfile, hands:number, decisions:number }`.
 - **Session close:** `onSessionEnd(summary)` keeps its shape, but the server trusts only `endedAt`. Server-side totals come from stored hands.

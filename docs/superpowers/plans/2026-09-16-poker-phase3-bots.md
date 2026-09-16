@@ -1,0 +1,5509 @@
+# Poker Trainer Phase 3: Strong, Adaptive, Trained Bots Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Replace the placeholder bots with a heuristic brain (our own preflop charts, opponent range tracking, time-boxed Monte Carlo equity, persona dials, exploit shifts against the hero), a Web Worker runner, an offline evolutionary trainer and a benchmark gate, and ship eight trained personas in `data/bots-v1.json`.
+
+**Architecture:** Everything under `bots/` is pure and decides only from `ctx.view` and `ctx.events`. Preflop play reads chart frequencies from a data file that our own script generates from a 169×169 all-in equity table. Postflop play runs Monte Carlo equity against opponent ranges. The tracker builds those ranges from chart likelihoods and reweights them by action likelihood, and the brain turns equity, pot odds, texture, position, SPR and opponent count into actions. Offline, `bots/arena.js` plays duplicate deals (every player sits in every seat with the same cards). `scripts/poker/` runs table jobs on `worker_threads` for the evolutionary trainer (population 50, style niches) and for the benchmark gate (every persona against 4 baselines and 3 exploit probes, with 95% confidence intervals).
+
+**Tech Stack:** JavaScript ES modules with JSDoc, Vitest 5 (node environment), Node 22 (`node:worker_threads`, `node:util` `parseArgs`), Vite 6 module workers, JSON import attributes (`with { type: 'json' }`, verified in Node 22, Vitest 5 and the Vite 6 build). No new npm dependencies.
+
+**Spec:** `docs/superpowers/specs/2026-09-16-poker-trainer-design.md` §5 (all of it), §10 (bot tests), §12 (risks). **Contracts:** `docs/superpowers/specs/2026-09-16-poker-contracts.md`.
+
+## Global Constraints
+
+- Plain JavaScript ES modules (`.js`) with JSDoc types. No TypeScript and no new npm dependencies.
+- Phase 3 owns and may edit only `src/private/trainers/poker/bots/**`, `src/private/trainers/poker/data/**`, `src/private/trainers/poker/worker/**`, `scripts/poker/**` (Phase 3 files) and the `scripts` block of `package.json`. Never edit `src/private/trainers/poker/engine/**`.
+- Keep the Phase 0 exports and signatures: `createBrain(persona)` (this plan adds an optional second argument), `listPersonas()`, `getPersona(id)` (throws `Unknown persona: <id>`), `BOT_VERSION`, `createLocalRunner({ rng })`, `PROFILE_STATS`, `emptyProfile()`, and the `Brain`/`BotContext`/`BotChoice`/`PlayerProfile` typedefs. `createBrain` throws `Unknown brain: <key>`.
+- Brains decide only from `ctx.view` (`viewFor(state, seat)`) and `ctx.events` (`eventsFor(events, seat)`), plus `ctx.legal`, `ctx.persona`, `ctx.profile`, `ctx.heroSeat` and `ctx.bb`. A brain never reads hidden cards. `decide(ctx, rng)` is synchronous and deterministic for a given rng whenever the time budget is `Infinity`.
+- Money is integer **units, where 1 unit = 0.5 BB**. Tables use `sb: 1, bb: 2`, and stacks start at 200 units (100 BB). `BotChoice.amount` is the raise-to total and is present only for `bet`/`raise`.
+- Cards are integers `rank * 4 + suit` (rank 0–12 = `2..A`, suit 0–3 = `c,d,h,s`). There are 169 hand classes, with class index `row * 13 + col` (pairs on the diagonal, suited when `row > col`, offsuit when `row < col`), and 1,326 combos.
+- Spec values: bet menu ⅓, ½, ¾, pot, all-in; bluff share `bet / (pot + 2·bet)`; adaptation only after **30** observations of a stat, capped; decision budget about **300 ms**; pacing fast **250–600 ms**, normal **600–1800 ms**, longer for big decisions; training population **50** with duplicate deals and 4 style niches; release gate **200,000 hands per matchup**, lower bound of the 95% CI of BB/100 above 0.
+- The eight personas keep their contract ids, names and tags: moss/Moss/MOS, viper/Viper/VIP, duchess/Duchess/DCH, rook/Rook/ROK, ink/Ink/INK, brick/Brick/BRK, lark/Lark/LRK, sable/Sable/SBL.
+- Randomness always comes in as an `rng` function. Use `mulberry32` from `src/private/trainers/core/rng.js` in tests and scripts. Bot code never calls `Math.random`. Pacing defaults to `Math.random` only for UI delays, and the worker entry seeds itself from `crypto.getRandomValues`.
+- `npm test` must stay fast (the whole suite runs in under 10 s on the dev machine). Long end-to-end CLI checks sit behind `POKER_SLOW=1`, as in Phase 1.
+- Commit messages end with exactly this trailer line (copy it verbatim):
+  `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>`
+- Stage files explicitly by path (`git add <paths>`), never `git add -A` or `git add .`. Never stage `wa.geo.json`.
+- Work happens in the worktree `C:\Users\hgrid\jp-poker-bots` on branch `feat/poker-bots`. Test a single file with `npx vitest run <path>` and the whole suite with `npm test`.
+
+## Decisions (already made, with reasons)
+
+1. **Preflop charts are generated by our own script, not copied.** We cannot run a commercial solver, and chart packs are licensed (§12). `scripts/poker/gen-preflop.js` computes a 169×169 heads-up all-in equity table by Monte Carlo (10,000 samples per pair, seeded, about 80 s). It orders hands by `0.4·equity vs any hand + 0.6·equity vs the top 25% + a playability bonus` (suited +0.02, connectors +0.012/+0.007/+0.003 by gap, both cards T+ +0.01). Each chart is then a set of bands over that order, with our own 6-max widths (for example UTG opens 15%, BTN 43%, BB defends 22–40% by opener, 3-bet value 3–9%, suited bluff 3-bets in the band just below the calls). Band edges mix linearly. The script is deterministic, reproducible and tunable, and the persona dials widen or tighten every range at lookup time (a hand at strength percentile p plays like the hand of the same kind at p / multiplier).
+2. **Compact chart format.** `data/preflop/charts-v1.json` holds `{ version, order: number[169], charts: { key: { raise: string(169), call: string(169) } } }`. There is one digit per class in tenths (`0`–`9`, `X` = 1.0), and fold is the remainder. The 39 chart keys are `open.{UTG,HJ,CO,BTN,SB}`, `vsOpen.{pos}.{openerPos}` (15), `squeeze.{CO,BTN,SB,BB}`, `vs3bet.{UTG,HJ,CO}.{ip,oop}` plus `vs3bet.BTN.ip` and `vs3bet.SB.oop`, `vs4bet.{ip,oop}` and `vsLimp.{HJ,CO,BTN,SB,BB}`. The file is about 16 KB. `equity169.json` stores the equity table as base64 little-endian Uint16 (about 76 KB).
+3. **Equity** (`bots/equity.js`) is Monte Carlo against one 1,326-entry weight array per live opponent. It samples combos by binary search on cumulative weights with rejection on card conflicts, and draws runouts by rejection from a 52-card used mask. It is deterministic under a seeded rng with `iterations`, and time-boxed in production (`budgetMs`, clock checked every 64 samples, minimum 32 samples). Measured speed is 1.35M heads-up samples/s and 330k 6-way samples/s. Accuracy tests cover AhAs vs KdKc (81.3%), 7c2d vs AhAs (12.5%), exact flop enumeration, and 88 vs any hand (about 69%).
+4. **Range model** (`bots/ranges.js`). An opponent's preflop class weights are the product of chart likelihoods for each action they took in their spot, with a floor of 0.03. Width is scaled by the observed type (`looseness = vpip / 0.25` once `vpip.n ≥ 30`). On the flop the weights become combo weights with card removal. Each postflop action multiplies every combo's weight by `actionLikelihood(action, p, draw, facingBet, aggression)`, where `p` is the combo's weighted strength percentile inside that opponent's current range. Bets favor the top of the range, draws and a few bottom-of-range bluffs; calls favor the middle and draws; checks discount the top. The tracker caches work per seat and processes only new events.
+5. **Brain** (`bots/brain.js`). Preflop: chart frequencies are scaled by dials and sampled with the rng. A call costing at least 35% of the remaining stack is decided on cached equity against the raiser's tracked range. Postflop: equity is converted to a heads-up equivalent (`equity^(1/nOpp)`) for thresholds, while pot odds use raw equity. Value bets, traps, check-raises, balanced bluffs (`bluffMul · aggression · (valueShare/weakShare) · r/(1−r)` with `r = bet/(pot+2·bet)`), c-bets, barrels, semi-bluff raises, floats and MDF defense are all controlled by named dials. Sizes come from the ⅓/½/¾/pot menu: ½ on the flop, ¾ later, one step larger on wet boards, shifted by `sizeBias`. A bet that commits at least 60% of the stack becomes all-in. Every choice passes through `legalize`.
+6. **Persona dials** (`bots/dials.js`): 30 dials, each with a name, range, default and meaning in the table below.
+7. **Adaptation** (`bots/adapt.js`): 21 data-driven exploit rules. A rule fires only when its stat has `n ≥ 30`, and it shifts one dial by `perUnit × distance past the threshold`, capped per rule, scaled by `adaptStrength` (0–1) and clamped to the dial's bounds. Adaptation applies only when `ctx.heroSeat` is a live opponent.
+8. **profileStats** (`bots/profileStats.js`): each stat's exact opportunity and hit, computed by replaying the full log with the engine reducer (definitions are in the module header and in Task 5).
+9. **Worker** (`worker/`): a pure `createMessageHandler({ createBrain, rng })` (tested in Node), a `createWorkerRunner({ createWorker, timeoutMs = 3000, onTimeout })` using `new Worker(new URL('./pokerWorker.js', import.meta.url), { type: 'module' })`, and a two-line entry. On timeout it resolves a safe choice (check if free, else fold); worker errors and dispose reject. A Vite 6 build of the client was verified to emit the worker chunk.
+10. **Pacing** (`bots/pacing.js`): `thinkTimeMs` (fast 250–600 ms, normal 600–1800 ms, ×1.6 for all-ins or actions of at least 20 BB) and `withPacing(runner, …)`, which sleeps only for the part of the think time left after compute.
+11. **Duplicate deals** (`bots/arena.js`). One deal is replayed with the players rotated through all 6 seats, with identical cards and button, 100 BB stacks every hand, and a separate decision rng. Card luck cancels per player.
+12. **Training** (`npm run poker:train`) is evolutionary: population 50, 4 rounds per generation of random tables with 5 individuals plus 1 anchor bot (a baseline or probe, sitting in the profiled hero chair so adaptation is exercised), 250 duplicate deals per table (1,500 hands). Fitness is BB/100 relative to tablemates, so the drawn anchor adds no noise. Elites are the best individual per niche plus the best overall, up to 10. Children come from tournament selection (size 3), uniform crossover and Gaussian mutation (rate 0.3, σ = 10% of the range). Niches are measured, not assigned: loose when VPIP ≥ 0.23, aggressive when postflop aggression frequency ≥ 0.35, calibrated on the archetypes in mixed play. An archive keeps the top 5 per niche. Training stops after 20 generations without a 1 BB/100 gain, after 150 generations, or at `--minutes`. Selection runs a quick gate (12,000 hands per matchup) and ships the first two candidates per niche whose worst mean is above 0. Every flag is configurable, and work runs on `worker_threads`.
+13. **Benchmark gate** (`npm run poker:benchmark`). Each matchup puts the baseline or probe in the hero chair (profiled, so personas adapt to it) against 5 copies of the persona. Per deal (6 hands), the persona's BB/100 per seat is `−opponentUnits · 100 / (6 · 5 · 2)`, with a 95% CI across deals. Every persona must have CI lower bound > 0 against `callingStation`, `randomLegal`, `rawEquity`, `tightPassive`, `always3Bet`, `alwaysCbet` and `alwaysOverbetRiver`. For probes this is stricter than "does not lose". `--hands` defaults to 200,000 per matchup, `--smoke` uses 3,000. The script exits 1 on failure. "New version beats previous version" is skipped for v1 (the report says so).
+14. **Equity budget in offline play:** training and the benchmark use 150 Monte Carlo samples per postflop decision. Production uses up to 4,000 samples in 300 ms, so the gate measures a weaker-or-equal version of the shipped brain.
+
+### Measured runtime (this dev machine: 16 logical cores, Node 22)
+
+- A heuristic 6-max table runs about 1,000–1,300 hands/s per thread. A table job pool with 15 threads runs about 10,000 hands/s.
+- `gen-preflop.js`: about 80 s. `--charts-only` takes about 1 s.
+- `poker:train` with the defaults: 60,000 hands per generation, about 6 s per generation, capped at 150 generations (15 min), usually stopping earlier on stall. Selection plays about 1.7M hands, about 3 min. **Estimate: 8–20 min.**
+- `poker:benchmark` at the release setting: 8 personas × 7 opponents × 200,000 = 11.2M hands. A smoke run of 168k hands took 17 s. **Estimate: 20–30 min.** Smoke (`--smoke`): about 20 s.
+- `npm test`: about 5–8 s including the new suites (the 10,000-state legality test takes about 4 s).
+
+### Persona dials
+
+| Dial | Range | Default | Meaning |
+|---|---|---|---|
+| `openUTG`, `openHJ`, `openCO`, `openBTN`, `openSB` | 0.5–1.8 | 1 | Open range width multiplier for that position |
+| `threeBet` | 0.3–2.5 | 1 | 3-bet and squeeze raise range width multiplier |
+| `coldCall` | 0.3–1.8 | 1 | Flat-call width facing an open or limpers (not the BB) |
+| `bbDefend` | 0.5–1.6 | 1 | Big blind call width facing an open |
+| `fourBet` | 0.3–2.5 | 1 | Raise width facing a 3-bet or 4-bet |
+| `vs3betCall` | 0.4–1.8 | 1 | Call width facing a 3-bet or 4-bet |
+| `isoRaise` | 0.5–2.0 | 1 | Raise width facing limpers |
+| `limpFreq` | 0–0.3 | 0 | Chance an unopened raise becomes a limp |
+| `openSize` | 2.0–3.5 | 2.5 | Open size in BB (+1 BB from the SB and per limper) |
+| `jamCall` | 0.8–1.3 | 1 | Multiplier on the equity needed to call a big preflop bet |
+| `valueThresh` | 0.52–0.80 | 0.62 | Heads-up-equivalent equity needed to bet for value |
+| `aggression` | 0.5–1.8 | 1 | Scales bluffs and thin value bets |
+| `bluffMul` | 0–2.5 | 1 | Multiplier on the balanced bluff frequency |
+| `cbetFlop` | 0–1 | 0.55 | Flop c-bet chance with non-value hands as the preflop aggressor |
+| `cbetTurn` | 0–1 | 0.35 | Turn barrel chance with non-value hands as the flop aggressor |
+| `sizeBias` | −1–1 | 0 | Shift along the ⅓/½/¾/pot menu |
+| `callThresh` | 0.75–1.35 | 1 | Multiplier on the pot-odds equity needed to call (low = sticky) |
+| `raiseValue` | 0.65–0.92 | 0.78 | Heads-up-equivalent equity needed to raise a bet for value |
+| `semiBluffRaise` | 0–0.6 | 0.15 | Chance to raise a strong draw facing a bet |
+| `floatFreq` | 0–0.5 | 0.15 | Chance to float a flop bet in position with weak equity |
+| `trapFreq` | 0–0.6 | 0.15 | Chance to slow-play a monster on the flop or turn |
+| `drawImplied` | 0–0.12 | 0.05 | Equity credited to draws for implied odds |
+| `checkRaise` | 0–0.5 | 0.15 | Chance to check a value hand out of position to check-raise |
+| `mdfDefend` | 0–1 | 0.3 | Chance to call hands just below the calling threshold |
+| `multiwayTight` | 0–0.15 | 0.05 | Extra value and raise threshold per extra opponent |
+| `adaptStrength` | 0–1 | 0.6 | Scale of exploit shifts against the profiled player |
+
+### Contract changes (need the controller's sign-off before Phase 2 relies on them)
+
+1. **`BotContext` gains `heroSeat?: number | null`**: the seat whose tendencies `profile` describes. Brains adapt only when it is set and that seat is still in the hand. Phase 2 must pass `heroSeat` wherever it passes `profile`. Task 11 updates the JSDoc in `bots/contract.js`.
+2. **`createBrain(persona, options?)`** gains an optional `{ iterations, budgetMs, now }` (additive). The registry keys are `heuristic`, `randomLegal`, `callingStation`, `rawEquity`, `tightPassive`, `always3Bet`, `alwaysCbet` and `alwaysOverbetRiver`.
+3. **`createWorkerRunner(options?)`** lives in `worker/workerClient.js` and accepts optional `{ createWorker, timeoutMs = 3000, onTimeout }`. On timeout it resolves `{action:'check'}` or `{action:'fold'}`.
+4. **`Persona.style`** is one of `tight-aggressive`, `loose-aggressive`, `tight-passive` or `loose-passive`.
+5. **`accumulateProfile`** needs the full log (all hole cards) of a completed hand. Any other input returns the profile unchanged. Stats are not split by position (the contract fixes 14 keys).
+6. New additive export: `bots/pacing.js` `withPacing(runner, { speed, rng, now, sleep })` and `thinkTimeMs(...)`. The UI wraps its runner with it.
+
+### Deliberate refinements of the spec
+
+- The spec says preflop charts come "from published solver outputs". Licensing forbids that (§12), so the charts are self-generated (Decision 1). They carry no EV table, so Phase 5 grading falls back to rollouts for preflop EV loss, as §7.1 already allows.
+- Training and benchmark hands always start at 100 BB (no stack carry-over), and the button moves deal by deal.
+- A persona passes a probe matchup only with CI lower bound > 0, which is stricter than "does not lose".
+- The manual 300-hand playtest (§5 gate, last bullet) needs Phase 2's table UI. Task 19 records it as the user's open release item.
+
+---
+
+## File Structure
+
+| File | Responsibility |
+|---|---|
+| `bots/handClass.js` | 169 classes, 1,326 combos, class and combo lookups |
+| `bots/equity.js` | `equityVsRanges` Monte Carlo against weighted ranges, iteration or time budget |
+| `scripts/poker/lib/equityTable.js` | Offline class-vs-class equity table and encoding |
+| `bots/preflopEquity.js` | Decodes `equity169.json`; `classEquity`, `equityVsClassWeights`, `EQUITY_VS_ANY` |
+| `scripts/poker/lib/chartGen.js` | Strength order, band charts, `CHART_SPECS` |
+| `scripts/poker/gen-preflop.js` | Writes `data/preflop/equity169.json` and `charts-v1.json` |
+| `bots/charts.js` | Chart lookup, `RANK_PCT`, width scaling, `topShareWeights` |
+| `bots/testHands.js` | Test helper: hand logs and contexts from step strings |
+| `bots/profileStats.js` | `accumulateProfile`, `handObservations` (the stat definitions) |
+| `bots/situation.js` | Positions, preflop spot, chart key, postflop context |
+| `bots/texture.js` | Board texture, hand draws, per-combo draws |
+| `bots/dials.js` | `DIALS`, `resolveDials`, `ARCHETYPES` |
+| `bots/adapt.js` | `EXPLOIT_RULES`, `adaptDials`, `ADAPT_MIN_OBS` |
+| `bots/ranges.js` | Player types, likelihoods, `createRangeTracker` |
+| `bots/legalize.js` | Maps an intended choice onto a legal one |
+| `bots/preflop.js` | `preflopDecision`, sizing, dial multipliers |
+| `bots/postflop.js` | `postflopDecision`, size menu, bluff math |
+| `bots/baselines.js` | `randomLegal`, `callingStation`, `rawEquity`, `tightPassive` |
+| `bots/probes.js` | `always3Bet`, `alwaysCbet`, `alwaysOverbetRiver` |
+| `bots/arena.js` | `playArenaHand`, `playDuplicateDeal` |
+| `bots/brain.js` | `createHeuristicBrain` |
+| `bots/index.js` | Brain registry, `createBrain`, `BOT_VERSION` |
+| `bots/pacing.js` | Think time and `withPacing` |
+| `worker/protocol.js`, `worker/workerClient.js`, `worker/pokerWorker.js` | Worker message handler, runner, entry |
+| `scripts/poker/lib/ciStats.js` | Streaming mean and 95% CI |
+| `scripts/poker/lib/tableJob.js`, `pool.js`, `tableWorker.js` | Table jobs and the `worker_threads` pool |
+| `scripts/poker/lib/gate.js`, `scripts/poker/benchmark.js` | Matchups, verdict, report, CLI |
+| `scripts/poker/lib/evolve.js` | Niches, variation, archive, generations, stall |
+| `scripts/poker/lib/trainLoop.js`, `scripts/poker/train.js` | Training loop, persona selection, CLI |
+| `scripts/poker/cli.slow.test.js` | Opt-in end-to-end CLI checks (`POKER_SLOW=1`) |
+| `data/preflop/equity169.json`, `data/preflop/charts-v1.json`, `data/bots-v1.json` | Generated data |
+| `bots/personas.js` | Loads the trained personas (Task 18) |
+
+All `bots/`, `worker/` and `data/` paths are under `src/private/trainers/poker/`.
+
+---
+
+### Task 1: Hand classes and combos
+
+**Files:**
+- Create: `src/private/trainers/poker/bots/handClass.js`
+- Test: `src/private/trainers/poker/bots/handClass.test.js`
+
+**Interfaces:**
+- Consumes: `RANKS` from `engine/cards.js`.
+- Produces: `CLASS_COUNT = 169`, `COMBO_COUNT = 1326`, `classOf(c1, c2) → 0..168`, `kindOf(cls) → 'pair'|'suited'|'offsuit'`, `className(cls) → 'AKs'`, `parseClass(text) → cls` (throws `Bad class: …`), `combosIn(cls) → 6|4|12`, `COMBO_CARDS: Uint8Array(2652)` (combo i's cards at `2i`, `2i+1`), `COMBO_CLASS: Uint8Array(1326)`, `CLASS_COMBOS: number[][]`, `comboOf(c1, c2) → 0..1325`, `classWeightsToCombos(Float32Array(169)) → Float32Array(1326)`.
+
+- [ ] **Step 1: Write the failing test**
+
+```js
+// src/private/trainers/poker/bots/handClass.test.js
+import { describe, it, expect } from 'vitest';
+import { parseCards } from '../engine/cards.js';
+import {
+  CLASS_COUNT, COMBO_COUNT, COMBO_CARDS, COMBO_CLASS, CLASS_COMBOS,
+  classOf, kindOf, className, parseClass, combosIn, comboOf, classWeightsToCombos,
+} from './handClass.js';
+
+const cls = (text) => classOf(...parseCards(text));
+
+describe('hand classes', () => {
+  it('maps cards to pair, suited and offsuit classes regardless of order', () => {
+    expect(className(cls('AhAs'))).toBe('AA');
+    expect(className(cls('AsKs'))).toBe('AKs');
+    expect(className(cls('KsAs'))).toBe('AKs');
+    expect(className(cls('Kd7c'))).toBe('K7o');
+    expect(className(cls('2c3d'))).toBe('32o');
+    expect(kindOf(parseClass('AA'))).toBe('pair');
+    expect(kindOf(parseClass('T9s'))).toBe('suited');
+    expect(kindOf(parseClass('T9o'))).toBe('offsuit');
+  });
+
+  it('round-trips all 169 class names', () => {
+    const names = new Set();
+    for (let i = 0; i < CLASS_COUNT; i += 1) {
+      expect(parseClass(className(i))).toBe(i);
+      names.add(className(i));
+    }
+    expect(names.size).toBe(169);
+    expect(() => parseClass('AKx')).toThrow();
+    expect(() => parseClass('KAs')).toThrow();
+  });
+
+  it('enumerates 1,326 combos with the right count per class', () => {
+    expect(COMBO_COUNT).toBe(1326);
+    let total = 0;
+    for (let i = 0; i < CLASS_COUNT; i += 1) {
+      expect(CLASS_COMBOS[i].length).toBe(combosIn(i));
+      total += CLASS_COMBOS[i].length;
+    }
+    expect(total).toBe(1326);
+    const [a, b] = parseCards('Td9d');
+    const combo = comboOf(a, b);
+    expect(comboOf(b, a)).toBe(combo);
+    expect([COMBO_CARDS[2 * combo], COMBO_CARDS[2 * combo + 1]].sort((x, y) => x - y)).toEqual([a, b].sort((x, y) => x - y));
+    expect(COMBO_CLASS[combo]).toBe(parseClass('T9s'));
+  });
+
+  it('expands class weights to combo weights', () => {
+    const weights = new Float32Array(169);
+    weights[parseClass('AKs')] = 0.5;
+    const combos = classWeightsToCombos(weights);
+    let sum = 0;
+    for (const w of combos) sum += w;
+    expect(sum).toBeCloseTo(2, 6);
+  });
+});
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `npx vitest run src/private/trainers/poker/bots/handClass.test.js`
+Expected: FAIL, with a module-not-found error for `./handClass.js`.
+
+- [ ] **Step 3: Write the implementation**
+
+```js
+// src/private/trainers/poker/bots/handClass.js
+// The 169 starting-hand classes and the 1,326 two-card combos.
+// Class index = row * 13 + col with ranks 0..12 = 2..A:
+//   row === col: pair, row > col: suited (row is the high rank), row < col: offsuit (col is the high rank).
+import { RANKS } from '../engine/cards.js';
+
+export const CLASS_COUNT = 169;
+export const COMBO_COUNT = 1326;
+
+/** @returns {number} class index 0..168 for two distinct cards */
+export function classOf(c1, c2) {
+  const r1 = c1 >> 2;
+  const r2 = c2 >> 2;
+  const hi = r1 > r2 ? r1 : r2;
+  const lo = r1 > r2 ? r2 : r1;
+  if (hi === lo) return hi * 13 + hi;
+  return (c1 & 3) === (c2 & 3) ? hi * 13 + lo : lo * 13 + hi;
+}
+
+/** @returns {'pair'|'suited'|'offsuit'} */
+export function kindOf(cls) {
+  const row = Math.floor(cls / 13);
+  const col = cls % 13;
+  if (row === col) return 'pair';
+  return row > col ? 'suited' : 'offsuit';
+}
+
+/** e.g. 168 -> 'AA', 167 -> 'AKs', 155 -> 'AKo' */
+export function className(cls) {
+  const row = Math.floor(cls / 13);
+  const col = cls % 13;
+  if (row === col) return RANKS[row] + RANKS[row];
+  return row > col ? `${RANKS[row]}${RANKS[col]}s` : `${RANKS[col]}${RANKS[row]}o`;
+}
+
+/** Inverse of className. Throws on malformed input. */
+export function parseClass(text) {
+  const hi = RANKS.indexOf(text[0]);
+  const lo = RANKS.indexOf(text[1]);
+  if (hi < 0 || lo < 0) throw new Error(`Bad class: ${text}`);
+  if (text.length === 2 && hi === lo) return hi * 13 + hi;
+  if (text.length === 3 && hi > lo && text[2] === 's') return hi * 13 + lo;
+  if (text.length === 3 && hi > lo && text[2] === 'o') return lo * 13 + hi;
+  throw new Error(`Bad class: ${text}`);
+}
+
+/** Combos per class: 6 pairs, 4 suited, 12 offsuit. */
+export const combosIn = (cls) => ({ pair: 6, suited: 4, offsuit: 12 })[kindOf(cls)];
+
+// COMBO_CARDS[2i], COMBO_CARDS[2i+1] are the cards of combo i (low card first).
+export const COMBO_CARDS = new Uint8Array(COMBO_COUNT * 2);
+export const COMBO_CLASS = new Uint8Array(COMBO_COUNT);
+const COMBO_INDEX = new Int16Array(52 * 52).fill(-1);
+/** @type {number[][]} combo indices for each class */
+export const CLASS_COMBOS = Array.from({ length: CLASS_COUNT }, () => []);
+
+let next = 0;
+for (let a = 0; a < 52; a += 1) {
+  for (let b = a + 1; b < 52; b += 1) {
+    COMBO_CARDS[2 * next] = a;
+    COMBO_CARDS[2 * next + 1] = b;
+    COMBO_CLASS[next] = classOf(a, b);
+    COMBO_INDEX[a * 52 + b] = next;
+    COMBO_INDEX[b * 52 + a] = next;
+    CLASS_COMBOS[COMBO_CLASS[next]].push(next);
+    next += 1;
+  }
+}
+
+/** @returns {number} combo index 0..1325 */
+export const comboOf = (c1, c2) => COMBO_INDEX[c1 * 52 + c2];
+
+/** Expands 169 class weights into 1,326 combo weights. */
+export function classWeightsToCombos(classWeights) {
+  const out = new Float32Array(COMBO_COUNT);
+  for (let i = 0; i < COMBO_COUNT; i += 1) out[i] = classWeights[COMBO_CLASS[i]];
+  return out;
+}
+```
+
+- [ ] **Step 4: Run the test to verify it passes**
+
+Run: `npx vitest run src/private/trainers/poker/bots/handClass.test.js`
+Expected: PASS (4 tests).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/private/trainers/poker/bots/handClass.js src/private/trainers/poker/bots/handClass.test.js
+git commit -m "Add poker hand classes and combo tables for bots
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 2: Monte Carlo equity against weighted ranges
+
+**Files:**
+- Create: `src/private/trainers/poker/bots/equity.js`
+- Test: `src/private/trainers/poker/bots/equity.test.js`
+
+**Interfaces:**
+- Consumes: `evaluate` (`engine/evaluator.js`); `COMBO_COUNT`, `COMBO_CARDS` (Task 1).
+- Produces: `equityVsRanges({ hole, board, ranges, rng, iterations = 1000, budgetMs = Infinity, now = performance.now }) → { equity, iterations, stderr }`. `ranges` is one `Float32Array(1326)` per live opponent, and `equity` is the expected share of the pot with ties split. With no ranges it returns `{ equity: 1, iterations: 0, stderr: 0 }`. An all-zero or fully dead range falls back to any live combo.
+
+- [ ] **Step 1: Write the failing test**
+
+```js
+// src/private/trainers/poker/bots/equity.test.js
+import { describe, it, expect } from 'vitest';
+import { mulberry32 } from '../../core/rng.js';
+import { parseCards } from '../engine/cards.js';
+import { evaluate } from '../engine/evaluator.js';
+import { COMBO_COUNT, comboOf, CLASS_COMBOS, parseClass } from './handClass.js';
+import { equityVsRanges } from './equity.js';
+
+/** A range holding exactly the given combos (e.g. 'KdKc'). */
+function rangeOf(...hands) {
+  const r = new Float32Array(COMBO_COUNT);
+  for (const h of hands) r[comboOf(...parseCards(h))] = 1;
+  return r;
+}
+
+const uniform = () => new Float32Array(COMBO_COUNT).fill(1);
+
+// Exact heads-up equity on the flop by enumerating all turn and river cards.
+function exactFlopEquity(hero, villain, flop) {
+  const dead = new Set([...hero, ...villain, ...flop]);
+  const live = Array.from({ length: 52 }, (_, c) => c).filter((c) => !dead.has(c));
+  let share = 0;
+  let n = 0;
+  for (let i = 0; i < live.length; i += 1) {
+    for (let j = i + 1; j < live.length; j += 1) {
+      const board = [...flop, live[i], live[j]];
+      const a = evaluate([...hero, ...board]);
+      const b = evaluate([...villain, ...board]);
+      share += a > b ? 1 : a === b ? 0.5 : 0;
+      n += 1;
+    }
+  }
+  return share / n;
+}
+
+describe('equityVsRanges', () => {
+  it('AhAs vs KdKc preflop is about 81%', () => {
+    const { equity, stderr } = equityVsRanges({
+      hole: parseCards('AhAs'), board: [], ranges: [rangeOf('KdKc')], rng: mulberry32(1), iterations: 40000,
+    });
+    expect(equity).toBeGreaterThan(0.80);
+    expect(equity).toBeLessThan(0.83);
+    expect(stderr).toBeLessThan(0.003);
+  });
+
+  it('7c2d vs AhAs preflop is about 12.5%', () => {
+    const { equity } = equityVsRanges({
+      hole: parseCards('7c2d'), board: [], ranges: [rangeOf('AhAs')], rng: mulberry32(2), iterations: 40000,
+    });
+    expect(equity).toBeGreaterThan(0.11);
+    expect(equity).toBeLessThan(0.14);
+  });
+
+  it('matches exact enumeration on the flop within 1.5 points', () => {
+    const hero = parseCards('AhKh');
+    const villain = parseCards('QsQd');
+    const flop = parseCards('Qh7h2c');
+    const exact = exactFlopEquity(hero, villain, flop);
+    const { equity } = equityVsRanges({ hole: hero, board: flop, ranges: [rangeOf('QsQd')], rng: mulberry32(3), iterations: 30000 });
+    expect(Math.abs(equity - exact)).toBeLessThan(0.015);
+  });
+
+  it('a random hand is 50% against a random hand and about 1/3 three-way', () => {
+    const hole = parseCards('Td9c');
+    const hu = equityVsRanges({ hole: parseCards('8s8d'), board: [], ranges: [uniform()], rng: mulberry32(4), iterations: 30000 });
+    expect(hu.equity).toBeGreaterThan(0.66); // 88 vs random is about 69%
+    expect(hu.equity).toBeLessThan(0.72);
+    const three = equityVsRanges({ hole, board: [], ranges: [uniform(), uniform()], rng: mulberry32(5), iterations: 30000 });
+    expect(three.equity).toBeGreaterThan(0.30);
+    expect(three.equity).toBeLessThan(0.40);
+  });
+
+  it('weights ranges: AKs vs {QQ weight 1, 72o weight 0} equals AKs vs QQ', () => {
+    const qq = new Float32Array(COMBO_COUNT);
+    for (const c of CLASS_COMBOS[parseClass('QQ')]) qq[c] = 1;
+    const mixed = qq.slice();
+    for (const c of CLASS_COMBOS[parseClass('72o')]) mixed[c] = 0;
+    const a = equityVsRanges({ hole: parseCards('AsKs'), board: [], ranges: [qq], rng: mulberry32(6), iterations: 5000 });
+    const b = equityVsRanges({ hole: parseCards('AsKs'), board: [], ranges: [mixed], rng: mulberry32(6), iterations: 5000 });
+    expect(b.equity).toBe(a.equity);
+    expect(a.equity).toBeGreaterThan(0.43);
+    expect(a.equity).toBeLessThan(0.49);
+  });
+
+  it('removes combos that conflict with the board and falls back to any live combo for an empty range', () => {
+    const board = parseCards('KdKc2h');
+    const onlyDead = rangeOf('KdKc');
+    const { equity } = equityVsRanges({ hole: parseCards('AhAs'), board, ranges: [onlyDead], rng: mulberry32(7), iterations: 2000 });
+    expect(equity).toBeGreaterThan(0.7);
+  });
+
+  it('is deterministic for a seed and returns 1 with no opponents', () => {
+    const input = () => ({ hole: parseCards('9h8h'), board: parseCards('Th7c2s'), ranges: [uniform()], rng: mulberry32(8), iterations: 500 });
+    expect(equityVsRanges(input())).toEqual(equityVsRanges(input()));
+    expect(equityVsRanges({ ...input(), ranges: [] }).equity).toBe(1);
+  });
+
+  it('stops at the time budget using the injected clock', () => {
+    let t = 0;
+    const now = () => {
+      t += 1;
+      return t;
+    };
+    const { iterations } = equityVsRanges({
+      hole: parseCards('9h8h'), board: [], ranges: [uniform()], rng: mulberry32(9), iterations: 1e9, budgetMs: 5, now,
+    });
+    expect(iterations).toBeGreaterThanOrEqual(32);
+    expect(iterations).toBeLessThan(1000);
+  });
+});
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `npx vitest run src/private/trainers/poker/bots/equity.test.js`
+Expected: FAIL, with a module-not-found error for `./equity.js`.
+
+- [ ] **Step 3: Write the implementation**
+
+```js
+// src/private/trainers/poker/bots/equity.js
+// Monte Carlo equity of one hand against the weighted ranges of live opponents.
+// Deterministic for a given rng when `budgetMs` is Infinity (tests pass `iterations`).
+import { evaluate } from '../engine/evaluator.js';
+import { COMBO_COUNT, COMBO_CARDS } from './handClass.js';
+
+const MIN_ITERATIONS = 32;
+const CLOCK_EVERY = 64;
+const PICK_TRIES = 24;
+const defaultNow = () => performance.now();
+
+// Keeps the combos of one range that do not touch dead cards, with a cumulative weight table.
+function prepareRange(weights, dead) {
+  const combos = new Int16Array(COMBO_COUNT);
+  const cumulative = new Float64Array(COMBO_COUNT);
+  let count = 0;
+  let total = 0;
+  for (let i = 0; i < COMBO_COUNT; i += 1) {
+    const w = weights ? weights[i] : 1;
+    if (w <= 0 || dead[COMBO_CARDS[2 * i]] || dead[COMBO_CARDS[2 * i + 1]]) continue;
+    total += w;
+    combos[count] = i;
+    cumulative[count] = total;
+    count += 1;
+  }
+  if (count === 0 && weights) return prepareRange(null, dead); // empty range: fall back to any live combo
+  return { combos, cumulative, count, total };
+}
+
+function pickCombo(range, rng) {
+  const target = rng() * range.total;
+  let lo = 0;
+  let hi = range.count - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (range.cumulative[mid] > target) hi = mid;
+    else lo = mid + 1;
+  }
+  return range.combos[lo];
+}
+
+function randomLiveCard(used, rng) {
+  for (;;) {
+    const card = Math.floor(rng() * 52);
+    if (!used[card]) return card;
+  }
+}
+
+/**
+ * @param {{ hole:number[], board:number[], ranges:Float32Array[], rng:() => number,
+ *   iterations?:number, budgetMs?:number, now?:() => number }} input
+ *   ranges: one 1,326-entry combo weight array per live opponent.
+ * @returns {{ equity:number, iterations:number, stderr:number }} equity = expected share of the pot (ties split)
+ */
+export function equityVsRanges({ hole, board, ranges, rng, iterations = 1000, budgetMs = Infinity, now = defaultNow }) {
+  if (ranges.length === 0) return { equity: 1, iterations: 0, stderr: 0 };
+  const dead = new Uint8Array(52);
+  for (const c of hole) dead[c] = 1;
+  for (const c of board) dead[c] = 1;
+  const prepared = ranges.map((r) => prepareRange(r, dead));
+  const used = new Uint8Array(52);
+  const touched = new Int8Array(2 * ranges.length + 5);
+  const need = 5 - board.length;
+  const heroCards = [hole[0], hole[1], ...board, 0, 0, 0, 0, 0].slice(0, 7);
+  const oppCards = prepared.map(() => [0, 0, ...board, 0, 0, 0, 0, 0].slice(0, 7));
+  const runout = new Int8Array(5);
+  const started = budgetMs === Infinity ? 0 : now();
+  let share = 0;
+  let sumSq = 0;
+  let n = 0;
+
+  while (n < iterations) {
+    if (budgetMs !== Infinity && n >= MIN_ITERATIONS && n % CLOCK_EVERY === 0 && now() - started >= budgetMs) break;
+    used.set(dead);
+    let t = 0;
+    for (let o = 0; o < prepared.length; o += 1) {
+      let a = -1;
+      let b = -1;
+      for (let tries = 0; tries < PICK_TRIES; tries += 1) {
+        const combo = pickCombo(prepared[o], rng);
+        const x = COMBO_CARDS[2 * combo];
+        const y = COMBO_CARDS[2 * combo + 1];
+        if (!used[x] && !used[y]) {
+          a = x;
+          b = y;
+          break;
+        }
+      }
+      if (a < 0) {
+        a = randomLiveCard(used, rng);
+        used[a] = 1;
+        b = randomLiveCard(used, rng);
+        used[a] = 0;
+      }
+      used[a] = 1;
+      used[b] = 1;
+      touched[t++] = a;
+      touched[t++] = b;
+      oppCards[o][0] = a;
+      oppCards[o][1] = b;
+    }
+    for (let k = 0; k < need; k += 1) {
+      const card = randomLiveCard(used, rng);
+      used[card] = 1;
+      runout[k] = card;
+    }
+    for (let k = 0; k < need; k += 1) {
+      heroCards[2 + board.length + k] = runout[k];
+      for (let o = 0; o < prepared.length; o += 1) oppCards[o][2 + board.length + k] = runout[k];
+    }
+    const heroScore = evaluate(heroCards);
+    let ties = 0;
+    let lost = false;
+    for (let o = 0; o < prepared.length; o += 1) {
+      const score = evaluate(oppCards[o]);
+      if (score > heroScore) {
+        lost = true;
+        break;
+      }
+      if (score === heroScore) ties += 1;
+    }
+    const x = lost ? 0 : 1 / (ties + 1);
+    share += x;
+    sumSq += x * x;
+    n += 1;
+  }
+  const equity = share / n;
+  const variance = Math.max(0, sumSq / n - equity * equity);
+  return { equity, iterations: n, stderr: Math.sqrt(variance / n) };
+}
+```
+
+- [ ] **Step 4: Run the test to verify it passes**
+
+Run: `npx vitest run src/private/trainers/poker/bots/equity.test.js`
+Expected: PASS (8 tests), in under 2 s.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/private/trainers/poker/bots/equity.js src/private/trainers/poker/bots/equity.test.js
+git commit -m "Add seeded, time-boxed Monte Carlo equity against weighted ranges
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 3: Cached preflop equity table
+
+**Files:**
+- Create: `scripts/poker/lib/equityTable.js`
+- Create: `scripts/poker/gen-preflop.js`
+- Create (generated): `src/private/trainers/poker/data/preflop/equity169.json`
+- Create: `src/private/trainers/poker/bots/preflopEquity.js`
+- Test: `src/private/trainers/poker/bots/preflopEquity.test.js`
+- Modify: `package.json` (`scripts`)
+
+**Interfaces:**
+- Consumes: Task 1 (`CLASS_COUNT`, `CLASS_COMBOS`, `COMBO_CARDS`, `combosIn`), `evaluate`, `mulberry32`.
+- Produces:
+  - `classVsClassEquity(a, b, samples, rng) → number`, `computeEquityTable({ samples, rng, onProgress }) → Float32Array(28561)` (`[a*169+b]` = equity of a vs b, diagonal 0.5), `encodeEquityTable(table) → base64` (Node only, uses `Buffer`).
+  - `decodeEquityTable(base64) → Float32Array` (uses `atob`, browser-safe), `classEquity(a, b)`, `equityVsClassWeights(cls, Float32Array(169)) → number` (0.5 for an empty range), `EQUITY_VS_ANY: Float32Array(169)`.
+  - Data file `{ version: 1, samples, seed, table }`.
+
+- [ ] **Step 1: Write the failing test**
+
+```js
+// src/private/trainers/poker/bots/preflopEquity.test.js
+import { describe, it, expect } from 'vitest';
+import { mulberry32 } from '../../core/rng.js';
+import { CLASS_COUNT, parseClass } from './handClass.js';
+import { classVsClassEquity, encodeEquityTable } from '../../../../../scripts/poker/lib/equityTable.js';
+import { classEquity, equityVsClassWeights, EQUITY_VS_ANY, decodeEquityTable } from './preflopEquity.js';
+
+const c = parseClass;
+
+describe('preflop equity table', () => {
+  it('matches known heads-up class equities within 2 points', () => {
+    expect(classEquity(c('AA'), c('KK'))).toBeGreaterThan(0.80);
+    expect(classEquity(c('AA'), c('KK'))).toBeLessThan(0.84);
+    expect(classEquity(c('AKo'), c('22'))).toBeGreaterThan(0.45);
+    expect(classEquity(c('AKo'), c('22'))).toBeLessThan(0.49);
+    expect(classEquity(c('KK'), c('AA'))).toBeCloseTo(1 - classEquity(c('AA'), c('KK')), 4);
+    expect(classEquity(c('T9s'), c('T9s'))).toBeCloseTo(0.5, 4);
+  });
+
+  it('AA is about 85% and 72o about 35% against a random hand', () => {
+    expect(EQUITY_VS_ANY[c('AA')]).toBeGreaterThan(0.84);
+    expect(EQUITY_VS_ANY[c('AA')]).toBeLessThan(0.86);
+    expect(EQUITY_VS_ANY[c('72o')]).toBeGreaterThan(0.33);
+    expect(EQUITY_VS_ANY[c('72o')]).toBeLessThan(0.37);
+  });
+
+  it('weights ranges by class and combo count', () => {
+    const onlyKK = new Float32Array(CLASS_COUNT);
+    onlyKK[c('KK')] = 1;
+    expect(equityVsClassWeights(c('AA'), onlyKK)).toBeCloseTo(classEquity(c('AA'), c('KK')), 6);
+    expect(equityVsClassWeights(c('AA'), new Float32Array(CLASS_COUNT))).toBe(0.5);
+  });
+
+  it('the generator agrees with the shipped table and round-trips the encoding', () => {
+    const fresh = classVsClassEquity(c('QQ'), c('AKs'), 20000, mulberry32(11));
+    expect(Math.abs(fresh - classEquity(c('QQ'), c('AKs')))).toBeLessThan(0.02);
+    const table = Float32Array.from([0, 0.25, 0.5, 1]);
+    const decoded = decodeEquityTable(encodeEquityTable(table));
+    decoded.forEach((x, i) => expect(x).toBeCloseTo(table[i], 4));
+  });
+});
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `npx vitest run src/private/trainers/poker/bots/preflopEquity.test.js`
+Expected: FAIL, with a module-not-found error for `equityTable.js` / `./preflopEquity.js`.
+
+- [ ] **Step 3: Write the table builder**
+
+```js
+// scripts/poker/lib/equityTable.js
+// Offline: heads-up all-in equity of every hand class against every hand class (169 x 169).
+import { evaluate } from '../../../src/private/trainers/poker/engine/evaluator.js';
+import { CLASS_COUNT, CLASS_COMBOS, COMBO_CARDS } from '../../../src/private/trainers/poker/bots/handClass.js';
+
+/** Monte Carlo equity of class `a` against class `b` over `samples` random suit choices and boards. */
+export function classVsClassEquity(a, b, samples, rng) {
+  const used = new Uint8Array(52);
+  const hero = [0, 0, 0, 0, 0, 0, 0];
+  const villain = [0, 0, 0, 0, 0, 0, 0];
+  let share = 0;
+  let n = 0;
+  while (n < samples) {
+    const ca = CLASS_COMBOS[a][Math.floor(rng() * CLASS_COMBOS[a].length)];
+    const cb = CLASS_COMBOS[b][Math.floor(rng() * CLASS_COMBOS[b].length)];
+    const a1 = COMBO_CARDS[2 * ca];
+    const a2 = COMBO_CARDS[2 * ca + 1];
+    const b1 = COMBO_CARDS[2 * cb];
+    const b2 = COMBO_CARDS[2 * cb + 1];
+    if (a1 === b1 || a1 === b2 || a2 === b1 || a2 === b2) continue; // card conflict: resample
+    used.fill(0);
+    used[a1] = 1;
+    used[a2] = 1;
+    used[b1] = 1;
+    used[b2] = 1;
+    hero[0] = a1;
+    hero[1] = a2;
+    villain[0] = b1;
+    villain[1] = b2;
+    for (let k = 2; k < 7; k += 1) {
+      let card;
+      do card = Math.floor(rng() * 52); while (used[card]);
+      used[card] = 1;
+      hero[k] = card;
+      villain[k] = card;
+    }
+    const x = evaluate(hero);
+    const y = evaluate(villain);
+    share += x > y ? 1 : x === y ? 0.5 : 0;
+    n += 1;
+  }
+  return share / samples;
+}
+
+/** @returns {Float32Array} 169*169, entry [a*169+b] = equity of a vs b; diagonal = 0.5. */
+export function computeEquityTable({ samples, rng, onProgress = () => {} }) {
+  const table = new Float32Array(CLASS_COUNT * CLASS_COUNT);
+  for (let a = 0; a < CLASS_COUNT; a += 1) {
+    table[a * CLASS_COUNT + a] = 0.5;
+    for (let b = a + 1; b < CLASS_COUNT; b += 1) {
+      const e = classVsClassEquity(a, b, samples, rng);
+      table[a * CLASS_COUNT + b] = e;
+      table[b * CLASS_COUNT + a] = 1 - e;
+    }
+    onProgress(a + 1);
+  }
+  return table;
+}
+
+/** Packs the table as base64 little-endian Uint16 (equity * 65535). */
+export function encodeEquityTable(table) {
+  const bytes = Buffer.alloc(table.length * 2);
+  for (let i = 0; i < table.length; i += 1) bytes.writeUInt16LE(Math.round(table[i] * 65535), 2 * i);
+  return bytes.toString('base64');
+}
+```
+
+- [ ] **Step 4: Write the generator script**
+
+```js
+// scripts/poker/gen-preflop.js
+// Regenerates src/private/trainers/poker/data/preflop/equity169.json.
+// Usage: node scripts/poker/gen-preflop.js [--samples 10000] [--seed 20260916]
+import { writeFileSync, mkdirSync } from 'node:fs';
+import { parseArgs } from 'node:util';
+import { mulberry32 } from '../../src/private/trainers/core/rng.js';
+import { computeEquityTable, encodeEquityTable } from './lib/equityTable.js';
+
+const DIR = 'src/private/trainers/poker/data/preflop';
+const { values } = parseArgs({
+  options: {
+    samples: { type: 'string', default: '10000' },
+    seed: { type: 'string', default: '20260916' },
+  },
+});
+
+mkdirSync(DIR, { recursive: true });
+const equityPath = `${DIR}/equity169.json`;
+const samples = Number(values.samples);
+const started = Date.now();
+const table = computeEquityTable({
+  samples,
+  rng: mulberry32(Number(values.seed)),
+  onProgress: (row) => {
+    if (row % 13 === 0) console.log(`equity rows ${row}/169 (${Math.round((Date.now() - started) / 1000)} s)`);
+  },
+});
+const json = { version: 1, samples, seed: Number(values.seed), table: encodeEquityTable(table) };
+writeFileSync(equityPath, `${JSON.stringify(json)}\n`);
+console.log(`wrote ${equityPath}`);
+```
+
+- [ ] **Step 5: Add the npm script**
+
+In `package.json`, add this line to `"scripts"` after `"poker:bench-eval"` (add a comma to the previous line):
+
+```json
+    "poker:gen-preflop": "node scripts/poker/gen-preflop.js"
+```
+
+- [ ] **Step 6: Generate the table**
+
+Run: `npm run poker:gen-preflop`
+Expected: progress lines every 13 rows, then `wrote src/private/trainers/poker/data/preflop/equity169.json` after about 80 s. The file is about 76 KB.
+
+- [ ] **Step 7: Write the decoder module**
+
+```js
+// src/private/trainers/poker/bots/preflopEquity.js
+// Cached heads-up preflop equities (class vs class), generated by scripts/poker/gen-preflop.js.
+import data from '../data/preflop/equity169.json' with { type: 'json' };
+import { CLASS_COUNT, combosIn } from './handClass.js';
+
+/** Decodes base64 little-endian Uint16 values into equities in [0, 1]. */
+export function decodeEquityTable(base64) {
+  const binary = atob(base64);
+  const out = new Float32Array(binary.length / 2);
+  for (let i = 0; i < out.length; i += 1) {
+    out[i] = (binary.charCodeAt(2 * i) | (binary.charCodeAt(2 * i + 1) << 8)) / 65535;
+  }
+  return out;
+}
+
+const TABLE = decodeEquityTable(data.table);
+
+/** Heads-up all-in equity of class `a` against class `b`. */
+export const classEquity = (a, b) => TABLE[a * CLASS_COUNT + b];
+
+/**
+ * Equity of class `cls` against a range given as 169 class weights (each class also weighted by its combo count).
+ * Card removal is ignored. Returns 0.5 for an empty range.
+ */
+export function equityVsClassWeights(cls, weights) {
+  let num = 0;
+  let den = 0;
+  for (let b = 0; b < CLASS_COUNT; b += 1) {
+    const w = weights[b] * combosIn(b);
+    if (w <= 0) continue;
+    num += w * TABLE[cls * CLASS_COUNT + b];
+    den += w;
+  }
+  return den > 0 ? num / den : 0.5;
+}
+
+/** Equity of every class against a uniformly random hand. */
+export const EQUITY_VS_ANY = Float32Array.from({ length: CLASS_COUNT }, (_, cls) =>
+  equityVsClassWeights(cls, new Float32Array(CLASS_COUNT).fill(1)),
+);
+```
+
+- [ ] **Step 8: Run the test to verify it passes**
+
+Run: `npx vitest run src/private/trainers/poker/bots/preflopEquity.test.js`
+Expected: PASS (4 tests).
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add scripts/poker/lib/equityTable.js scripts/poker/gen-preflop.js src/private/trainers/poker/data/preflop/equity169.json src/private/trainers/poker/bots/preflopEquity.js src/private/trainers/poker/bots/preflopEquity.test.js package.json
+git commit -m "Add generated 169x169 preflop equity table and decoder
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 4: Our own preflop charts
+
+**Files:**
+- Create: `scripts/poker/lib/chartGen.js`
+- Modify: `scripts/poker/gen-preflop.js` (replace the whole file)
+- Create (generated): `src/private/trainers/poker/data/preflop/charts-v1.json`
+- Create: `src/private/trainers/poker/bots/charts.js`
+- Test: `src/private/trainers/poker/bots/charts.test.js`
+
+**Interfaces:**
+- Consumes: Task 1 (`CLASS_COUNT`, `combosIn`, `kindOf`), Task 3 (`decodeEquityTable`, `equity169.json`).
+- Produces:
+  - `playability(cls)`, `strengthOrder(table) → { order, rankPct }`, `buildChart(spec, rankPct) → { raise, call }`, `CHART_SPECS`, `buildCharts(table) → { version:'charts-v1', order, charts }`.
+  - `CHART_VERSION`, `STRENGTH_ORDER: number[169]` (strongest first), `RANK_PCT: Float64Array(169)`, `hasChart(key)`, `chartKeys()`, `chartFreqs(key, cls) → { raise, call }` (throws `Unknown chart: <key>`), `scaledFreqs(key, cls, raiseMul = 1, callMul = 1) → { raise, call }`, `topShareWeights(share) → Float32Array(169)`.
+
+- [ ] **Step 1: Write the failing test**
+
+```js
+// src/private/trainers/poker/bots/charts.test.js
+import { describe, it, expect } from 'vitest';
+import { CLASS_COUNT, combosIn, parseClass } from './handClass.js';
+import { CHART_SPECS } from '../../../../../scripts/poker/lib/chartGen.js';
+import { chartKeys, chartFreqs, scaledFreqs, hasChart, STRENGTH_ORDER, RANK_PCT, topShareWeights } from './charts.js';
+
+const c = parseClass;
+// Share of all 1,326 combos that take an action, weighted by frequency.
+const share = (key, action) => {
+  let sum = 0;
+  for (let cls = 0; cls < CLASS_COUNT; cls += 1) sum += chartFreqs(key, cls)[action] * combosIn(cls);
+  return sum / 1326;
+};
+
+describe('preflop charts', () => {
+  it('ships one chart per spec with 169 valid frequencies', () => {
+    expect(chartKeys().sort()).toEqual(Object.keys(CHART_SPECS).sort());
+    for (const key of chartKeys()) {
+      for (let cls = 0; cls < CLASS_COUNT; cls += 1) {
+        const { raise, call } = chartFreqs(key, cls);
+        expect(raise + call).toBeLessThanOrEqual(1 + 1e-9);
+      }
+    }
+    expect(STRENGTH_ORDER.length).toBe(169);
+    expect(new Set(STRENGTH_ORDER).size).toBe(169);
+    expect(STRENGTH_ORDER[0]).toBe(c('AA'));
+    expect(() => chartFreqs('open.BB', 0)).toThrow('Unknown chart: open.BB');
+    expect(hasChart('open.UTG')).toBe(true);
+  });
+
+  it('opening ranges have the specified widths within 2 points and widen by position', () => {
+    for (const key of ['open.UTG', 'open.HJ', 'open.CO', 'open.BTN', 'open.SB']) {
+      expect(Math.abs(share(key, 'raise') - CHART_SPECS[key].value)).toBeLessThan(0.02);
+    }
+    expect(share('open.UTG', 'raise')).toBeLessThan(share('open.CO', 'raise'));
+    expect(share('open.CO', 'raise')).toBeLessThan(share('open.BTN', 'raise'));
+  });
+
+  it('makes sensible calls on landmark hands', () => {
+    expect(chartFreqs('open.UTG', c('AA')).raise).toBe(1);
+    expect(chartFreqs('open.UTG', c('72o')).raise).toBe(0);
+    expect(chartFreqs('open.BTN', c('K9o')).raise).toBe(1);
+    expect(chartFreqs('vsOpen.BB.BTN', c('KK')).raise).toBe(1);
+    expect(chartFreqs('vsOpen.BB.BTN', c('T9s')).call).toBe(1);
+    expect(chartFreqs('vsOpen.HJ.UTG', c('K4o'))).toEqual({ raise: 0, call: 0 });
+    expect(chartFreqs('vs4bet.oop', c('AA')).raise).toBe(1);
+  });
+
+  it('orders strength sensibly', () => {
+    expect(RANK_PCT[c('AKs')]).toBeLessThan(RANK_PCT[c('AKo')]);
+    expect(RANK_PCT[c('JTs')]).toBeLessThan(RANK_PCT[c('JTo')]);
+    expect(RANK_PCT[c('KQs')]).toBeLessThan(RANK_PCT[c('72o')]);
+  });
+
+  it('scales ranges: a wider multiplier plays weaker hands, a tighter one folds marginal ones', () => {
+    expect(chartFreqs('open.UTG', c('K9s')).raise).toBe(0);
+    expect(scaledFreqs('open.UTG', c('K9s'), 1.6).raise).toBe(1);
+    expect(scaledFreqs('open.UTG', c('KJo'), 0.6).raise).toBe(0);
+    expect(scaledFreqs('open.UTG', c('AA'), 0.5).raise).toBe(1);
+    expect(scaledFreqs('open.UTG', c('K9s'), 1, 1)).toEqual(chartFreqs('open.UTG', c('K9s')));
+  });
+
+  it('topShareWeights keeps the strongest share of combos', () => {
+    const w = topShareWeights(0.1);
+    let combos = 0;
+    for (let cls = 0; cls < CLASS_COUNT; cls += 1) combos += w[cls] * combosIn(cls);
+    expect(combos / 1326).toBeGreaterThan(0.08);
+    expect(combos / 1326).toBeLessThan(0.12);
+    expect(w[c('AA')]).toBe(1);
+    expect(w[c('72o')]).toBe(0);
+  });
+});
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `npx vitest run src/private/trainers/poker/bots/charts.test.js`
+Expected: FAIL, with a module-not-found error for `chartGen.js` / `./charts.js`.
+
+- [ ] **Step 3: Write the chart generator**
+
+```js
+// scripts/poker/lib/chartGen.js
+// Builds our own 6-max preflop charts from the class-vs-class equity table.
+// Hands are ordered by a blend of equity against any hand and against a strong range; each chart
+// is then a set of bands over that order (value raise, flat call, suited bluff raise) whose widths
+// are our own approximations of common 100 BB 6-max play. No third-party chart data is used.
+import { CLASS_COUNT, combosIn, kindOf } from '../../../src/private/trainers/poker/bots/handClass.js';
+
+const MAX_FADE = 0.02; // band edges mix linearly over up to 2% of combos
+const TOP_SHARE = 0.25; // "strong range" used for the second ordering term
+const W_ANY = 0.4;
+
+// Postflop playability that all-in equity misses: suited, connected and broadway hands realize more equity.
+export function playability(cls) {
+  const row = Math.floor(cls / 13);
+  const col = cls % 13;
+  if (row === col) return 0;
+  const hi = Math.max(row, col);
+  const lo = Math.min(row, col);
+  const gap = hi - lo - 1;
+  let bonus = row > col ? 0.02 : 0;
+  bonus += [0.012, 0.007, 0.003][gap] ?? 0;
+  if (lo >= 8) bonus += 0.01;
+  return bonus;
+}
+
+const equityVs = (table, a, weights) => {
+  let num = 0;
+  let den = 0;
+  for (let b = 0; b < CLASS_COUNT; b += 1) {
+    const w = weights[b] * combosIn(b);
+    num += w * table[a * CLASS_COUNT + b];
+    den += w;
+  }
+  return num / den;
+};
+
+/** Cumulative combo share at the middle of each class, walking `order` strongest first. */
+function centers(order) {
+  const pct = new Float64Array(CLASS_COUNT);
+  let before = 0;
+  for (const cls of order) {
+    pct[cls] = (before + combosIn(cls) / 2) / 1326;
+    before += combosIn(cls);
+  }
+  return pct;
+}
+
+/** @returns {{ order:number[], rankPct:Float64Array }} strongest class first */
+export function strengthOrder(table) {
+  const any = Float64Array.from({ length: CLASS_COUNT }, (_, a) => equityVs(table, a, new Float64Array(CLASS_COUNT).fill(1)));
+  const byAny = [...Array(CLASS_COUNT).keys()].sort((a, b) => any[b] - any[a]);
+  const pctAny = centers(byAny);
+  const top = Float64Array.from({ length: CLASS_COUNT }, (_, cls) => (pctAny[cls] < TOP_SHARE ? 1 : 0));
+  const score = Float64Array.from({ length: CLASS_COUNT }, (_, a) => W_ANY * any[a] + (1 - W_ANY) * equityVs(table, a, top) + playability(a));
+  const order = [...Array(CLASS_COUNT).keys()].sort((a, b) => score[b] - score[a] || a - b);
+  return { order, rankPct: centers(order) };
+}
+
+const clamp01 = (x) => Math.min(1, Math.max(0, x));
+const fadeFor = (edge) => Math.min(MAX_FADE, edge * 0.3);
+const below = (p, hi) => clamp01((hi + fadeFor(hi) / 2 - p) / fadeFor(hi));
+const above = (p, lo) => (lo <= 0 ? 1 : clamp01((p - (lo - fadeFor(lo) / 2)) / fadeFor(lo)));
+const quantize = (x) => Math.round(x * 10);
+const DIGITS = '0123456789X';
+
+/**
+ * @param {{ value:number, call?:number, bluff?:{ from:number, to:number, freq:number } }} spec
+ *   value: top share of combos that raises; call: the next share that calls; bluff: suited hands in
+ *   [from, to] (combo share) raise with probability freq.
+ * @returns {{ raise:string, call:string }} one digit per class (0-9, X = 10 tenths)
+ */
+export function buildChart(spec, rankPct) {
+  let raise = '';
+  let call = '';
+  for (let cls = 0; cls < CLASS_COUNT; cls += 1) {
+    const p = rankPct[cls];
+    let r = below(p, spec.value);
+    if (spec.bluff && kindOf(cls) === 'suited' && p >= spec.bluff.from && p <= spec.bluff.to) r = Math.max(r, spec.bluff.freq);
+    const c = spec.call ? Math.min(1 - r, Math.min(above(p, spec.value), below(p, spec.value + spec.call))) : 0;
+    const rq = quantize(r);
+    raise += DIGITS[rq];
+    call += DIGITS[Math.min(quantize(c), 10 - rq)];
+  }
+  return { raise, call };
+}
+
+const bluffAfter = (value, call, freq = 0.35, width = 0.08) => ({ from: value + call, to: value + call + width, freq });
+
+/** Chart widths as combo shares. Keys: situation.position[.detail]. */
+export const CHART_SPECS = {
+  'open.UTG': { value: 0.15 },
+  'open.HJ': { value: 0.19 },
+  'open.CO': { value: 0.26 },
+  'open.BTN': { value: 0.43 },
+  'open.SB': { value: 0.36 },
+
+  'vsOpen.HJ.UTG': { value: 0.03, call: 0.06, bluff: bluffAfter(0.03, 0.06) },
+  'vsOpen.CO.UTG': { value: 0.035, call: 0.07, bluff: bluffAfter(0.035, 0.07) },
+  'vsOpen.CO.HJ': { value: 0.04, call: 0.08, bluff: bluffAfter(0.04, 0.08) },
+  'vsOpen.BTN.UTG': { value: 0.035, call: 0.09, bluff: bluffAfter(0.035, 0.09) },
+  'vsOpen.BTN.HJ': { value: 0.04, call: 0.1, bluff: bluffAfter(0.04, 0.1) },
+  'vsOpen.BTN.CO': { value: 0.055, call: 0.12, bluff: bluffAfter(0.055, 0.12) },
+  'vsOpen.SB.UTG': { value: 0.035, call: 0.03, bluff: bluffAfter(0.035, 0.03) },
+  'vsOpen.SB.HJ': { value: 0.04, call: 0.035, bluff: bluffAfter(0.04, 0.035) },
+  'vsOpen.SB.CO': { value: 0.05, call: 0.04, bluff: bluffAfter(0.05, 0.04) },
+  'vsOpen.SB.BTN': { value: 0.07, call: 0.05, bluff: bluffAfter(0.07, 0.05) },
+  'vsOpen.BB.UTG': { value: 0.035, call: 0.22, bluff: bluffAfter(0.035, 0.22, 0.25) },
+  'vsOpen.BB.HJ': { value: 0.04, call: 0.25, bluff: bluffAfter(0.04, 0.25, 0.25) },
+  'vsOpen.BB.CO': { value: 0.05, call: 0.3, bluff: bluffAfter(0.05, 0.3, 0.25) },
+  'vsOpen.BB.BTN': { value: 0.07, call: 0.36, bluff: bluffAfter(0.07, 0.36, 0.25) },
+  'vsOpen.BB.SB': { value: 0.09, call: 0.4, bluff: bluffAfter(0.09, 0.4, 0.25) },
+
+  'squeeze.CO': { value: 0.03, call: 0.03, bluff: bluffAfter(0.03, 0.03, 0.2) },
+  'squeeze.BTN': { value: 0.035, call: 0.05, bluff: bluffAfter(0.035, 0.05, 0.2) },
+  'squeeze.SB': { value: 0.04, call: 0.02, bluff: bluffAfter(0.04, 0.02, 0.2) },
+  'squeeze.BB': { value: 0.04, call: 0.15, bluff: bluffAfter(0.04, 0.15, 0.2) },
+
+  'vs3bet.UTG.ip': { value: 0.025, call: 0.045, bluff: bluffAfter(0.025, 0.045, 0.2, 0.04) },
+  'vs3bet.UTG.oop': { value: 0.025, call: 0.035, bluff: bluffAfter(0.025, 0.035, 0.2, 0.04) },
+  'vs3bet.HJ.ip': { value: 0.025, call: 0.05, bluff: bluffAfter(0.025, 0.05, 0.2, 0.04) },
+  'vs3bet.HJ.oop': { value: 0.025, call: 0.04, bluff: bluffAfter(0.025, 0.04, 0.2, 0.04) },
+  'vs3bet.CO.ip': { value: 0.03, call: 0.06, bluff: bluffAfter(0.03, 0.06, 0.2, 0.05) },
+  'vs3bet.CO.oop': { value: 0.03, call: 0.045, bluff: bluffAfter(0.03, 0.045, 0.2, 0.05) },
+  'vs3bet.BTN.ip': { value: 0.035, call: 0.08, bluff: bluffAfter(0.035, 0.08, 0.2, 0.06) },
+  'vs3bet.SB.oop': { value: 0.035, call: 0.06, bluff: bluffAfter(0.035, 0.06, 0.2, 0.05) },
+
+  'vs4bet.ip': { value: 0.015, call: 0.02 },
+  'vs4bet.oop': { value: 0.015, call: 0.012 },
+
+  'vsLimp.HJ': { value: 0.1, call: 0.02 },
+  'vsLimp.CO': { value: 0.14, call: 0.03 },
+  'vsLimp.BTN': { value: 0.2, call: 0.05 },
+  'vsLimp.SB': { value: 0.16, call: 0.1 },
+  'vsLimp.BB': { value: 0.12 },
+};
+
+/** @returns {{ version:string, order:number[], charts:Record<string,{raise:string, call:string}> }} */
+export function buildCharts(table) {
+  const { order, rankPct } = strengthOrder(table);
+  const charts = {};
+  for (const [key, spec] of Object.entries(CHART_SPECS)) charts[key] = buildChart(spec, rankPct);
+  return { version: 'charts-v1', order, charts };
+}
+```
+
+- [ ] **Step 4: Replace the generator script so it also writes charts**
+
+```js
+// scripts/poker/gen-preflop.js
+// Regenerates src/private/trainers/poker/data/preflop/equity169.json and charts-v1.json.
+// Usage: node scripts/poker/gen-preflop.js [--samples 10000] [--seed 20260916] [--charts-only]
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { parseArgs } from 'node:util';
+import { mulberry32 } from '../../src/private/trainers/core/rng.js';
+import { computeEquityTable, encodeEquityTable } from './lib/equityTable.js';
+import { buildCharts } from './lib/chartGen.js';
+
+const DIR = 'src/private/trainers/poker/data/preflop';
+const { values } = parseArgs({
+  options: {
+    samples: { type: 'string', default: '10000' },
+    seed: { type: 'string', default: '20260916' },
+    'charts-only': { type: 'boolean', default: false },
+  },
+});
+
+mkdirSync(DIR, { recursive: true });
+const equityPath = `${DIR}/equity169.json`;
+let table;
+if (values['charts-only']) {
+  const { decodeEquityTable } = await import('../../src/private/trainers/poker/bots/preflopEquity.js');
+  table = decodeEquityTable(JSON.parse(readFileSync(equityPath, 'utf8')).table);
+} else {
+  const samples = Number(values.samples);
+  const started = Date.now();
+  table = computeEquityTable({
+    samples,
+    rng: mulberry32(Number(values.seed)),
+    onProgress: (row) => {
+      if (row % 13 === 0) console.log(`equity rows ${row}/169 (${Math.round((Date.now() - started) / 1000)} s)`);
+    },
+  });
+  const json = { version: 1, samples, seed: Number(values.seed), table: encodeEquityTable(table) };
+  writeFileSync(equityPath, `${JSON.stringify(json)}\n`);
+  console.log(`wrote ${equityPath}`);
+}
+const charts = buildCharts(table);
+writeFileSync(`${DIR}/charts-v1.json`, `${JSON.stringify(charts, null, 1)}\n`);
+console.log(`wrote ${DIR}/charts-v1.json (${Object.keys(charts.charts).length} charts)`);
+```
+
+- [ ] **Step 5: Generate the charts from the committed equity table**
+
+Run: `npm run poker:gen-preflop -- --charts-only`
+Expected: `wrote src/private/trainers/poker/data/preflop/charts-v1.json (39 charts)` in about 1 s.
+
+Sanity check: run `node -e "import('./src/private/trainers/poker/bots/charts.js').then(async (c) => { const { className } = await import('./src/private/trainers/poker/bots/handClass.js'); console.log(c.STRENGTH_ORDER.slice(0, 20).map(className).join(' ')); })"`
+Expected: a list starting `AA KK QQ JJ AKs TT AQs AKo AJs 99`.
+
+- [ ] **Step 6: Write the chart lookup**
+
+```js
+// src/private/trainers/poker/bots/charts.js
+// Preflop chart lookup. Charts are generated by scripts/poker/gen-preflop.js into data/preflop/charts-v1.json.
+import data from '../data/preflop/charts-v1.json' with { type: 'json' };
+import { CLASS_COUNT, combosIn, kindOf } from './handClass.js';
+
+export const CHART_VERSION = data.version;
+
+/** Classes strongest first. */
+export const STRENGTH_ORDER = Object.freeze(data.order.slice());
+
+/** RANK_PCT[cls] = share of combos stronger than the middle of `cls` (0 = strongest). */
+export const RANK_PCT = new Float64Array(CLASS_COUNT);
+{
+  let before = 0;
+  for (const cls of STRENGTH_ORDER) {
+    RANK_PCT[cls] = (before + combosIn(cls) / 2) / 1326;
+    before += combosIn(cls);
+  }
+}
+
+// Classes of one kind (pair/suited/offsuit) sorted strongest first, for width scaling.
+const BY_KIND = { pair: [], suited: [], offsuit: [] };
+for (const cls of STRENGTH_ORDER) BY_KIND[kindOf(cls)].push(cls);
+
+const digit = (ch) => (ch === 'X' ? 1 : Number(ch) / 10);
+
+export const hasChart = (key) => Object.hasOwn(data.charts, key);
+
+export const chartKeys = () => Object.keys(data.charts);
+
+/** @returns {{ raise:number, call:number }} base frequencies in [0, 1]; fold = 1 - raise - call */
+export function chartFreqs(key, cls) {
+  const chart = data.charts[key];
+  if (!chart) throw new Error(`Unknown chart: ${key}`);
+  return { raise: digit(chart.raise[cls]), call: digit(chart.call[cls]) };
+}
+
+// The class of the same kind whose strength percentile is closest to `pct`.
+function nearestOfKind(cls, pct) {
+  const list = BY_KIND[kindOf(cls)];
+  let best = list[0];
+  for (const other of list) {
+    if (Math.abs(RANK_PCT[other] - pct) < Math.abs(RANK_PCT[best] - pct)) best = other;
+  }
+  return best;
+}
+
+/**
+ * Chart frequencies with the raise and call ranges widened (mul > 1) or tightened (mul < 1).
+ * A hand at strength percentile p plays like the hand of the same kind at p / mul.
+ */
+export function scaledFreqs(key, cls, raiseMul = 1, callMul = 1) {
+  const raiseFrom = raiseMul === 1 ? cls : nearestOfKind(cls, RANK_PCT[cls] / raiseMul);
+  const callFrom = callMul === 1 ? cls : nearestOfKind(cls, RANK_PCT[cls] / callMul);
+  const raise = chartFreqs(key, raiseFrom).raise;
+  const call = Math.min(chartFreqs(key, callFrom).call, 1 - raise);
+  return { raise, call };
+}
+
+/** 169 class weights: 1 for the strongest `share` of combos, 0 otherwise. */
+export function topShareWeights(share) {
+  const out = new Float32Array(CLASS_COUNT);
+  for (let cls = 0; cls < CLASS_COUNT; cls += 1) out[cls] = RANK_PCT[cls] <= share ? 1 : 0;
+  return out;
+}
+```
+
+- [ ] **Step 7: Run the tests to verify they pass**
+
+Run: `npx vitest run src/private/trainers/poker/bots/charts.test.js src/private/trainers/poker/bots/preflopEquity.test.js`
+Expected: PASS (10 tests).
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add scripts/poker/lib/chartGen.js scripts/poker/gen-preflop.js src/private/trainers/poker/data/preflop/charts-v1.json src/private/trainers/poker/bots/charts.js src/private/trainers/poker/bots/charts.test.js
+git commit -m "Add self-generated 6-max preflop charts with width scaling
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 5: Profile stats (the one definition)
+
+**Files:**
+- Create: `src/private/trainers/poker/bots/testHands.js`
+- Create: `src/private/trainers/poker/bots/profileStats.js`
+- Test: `src/private/trainers/poker/bots/profileStats.test.js`
+
+**Interfaces:**
+- Consumes: `applyEvent`, `legalActions`, `reduceHand` (engine); `viewFor`, `eventsFor` (`engine/view.js`); `PROFILE_STATS`, `emptyProfile` (`bots/contract.js`).
+- Produces:
+  - `accumulateProfile(profile, heroSeat, events) → PlayerProfile` (pure; returns the same object for incomplete logs or an undealt hero), `handObservations(events, heroSeat) → { stat, hit }[] | null`.
+  - Test helpers `HOLES6`, `buildLog(steps, { holes, stack, button }) → events`, `contextAfter(steps, options) → { state, events, legal, seat, view, seatEvents }`. Steps: `'r 2 5'` raise to 5, `'b 2 6'` bet 6, `'c 1'` call, `'k 1'` check, `'f 3'` fold, `'B Kh8d4s'` board. Default table: 6 seats, 200 units, button 5 (SB 0, BB 1, UTG 2, HJ 3, CO 4, BTN 5) with holes SB 2c3d, BB 7h2s, UTG AhAs, HJ KdQd, CO JcTc, BTN 9s9h.
+
+Stat definitions. A "decision" is a hero `act` event, judged on the state just before it. Preflop raise counts exclude blinds. Each stat is counted at most once per hand unless noted.
+
+| Stat | Opportunity | Hit |
+|---|---|---|
+| `vpip` | Hero made at least one preflop decision | Hero called or raised preflop |
+| `pfr` | Same as `vpip` | Hero raised preflop |
+| `threeBet` | First hero preflop decision facing exactly one raise, made by someone else | Raised |
+| `foldTo3Bet` | First hero preflop decision facing exactly two raises, where hero made the first | Folded |
+| `cbetFlop` | First hero flop decision with no flop bet yet, when hero made the last preflop raise | Bet |
+| `cbetTurn` | First hero turn decision with no turn bet yet, when hero's flop c-bet opportunity was a bet and hero made the last flop bet or raise | Bet |
+| `foldToCbetFlop` | First hero flop decision facing exactly one flop bet, made by the last preflop raiser (not hero) | Folded |
+| `foldToCbetTurn` | First hero turn decision facing exactly one turn bet, by the player who made the last preflop raise and the first flop bet (not hero) | Folded |
+| `checkRaise` | Per postflop street: first hero decision after hero checked on that street, facing a bet, with a raise allowed | Raised |
+| `wtsd` | Hero had not folded when the flop was dealt | Showdown with hero not folded |
+| `wsd` | Showdown with hero not folded | Hero was awarded chips |
+| `aggFreq` | Every hero postflop decision | Bet or raised |
+| `foldToRiverBet` | First hero river decision facing a bet | Folded |
+| `riverBetFreq` | First hero river decision with no river bet yet | Bet |
+
+- [ ] **Step 1: Write the test helper** (used by this and later tests)
+
+```js
+// src/private/trainers/poker/bots/testHands.js
+// Test helper (imported only by *.test.js): builds hand logs from short step strings.
+import { parseCards } from '../engine/cards.js';
+import { reduceHand, legalActions } from '../engine/handState.js';
+import { viewFor, eventsFor } from '../engine/view.js';
+
+export const HOLES6 = ['2c3d', '7h2s', 'AhAs', 'KdQd', 'JcTc', '9s9h'];
+
+/**
+ * Six players (or holes.length players) with `stack` units each, button on the last seat.
+ * Steps: 'r 2 5' raise to 5, 'b 2 6' bet 6, 'c 1' call, 'k 1' check, 'f 3' fold, 'B Kh8d4s' board cards.
+ * Throws if the log is illegal.
+ */
+export function buildLog(steps, { holes = HOLES6, stack = 200, button = holes.length - 1 } = {}) {
+  const events = [{ type: 'start', button, sb: 1, bb: 2, seats: holes.map((_, seat) => ({ seat, stack })) }];
+  holes.forEach((h, seat) => events.push({ type: 'hole', seat, cards: parseCards(h) }));
+  for (const step of steps) {
+    const [kind, a, b] = step.split(' ');
+    if (kind === 'B') {
+      events.push({ type: 'board', cards: parseCards(a) });
+      continue;
+    }
+    const action = { r: 'raise', b: 'bet', c: 'call', k: 'check', f: 'fold' }[kind];
+    if (!action) throw new Error(`Bad step: ${step}`);
+    const event = { type: 'act', seat: Number(a), action };
+    if (b !== undefined) event.amount = Number(b);
+    events.push(event);
+  }
+  reduceHand(events);
+  return events;
+}
+
+/** The BotContext pieces for whoever is to act after `steps`. */
+export function contextAfter(steps, options = {}) {
+  const events = buildLog(steps, options);
+  const state = reduceHand(events);
+  const legal = legalActions(state);
+  if (!legal) throw new Error('nobody to act');
+  return { state, events, legal, seat: legal.seat, view: viewFor(state, legal.seat), seatEvents: eventsFor(events, legal.seat) };
+}
+```
+
+- [ ] **Step 2: Write the failing test**
+
+```js
+// src/private/trainers/poker/bots/profileStats.test.js
+import { describe, it, expect } from 'vitest';
+import { emptyProfile, PROFILE_STATS } from './contract.js';
+import { accumulateProfile, handObservations } from './profileStats.js';
+import { buildLog } from './testHands.js';
+
+// Six players with 200 units, button 5: SB 0, BB 1, UTG 2, HJ 3, CO 4, BTN 5. Holes: SB 2c3d, BB 7h2s, UTG AhAs, HJ KdQd, CO JcTc, BTN 9s9h.
+const log = (steps) => buildLog(steps);
+
+const statsAfter = (events, hero) => accumulateProfile(emptyProfile(), hero, events).stats;
+
+describe('accumulateProfile', () => {
+  it('open then fold to a 3-bet', () => {
+    const events = log(['f 2', 'f 3', 'r 4 5', 'r 5 15', 'f 0', 'f 1', 'f 4']);
+    const s = statsAfter(events, 4);
+    expect(s.vpip).toEqual({ value: 1, n: 1 });
+    expect(s.pfr).toEqual({ value: 1, n: 1 });
+    expect(s.threeBet).toEqual({ value: null, n: 0 });
+    expect(s.foldTo3Bet).toEqual({ value: 1, n: 1 });
+    expect(s.wtsd).toEqual({ value: null, n: 0 });
+    expect(s.aggFreq).toEqual({ value: null, n: 0 });
+    // the 3-bettor
+    const b = statsAfter(events, 5);
+    expect(b.threeBet).toEqual({ value: 1, n: 1 });
+    expect(b.foldTo3Bet.n).toBe(0);
+  });
+
+  it('3-bet, c-bet flop, barrel turn, call a raise, fold the river', () => {
+    const events = log([
+      'r 2 5', 'f 3', 'f 4', 'r 5 15', 'f 0', 'f 1', 'c 2',
+      'B Kh8d4s', 'k 2', 'b 5 20', 'c 2',
+      'B 6c', 'k 2', 'b 5 40', 'r 2 100', 'c 5',
+      'B 3h', 'b 2 50', 'f 5',
+    ]);
+    const s = statsAfter(events, 5);
+    expect(s.threeBet).toEqual({ value: 1, n: 1 });
+    expect(s.cbetFlop).toEqual({ value: 1, n: 1 });
+    expect(s.cbetTurn).toEqual({ value: 1, n: 1 });
+    expect(s.foldToRiverBet).toEqual({ value: 1, n: 1 });
+    expect(s.riverBetFreq.n).toBe(0);
+    expect(s.aggFreq).toEqual({ value: 0.5, n: 4 });
+    expect(s.wtsd).toEqual({ value: 0, n: 1 });
+    expect(s.wsd.n).toBe(0);
+    // the opener faced the 3-bet, checked and called the c-bet, then check-raised the turn
+    const o = statsAfter(events, 2);
+    expect(o.foldTo3Bet).toEqual({ value: 0, n: 1 });
+    expect(o.foldToCbetFlop).toEqual({ value: 0, n: 1 }); // the flop bettor made the last preflop raise
+    expect(o.foldToCbetTurn).toEqual({ value: 0, n: 1 });
+    expect(o.checkRaise).toEqual({ value: 0.5, n: 2 });
+    expect(o.riverBetFreq).toEqual({ value: 1, n: 1 });
+  });
+
+  it('defend the big blind and check-raise a c-bet', () => {
+    const events = log(['f 2', 'f 3', 'f 4', 'r 5 5', 'f 0', 'c 1', 'B Kh8d4s', 'k 1', 'b 5 6', 'r 1 20', 'f 5']);
+    const s = statsAfter(events, 1);
+    expect(s.vpip).toEqual({ value: 1, n: 1 });
+    expect(s.pfr).toEqual({ value: 0, n: 1 });
+    expect(s.threeBet).toEqual({ value: 0, n: 1 });
+    expect(s.foldToCbetFlop).toEqual({ value: 0, n: 1 });
+    expect(s.checkRaise).toEqual({ value: 1, n: 1 });
+    expect(s.aggFreq).toEqual({ value: 0.5, n: 2 });
+    expect(s.wtsd).toEqual({ value: 0, n: 1 });
+    const btn = statsAfter(events, 5);
+    expect(btn.cbetFlop).toEqual({ value: 1, n: 1 });
+    expect(btn.foldToCbetFlop.n).toBe(0);
+  });
+
+  it('miss the c-bet, call the turn, bet the river and win at showdown', () => {
+    const events = log([
+      'r 2 5', 'f 3', 'f 4', 'f 5', 'f 0', 'c 1',
+      'B Kh8d4s', 'k 1', 'k 2',
+      'B 6c', 'b 1 6', 'c 2',
+      'B 3h', 'k 1', 'b 2 10', 'c 1',
+    ]);
+    const s = statsAfter(events, 2);
+    expect(s.cbetFlop).toEqual({ value: 0, n: 1 });
+    expect(s.cbetTurn.n).toBe(0);
+    expect(s.foldToCbetTurn.n).toBe(0); // the turn bettor was not the preflop raiser
+    expect(s.foldToRiverBet.n).toBe(0);
+    expect(s.riverBetFreq).toEqual({ value: 1, n: 1 });
+    expect(s.wtsd).toEqual({ value: 1, n: 1 });
+    expect(s.wsd).toEqual({ value: 1, n: 1 }); // AA beats 72
+    const bb = statsAfter(events, 1);
+    expect(bb.wsd).toEqual({ value: 0, n: 1 });
+    expect(bb.checkRaise).toEqual({ value: 0, n: 1 }); // checked the river, then called
+  });
+
+  it('counts fold to a turn c-bet after calling the flop c-bet', () => {
+    const events = log([
+      'r 2 5', 'f 3', 'f 4', 'c 5', 'f 0', 'f 1',
+      'B Kh8d4s', 'b 2 8', 'c 5',
+      'B 6c', 'b 2 20', 'f 5',
+    ]);
+    const s = statsAfter(events, 5);
+    expect(s.vpip).toEqual({ value: 1, n: 1 });
+    expect(s.threeBet).toEqual({ value: 0, n: 1 });
+    expect(s.foldToCbetFlop).toEqual({ value: 0, n: 1 });
+    expect(s.foldToCbetTurn).toEqual({ value: 1, n: 1 });
+    expect(statsAfter(events, 2).cbetTurn).toEqual({ value: 1, n: 1 });
+  });
+
+  it('a walk counts the hand but no preflop opportunity', () => {
+    const events = log(['f 2', 'f 3', 'f 4', 'f 5', 'f 0']);
+    const p = accumulateProfile(emptyProfile(), 1, events);
+    expect(p.hands).toBe(1);
+    expect(p.stats.vpip.n).toBe(0);
+  });
+
+  it('keeps running means across hands and never mutates the input', () => {
+    const fold = log(['f 2', 'f 3', 'f 4', 'f 5', 'f 0']);
+    const open = log(['r 2 5', 'f 3', 'f 4', 'f 5', 'f 0', 'f 1']);
+    const limpFold = log(['f 2', 'f 3', 'f 4', 'f 5', 'c 0', 'r 1 6', 'f 0']);
+    const start = emptyProfile();
+    const before = JSON.stringify(start);
+    let p = accumulateProfile(start, 2, open);
+    p = accumulateProfile(p, 2, limpFold); // UTG folded preflop: vpip 0
+    p = accumulateProfile(p, 2, fold);
+    expect(p.hands).toBe(3);
+    expect(p.stats.vpip.n).toBe(3);
+    expect(p.stats.vpip.value).toBeCloseTo(1 / 3, 10);
+    expect(JSON.stringify(start)).toBe(before);
+    expect(Object.keys(p.stats).sort()).toEqual([...PROFILE_STATS].sort());
+  });
+
+  it('ignores incomplete hands and seats that were not dealt in', () => {
+    const events = log(['r 2 5', 'f 3']);
+    const p = emptyProfile();
+    expect(accumulateProfile(p, 2, events)).toBe(p);
+    const full = log(['r 2 5', 'f 3', 'f 4', 'f 5', 'f 0', 'f 1']);
+    expect(handObservations(full, 7)).toBeNull();
+  });
+});
+```
+
+- [ ] **Step 3: Run the test to verify it fails**
+
+Run: `npx vitest run src/private/trainers/poker/bots/profileStats.test.js`
+Expected: FAIL, with a module-not-found error for `./profileStats.js`.
+
+- [ ] **Step 4: Write the implementation**
+
+```js
+// src/private/trainers/poker/bots/profileStats.js
+// The one definition of every PROFILE_STATS stat. Phase 4's GET profile imports this module.
+//
+// accumulateProfile(profile, heroSeat, events) folds ONE completed hand into a profile. `events` must be
+// the full log (every hole card) of a hand that reached street 'complete'; anything else, or a log in
+// which heroSeat was not dealt in, returns the profile unchanged. Each stat is a running mean of 0/1
+// observations; `n` counts opportunities. "Decision" means an `act` event by the hero, judged on the
+// state just before it. Preflop raise counts exclude the blinds.
+//
+// Stat            | Opportunity (at most once per hand unless noted)                        | Hit
+// vpip            | hero made at least one preflop decision                                  | hero called or raised preflop
+// pfr             | same as vpip                                                             | hero raised preflop
+// threeBet        | first hero preflop decision facing exactly one raise, made by someone else | hero raised
+// foldTo3Bet      | first hero preflop decision facing exactly two raises where hero made the first | hero folded
+// cbetFlop        | first hero flop decision with no flop bet yet, hero made the last preflop raise | hero bet
+// cbetTurn        | first hero turn decision with no turn bet yet, hero's flop c-bet opportunity was a bet and hero made the last flop bet or raise | hero bet
+// foldToCbetFlop  | first hero flop decision facing exactly one flop bet, made by the last preflop raiser (not hero) | hero folded
+// foldToCbetTurn  | first hero turn decision facing exactly one turn bet, made by the player who made the last preflop raise and the first flop bet (not hero) | hero folded
+// checkRaise      | per postflop street: first hero decision after hero checked on that street, facing a bet, with a raise allowed | hero raised
+// wtsd            | hero had not folded when the flop was dealt                             | hand went to showdown with hero not folded
+// wsd             | hand went to showdown with hero not folded                              | hero was awarded chips
+// aggFreq         | every hero postflop decision (not once per hand)                         | hero bet or raised
+// foldToRiverBet  | first hero river decision facing a bet (toCall > 0)                      | hero folded
+// riverBetFreq    | first hero river decision with no river bet yet                          | hero bet
+import { applyEvent, legalActions } from '../engine/handState.js';
+import { PROFILE_STATS } from './contract.js';
+
+const isAggressive = (action) => action === 'bet' || action === 'raise';
+
+/** @returns {{ stat:string, hit:0|1 }[] | null} observations for one hand, or null if the hand does not count */
+export function handObservations(events, heroSeat) {
+  const start = events[0];
+  if (!start || start.type !== 'start' || !start.seats.some((s) => s.seat === heroSeat)) return null;
+
+  const obs = [];
+  const seen = new Set();
+  const observe = (stat, hit, once = true) => {
+    if (once && seen.has(stat)) return;
+    seen.add(stat);
+    obs.push({ stat, hit: hit ? 1 : 0 });
+  };
+
+  let state = null;
+  let preflopActed = false;
+  let vpip = false;
+  let pfr = false;
+  const pfRaisers = [];
+  const streetBets = { preflop: 0, flop: 0, turn: 0, river: 0 };
+  const firstBettor = {};
+  const lastAggressor = {};
+  const heroChecked = {};
+  let heroFoldedBeforeFlop = null;
+  let flopCbetWasBet = false;
+
+  for (const event of events) {
+    if (event.type === 'board' && state.street === 'flop' && heroFoldedBeforeFlop === null) {
+      heroFoldedBeforeFlop = state.players.find((p) => p.seat === heroSeat).folded;
+    }
+    if (event.type === 'act' && event.seat === heroSeat) {
+      const legal = legalActions(state);
+      const street = state.street;
+      const { action } = event;
+      const bets = streetBets[street];
+      if (street === 'preflop') {
+        preflopActed = true;
+        if (action === 'call' || action === 'raise') vpip = true;
+        if (action === 'raise') pfr = true;
+        if (pfRaisers.length === 1 && pfRaisers[0] !== heroSeat) observe('threeBet', action === 'raise');
+        if (pfRaisers.length === 2 && pfRaisers[0] === heroSeat && pfRaisers[1] !== heroSeat) {
+          observe('foldTo3Bet', action === 'fold');
+        }
+      } else {
+        observe('aggFreq', isAggressive(action), false);
+        const pfAggressor = pfRaisers[pfRaisers.length - 1];
+        if (street === 'flop') {
+          if (bets === 0 && pfAggressor === heroSeat && !seen.has('cbetFlop')) {
+            flopCbetWasBet = action === 'bet';
+            observe('cbetFlop', action === 'bet');
+          }
+          if (bets === 1 && firstBettor.flop === pfAggressor && pfAggressor !== heroSeat) {
+            observe('foldToCbetFlop', action === 'fold');
+          }
+        }
+        if (street === 'turn') {
+          if (bets === 0 && flopCbetWasBet && lastAggressor.flop === heroSeat) observe('cbetTurn', action === 'bet');
+          if (bets === 1 && pfAggressor !== heroSeat && firstBettor.turn === pfAggressor && firstBettor.flop === pfAggressor) {
+            observe('foldToCbetTurn', action === 'fold');
+          }
+        }
+        if (street === 'river') {
+          if (legal.toCall > 0) observe('foldToRiverBet', action === 'fold');
+          if (bets === 0) observe('riverBetFreq', action === 'bet');
+        }
+        const crKey = `checkRaise.${street}`;
+        if (heroChecked[street] && bets > 0 && legal.canRaise && !seen.has(crKey)) {
+          seen.add(crKey);
+          obs.push({ stat: 'checkRaise', hit: action === 'raise' ? 1 : 0 });
+        }
+        if (action === 'check') heroChecked[street] = true;
+      }
+    }
+    if (event.type === 'act') {
+      const street = state.street;
+      if (isAggressive(event.action)) {
+        streetBets[street] += 1;
+        if (firstBettor[street] === undefined) firstBettor[street] = event.seat;
+        lastAggressor[street] = event.seat;
+        if (street === 'preflop') pfRaisers.push(event.seat);
+      }
+    }
+    state = applyEvent(state, event);
+  }
+
+  if (!state || state.street !== 'complete') return null;
+  if (preflopActed) {
+    obs.push({ stat: 'vpip', hit: vpip ? 1 : 0 });
+    obs.push({ stat: 'pfr', hit: pfr ? 1 : 0 });
+  }
+  const hero = state.players.find((p) => p.seat === heroSeat);
+  const sawFlop = heroFoldedBeforeFlop === false;
+  const wentToShowdown = state.result.showdown && !hero.folded;
+  if (sawFlop) obs.push({ stat: 'wtsd', hit: wentToShowdown ? 1 : 0 });
+  if (wentToShowdown) obs.push({ stat: 'wsd', hit: (state.result.awards[heroSeat] ?? 0) > 0 ? 1 : 0 });
+  return obs;
+}
+
+/**
+ * Folds one completed hand into `profile` without mutating it.
+ * @param {import('./contract.js').PlayerProfile} profile
+ * @param {number} heroSeat
+ * @param {object[]} events full event log of one completed hand
+ * @returns {import('./contract.js').PlayerProfile}
+ */
+export function accumulateProfile(profile, heroSeat, events) {
+  const obs = handObservations(events, heroSeat);
+  if (!obs) return profile;
+  const stats = {};
+  for (const key of PROFILE_STATS) stats[key] = { ...(profile.stats[key] ?? { value: null, n: 0 }) };
+  for (const { stat, hit } of obs) {
+    const s = stats[stat];
+    s.value = s.n === 0 ? hit : (s.value * s.n + hit) / (s.n + 1);
+    s.n += 1;
+  }
+  return { hands: profile.hands + 1, stats };
+}
+```
+
+- [ ] **Step 5: Run the test to verify it passes**
+
+Run: `npx vitest run src/private/trainers/poker/bots/profileStats.test.js`
+Expected: PASS (8 tests).
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/private/trainers/poker/bots/testHands.js src/private/trainers/poker/bots/profileStats.js src/private/trainers/poker/bots/profileStats.test.js
+git commit -m "Add accumulateProfile with exact definitions for all 14 profile stats
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 6: Situation and texture
+
+**Files:**
+- Create: `src/private/trainers/poker/bots/situation.js`
+- Create: `src/private/trainers/poker/bots/texture.js`
+- Test: `src/private/trainers/poker/bots/situation.test.js`
+- Test: `src/private/trainers/poker/bots/texture.test.js`
+
+**Interfaces:**
+- Consumes: `seatsFromButton` (engine), `evaluate`/`CATEGORY`, `hasChart` (Task 4), Task 1 combos, `contextAfter` (Task 5).
+- Produces:
+  - `positionsOf(view) → Record<seat, 'UTG'|'HJ'|'CO'|'BTN'|'SB'|'BB'>` (heads-up: the button is `SB`).
+  - `actsByStreet(events) → { preflop, flop, turn, river }` (act events).
+  - `preflopSpot(view, preflopActs, seat) → { kind:'open'|'vsLimp'|'vsOpen'|'squeeze'|'vs3bet'|'vs4bet', position, raiser, raiserPosition, raises, limpers, callers, ip }`.
+  - `chartKeyFor(spot, hasChart) → string` (with fallbacks; throws `No chart for …`).
+  - `postflopContext(view, events, seat, legal) → { street, pot, toCall, stack, nOpp, ip, aggressor, betsThisStreet, spr, pfAggressor }`.
+  - `boardTexture(board) → { paired, monotone, twoTone, maxSuit, straightWindows, wetness, highRank }`, `handFeatures(hole, board) → { category, flushDraw, straightDraw:'oesd'|'gutshot'|null }`, `comboDraws(board) → Uint8Array(1326)`.
+
+- [ ] **Step 1: Write the failing tests**
+
+```js
+// src/private/trainers/poker/bots/situation.test.js
+import { describe, it, expect } from 'vitest';
+import { applyEvent } from '../engine/handState.js';
+import { hasChart } from './charts.js';
+import { positionsOf, actsByStreet, preflopSpot, chartKeyFor, postflopContext } from './situation.js';
+import { contextAfter } from './testHands.js';
+
+const spotFor = (steps) => {
+  const c = contextAfter(steps);
+  return preflopSpot(c.view, actsByStreet(c.seatEvents).preflop, c.seat);
+};
+
+describe('positionsOf', () => {
+  it('labels 6, 4 and 2 handed tables', () => {
+    const six = applyEvent(null, { type: 'start', button: 5, sb: 1, bb: 2, seats: [0, 1, 2, 3, 4, 5].map((seat) => ({ seat, stack: 200 })) });
+    expect(positionsOf(six)).toEqual({ 0: 'SB', 1: 'BB', 2: 'UTG', 3: 'HJ', 4: 'CO', 5: 'BTN' });
+    const four = applyEvent(null, { type: 'start', button: 1, sb: 1, bb: 2, seats: [1, 2, 4, 5].map((seat) => ({ seat, stack: 200 })) });
+    expect(positionsOf(four)).toEqual({ 2: 'SB', 4: 'BB', 5: 'CO', 1: 'BTN' });
+    const two = applyEvent(null, { type: 'start', button: 3, sb: 1, bb: 2, seats: [0, 3].map((seat) => ({ seat, stack: 200 })) });
+    expect(positionsOf(two)).toEqual({ 3: 'SB', 0: 'BB' });
+  });
+});
+
+describe('preflopSpot and chartKeyFor', () => {
+  it('first in is an open', () => {
+    const spot = spotFor([]);
+    expect(spot).toMatchObject({ kind: 'open', position: 'UTG', raises: 0 });
+    expect(chartKeyFor(spot, hasChart)).toBe('open.UTG');
+  });
+
+  it('facing a single raise is vsOpen, with a caller it is a squeeze', () => {
+    const vsOpen = spotFor(['r 2 5', 'f 3']);
+    expect(vsOpen).toMatchObject({ kind: 'vsOpen', position: 'CO', raiserPosition: 'UTG', ip: true });
+    expect(chartKeyFor(vsOpen, hasChart)).toBe('vsOpen.CO.UTG');
+    const squeeze = spotFor(['r 2 5', 'c 3', 'f 4']);
+    expect(squeeze).toMatchObject({ kind: 'squeeze', position: 'BTN', callers: 1 });
+    expect(chartKeyFor(squeeze, hasChart)).toBe('squeeze.BTN');
+  });
+
+  it('the opener facing a 3-bet is vs3bet with position relative to the 3-bettor', () => {
+    const oop = spotFor(['r 2 5', 'f 3', 'f 4', 'r 5 15', 'f 0', 'f 1']);
+    expect(oop).toMatchObject({ kind: 'vs3bet', position: 'UTG', ip: false });
+    expect(chartKeyFor(oop, hasChart)).toBe('vs3bet.UTG.oop');
+    const ip = spotFor(['f 2', 'f 3', 'r 4 5', 'f 5', 'f 0', 'r 1 18']);
+    expect(ip).toMatchObject({ kind: 'vs3bet', position: 'CO', ip: true });
+    expect(chartKeyFor(ip, hasChart)).toBe('vs3bet.CO.ip');
+  });
+
+  it('a cold 3-bet or any 4-bet is vs4bet', () => {
+    expect(spotFor(['r 2 5', 'r 3 15'])).toMatchObject({ kind: 'vs4bet', position: 'CO' });
+    const fourBet = spotFor(['r 2 5', 'f 3', 'f 4', 'r 5 15', 'f 0', 'f 1', 'r 2 40']);
+    expect(fourBet.kind).toBe('vs4bet');
+    expect(chartKeyFor(fourBet, hasChart)).toBe('vs4bet.ip');
+  });
+
+  it('limps give vsLimp; an unknown vsOpen pairing falls back to a squeeze chart', () => {
+    const limp = spotFor(['c 2', 'f 3']);
+    expect(limp).toMatchObject({ kind: 'vsLimp', limpers: 1, position: 'CO' });
+    expect(chartKeyFor(limp, hasChart)).toBe('vsLimp.CO');
+    const limpRaised = spotFor(['c 2', 'r 3 8', 'f 4', 'f 5', 'f 0', 'f 1']);
+    expect(limpRaised).toMatchObject({ kind: 'vsOpen', position: 'UTG', raiserPosition: 'HJ' });
+    expect(chartKeyFor(limpRaised, hasChart)).toBe('squeeze.CO');
+  });
+});
+
+describe('postflopContext', () => {
+  it('reads pot, opponents, position, aggressor and SPR on the flop', () => {
+    const c = contextAfter(['r 2 5', 'f 3', 'f 4', 'c 5', 'f 0', 'c 1', 'B Kh8d4s', 'k 1']);
+    expect(c.seat).toBe(2);
+    const ctx = postflopContext(c.view, c.seatEvents, c.seat, c.legal);
+    expect(ctx).toMatchObject({ street: 'flop', pot: 16, toCall: 0, stack: 195, nOpp: 2, ip: false, aggressor: true, betsThisStreet: 0, pfAggressor: 2 });
+    expect(ctx.spr).toBeCloseTo(195 / 16, 10);
+  });
+
+  it('the button facing a bet is in position and not the aggressor', () => {
+    const c = contextAfter(['r 2 5', 'f 3', 'f 4', 'c 5', 'f 0', 'f 1', 'B Kh8d4s', 'b 2 8']);
+    const ctx = postflopContext(c.view, c.seatEvents, c.seat, c.legal);
+    expect(ctx).toMatchObject({ street: 'flop', pot: 21, toCall: 8, nOpp: 1, ip: true, aggressor: false, betsThisStreet: 1 });
+  });
+});
+```
+
+```js
+// src/private/trainers/poker/bots/texture.test.js
+import { describe, it, expect } from 'vitest';
+import { parseCards } from '../engine/cards.js';
+import { CATEGORY } from '../engine/evaluator.js';
+import { boardTexture, handFeatures } from './texture.js';
+
+describe('boardTexture', () => {
+  it('scores a dry rainbow board low and a connected two-tone board high', () => {
+    const dry = boardTexture(parseCards('Kh7d2c'));
+    expect(dry).toMatchObject({ paired: false, monotone: false, twoTone: false, maxSuit: 1 });
+    expect(dry.wetness).toBeLessThan(0.3);
+    const wet = boardTexture(parseCards('9h8hTc'));
+    expect(wet.twoTone).toBe(true);
+    expect(wet.wetness).toBeGreaterThan(0.7);
+    expect(wet.highRank).toBe(8); // T
+  });
+
+  it('detects paired and monotone boards', () => {
+    expect(boardTexture(parseCards('8s8d3c')).paired).toBe(true);
+    const mono = boardTexture(parseCards('Ks9s4s'));
+    expect(mono.monotone).toBe(true);
+    expect(mono.wetness).toBeGreaterThanOrEqual(0.5);
+  });
+
+  it('counts wheel windows', () => {
+    expect(boardTexture(parseCards('As2d3c')).straightWindows).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('handFeatures', () => {
+  it('finds flush draws and straight draws that use a hole card', () => {
+    expect(handFeatures(parseCards('Ah5h'), parseCards('Kh8h2c'))).toMatchObject({ flushDraw: true, straightDraw: null, category: CATEGORY.HIGH_CARD });
+    expect(handFeatures(parseCards('9c8d'), parseCards('7h6s2c')).straightDraw).toBe('oesd');
+    expect(handFeatures(parseCards('9c8d'), parseCards('6h5s2c')).straightDraw).toBe('gutshot');
+    expect(handFeatures(parseCards('Ad2c'), parseCards('3h4sKc')).straightDraw).toBe('gutshot');
+  });
+
+  it('ignores draws on the board alone, on the river, and once a straight is made', () => {
+    expect(handFeatures(parseCards('2c2d'), parseCards('9h8h7h6h')).flushDraw).toBe(false);
+    expect(handFeatures(parseCards('Ah5h'), parseCards('Kh8h2c3d4s'))).toMatchObject({ flushDraw: false, straightDraw: null });
+    expect(handFeatures(parseCards('9c8d'), parseCards('7h6sTc')).straightDraw).toBeNull();
+    expect(handFeatures(parseCards('9c8d'), parseCards('7h6sTc')).category).toBe(CATEGORY.STRAIGHT);
+  });
+});
+```
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `npx vitest run src/private/trainers/poker/bots/situation.test.js src/private/trainers/poker/bots/texture.test.js`
+Expected: FAIL, with module-not-found errors for `./situation.js` and `./texture.js`.
+
+- [ ] **Step 3: Write `situation.js`**
+
+```js
+// src/private/trainers/poker/bots/situation.js
+// Reads positions and betting context from what a seat may see (view + its events). No hidden cards.
+import { seatsFromButton } from '../engine/handState.js';
+
+const MIDDLE = ['UTG', 'HJ', 'CO'];
+
+/** @returns {Record<number, 'UTG'|'HJ'|'CO'|'BTN'|'SB'|'BB'>} position label per seat */
+export function positionsOf(view) {
+  const order = seatsFromButton(view); // left of the button first, button last
+  const out = {};
+  if (order.length === 2) {
+    out[order[1]] = 'SB'; // heads-up: the button posts the small blind
+    out[order[0]] = 'BB';
+    return out;
+  }
+  out[order[0]] = 'SB';
+  out[order[1]] = 'BB';
+  out[order[order.length - 1]] = 'BTN';
+  const middle = order.slice(2, -1);
+  middle.forEach((seat, i) => {
+    out[seat] = MIDDLE[MIDDLE.length - middle.length + i];
+  });
+  return out;
+}
+
+/** Acts grouped by street, using board events as street boundaries. */
+export function actsByStreet(events) {
+  const streets = { preflop: [], flop: [], turn: [], river: [] };
+  const names = ['preflop', 'flop', 'turn', 'river'];
+  let i = 0;
+  for (const e of events) {
+    if (e.type === 'board') i += 1;
+    else if (e.type === 'act') streets[names[i]].push(e);
+  }
+  return streets;
+}
+
+/** Postflop acting order index: 0 acts first. */
+function postflopOrder(view) {
+  const order = seatsFromButton(view);
+  return Object.fromEntries(order.map((seat, i) => [seat, i]));
+}
+
+/**
+ * Preflop spot for `seat` given the preflop acts so far.
+ * kind: 'open' (no voluntary action yet), 'vsLimp' (limpers, no raise), 'vsOpen' (one raise, no callers after it),
+ * 'squeeze' (one raise with callers), 'vs3bet' (two raises, seat made the first), 'vs4bet' (three or more raises,
+ * or two raises that seat was not part of).
+ * @returns {{ kind:string, position:string, raiser:number|null, raiserPosition:string|null, raises:number,
+ *   limpers:number, callers:number, ip:boolean }} ip: seat acts after the last raiser postflop
+ */
+export function preflopSpot(view, preflopActs, seat) {
+  const positions = positionsOf(view);
+  const raisers = [];
+  let limpers = 0;
+  let callers = 0;
+  for (const a of preflopActs) {
+    if (a.action === 'raise') {
+      raisers.push(a.seat);
+      callers = 0;
+    } else if (a.action === 'call') {
+      if (raisers.length === 0) limpers += 1;
+      else callers += 1;
+    }
+  }
+  const raiser = raisers.length ? raisers[raisers.length - 1] : null;
+  const order = postflopOrder(view);
+  const ip = raiser === null ? false : order[seat] > order[raiser];
+  let kind;
+  if (raisers.length === 0) kind = limpers > 0 ? 'vsLimp' : 'open';
+  else if (raisers.length === 1) kind = callers > 0 ? 'squeeze' : 'vsOpen';
+  else if (raisers.length === 2 && raisers[0] === seat) kind = 'vs3bet';
+  else kind = 'vs4bet';
+  return {
+    kind,
+    position: positions[seat],
+    raiser,
+    raiserPosition: raiser === null ? null : positions[raiser],
+    raises: raisers.length,
+    limpers,
+    callers,
+    ip,
+  };
+}
+
+const FALLBACK = { UTG: 'HJ', HJ: 'CO', CO: 'BTN', BTN: 'SB', SB: 'BB' };
+
+/** Chart key for a preflop spot, falling back to the nearest existing chart. */
+export function chartKeyFor(spot, hasChart) {
+  const { kind, position, raiserPosition, ip } = spot;
+  const candidates = [];
+  if (kind === 'open') candidates.push(`open.${position}`, 'open.UTG');
+  if (kind === 'vsLimp') candidates.push(`vsLimp.${position}`, 'vsLimp.HJ');
+  if (kind === 'vsOpen') {
+    let rp = raiserPosition;
+    while (rp && !hasChart(`vsOpen.${position}.${rp}`)) rp = FALLBACK[rp];
+    if (rp) candidates.push(`vsOpen.${position}.${rp}`);
+    candidates.push(`squeeze.${position}`, 'squeeze.CO');
+  }
+  if (kind === 'squeeze') candidates.push(`squeeze.${position}`, 'squeeze.CO');
+  if (kind === 'vs3bet') candidates.push(`vs3bet.${position}.${ip ? 'ip' : 'oop'}`, `vs3bet.CO.${ip ? 'ip' : 'oop'}`);
+  if (kind === 'vs4bet') candidates.push(`vs4bet.${ip ? 'ip' : 'oop'}`);
+  const key = candidates.find(hasChart);
+  if (!key) throw new Error(`No chart for ${kind} ${position}`);
+  return key;
+}
+
+/**
+ * Betting context for `seat` on the current postflop street.
+ * @returns {{ street:string, pot:number, toCall:number, stack:number, nOpp:number, ip:boolean,
+ *   aggressor:boolean, betsThisStreet:number, spr:number, pfAggressor:number|null }}
+ *   aggressor: seat made the last bet or raise of the previous street (the preflop raise on the flop).
+ */
+export function postflopContext(view, events, seat, legal) {
+  const acts = actsByStreet(events);
+  const me = view.players.find((p) => p.seat === seat);
+  const live = view.players.filter((p) => !p.folded);
+  const order = postflopOrder(view);
+  const canAct = live.filter((p) => !p.allIn || p.seat === seat);
+  const ip = canAct.every((p) => order[p.seat] <= order[seat]);
+  const lastAggressor = (list) => {
+    const agg = list.filter((a) => a.action === 'bet' || a.action === 'raise');
+    return agg.length ? agg[agg.length - 1].seat : null;
+  };
+  const previous = { flop: 'preflop', turn: 'flop', river: 'turn' }[view.street];
+  const pot = view.players.reduce((sum, p) => sum + p.total, 0);
+  return {
+    street: view.street,
+    pot,
+    toCall: legal.toCall,
+    stack: me.stack,
+    nOpp: live.length - 1,
+    ip,
+    aggressor: lastAggressor(acts[previous]) === seat,
+    betsThisStreet: acts[view.street].filter((a) => a.action === 'bet' || a.action === 'raise').length,
+    spr: pot > 0 ? me.stack / pot : Infinity,
+    pfAggressor: lastAggressor(acts.preflop),
+  };
+}
+```
+
+- [ ] **Step 4: Write `texture.js`**
+
+```js
+// src/private/trainers/poker/bots/texture.js
+// Board texture and draw detection.
+import { evaluate } from '../engine/evaluator.js';
+import { COMBO_COUNT, COMBO_CARDS } from './handClass.js';
+
+const WHEEL_ACE = 13; // rank bit 13 stands for an ace playing low
+
+function rankMask(cards) {
+  let mask = 0;
+  for (const c of cards) mask |= 1 << (c >> 2);
+  if (mask & (1 << 12)) mask |= 1 << WHEEL_ACE;
+  return mask;
+}
+
+const bits = (x) => {
+  let n = 0;
+  for (let v = x; v; v &= v - 1) n += 1;
+  return n;
+};
+
+// 5-rank windows, lowest = A2345 (bits 13,0,1,2,3) ... highest = TJQKA.
+const WINDOWS = [(1 << WHEEL_ACE) | 0b1111, ...Array.from({ length: 9 }, (_, i) => 0b11111 << i)];
+
+/**
+ * @param {number[]} board 3-5 cards
+ * @returns {{ paired:boolean, monotone:boolean, twoTone:boolean, maxSuit:number, straightWindows:number, wetness:number, highRank:number }}
+ *   wetness in [0, 1]: how many strong draws and completed draws the board allows.
+ */
+export function boardTexture(board) {
+  const suits = [0, 0, 0, 0];
+  for (const c of board) suits[c & 3] += 1;
+  const maxSuit = Math.max(...suits);
+  const ranks = new Set(board.map((c) => c >> 2));
+  const mask = rankMask(board);
+  const straightWindows = WINDOWS.filter((w) => bits(mask & w) >= 3).length;
+  const flushiness = maxSuit >= 3 ? 1 : maxSuit === 2 && board.length < 5 ? 0.5 : 0;
+  const straightiness = Math.min(1, straightWindows / 3);
+  const paired = ranks.size < board.length;
+  const wetness = Math.max(0, Math.min(1, 0.5 * flushiness + 0.5 * straightiness - (paired ? 0.15 : 0)));
+  return {
+    paired,
+    monotone: maxSuit >= 3 && board.length === 3,
+    twoTone: maxSuit === 2,
+    maxSuit,
+    straightWindows,
+    wetness,
+    highRank: Math.max(...board.map((c) => c >> 2)),
+  };
+}
+
+/**
+ * Draws that use at least one hole card. Returns no draws on the river or once the hand is already a straight or better.
+ * @returns {{ category:number, flushDraw:boolean, straightDraw:'oesd'|'gutshot'|null }}
+ */
+export function handFeatures(hole, board) {
+  const category = evaluate([...hole, ...board]) >> 20;
+  if (board.length >= 5 || category >= 4) return { category, flushDraw: false, straightDraw: null };
+  const suitCount = (cards, suit) => cards.filter((c) => (c & 3) === suit).length;
+  const flushDraw = hole.some((h) => suitCount([...hole, ...board], h & 3) === 4 && suitCount(board, h & 3) < 4);
+  const all = rankMask([...hole, ...board]);
+  const boardOnly = rankMask(board);
+  const drawWindows = WINDOWS.filter((w) => bits(all & w) === 4 && bits(boardOnly & w) < 4);
+  let straightDraw = null;
+  if (drawWindows.length >= 2) straightDraw = 'oesd';
+  else if (drawWindows.length === 1) straightDraw = 'gutshot';
+  return { category, flushDraw, straightDraw };
+}
+
+/**
+ * Uint8Array(1326): 1 when a combo holds a flush draw or an open-ended (or double gutshot) straight draw that uses
+ * its own cards on a flop or turn board. Combos touching the board, made straights and made flushes get 0.
+ */
+export function comboDraws(board) {
+  const out = new Uint8Array(COMBO_COUNT);
+  if (board.length >= 5) return out;
+  const suits = [0, 0, 0, 0];
+  const onBoard = new Uint8Array(52);
+  for (const c of board) {
+    suits[c & 3] += 1;
+    onBoard[c] = 1;
+  }
+  const boardMask = rankMask(board);
+  for (let i = 0; i < COMBO_COUNT; i += 1) {
+    const a = COMBO_CARDS[2 * i];
+    const b = COMBO_CARDS[2 * i + 1];
+    if (onBoard[a] || onBoard[b]) continue;
+    const flushDraw = (a & 3) === (b & 3) ? suits[a & 3] === 2 : suits[a & 3] === 3 || suits[b & 3] === 3;
+    let mask = boardMask | (1 << (a >> 2)) | (1 << (b >> 2));
+    if (mask & (1 << 12)) mask |= 1 << WHEEL_ACE;
+    let draws = 0;
+    let made = false;
+    for (const w of WINDOWS) {
+      const n = bits(mask & w);
+      if (n === 5) made = true;
+      else if (n === 4 && bits(boardMask & w) < 4) draws += 1;
+    }
+    out[i] = flushDraw || (!made && draws >= 2) ? 1 : 0;
+  }
+  return out;
+}
+```
+
+- [ ] **Step 5: Run the tests to verify they pass**
+
+Run: `npx vitest run src/private/trainers/poker/bots/situation.test.js src/private/trainers/poker/bots/texture.test.js`
+Expected: PASS (13 tests).
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/private/trainers/poker/bots/situation.js src/private/trainers/poker/bots/texture.js src/private/trainers/poker/bots/situation.test.js src/private/trainers/poker/bots/texture.test.js
+git commit -m "Add bot position, preflop spot, postflop context and board texture helpers
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 7: Persona dials and exploit adaptation
+
+**Files:**
+- Create: `src/private/trainers/poker/bots/dials.js`
+- Create: `src/private/trainers/poker/bots/adapt.js`
+- Test: `src/private/trainers/poker/bots/dials.test.js`
+
+**Interfaces:**
+- Consumes: `emptyProfile` (contract).
+- Produces:
+  - `DIALS: { key, min, max, def, meaning }[]` (30 dials), `clampDial(key, value)`, `defaultDials()`, `resolveDials(partial?)` (fills defaults, clamps, drops unknown keys), `ARCHETYPES: Record<'tight-aggressive'|'loose-aggressive'|'tight-passive'|'loose-passive', dials>`.
+  - `ADAPT_MIN_OBS = 30`, `EXPLOIT_RULES: { stat, when:'above'|'below', threshold, dial, perUnit, cap, why }[]`, `adaptDials(dials, profile|null) → dials` (new object).
+
+- [ ] **Step 1: Write the failing test**
+
+```js
+// src/private/trainers/poker/bots/dials.test.js
+import { describe, it, expect } from 'vitest';
+import { emptyProfile } from './contract.js';
+import { DIALS, defaultDials, resolveDials, clampDial, ARCHETYPES } from './dials.js';
+import { adaptDials, EXPLOIT_RULES, ADAPT_MIN_OBS } from './adapt.js';
+
+const profileWith = (stats) => {
+  const p = emptyProfile();
+  for (const [k, [value, n]] of Object.entries(stats)) p.stats[k] = { value, n };
+  return p;
+};
+
+describe('dials', () => {
+  it('defines 20-40 unique dials with defaults inside their bounds', () => {
+    expect(DIALS.length).toBeGreaterThanOrEqual(20);
+    expect(DIALS.length).toBeLessThanOrEqual(40);
+    expect(new Set(DIALS.map((d) => d.key)).size).toBe(DIALS.length);
+    for (const d of DIALS) {
+      expect(d.min).toBeLessThan(d.max);
+      expect(d.def).toBeGreaterThanOrEqual(d.min);
+      expect(d.def).toBeLessThanOrEqual(d.max);
+      expect(d.meaning.length).toBeGreaterThan(5);
+    }
+  });
+
+  it('resolves partial dials: defaults, clamping, unknown keys dropped', () => {
+    const r = resolveDials({ bluffMul: 99, openUTG: 'x', nope: 1 });
+    expect(r.bluffMul).toBe(2.5);
+    expect(r.openUTG).toBe(1);
+    expect(r).not.toHaveProperty('nope');
+    expect(Object.keys(r).length).toBe(DIALS.length);
+    expect(resolveDials()).toEqual(defaultDials());
+    expect(clampDial('cbetFlop', -1)).toBe(0);
+  });
+
+  it('ships four resolved archetypes', () => {
+    expect(Object.keys(ARCHETYPES).sort()).toEqual(['loose-aggressive', 'loose-passive', 'tight-aggressive', 'tight-passive']);
+    for (const dials of Object.values(ARCHETYPES)) expect(resolveDials(dials)).toEqual(dials);
+    expect(ARCHETYPES['loose-aggressive'].bluffMul).toBeGreaterThan(ARCHETYPES['tight-passive'].bluffMul);
+  });
+});
+
+describe('adaptDials', () => {
+  it('does nothing without a profile or below 30 observations', () => {
+    const d = defaultDials();
+    expect(adaptDials(d, null)).toEqual(d);
+    expect(ADAPT_MIN_OBS).toBe(30);
+    expect(adaptDials(d, profileWith({ foldToCbetFlop: [0.9, 29] }))).toEqual(d);
+  });
+
+  it('c-bets more against a player who over-folds to c-bets, capped and scaled by adaptStrength', () => {
+    const d = { ...defaultDials(), adaptStrength: 1 };
+    const small = adaptDials(d, profileWith({ foldToCbetFlop: [0.6, 30] }));
+    expect(small.cbetFlop).toBeCloseTo(d.cbetFlop + 1.5 * 0.05, 10);
+    const huge = adaptDials(d, profileWith({ foldToCbetFlop: [1, 500] }));
+    expect(huge.cbetFlop).toBeCloseTo(d.cbetFlop + 0.35, 10);
+    const half = adaptDials({ ...d, adaptStrength: 0.5 }, profileWith({ foldToCbetFlop: [1, 500] }));
+    expect(half.cbetFlop).toBeCloseTo(d.cbetFlop + 0.175, 10);
+    const none = adaptDials({ ...d, adaptStrength: 0 }, profileWith({ foldToCbetFlop: [1, 500] }));
+    expect(none).toEqual({ ...d, adaptStrength: 0 });
+  });
+
+  it('bluffs less and value bets thinner against a player who calls rivers', () => {
+    const d = { ...defaultDials(), adaptStrength: 1 };
+    const a = adaptDials(d, profileWith({ foldToRiverBet: [0.1, 100] }));
+    expect(a.bluffMul).toBeCloseTo(d.bluffMul - 0.75, 10);
+    expect(a.valueThresh).toBeCloseTo(d.valueThresh - 0.05, 10);
+  });
+
+  it('defends wider against a frequent 3-bettor and clamps to dial bounds', () => {
+    const d = { ...defaultDials(), adaptStrength: 1, vs3betCall: 1.7 };
+    const a = adaptDials(d, profileWith({ threeBet: [0.6, 200] }));
+    expect(a.vs3betCall).toBe(1.8);
+    expect(a.fourBet).toBeCloseTo(1.6, 10);
+    expect(d.vs3betCall).toBe(1.7);
+  });
+
+  it('every rule names a real stat and dial', () => {
+    const stats = Object.keys(emptyProfile().stats);
+    const dials = DIALS.map((x) => x.key);
+    for (const rule of EXPLOIT_RULES) {
+      expect(stats).toContain(rule.stat);
+      expect(dials).toContain(rule.dial);
+      expect(rule.cap).toBeGreaterThan(0);
+    }
+  });
+});
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `npx vitest run src/private/trainers/poker/bots/dials.test.js`
+Expected: FAIL, with module-not-found errors for `./dials.js` and `./adapt.js`.
+
+- [ ] **Step 3: Write `dials.js`**
+
+```js
+// src/private/trainers/poker/bots/dials.js
+// Persona dials: the numeric knobs of the heuristic brain. Training evolves these; personas ship them.
+
+/** @typedef {{ key:string, min:number, max:number, def:number, meaning:string }} Dial */
+
+/** @type {readonly Dial[]} */
+export const DIALS = Object.freeze([
+  // Preflop
+  { key: 'openUTG', min: 0.5, max: 1.8, def: 1, meaning: 'UTG open range width multiplier' },
+  { key: 'openHJ', min: 0.5, max: 1.8, def: 1, meaning: 'HJ open range width multiplier' },
+  { key: 'openCO', min: 0.5, max: 1.8, def: 1, meaning: 'CO open range width multiplier' },
+  { key: 'openBTN', min: 0.5, max: 1.8, def: 1, meaning: 'BTN open range width multiplier' },
+  { key: 'openSB', min: 0.5, max: 1.8, def: 1, meaning: 'SB open range width multiplier' },
+  { key: 'threeBet', min: 0.3, max: 2.5, def: 1, meaning: '3-bet and squeeze raise range width multiplier' },
+  { key: 'coldCall', min: 0.3, max: 1.8, def: 1, meaning: 'flat-call width facing an open or limpers (not the BB)' },
+  { key: 'bbDefend', min: 0.5, max: 1.6, def: 1, meaning: 'big blind call width facing an open' },
+  { key: 'fourBet', min: 0.3, max: 2.5, def: 1, meaning: 'raise width facing a 3-bet or 4-bet' },
+  { key: 'vs3betCall', min: 0.4, max: 1.8, def: 1, meaning: 'call width facing a 3-bet or 4-bet' },
+  { key: 'isoRaise', min: 0.5, max: 2, def: 1, meaning: 'raise width facing limpers' },
+  { key: 'limpFreq', min: 0, max: 0.3, def: 0, meaning: 'chance an unopened raise becomes a limp' },
+  { key: 'openSize', min: 2, max: 3.5, def: 2.5, meaning: 'open raise size in BB (+1 BB from the SB and per limper)' },
+  { key: 'jamCall', min: 0.8, max: 1.3, def: 1, meaning: 'multiplier on the equity needed to call a big preflop bet' },
+  // Postflop
+  { key: 'valueThresh', min: 0.52, max: 0.8, def: 0.62, meaning: 'heads-up-equivalent equity needed to bet for value' },
+  { key: 'aggression', min: 0.5, max: 1.8, def: 1, meaning: 'scales bluffs and thin value bets' },
+  { key: 'bluffMul', min: 0, max: 2.5, def: 1, meaning: 'multiplier on the balanced bluff frequency bet/(pot+2*bet)' },
+  { key: 'cbetFlop', min: 0, max: 1, def: 0.55, meaning: 'flop c-bet chance with non-value hands as the preflop aggressor' },
+  { key: 'cbetTurn', min: 0, max: 1, def: 0.35, meaning: 'turn barrel chance with non-value hands as the flop aggressor' },
+  { key: 'sizeBias', min: -1, max: 1, def: 0, meaning: 'shift along the 1/3, 1/2, 3/4, pot size menu' },
+  { key: 'callThresh', min: 0.75, max: 1.35, def: 1, meaning: 'multiplier on the pot-odds equity needed to call (low = sticky)' },
+  { key: 'raiseValue', min: 0.65, max: 0.92, def: 0.78, meaning: 'heads-up-equivalent equity needed to raise a bet for value' },
+  { key: 'semiBluffRaise', min: 0, max: 0.6, def: 0.15, meaning: 'chance to raise a strong draw facing a bet' },
+  { key: 'floatFreq', min: 0, max: 0.5, def: 0.15, meaning: 'chance to float a flop bet in position with weak equity' },
+  { key: 'trapFreq', min: 0, max: 0.6, def: 0.15, meaning: 'chance to slow-play a monster on the flop or turn' },
+  { key: 'drawImplied', min: 0, max: 0.12, def: 0.05, meaning: 'equity credited to draws for implied odds' },
+  { key: 'checkRaise', min: 0, max: 0.5, def: 0.15, meaning: 'chance to check a value hand out of position to check-raise' },
+  { key: 'mdfDefend', min: 0, max: 1, def: 0.3, meaning: 'chance to call hands just below the calling threshold' },
+  { key: 'multiwayTight', min: 0, max: 0.15, def: 0.05, meaning: 'extra value and raise threshold per extra opponent' },
+  // Adaptation
+  { key: 'adaptStrength', min: 0, max: 1, def: 0.6, meaning: 'scale of exploit shifts against the profiled player' },
+]);
+
+const BY_KEY = Object.fromEntries(DIALS.map((d) => [d.key, d]));
+
+export const clampDial = (key, value) => Math.min(BY_KEY[key].max, Math.max(BY_KEY[key].min, value));
+
+/** Every dial at its default. */
+export const defaultDials = () => Object.fromEntries(DIALS.map((d) => [d.key, d.def]));
+
+/** Fills missing dials with defaults, clamps the rest and drops unknown keys. */
+export function resolveDials(partial = {}) {
+  const out = {};
+  for (const d of DIALS) {
+    const v = partial[d.key];
+    out[d.key] = typeof v === 'number' && Number.isFinite(v) ? clampDial(d.key, v) : d.def;
+  }
+  return out;
+}
+
+const opens = (x) => ({ openUTG: x, openHJ: x, openCO: x, openBTN: x, openSB: x });
+
+/** Starting dial sets for the four style niches. */
+export const ARCHETYPES = Object.freeze({
+  'tight-aggressive': resolveDials({
+    ...opens(0.9), threeBet: 1.2, coldCall: 0.8, bbDefend: 0.9, valueThresh: 0.6, aggression: 1.3, bluffMul: 1.2,
+    cbetFlop: 0.65, cbetTurn: 0.45, callThresh: 1.05,
+  }),
+  'loose-aggressive': resolveDials({
+    ...opens(1.35), threeBet: 1.8, coldCall: 1.1, bbDefend: 1.2, isoRaise: 1.6, valueThresh: 0.58, aggression: 1.6,
+    bluffMul: 1.8, cbetFlop: 0.8, cbetTurn: 0.55, semiBluffRaise: 0.35, callThresh: 0.95,
+  }),
+  'tight-passive': resolveDials({
+    ...opens(0.8), threeBet: 0.6, valueThresh: 0.68, aggression: 0.7, bluffMul: 0.4, cbetFlop: 0.35, cbetTurn: 0.2,
+    trapFreq: 0.35, checkRaise: 0.25, mdfDefend: 0.5,
+  }),
+  'loose-passive': resolveDials({
+    ...opens(1.2), threeBet: 0.7, coldCall: 1.5, bbDefend: 1.4, limpFreq: 0.15, valueThresh: 0.66, aggression: 0.7,
+    bluffMul: 0.5, cbetFlop: 0.4, cbetTurn: 0.2, callThresh: 0.9, floatFreq: 0.3, mdfDefend: 0.6,
+  }),
+});
+```
+
+- [ ] **Step 4: Write `adapt.js`**
+
+```js
+// src/private/trainers/poker/bots/adapt.js
+// Exploit shifts against the profiled player (the hero). Each rule fires only once its stat has at least
+// ADAPT_MIN_OBS observations, moves one dial by perUnit * distance past the threshold, is capped, is scaled
+// by the persona's adaptStrength, and the result is clamped to the dial bounds.
+import { clampDial } from './dials.js';
+
+export const ADAPT_MIN_OBS = 30;
+
+/** @type {readonly { stat:string, when:'above'|'below', threshold:number, dial:string, perUnit:number, cap:number, why:string }[]} */
+export const EXPLOIT_RULES = Object.freeze([
+  { stat: 'foldToCbetFlop', when: 'above', threshold: 0.55, dial: 'cbetFlop', perUnit: 1.5, cap: 0.35, why: 'folds to c-bets: c-bet more' },
+  { stat: 'foldToCbetFlop', when: 'below', threshold: 0.35, dial: 'cbetFlop', perUnit: -1.5, cap: 0.35, why: 'calls c-bets: c-bet bluff less' },
+  { stat: 'foldToCbetFlop', when: 'below', threshold: 0.35, dial: 'valueThresh', perUnit: -0.2, cap: 0.04, why: 'calls c-bets: value bet thinner' },
+  { stat: 'foldToCbetTurn', when: 'above', threshold: 0.55, dial: 'cbetTurn', perUnit: 1.5, cap: 0.3, why: 'folds to barrels: barrel more' },
+  { stat: 'foldToCbetTurn', when: 'below', threshold: 0.35, dial: 'cbetTurn', perUnit: -1.5, cap: 0.3, why: 'calls barrels: barrel less' },
+  { stat: 'foldToRiverBet', when: 'above', threshold: 0.6, dial: 'bluffMul', perUnit: 3, cap: 0.8, why: 'over-folds the river: bluff more' },
+  { stat: 'foldToRiverBet', when: 'below', threshold: 0.35, dial: 'bluffMul', perUnit: -3, cap: 0.8, why: 'calls the river: bluff less' },
+  { stat: 'foldToRiverBet', when: 'below', threshold: 0.35, dial: 'valueThresh', perUnit: -0.25, cap: 0.05, why: 'calls the river: value bet thinner' },
+  { stat: 'vpip', when: 'above', threshold: 0.35, dial: 'isoRaise', perUnit: 2, cap: 0.6, why: 'plays too many hands: isolate wider' },
+  { stat: 'vpip', when: 'above', threshold: 0.35, dial: 'threeBet', perUnit: 1.5, cap: 0.4, why: 'plays too many hands: 3-bet wider for value' },
+  { stat: 'threeBet', when: 'above', threshold: 0.12, dial: 'vs3betCall', perUnit: 3, cap: 0.5, why: '3-bets too much: defend wider' },
+  { stat: 'threeBet', when: 'above', threshold: 0.12, dial: 'fourBet', perUnit: 3, cap: 0.6, why: '3-bets too much: 4-bet wider' },
+  { stat: 'foldTo3Bet', when: 'above', threshold: 0.65, dial: 'threeBet', perUnit: 2.5, cap: 0.7, why: 'folds to 3-bets: 3-bet more' },
+  { stat: 'pfr', when: 'above', threshold: 0.3, dial: 'bbDefend', perUnit: 1.5, cap: 0.3, why: 'raises too often: defend the big blind wider' },
+  { stat: 'aggFreq', when: 'above', threshold: 0.55, dial: 'callThresh', perUnit: -0.4, cap: 0.12, why: 'over-aggressive: call down lighter' },
+  { stat: 'aggFreq', when: 'above', threshold: 0.55, dial: 'trapFreq', perUnit: 0.6, cap: 0.15, why: 'over-aggressive: trap more' },
+  { stat: 'wtsd', when: 'above', threshold: 0.35, dial: 'bluffMul', perUnit: -2, cap: 0.5, why: 'goes to showdown a lot: bluff less' },
+  { stat: 'riverBetFreq', when: 'above', threshold: 0.5, dial: 'callThresh', perUnit: -0.3, cap: 0.1, why: 'bets the river a lot: call lighter' },
+  { stat: 'cbetFlop', when: 'above', threshold: 0.75, dial: 'floatFreq', perUnit: 1.2, cap: 0.25, why: 'c-bets too much: float more' },
+  { stat: 'cbetFlop', when: 'above', threshold: 0.75, dial: 'checkRaise', perUnit: 0.8, cap: 0.2, why: 'c-bets too much: check-raise more' },
+  { stat: 'checkRaise', when: 'above', threshold: 0.2, dial: 'cbetFlop', perUnit: -1, cap: 0.15, why: 'check-raises a lot: c-bet less' },
+]);
+
+/**
+ * @param {Record<string, number>} dials resolved dials (see resolveDials)
+ * @param {import('./contract.js').PlayerProfile|null} profile
+ * @returns {Record<string, number>} a new dial set; `dials` is not mutated
+ */
+export function adaptDials(dials, profile) {
+  const out = { ...dials };
+  if (!profile) return out;
+  const strength = dials.adaptStrength;
+  for (const rule of EXPLOIT_RULES) {
+    const stat = profile.stats[rule.stat];
+    if (!stat || stat.n < ADAPT_MIN_OBS || stat.value === null) continue;
+    const past = rule.when === 'above' ? stat.value - rule.threshold : rule.threshold - stat.value;
+    if (past <= 0) continue;
+    const magnitude = Math.min(rule.cap, Math.abs(rule.perUnit) * past);
+    out[rule.dial] = clampDial(rule.dial, out[rule.dial] + Math.sign(rule.perUnit) * magnitude * strength);
+  }
+  return out;
+}
+```
+
+- [ ] **Step 5: Run the test to verify it passes**
+
+Run: `npx vitest run src/private/trainers/poker/bots/dials.test.js`
+Expected: PASS (8 tests).
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/private/trainers/poker/bots/dials.js src/private/trainers/poker/bots/adapt.js src/private/trainers/poker/bots/dials.test.js
+git commit -m "Add 30 persona dials, style archetypes and capped exploit rules
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 8: Opponent range tracking
+
+**Files:**
+- Create: `src/private/trainers/poker/bots/ranges.js`
+- Test: `src/private/trainers/poker/bots/ranges.test.js`
+
+**Interfaces:**
+- Consumes: Task 1 combos, Task 4 (`hasChart`, `scaledFreqs`, `RANK_PCT`), Task 6 (`preflopSpot`, `chartKeyFor`, `comboDraws`), Task 7 (`ADAPT_MIN_OBS`), `evaluate`.
+- Produces:
+  - `DEFAULT_TYPE = { looseness: 1, aggression: 0.35 }`, `typeFromProfile(profile|null) → PlayerType`.
+  - `preflopLikelihoods(spot, action, type) → Float32Array(169)`, `actionLikelihood(action, p, draw, facingBet, aggression, river) → number`, `reweightPostflop(range, board, action, facingBet, type)` (mutates `range`).
+  - `createRangeTracker() → { track(view, events, seat, typeOf) → { classWeights: Map<seat, Float32Array(169)>, comboRanges: Map<seat, Float32Array(1326)> } }`. Both maps cover live opponents only, and `comboRanges` is empty preflop.
+
+- [ ] **Step 1: Write the failing test**
+
+```js
+// src/private/trainers/poker/bots/ranges.test.js
+import { describe, it, expect } from 'vitest';
+import { parseCards } from '../engine/cards.js';
+import { COMBO_COUNT, CLASS_COMBOS, parseClass, comboOf } from './handClass.js';
+import { emptyProfile } from './contract.js';
+import { preflopSpot } from './situation.js';
+import {
+  DEFAULT_TYPE, typeFromProfile, preflopLikelihoods, actionLikelihood, reweightPostflop, createRangeTracker,
+} from './ranges.js';
+import { contextAfter } from './testHands.js';
+
+const c = parseClass;
+const classMass = (range, name) => CLASS_COMBOS[c(name)].reduce((sum, i) => sum + range[i], 0);
+
+describe('player types', () => {
+  it('uses defaults until 30 observations, then vpip and aggression', () => {
+    expect(typeFromProfile(null)).toEqual(DEFAULT_TYPE);
+    const p = emptyProfile();
+    p.stats.vpip = { value: 0.5, n: 29 };
+    expect(typeFromProfile(p).looseness).toBe(1);
+    p.stats.vpip = { value: 0.5, n: 30 };
+    p.stats.aggFreq = { value: 0.7, n: 40 };
+    expect(typeFromProfile(p)).toEqual({ looseness: 2, aggression: 0.7 });
+  });
+});
+
+describe('preflopLikelihoods', () => {
+  it('an UTG open makes AA likely and 72o nearly impossible; a looser type widens', () => {
+    const c0 = contextAfter([]);
+    const spot = preflopSpot(c0.view, [], 2);
+    const like = preflopLikelihoods(spot, 'raise', DEFAULT_TYPE);
+    expect(like[c('AA')]).toBe(1);
+    expect(like[c('72o')]).toBeCloseTo(0.03, 5);
+    const loose = preflopLikelihoods(spot, 'raise', { looseness: 2, aggression: 0.35 });
+    expect(loose[c('K9s')]).toBeGreaterThan(like[c('K9s')]);
+  });
+});
+
+describe('actionLikelihood', () => {
+  it('bets favour strong hands and draws; checks favour weaker hands; calls favour the middle', () => {
+    expect(actionLikelihood('bet', 0.95, false, false, 0.35, false)).toBeGreaterThan(0.9);
+    expect(actionLikelihood('bet', 0.5, false, false, 0.35, false)).toBeLessThan(0.3);
+    expect(actionLikelihood('bet', 0.5, true, false, 0.35, false)).toBeGreaterThan(0.3);
+    expect(actionLikelihood('check', 0.95, false, false, 0.35, false)).toBeLessThan(actionLikelihood('check', 0.2, false, false, 0.35, false));
+    expect(actionLikelihood('call', 0.6, false, true, 0.35, false)).toBeGreaterThan(actionLikelihood('call', 0.1, false, true, 0.35, false));
+    expect(actionLikelihood('call', 0.1, false, false, 0.35, false)).toBe(1);
+  });
+});
+
+describe('reweightPostflop', () => {
+  it('a bet on Ah Kd 7c shifts weight toward AK and sets, away from 65o', () => {
+    const board = parseCards('AhKd7c');
+    const range = new Float32Array(COMBO_COUNT).fill(1);
+    const before = { ak: classMass(range, 'AKo'), low: classMass(range, '65o') };
+    reweightPostflop(range, board, 'bet', false, DEFAULT_TYPE);
+    expect(classMass(range, 'AKo') / before.ak).toBeGreaterThan(0.9);
+    expect(classMass(range, '65o') / before.low).toBeLessThan(0.4);
+    expect(range[comboOf(...parseCards('7d7s'))]).toBeGreaterThan(0.9);
+  });
+});
+
+describe('createRangeTracker', () => {
+  const typeOf = () => DEFAULT_TYPE;
+
+  it('builds preflop ranges for players who acted and any-hand ranges for the rest', () => {
+    const cx = contextAfter(['r 2 5', 'f 3']);
+    const tracker = createRangeTracker();
+    const { classWeights, comboRanges } = tracker.track(cx.view, cx.seatEvents, cx.seat, typeOf);
+    expect(comboRanges.size).toBe(0);
+    expect([...classWeights.keys()].sort()).toEqual([0, 1, 2, 5]);
+    expect(classWeights.get(2)[c('AA')]).toBe(1);
+    expect(classWeights.get(2)[c('72o')]).toBeLessThan(0.05);
+    expect(classWeights.get(5)[c('72o')]).toBe(1);
+  });
+
+  it('builds combo ranges on the flop with card removal and follows postflop actions incrementally', () => {
+    const steps = ['r 2 5', 'f 3', 'c 4', 'f 5', 'f 0', 'f 1', 'B Kh8d4s', 'b 2 8'];
+    const cx = contextAfter(steps);
+    expect(cx.seat).toBe(4);
+    const tracker = createRangeTracker();
+    const first = tracker.track(cx.view, cx.seatEvents, cx.seat, typeOf);
+    const utg = first.comboRanges.get(2);
+    expect([...first.comboRanges.keys()]).toEqual([2]);
+    expect(utg[comboOf(...parseCards('JcTd'))]).toBe(0); // hero holds Jc
+    expect(utg[comboOf(...parseCards('KsKh'))]).toBe(0); // Kh is on the board
+    const kk = utg[comboOf(...parseCards('KsKc'))];
+    const weak = utg[comboOf(...parseCards('QsJs'))];
+    expect(kk).toBeGreaterThan(weak);
+
+    // incremental: track the log without the last bet, then the full log, on one tracker
+    const incremental = createRangeTracker();
+    const before = incremental.track(cx.view, cx.seatEvents.slice(0, -1), cx.seat, typeOf).comboRanges.get(2).slice();
+    const after = incremental.track(cx.view, cx.seatEvents, cx.seat, typeOf).comboRanges.get(2);
+    expect(after).toEqual(utg);
+    expect(after).not.toEqual(before);
+  });
+});
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `npx vitest run src/private/trainers/poker/bots/ranges.test.js`
+Expected: FAIL, with a module-not-found error for `./ranges.js`.
+
+- [ ] **Step 3: Write the implementation**
+
+```js
+// src/private/trainers/poker/bots/ranges.js
+// Opponent range model. Each opponent starts from the chart range for the preflop actions they took
+// (widened or tightened by their observed type), then every postflop action multiplies each combo's
+// weight by the likelihood that a player of that type takes that action with that combo's strength.
+import { evaluate } from '../engine/evaluator.js';
+import { CLASS_COUNT, COMBO_COUNT, COMBO_CARDS, COMBO_CLASS } from './handClass.js';
+import { hasChart, scaledFreqs, RANK_PCT } from './charts.js';
+import { preflopSpot, chartKeyFor } from './situation.js';
+import { comboDraws } from './texture.js';
+import { ADAPT_MIN_OBS } from './adapt.js';
+
+/** @typedef {{ looseness:number, aggression:number }} PlayerType looseness: range width multiplier; aggression in [0, 1] */
+
+/** @type {PlayerType} */
+export const DEFAULT_TYPE = Object.freeze({ looseness: 1, aggression: 0.35 });
+
+const FLOOR = 0.03; // no action ever rules a hand out completely
+const sig = (x) => 1 / (1 + Math.exp(-x));
+
+/** @returns {PlayerType} */
+export function typeFromProfile(profile) {
+  if (!profile) return DEFAULT_TYPE;
+  const { vpip, aggFreq } = profile.stats;
+  return {
+    looseness: vpip && vpip.n >= ADAPT_MIN_OBS ? Math.min(2.5, Math.max(0.5, vpip.value / 0.25)) : 1,
+    aggression: aggFreq && aggFreq.n >= ADAPT_MIN_OBS ? aggFreq.value : DEFAULT_TYPE.aggression,
+  };
+}
+
+/** 169 class likelihoods of taking `action` in a preflop spot. */
+export function preflopLikelihoods(spot, action, type) {
+  const key = chartKeyFor(spot, hasChart);
+  const out = new Float32Array(CLASS_COUNT);
+  for (let cls = 0; cls < CLASS_COUNT; cls += 1) {
+    const f = scaledFreqs(key, cls, type.looseness, type.looseness);
+    let w = 1;
+    if (action === 'raise') w = f.raise;
+    else if (action === 'check') w = 1 - f.raise;
+    else if (action === 'call' && spot.kind === 'open') w = RANK_PCT[cls] < 0.6 ? 0.8 : 0.15; // open limp
+    else if (action === 'call') w = f.call;
+    out[cls] = FLOOR + (1 - FLOOR) * w;
+  }
+  return out;
+}
+
+/**
+ * Likelihood of a postflop action for a combo at weighted-percentile strength p (0 = weakest in the range).
+ * @param {'bet'|'raise'|'call'|'check'} action
+ */
+export function actionLikelihood(action, p, draw, facingBet, aggression, river) {
+  if (action === 'bet' || action === 'raise') {
+    const t = (facingBet ? 0.8 : 0.7) - 0.25 * aggression;
+    let l = 0.06 + 0.94 * sig((p - t) / 0.06);
+    if (draw && !river) l = Math.max(l, 0.2 + 0.5 * aggression);
+    if (p < 0.2) l = Math.max(l, 0.35 * aggression);
+    return l;
+  }
+  if (action === 'call') {
+    if (!facingBet) return 1;
+    let l = 0.12 + 0.88 * sig((p - 0.35) / 0.08);
+    if (p > 0.92) l *= 0.6;
+    if (draw && !river) l = Math.max(l, 0.8);
+    return l;
+  }
+  if (action === 'check') return 1 - 0.6 * sig((p - (0.8 - 0.1 * aggression)) / 0.06);
+  return 1;
+}
+
+// Combos sorted weakest first by their hand value on a board, shared across seats (small LRU by board).
+const strengthCache = new Map();
+function boardStrength(board) {
+  const key = board.join(',');
+  const hit = strengthCache.get(key);
+  if (hit) return hit;
+  const onBoard = new Uint8Array(52);
+  for (const c of board) onBoard[c] = 1;
+  const scores = new Int32Array(COMBO_COUNT).fill(-1);
+  const live = [];
+  const cards = [0, 0, ...board];
+  for (let i = 0; i < COMBO_COUNT; i += 1) {
+    const a = COMBO_CARDS[2 * i];
+    const b = COMBO_CARDS[2 * i + 1];
+    if (onBoard[a] || onBoard[b]) continue;
+    cards[0] = a;
+    cards[1] = b;
+    scores[i] = evaluate(cards);
+    live.push(i);
+  }
+  live.sort((x, y) => scores[x] - scores[y]);
+  const entry = { order: Int16Array.from(live), draws: comboDraws(board) };
+  strengthCache.set(key, entry);
+  if (strengthCache.size > 32) strengthCache.delete(strengthCache.keys().next().value);
+  return entry;
+}
+
+/** Multiplies `range` (1,326 combo weights, mutated) by the likelihood of `action` on `board`. */
+export function reweightPostflop(range, board, action, facingBet, type) {
+  const { order, draws } = boardStrength(board);
+  let total = 0;
+  for (let k = 0; k < order.length; k += 1) total += range[order[k]];
+  if (total <= 0) return;
+  const river = board.length === 5;
+  let before = 0;
+  for (let k = 0; k < order.length; k += 1) {
+    const i = order[k];
+    const w = range[i];
+    if (w <= 0) continue;
+    const p = (before + w / 2) / total;
+    before += w;
+    range[i] = w * actionLikelihood(action, p, draws[i] === 1, facingBet, type.aggression, river);
+  }
+}
+
+function comboRangeFrom(classWeights, dead) {
+  const range = new Float32Array(COMBO_COUNT);
+  for (let i = 0; i < COMBO_COUNT; i += 1) {
+    if (dead[COMBO_CARDS[2 * i]] || dead[COMBO_CARDS[2 * i + 1]]) continue;
+    range[i] = classWeights[COMBO_CLASS[i]];
+  }
+  return range;
+}
+
+const sameEvent = (a, b) => a === b || (a && b && a.type === 'hole' && b.type === 'hole' && a.seat === b.seat);
+
+/**
+ * Tracks opponents' ranges for one seat through a hand, processing only new events when the log grows.
+ * @returns {{ track:(view:object, events:object[], seat:number, typeOf:(seat:number) => PlayerType) =>
+ *   { classWeights:Map<number, Float32Array>, comboRanges:Map<number, Float32Array> } }}
+ *   classWeights: preflop range per live opponent; comboRanges: postflop combo weights per live opponent (empty preflop).
+ */
+export function createRangeTracker() {
+  const bySeat = new Map();
+
+  const fresh = (events) => ({
+    start: events[0], processed: 0, last: null, preflopActs: [], boards: [],
+    classWeights: new Map(), comboRanges: new Map(), folded: new Set(), facingBet: false,
+  });
+
+  function step(entry, event, view, seat, typeOf) {
+    if (event.type === 'board') {
+      const first = entry.boards.length === 0;
+      entry.boards.push(...event.cards);
+      entry.facingBet = false;
+      if (first) {
+        const dead = new Uint8Array(52);
+        for (const c of view.players.find((p) => p.seat === seat).hole) dead[c] = 1;
+        for (const c of entry.boards) dead[c] = 1;
+        const any = new Float32Array(CLASS_COUNT).fill(1);
+        for (const p of view.players) {
+          if (p.seat === seat || entry.folded.has(p.seat)) continue;
+          entry.comboRanges.set(p.seat, comboRangeFrom(entry.classWeights.get(p.seat) ?? any, dead));
+        }
+      } else {
+        for (const range of entry.comboRanges.values()) {
+          for (let i = 0; i < COMBO_COUNT; i += 1) {
+            if (event.cards.includes(COMBO_CARDS[2 * i]) || event.cards.includes(COMBO_CARDS[2 * i + 1])) range[i] = 0;
+          }
+        }
+      }
+      return;
+    }
+    if (event.type !== 'act') return;
+    const actor = event.seat;
+    if (entry.boards.length === 0) {
+      if (actor !== seat) {
+        if (!entry.classWeights.has(actor)) entry.classWeights.set(actor, new Float32Array(CLASS_COUNT).fill(1));
+        if (event.action !== 'fold') {
+          const spot = preflopSpot(view, entry.preflopActs, actor);
+          const like = preflopLikelihoods(spot, event.action, typeOf(actor));
+          const w = entry.classWeights.get(actor);
+          for (let cls = 0; cls < CLASS_COUNT; cls += 1) w[cls] *= like[cls];
+        }
+      }
+      entry.preflopActs.push(event);
+    } else if (actor !== seat && event.action !== 'fold' && entry.comboRanges.has(actor)) {
+      reweightPostflop(entry.comboRanges.get(actor), entry.boards, event.action, entry.facingBet, typeOf(actor));
+    }
+    if (event.action === 'fold') {
+      entry.folded.add(actor);
+      entry.comboRanges.delete(actor);
+    }
+    if (event.action === 'bet' || event.action === 'raise') entry.facingBet = true;
+  }
+
+  function track(view, events, seat, typeOf) {
+    let entry = bySeat.get(seat);
+    const valid = entry && entry.start === events[0] && entry.processed <= events.length
+      && (entry.processed === 0 || sameEvent(events[entry.processed - 1], entry.last));
+    if (!valid) {
+      entry = fresh(events);
+      bySeat.set(seat, entry);
+    }
+    for (let k = entry.processed; k < events.length; k += 1) step(entry, events[k], view, seat, typeOf);
+    entry.processed = events.length;
+    entry.last = events[events.length - 1];
+    const live = new Set(view.players.filter((p) => !p.folded && p.seat !== seat).map((p) => p.seat));
+    const pick = (map) => new Map([...map].filter(([s]) => live.has(s)));
+    // Opponents who have not acted preflop yet (e.g. the blinds before their turn) hold any hand.
+    const classWeights = pick(entry.classWeights);
+    for (const s of live) if (!classWeights.has(s)) classWeights.set(s, new Float32Array(CLASS_COUNT).fill(1));
+    return { classWeights, comboRanges: pick(entry.comboRanges) };
+  }
+
+  return { track };
+}
+```
+
+- [ ] **Step 4: Run the test to verify it passes**
+
+Run: `npx vitest run src/private/trainers/poker/bots/ranges.test.js`
+Expected: PASS (6 tests).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/private/trainers/poker/bots/ranges.js src/private/trainers/poker/bots/ranges.test.js
+git commit -m "Add opponent range tracking with chart priors and action likelihoods
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 9: Preflop and postflop decisions
+
+**Files:**
+- Create: `src/private/trainers/poker/bots/legalize.js`
+- Create: `src/private/trainers/poker/bots/preflop.js`
+- Create: `src/private/trainers/poker/bots/postflop.js`
+- Test: `src/private/trainers/poker/bots/decisions.test.js`
+
+**Interfaces:**
+- Consumes: Tasks 1, 3, 4, 6, 7; `contextAfter` (Task 5).
+- Produces:
+  - `legalize(choice, legal) → BotChoice` (clamps and renames raises, never folds when checking is free).
+  - `spotMultipliers(spot, dials) → [raiseMul, callMul]`, `raiseSize(spot, view, dials, bb) → units`, `preflopDecision({ view, events, seat, legal, dials, rng, bb, raiserWeights? }) → intended choice`.
+  - `SIZE_MENU = [1/3, 1/2, 3/4, 1]`, `huEquity(equity, nOpp)`, `bluffShare(bet, pot)`, `balancedBluffChance(street, frac)`, `sizeIndex(street, wetness, sizeBias)`, `postflopDecision({ street, equity, nOpp, pot, toCall, currentBet, maxRaiseTo, canRaise, ip, aggressor, betsThisStreet, spr, wetness, draw, dials, rng }) → intended choice`.
+
+- [ ] **Step 1: Write the failing test**
+
+```js
+// src/private/trainers/poker/bots/decisions.test.js
+import { describe, it, expect } from 'vitest';
+import { mulberry32 } from '../../core/rng.js';
+import { chartFreqs } from './charts.js';
+import { defaultDials } from './dials.js';
+import { parseClass } from './handClass.js';
+import { legalize } from './legalize.js';
+import { preflopDecision, raiseSize, spotMultipliers } from './preflop.js';
+import { postflopDecision, huEquity, bluffShare, balancedBluffChance, sizeIndex, SIZE_MENU } from './postflop.js';
+import { contextAfter } from './testHands.js';
+
+const always = (x) => () => x;
+
+describe('legalize', () => {
+  const facing = { canCheck: false, canRaise: true, raiseKind: 'raise', minRaiseTo: 10, maxRaiseTo: 200, toCall: 5 };
+  const unopened = { canCheck: true, canRaise: true, raiseKind: 'bet', minRaiseTo: 2, maxRaiseTo: 150, toCall: 0 };
+  it('clamps and renames raises, and never folds when checking is free', () => {
+    expect(legalize({ action: 'raise', amount: 3 }, facing)).toEqual({ action: 'raise', amount: 10 });
+    expect(legalize({ action: 'raise', amount: 999 }, facing)).toEqual({ action: 'raise', amount: 200 });
+    expect(legalize({ action: 'raise', amount: 7.6 }, unopened)).toEqual({ action: 'bet', amount: 8 });
+    expect(legalize({ action: 'bet', amount: NaN }, unopened)).toEqual({ action: 'bet', amount: 2 });
+    expect(legalize({ action: 'fold' }, unopened)).toEqual({ action: 'check' });
+    expect(legalize({ action: 'call' }, unopened)).toEqual({ action: 'check' });
+    expect(legalize({ action: 'check' }, facing)).toEqual({ action: 'fold' });
+    expect(legalize({ action: 'raise', amount: 50 }, { ...facing, canRaise: false, minRaiseTo: null, maxRaiseTo: null })).toEqual({ action: 'call' });
+  });
+});
+
+describe('preflopDecision', () => {
+  const decide = (steps, rngValue, dials = defaultDials()) => {
+    const cx = contextAfter(steps);
+    return legalize(preflopDecision({ view: cx.view, events: cx.seatEvents, seat: cx.seat, legal: cx.legal, dials, rng: always(rngValue), bb: 2 }), cx.legal);
+  };
+
+  it('opens AA from UTG to 2.5 BB and folds 72o', () => {
+    expect(decide([], 0.5)).toEqual({ action: 'raise', amount: 5 });
+    const junk = contextAfter([], { holes: ['2c3d', '7h2s', '7c2d', 'KdQd', 'JcTc', '9s9h'] });
+    const choice = preflopDecision({ view: junk.view, events: junk.seatEvents, seat: 2, legal: junk.legal, dials: defaultDials(), rng: always(0.5), bb: 2 });
+    expect(legalize(choice, junk.legal)).toEqual({ action: 'fold' });
+  });
+
+  it('follows the chart facing an open: KQs in the HJ vs an UTG open', () => {
+    const f = chartFreqs('vsOpen.HJ.UTG', parseClass('KQs'));
+    const low = decide(['r 2 5'], 0);
+    const high = decide(['r 2 5'], 0.999);
+    if (f.raise > 0) expect(low).toEqual({ action: 'raise', amount: 15 });
+    else expect(low).toEqual({ action: f.call > 0 ? 'call' : 'fold' });
+    expect(high).toEqual({ action: f.raise + f.call > 0.999 ? 'call' : 'fold' });
+  });
+
+  it('sizes 3-bets by position and jams when the raise commits the stack', () => {
+    const cx = contextAfter(['r 2 5', 'f 3', 'f 4']);
+    const spot = { kind: 'vsOpen', ip: true, position: 'BTN', limpers: 0, callers: 0 };
+    expect(raiseSize(spot, cx.view, defaultDials(), 2)).toBe(15);
+    expect(raiseSize({ ...spot, ip: false }, cx.view, defaultDials(), 2)).toBe(19);
+    expect(raiseSize({ kind: 'open', position: 'SB' }, cx.view, defaultDials(), 2)).toBe(7);
+    expect(raiseSize({ kind: 'vsLimp', position: 'CO', limpers: 2 }, cx.view, defaultDials(), 2)).toBe(11);
+    const short = contextAfter([], { stack: 10 });
+    const jam = preflopDecision({ view: short.view, events: short.seatEvents, seat: 2, legal: short.legal, dials: defaultDials(), rng: always(0), bb: 2 });
+    expect(jam).toEqual({ action: 'raise', amount: 10 });
+  });
+
+  it('makes big calls on equity: AA calls a shove, 83o folds', () => {
+    const shove = contextAfter(['r 2 200', 'f 3', 'f 4'], { holes: ['2c3d', '7h2s', 'KsKc', 'KdQd', 'JcTc', 'AhAs'] });
+    expect(shove.seat).toBe(5);
+    const aa = preflopDecision({ view: shove.view, events: shove.seatEvents, seat: 5, legal: shove.legal, dials: defaultDials(), rng: always(0.99), bb: 2 });
+    expect(aa.action === 'call' || aa.action === 'raise').toBe(true);
+    const junk = contextAfter(['r 2 200', 'f 3', 'f 4'], { holes: ['2c3d', '7h2s', 'KsKc', 'KdQd', 'JcTc', '8d3h'] });
+    const fold = preflopDecision({ view: junk.view, events: junk.seatEvents, seat: 5, legal: junk.legal, dials: defaultDials(), rng: always(0), bb: 2 });
+    expect(fold).toEqual({ action: 'fold' });
+  });
+
+  it('maps spots to dial multipliers', () => {
+    const d = { ...defaultDials(), openBTN: 1.4, bbDefend: 1.3, coldCall: 0.7, threeBet: 2 };
+    expect(spotMultipliers({ kind: 'open', position: 'BTN' }, d)).toEqual([1.4, 1]);
+    expect(spotMultipliers({ kind: 'vsOpen', position: 'BB' }, d)).toEqual([2, 1.3]);
+    expect(spotMultipliers({ kind: 'squeeze', position: 'CO' }, d)).toEqual([2, 0.7]);
+  });
+});
+
+describe('postflop helpers', () => {
+  it('computes heads-up equivalent equity, bluff share and sizes', () => {
+    expect(huEquity(0.25, 1)).toBe(0.25);
+    expect(huEquity(0.25, 2)).toBeCloseTo(0.5, 10);
+    expect(bluffShare(50, 100)).toBeCloseTo(0.25, 10);
+    expect(bluffShare(100, 100)).toBeCloseTo(1 / 3, 10);
+    expect(balancedBluffChance('flop', 0.5)).toBeCloseTo((0.35 / 0.45) * (1 / 3), 10);
+    expect(SIZE_MENU[sizeIndex('flop', 0.2, 0)]).toBe(0.5);
+    expect(SIZE_MENU[sizeIndex('turn', 0.8, 0)]).toBe(1);
+    expect(SIZE_MENU[sizeIndex('flop', 0.2, -1)]).toBeCloseTo(1 / 3, 10);
+  });
+});
+
+describe('postflopDecision', () => {
+  const base = {
+    street: 'flop', equity: 0.5, nOpp: 1, pot: 20, toCall: 0, currentBet: 0, maxRaiseTo: 190, canRaise: true, ip: true,
+    aggressor: false, betsThisStreet: 0, spr: 9.5, wetness: 0.2, draw: false, dials: defaultDials(), rng: always(0.99),
+  };
+
+  it('bets strong hands for value at the menu size', () => {
+    expect(postflopDecision({ ...base, equity: 0.8 })).toEqual({ action: 'bet', amount: 10 });
+  });
+
+  it('traps monsters only when the rng says so', () => {
+    expect(postflopDecision({ ...base, equity: 0.95, rng: always(0.01) })).toEqual({ action: 'check' });
+    expect(postflopDecision({ ...base, equity: 0.95, rng: always(0.99) }).action).toBe('bet');
+  });
+
+  it('c-bets air as the aggressor with a low rng and checks it back otherwise', () => {
+    expect(postflopDecision({ ...base, equity: 0.2, aggressor: true, rng: always(0.1) }).action).toBe('bet');
+    expect(postflopDecision({ ...base, equity: 0.2, aggressor: true, rng: always(0.99) }).action).toBe('check');
+  });
+
+  it('calls with pot odds, folds without them, raises the nuts', () => {
+    const facing = { ...base, toCall: 10, currentBet: 10, pot: 30, betsThisStreet: 1 };
+    expect(postflopDecision({ ...facing, equity: 0.3 }).action).toBe('call'); // needs 25%
+    expect(postflopDecision({ ...facing, equity: 0.1 }).action).toBe('fold');
+    expect(postflopDecision({ ...facing, equity: 0.95 })).toEqual({ action: 'raise', amount: 40 });
+  });
+
+  it('goes all-in when the size commits most of the stack', () => {
+    expect(postflopDecision({ ...base, equity: 0.9, pot: 150, maxRaiseTo: 100 })).toEqual({ action: 'bet', amount: 100 });
+  });
+
+  it('judges multiway equity in heads-up terms', () => {
+    expect(postflopDecision({ ...base, equity: 0.4, nOpp: 1 }).action).toBe('check');
+    expect(postflopDecision({ ...base, equity: 0.45, nOpp: 3 }).action).toBe('bet'); // hu ~0.77
+  });
+});
+
+describe('determinism', () => {
+  it('same inputs and seed give the same preflop choice', () => {
+    const cx = contextAfter(['r 2 5']);
+    const run = () => preflopDecision({ view: cx.view, events: cx.seatEvents, seat: cx.seat, legal: cx.legal, dials: defaultDials(), rng: mulberry32(5), bb: 2 });
+    expect(run()).toEqual(run());
+  });
+});
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `npx vitest run src/private/trainers/poker/bots/decisions.test.js`
+Expected: FAIL, with module-not-found errors for `./legalize.js`, `./preflop.js` and `./postflop.js`.
+
+- [ ] **Step 3: Write `legalize.js`**
+
+```js
+// src/private/trainers/poker/bots/legalize.js
+// Maps any intended choice onto a legal one. Never folds when checking is free.
+
+/**
+ * @param {{ action:string, amount?:number }} choice
+ * @param {{ canCheck:boolean, canRaise:boolean, raiseKind:'bet'|'raise', minRaiseTo:number|null, maxRaiseTo:number|null }} legal
+ * @returns {import('./contract.js').BotChoice}
+ */
+export function legalize(choice, legal) {
+  const passive = () => (legal.canCheck ? { action: 'check' } : { action: 'call' });
+  const giveUp = () => (legal.canCheck ? { action: 'check' } : { action: 'fold' });
+  switch (choice.action) {
+    case 'bet':
+    case 'raise': {
+      if (!legal.canRaise) return passive();
+      const wanted = Number.isFinite(choice.amount) ? Math.round(choice.amount) : legal.minRaiseTo;
+      return { action: legal.raiseKind, amount: Math.min(legal.maxRaiseTo, Math.max(legal.minRaiseTo, wanted)) };
+    }
+    case 'call':
+      return passive();
+    case 'check':
+    case 'fold':
+    default:
+      return giveUp();
+  }
+}
+```
+
+- [ ] **Step 4: Write `preflop.js`**
+
+```js
+// src/private/trainers/poker/bots/preflop.js
+// Preflop decisions: chart frequencies scaled by persona dials, plus an equity check for big calls.
+import { classOf } from './handClass.js';
+import { hasChart, scaledFreqs, topShareWeights } from './charts.js';
+import { equityVsClassWeights } from './preflopEquity.js';
+import { actsByStreet, preflopSpot, chartKeyFor } from './situation.js';
+
+// Range share assumed for a raiser when no tracked range is available.
+const RAISER_SHARE = { open: 0.3, vsLimp: 0.3, vsOpen: 0.2, squeeze: 0.2, vs3bet: 0.07, vs4bet: 0.035 };
+const BIG_CALL = 0.35; // a call costing at least this share of the remaining stack is an equity decision
+const JAM_SHARE = 0.4; // raises committing at least this share of the stack go all-in
+
+/** Width multipliers [raise, call] for a spot from persona dials. */
+export function spotMultipliers(spot, dials) {
+  switch (spot.kind) {
+    case 'open':
+      return [dials[`open${spot.position}`] ?? 1, 1];
+    case 'vsLimp':
+      return [dials.isoRaise, dials.coldCall];
+    case 'vsOpen':
+    case 'squeeze':
+      return [dials.threeBet, spot.position === 'BB' ? dials.bbDefend : dials.coldCall];
+    default:
+      return [dials.fourBet, dials.vs3betCall];
+  }
+}
+
+/** Raise-to amount in units for a spot, before clamping to legal bounds. */
+export function raiseSize(spot, view, dials, bb) {
+  const bet = view.currentBet;
+  switch (spot.kind) {
+    case 'open':
+      return Math.round((dials.openSize + (spot.position === 'SB' ? 1 : 0)) * bb);
+    case 'vsLimp':
+      return Math.round((dials.openSize + 1 + spot.limpers) * bb);
+    case 'vsOpen':
+      return Math.round(bet * (spot.ip ? 3 : 3.8));
+    case 'squeeze':
+      return Math.round(bet * (spot.ip ? 3 : 3.8) + bet * spot.callers);
+    case 'vs3bet':
+      return Math.round(bet * 2.3);
+    default:
+      return Infinity; // 5-bet: all-in
+  }
+}
+
+/**
+ * @param {{ view:object, events:object[], seat:number, legal:object, dials:Record<string,number>, rng:() => number,
+ *   bb:number, raiserWeights?:Float32Array|null }} input raiserWeights: tracked 169-class range of the last raiser
+ * @returns {{ action:string, amount?:number }} an intended choice (pass through legalize)
+ */
+export function preflopDecision({ view, events, seat, legal, dials, rng, bb, raiserWeights = null }) {
+  const me = view.players.find((p) => p.seat === seat);
+  const cls = classOf(me.hole[0], me.hole[1]);
+  const spot = preflopSpot(view, actsByStreet(events).preflop, seat);
+  const key = chartKeyFor(spot, hasChart);
+  const [raiseMul, callMul] = spotMultipliers(spot, dials);
+  const f = scaledFreqs(key, cls, raiseMul, callMul);
+  const allIn = { action: 'raise', amount: legal.maxRaiseTo ?? 0 };
+
+  if (legal.toCall > 0 && legal.toCall >= BIG_CALL * me.stack) {
+    const pot = view.players.reduce((sum, p) => sum + p.total, 0);
+    const villain = raiserWeights ?? topShareWeights(RAISER_SHARE[spot.kind]);
+    const equity = equityVsClassWeights(cls, villain);
+    const need = legal.toCall / (pot + legal.toCall);
+    if (legal.canRaise && f.raise >= 0.5 && equity >= 0.55) return allIn;
+    return equity >= need * dials.jamCall ? { action: 'call' } : { action: 'fold' };
+  }
+
+  const u = rng();
+  if (u < f.raise) {
+    if (spot.kind === 'open' && rng() < dials.limpFreq) return { action: 'call' };
+    const amount = raiseSize(spot, view, dials, bb);
+    if (!legal.canRaise) return { action: 'call' };
+    return amount >= JAM_SHARE * legal.maxRaiseTo ? allIn : { action: 'raise', amount };
+  }
+  if (u < f.raise + f.call) return { action: 'call' };
+  return { action: 'fold' };
+}
+```
+
+- [ ] **Step 5: Write `postflop.js`**
+
+```js
+// src/private/trainers/poker/bots/postflop.js
+// Postflop decisions from equity, pot odds, texture, position, SPR and opponent count.
+export const SIZE_MENU = Object.freeze([1 / 3, 1 / 2, 3 / 4, 1]);
+// Rough share of a betting range that is value, and share of hands too weak to show down, by street.
+const VALUE_SHARE = { flop: 0.35, turn: 0.3, river: 0.25 };
+const WEAK_SHARE = 0.45;
+const ALL_IN_SHARE = 0.6; // bets committing at least this share of the stack go all-in
+
+const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+
+/** Converts multiway equity (share of the pot) to a heads-up-equivalent equity. */
+export const huEquity = (equity, nOpp) => (nOpp <= 1 ? equity : Math.max(0, equity) ** (1 / nOpp));
+
+/** Share of bluffs in a balanced betting range for a bet of size `bet` into `pot`. */
+export const bluffShare = (bet, pot) => bet / (pot + 2 * bet);
+
+/** Balanced chance to bluff with a weak hand, before persona and context multipliers. */
+export function balancedBluffChance(street, frac) {
+  const r = bluffShare(frac, 1);
+  return (VALUE_SHARE[street] / WEAK_SHARE) * (r / (1 - r));
+}
+
+/** Index into SIZE_MENU: 1/2 pot on the flop, 3/4 later, one step bigger on wet boards, shifted by sizeBias. */
+export function sizeIndex(street, wetness, sizeBias) {
+  return clamp((street === 'flop' ? 1 : 2) + (wetness > 0.55 ? 1 : 0) + Math.round(sizeBias), 0, SIZE_MENU.length - 1);
+}
+
+function betTo(c, frac) {
+  const amount = Math.round(c.currentBet + frac * (c.pot + c.toCall));
+  if (amount >= ALL_IN_SHARE * c.maxRaiseTo) return { action: c.currentBet === 0 ? 'bet' : 'raise', amount: c.maxRaiseTo };
+  return { action: c.currentBet === 0 ? 'bet' : 'raise', amount };
+}
+
+/**
+ * @param {{ street:'flop'|'turn'|'river', equity:number, nOpp:number, pot:number, toCall:number, currentBet:number,
+ *   maxRaiseTo:number, canRaise:boolean, ip:boolean, aggressor:boolean, betsThisStreet:number, spr:number,
+ *   wetness:number, draw:boolean, dials:Record<string,number>, rng:() => number }} c
+ *   equity: share of the pot vs the live opponents' ranges; draw: flush draw or open-ended straight draw.
+ * @returns {{ action:string, amount?:number }} an intended choice (pass through legalize)
+ */
+export function postflopDecision(c) {
+  const d = c.dials;
+  const hu = huEquity(c.equity, c.nOpp);
+  const frac = SIZE_MENU[sizeIndex(c.street, c.wetness, d.sizeBias)];
+  const multiway = d.multiwayTight * (c.nOpp - 1);
+
+  if (c.toCall === 0) {
+    const valueT = d.valueThresh + multiway + (c.street === 'river' ? 0.03 : 0) - (c.ip ? 0.02 : 0);
+    if (hu >= valueT) {
+      if (c.street !== 'river' && hu >= 0.85 && c.rng() < d.trapFreq) return { action: 'check' };
+      if (!c.ip && c.nOpp === 1 && c.rng() < d.checkRaise) return { action: 'check' };
+      return betTo(c, frac);
+    }
+    let p = d.bluffMul * d.aggression * balancedBluffChance(c.street, frac);
+    if (c.aggressor && c.street === 'flop') p = Math.max(p, d.cbetFlop * (1 - 0.4 * c.wetness));
+    if (c.aggressor && c.street === 'turn') p = Math.max(p, d.cbetTurn * (c.draw ? 1.3 : 0.8));
+    if (c.draw) p *= 1.5;
+    if (c.street === 'river' && hu > 0.35) p *= 0.25; // showdown value: mostly check
+    if (c.street !== 'river' && hu >= valueT - 0.1) p = Math.max(p, 0.25 * (d.aggression - 0.5)); // thin value
+    p *= 0.5 ** (c.nOpp - 1);
+    return c.rng() < Math.min(0.95, p) ? betTo(c, frac) : { action: 'check' };
+  }
+
+  const need = c.toCall / (c.pot + c.toCall);
+  const implied = c.draw && c.street !== 'river' && c.spr > 2 ? d.drawImplied : 0;
+  const eq = c.equity + implied;
+  const raiseT = d.raiseValue + multiway + 0.04 * Math.max(0, c.betsThisStreet - 1);
+  if (c.canRaise && hu >= raiseT) {
+    if (c.street !== 'river' && c.rng() < d.trapFreq * 0.5) return { action: 'call' };
+    return betTo(c, SIZE_MENU[clamp(2 + Math.round(d.sizeBias), 0, SIZE_MENU.length - 1)]);
+  }
+  if (c.canRaise && c.draw && c.street !== 'river' && c.betsThisStreet === 1 && c.rng() < d.semiBluffRaise * (c.nOpp === 1 ? 1 : 0.3)) {
+    return betTo(c, SIZE_MENU[2]);
+  }
+  const callT = need * d.callThresh;
+  if (eq >= callT) return { action: 'call' };
+  if (eq >= 0.8 * callT && c.rng() < d.mdfDefend * 0.5) return { action: 'call' };
+  if (c.street === 'flop' && c.ip && c.nOpp === 1 && c.betsThisStreet === 1 && eq >= 0.6 * callT && c.rng() < d.floatFreq) {
+    return { action: 'call' };
+  }
+  return { action: 'fold' };
+}
+```
+
+- [ ] **Step 6: Run the test to verify it passes**
+
+Run: `npx vitest run src/private/trainers/poker/bots/decisions.test.js`
+Expected: PASS (14 tests).
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add src/private/trainers/poker/bots/legalize.js src/private/trainers/poker/bots/preflop.js src/private/trainers/poker/bots/postflop.js src/private/trainers/poker/bots/decisions.test.js
+git commit -m "Add preflop chart play, postflop equity decisions and choice legalization
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 10: Reference bots, exploit probes and the duplicate-deal arena
+
+**Files:**
+- Modify: `src/private/trainers/poker/bots/baselines.js` (replace the whole file; `randomLegal` and `callingStation` are unchanged)
+- Create: `src/private/trainers/poker/bots/probes.js`
+- Create: `src/private/trainers/poker/bots/arena.js`
+- Test: `src/private/trainers/poker/bots/probes.test.js`
+- Test: `src/private/trainers/poker/bots/arena.test.js`
+
+**Interfaces:**
+- Consumes: Tasks 2–6, 9 (`legalize`, `huEquity`), Task 5 (`accumulateProfile`), engine `dealHand`/`applyEvent`/`legalActions`/`EngineError`, `viewFor`/`eventsFor`, `mulberry32`.
+- Produces:
+  - `randomLegal`, `callingStation`, `tightPassive`, `rawEquity` (Brains) and `createRawEquityBrain({ iterations = 200 })`.
+  - `always3Bet`, `alwaysCbet`, `alwaysOverbetRiver` (Brains).
+  - `playArenaHand({ seats, button, dealRng, decisionRng, playerAt, profile?, heroSeat?, sb?, bb? }) → { events, state }`.
+  - `playDuplicateDeal({ players, dealSeed, decisionRng, button?, stack?, subject?, profile?, onHand? }) → { nets, hands, profile }`. Rotation r seats player `(s + r) % n` in seat s; `onHand(events, seatOf)`.
+
+- [ ] **Step 1: Write the failing tests**
+
+```js
+// src/private/trainers/poker/bots/probes.test.js
+import { describe, it, expect } from 'vitest';
+import { mulberry32 } from '../../core/rng.js';
+import { rawEquity, tightPassive, callingStation } from './baselines.js';
+import { always3Bet, alwaysCbet, alwaysOverbetRiver } from './probes.js';
+import { playArenaHand } from './arena.js';
+import { contextAfter } from './testHands.js';
+
+const ctxOf = (steps, options) => {
+  const cx = contextAfter(steps, options);
+  return { view: cx.view, seat: cx.seat, legal: cx.legal, events: cx.seatEvents, persona: null, profile: null, bb: 2 };
+};
+
+describe('reference bots', () => {
+  it('rawEquity raises AA pot-size preflop and folds 72o to a raise', () => {
+    expect(rawEquity.decide(ctxOf([]), mulberry32(1))).toEqual({ action: 'raise', amount: 7 });
+    const junk = ctxOf(['r 2 6'], { holes: ['2c3d', '7h2s', 'AhAs', '7c2d', 'JcTc', '9s9h'] });
+    expect(rawEquity.decide(junk, mulberry32(1))).toEqual({ action: 'fold' });
+  });
+
+  it('tightPassive raises only premium hands unopened, calls its range, checks one pair and folds air to a bet', () => {
+    expect(tightPassive.decide(ctxOf([]), mulberry32(1))).toEqual({ action: 'raise', amount: 6 });
+    const kq = ctxOf(['r 2 6']); // HJ KdQd facing a raise
+    expect(tightPassive.decide(kq, mulberry32(1))).toEqual({ action: 'call' });
+    const overpair = ctxOf(['r 2 6', 'c 3', 'f 4', 'f 5', 'f 0', 'f 1', 'B 2h5s8c']);
+    expect(overpair.seat).toBe(2);
+    expect(tightPassive.decide(overpair, mulberry32(1))).toEqual({ action: 'check' }); // one pair: no bet
+    const set = ctxOf(['r 2 6', 'c 3', 'f 4', 'f 5', 'f 0', 'f 1', 'B Ad5s8c']);
+    expect(tightPassive.decide(set, mulberry32(1))).toEqual({ action: 'bet', amount: 8 }); // trips: half of a 15 pot, rounded
+    const hj = ctxOf(['r 2 6', 'c 3', 'f 4', 'f 5', 'f 0', 'f 1', 'B 2h5s8c', 'b 2 8']);
+    expect(tightPassive.decide(hj, mulberry32(1))).toEqual({ action: 'fold' });
+  });
+
+  it('always3Bet re-raises any single raise to 3x', () => {
+    expect(always3Bet.decide(ctxOf(['r 2 5']), mulberry32(1))).toEqual({ action: 'raise', amount: 15 });
+  });
+
+  it('alwaysCbet bets 2/3 pot on the flop as the preflop raiser', () => {
+    const flop = ctxOf(['r 2 5', 'f 3', 'f 4', 'f 5', 'f 0', 'c 1', 'B Kh8d4s', 'k 1']);
+    expect(alwaysCbet.decide(flop, mulberry32(1))).toEqual({ action: 'bet', amount: 7 });
+  });
+
+  it('alwaysOverbetRiver bets 1.5x pot on the river', () => {
+    const river = ctxOf(['r 2 5', 'f 3', 'f 4', 'f 5', 'f 0', 'c 1', 'B Kh8d4s', 'k 1', 'k 2', 'B 6c', 'k 1', 'k 2', 'B 3h', 'k 1']);
+    expect(alwaysOverbetRiver.decide(river, mulberry32(1))).toEqual({ action: 'bet', amount: 17 });
+  });
+
+  it('every reference bot completes 300 hands with only legal actions', () => {
+    const rng = mulberry32(4);
+    const bots = [rawEquity, tightPassive, always3Bet, alwaysCbet, alwaysOverbetRiver, callingStation];
+    for (let h = 0; h < 300; h += 1) {
+      const { state } = playArenaHand({
+        seats: bots.map((_, seat) => ({ seat, stack: 200 })),
+        button: h % 6,
+        dealRng: rng,
+        decisionRng: rng,
+        playerAt: (seat) => ({ brain: bots[(seat + h) % 6], persona: null }),
+      });
+      expect(state.street).toBe('complete');
+    }
+  });
+});
+```
+
+```js
+// src/private/trainers/poker/bots/arena.test.js
+import { describe, it, expect } from 'vitest';
+import { mulberry32 } from '../../core/rng.js';
+import { reduceHand } from '../engine/handState.js';
+import { callingStation, randomLegal } from './baselines.js';
+import { emptyProfile } from './contract.js';
+import { playArenaHand, playDuplicateDeal } from './arena.js';
+
+describe('playArenaHand', () => {
+  it('gives each brain only its own view and hole cards', () => {
+    const spy = {
+      decide(ctx) {
+        for (const p of ctx.view.players) if (p.seat !== ctx.seat) expect(p.hole).toBeNull();
+        for (const e of ctx.events) if (e.type === 'hole' && e.seat !== ctx.seat) expect(e.cards).toBeNull();
+        expect(ctx.bb).toBe(2);
+        return callingStation.decide(ctx);
+      },
+    };
+    const { events, state } = playArenaHand({
+      seats: [0, 1, 2].map((seat) => ({ seat, stack: 200 })), button: 0, dealRng: mulberry32(1), decisionRng: mulberry32(2),
+      playerAt: () => ({ brain: spy, persona: null }),
+    });
+    expect(state.street).toBe('complete');
+    expect(reduceHand(events)).toEqual(state);
+  });
+});
+
+describe('playDuplicateDeal', () => {
+  it('rotates every player through every seat with identical cards, and nets sum to zero', () => {
+    const holesSeen = [];
+    const players = Array.from({ length: 6 }, () => ({ brain: callingStation, persona: null }));
+    const { nets, hands } = playDuplicateDeal({
+      players, dealSeed: 77, decisionRng: mulberry32(1), button: 2,
+      onHand: (events) => holesSeen.push(events.filter((e) => e.type === 'hole').map((e) => `${e.seat}:${e.cards}`).sort().join('|')),
+    });
+    expect(hands).toBe(6);
+    expect(new Set(holesSeen).size).toBe(1);
+    expect(nets.reduce((a, b) => a + b, 0)).toBe(0);
+    // identical players and identical cards in every seat: everyone breaks even over the rotations
+    expect(nets).toEqual([0, 0, 0, 0, 0, 0]);
+  });
+
+  it('accumulates the subject profile with the subject seat for each rotation', () => {
+    const players = [{ brain: randomLegal, persona: null }, ...Array.from({ length: 5 }, () => ({ brain: callingStation, persona: null }))];
+    const seen = [];
+    const spyStation = {
+      decide(ctx) {
+        seen.push([ctx.seat, ctx.heroSeat]);
+        return callingStation.decide(ctx);
+      },
+    };
+    players[1] = { brain: spyStation, persona: null };
+    const { profile } = playDuplicateDeal({ players, dealSeed: 5, decisionRng: mulberry32(3), subject: 0, profile: emptyProfile() });
+    expect(profile.hands).toBe(6);
+    // player 1 sits one seat after player 0 in every rotation
+    expect(seen.length).toBeGreaterThan(0);
+    for (const [seat, heroSeat] of seen) expect(heroSeat).toBe((seat + 5) % 6);
+  });
+});
+```
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `npx vitest run src/private/trainers/poker/bots/probes.test.js src/private/trainers/poker/bots/arena.test.js`
+Expected: FAIL, with module-not-found errors for `./probes.js` and `./arena.js`, and missing exports `rawEquity`/`tightPassive`.
+
+- [ ] **Step 3: Replace `baselines.js`**
+
+```js
+// src/private/trainers/poker/bots/baselines.js
+// Fixed reference bots for tests, training anchors and the benchmark gate.
+import { randomPolicy } from '../engine/simulate.js';
+import { evaluate } from '../engine/evaluator.js';
+import { classOf, COMBO_COUNT } from './handClass.js';
+import { RANK_PCT } from './charts.js';
+import { equityVsRanges } from './equity.js';
+import { legalize } from './legalize.js';
+import { EQUITY_VS_ANY } from './preflopEquity.js';
+import { huEquity } from './postflop.js';
+
+const ANY_RANGE = new Float32Array(COMBO_COUNT).fill(1);
+const potOf = (view) => view.players.reduce((sum, p) => sum + p.total, 0);
+const meOf = (ctx) => ctx.view.players.find((p) => p.seat === ctx.seat);
+const liveOpponents = (ctx) => ctx.view.players.filter((p) => !p.folded && p.seat !== ctx.seat).length;
+
+/** @type {import('./contract.js').Brain} */
+export const randomLegal = { decide: (ctx, rng) => randomPolicy(ctx.view, ctx.legal, rng) };
+
+/** @type {import('./contract.js').Brain} */
+export const callingStation = { decide: (ctx) => (ctx.legal.canCheck ? { action: 'check' } : { action: 'call' }) };
+
+/**
+ * Plays its raw equity against random hands: pot-size raise with heads-up-equivalent equity >= 0.65,
+ * otherwise check, or call when equity covers the pot odds.
+ * @returns {import('./contract.js').Brain}
+ */
+export function createRawEquityBrain({ iterations = 200 } = {}) {
+  return {
+    decide(ctx, rng) {
+      const { view, legal } = ctx;
+      const me = meOf(ctx);
+      const nOpp = liveOpponents(ctx);
+      const equity = view.street === 'preflop'
+        ? EQUITY_VS_ANY[classOf(me.hole[0], me.hole[1])] ** nOpp
+        : equityVsRanges({ hole: me.hole, board: view.board, ranges: Array(nOpp).fill(ANY_RANGE), rng, iterations }).equity;
+      const pot = potOf(view);
+      if (legal.canRaise && huEquity(equity, nOpp) >= 0.65) {
+        return legalize({ action: 'raise', amount: view.currentBet + pot + legal.toCall }, legal);
+      }
+      if (legal.canCheck) return { action: 'check' };
+      return equity >= legal.toCall / (pot + legal.toCall) ? { action: 'call' } : { action: 'fold' };
+    },
+  };
+}
+
+// Category of the board alone (pairs and trips on a 3-4 card board; full evaluation on the river).
+function boardCategory(board) {
+  if (board.length >= 5) return evaluate(board) >> 20;
+  const counts = {};
+  for (const c of board) counts[c >> 2] = (counts[c >> 2] ?? 0) + 1;
+  const n = Object.values(counts).sort((a, b) => b - a);
+  if (n[0] >= 3) return 3;
+  if (n[0] === 2 && n[1] === 2) return 2;
+  return n[0] === 2 ? 1 : 0;
+}
+
+/**
+ * Tight-passive: plays the top 12% preflop by calling (raises only the top 3% when unopened), continues postflop
+ * only with a hand that improves on the board, and bets half pot with two pair or better when checked to.
+ * @type {import('./contract.js').Brain}
+ */
+export const tightPassive = {
+  decide(ctx) {
+    const { view, legal, bb } = ctx;
+    const me = meOf(ctx);
+    const check = () => (legal.canCheck ? { action: 'check' } : { action: 'fold' });
+    if (view.street === 'preflop') {
+      const pct = RANK_PCT[classOf(me.hole[0], me.hole[1])];
+      if (pct > 0.12) return check();
+      if (pct <= 0.03 && view.currentBet === bb) return legalize({ action: 'raise', amount: 3 * bb }, legal);
+      return legal.canCheck ? { action: 'check' } : { action: 'call' };
+    }
+    const category = evaluate([...me.hole, ...view.board]) >> 20;
+    if (category <= boardCategory(view.board)) return check();
+    if (category >= 2 && legal.canCheck && legal.canRaise) {
+      return legalize({ action: 'bet', amount: Math.round(potOf(view) / 2) }, legal);
+    }
+    return legal.canCheck ? { action: 'check' } : { action: 'call' };
+  },
+};
+
+export const rawEquity = createRawEquityBrain();
+```
+
+- [ ] **Step 4: Write `probes.js`**
+
+```js
+// src/private/trainers/poker/bots/probes.js
+// Fixed exploit probes for the benchmark gate. Each plays like rawEquity except in its probe spot.
+import { classOf } from './handClass.js';
+import { RANK_PCT } from './charts.js';
+import { rawEquity } from './baselines.js';
+import { legalize } from './legalize.js';
+import { actsByStreet, preflopSpot } from './situation.js';
+
+const potOf = (view) => view.players.reduce((sum, p) => sum + p.total, 0);
+
+/** Re-raises to 3x whenever it faces a single raise preflop (with or without callers). */
+export const always3Bet = {
+  decide(ctx, rng) {
+    const { view, legal, seat, events } = ctx;
+    if (view.street === 'preflop' && legal.canRaise) {
+      const spot = preflopSpot(view, actsByStreet(events).preflop, seat);
+      if (spot.kind === 'vsOpen' || spot.kind === 'squeeze') return legalize({ action: 'raise', amount: 3 * view.currentBet }, legal);
+    }
+    return rawEquity.decide(ctx, rng);
+  },
+};
+
+/** Opens 45% of hands to 2.5 BB and bets 2/3 pot on every flop it reaches as the preflop raiser when checked to. */
+export const alwaysCbet = {
+  decide(ctx, rng) {
+    const { view, legal, seat, events, bb } = ctx;
+    const acts = actsByStreet(events);
+    if (view.street === 'preflop' && legal.canRaise) {
+      const me = view.players.find((p) => p.seat === seat);
+      const spot = preflopSpot(view, acts.preflop, seat);
+      if (spot.kind === 'open' && RANK_PCT[classOf(me.hole[0], me.hole[1])] <= 0.45) {
+        return legalize({ action: 'raise', amount: Math.round(2.5 * bb) }, legal);
+      }
+    }
+    if (view.street === 'flop' && legal.canCheck && legal.canRaise) {
+      const raises = acts.preflop.filter((a) => a.action === 'raise');
+      if (raises.length && raises[raises.length - 1].seat === seat) {
+        return legalize({ action: 'bet', amount: Math.round((2 * potOf(view)) / 3) }, legal);
+      }
+    }
+    return rawEquity.decide(ctx, rng);
+  },
+};
+
+/** Bets 1.5x pot (capped at all-in) on every river where it can bet. */
+export const alwaysOverbetRiver = {
+  decide(ctx, rng) {
+    const { view, legal } = ctx;
+    if (view.street === 'river' && legal.canCheck && legal.canRaise) {
+      return legalize({ action: 'bet', amount: Math.round(1.5 * potOf(view)) }, legal);
+    }
+    return rawEquity.decide(ctx, rng);
+  },
+};
+```
+
+- [ ] **Step 5: Write `arena.js`**
+
+```js
+// src/private/trainers/poker/bots/arena.js
+// Bot-vs-bot play with duplicate deals: each deal is replayed with the players rotated through every seat,
+// so every player holds every set of hole cards once. Used by training and the benchmark gate.
+import { mulberry32 } from '../../core/rng.js';
+import { applyEvent, legalActions, EngineError } from '../engine/handState.js';
+import { dealHand } from '../engine/dealer.js';
+import { viewFor, eventsFor } from '../engine/view.js';
+import { accumulateProfile } from './profileStats.js';
+
+const MAX_EVENTS = 500;
+
+/** @typedef {{ brain:import('./contract.js').Brain, persona:import('./contract.js').Persona|null }} ArenaPlayer */
+
+/**
+ * Plays one hand. Brains see only viewFor/eventsFor for their own seat.
+ * @param {{ seats:{seat:number, stack:number}[], button:number, dealRng:() => number, decisionRng:() => number,
+ *   playerAt:(seat:number) => ArenaPlayer, profile?:object|null, heroSeat?:number|null, sb?:number, bb?:number }} input
+ * @returns {{ events:object[], state:object }}
+ */
+export function playArenaHand({ seats, button, dealRng, decisionRng, playerAt, profile = null, heroSeat = null, sb = 1, bb = 2 }) {
+  const deal = dealHand({ seats, button, sb, bb, rng: dealRng });
+  const events = [];
+  let state = null;
+  const push = (event) => {
+    state = applyEvent(state, event);
+    events.push(event);
+  };
+  deal.events.forEach(push);
+  while (state.street !== 'complete') {
+    if (events.length > MAX_EVENTS) throw new EngineError('HAND_DID_NOT_TERMINATE', 'hand did not terminate');
+    if (state.needsBoard) {
+      push(deal.boardEvent(state.needsBoard));
+      continue;
+    }
+    const legal = legalActions(state);
+    const seat = legal.seat;
+    const { brain, persona } = playerAt(seat);
+    const ctx = { view: viewFor(state, seat), seat, legal, events: eventsFor(events, seat), persona, profile, heroSeat, bb };
+    const choice = brain.decide(ctx, decisionRng);
+    const event = { type: 'act', seat, action: choice.action };
+    if (choice.action === 'bet' || choice.action === 'raise') event.amount = choice.amount;
+    push(event);
+  }
+  return { events, state };
+}
+
+/**
+ * Plays one deal under all rotations of `players` (one per seat, 2-6 players, full stacks each hand).
+ * Rotation r puts player (s + r) % n in seat s; the cards and button are identical in every rotation.
+ * @param {{ players:ArenaPlayer[], dealSeed:number, decisionRng:() => number, button?:number, stack?:number,
+ *   subject?:number|null, profile?:object|null, onHand?:(events:object[], seatOf:(player:number) => number) => void }} input
+ *   subject: index of the profiled player; its profile is passed to every brain and updated after each hand.
+ * @returns {{ nets:number[], hands:number, profile:object|null }} nets: units won per player over all rotations
+ */
+export function playDuplicateDeal({ players, dealSeed, decisionRng, button = 0, stack = 200, subject = null, profile = null, onHand }) {
+  const n = players.length;
+  const nets = new Array(n).fill(0);
+  let current = profile;
+  for (let r = 0; r < n; r += 1) {
+    const seatOf = (player) => (player - r + n) % n;
+    const heroSeat = subject === null ? null : seatOf(subject);
+    const { events, state } = playArenaHand({
+      seats: players.map((_, seat) => ({ seat, stack })),
+      button,
+      dealRng: mulberry32(dealSeed),
+      decisionRng,
+      playerAt: (seat) => players[(seat + r) % n],
+      profile: current,
+      heroSeat,
+    });
+    for (let p = 0; p < n; p += 1) nets[p] += state.result.net[seatOf(p)];
+    if (subject !== null && current) current = accumulateProfile(current, heroSeat, events);
+    if (onHand) onHand(events, seatOf);
+  }
+  return { nets, hands: n, profile: current };
+}
+```
+
+- [ ] **Step 6: Run the tests to verify they pass**
+
+Run: `npx vitest run src/private/trainers/poker/bots/probes.test.js src/private/trainers/poker/bots/arena.test.js src/private/trainers/poker/bots/baselines.test.js`
+Expected: PASS (11 tests).
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add src/private/trainers/poker/bots/baselines.js src/private/trainers/poker/bots/probes.js src/private/trainers/poker/bots/arena.js src/private/trainers/poker/bots/probes.test.js src/private/trainers/poker/bots/arena.test.js
+git commit -m "Add raw-equity and tight-passive baselines, exploit probes and duplicate-deal arena
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 11: Heuristic brain and brain registry
+
+**Files:**
+- Create: `src/private/trainers/poker/bots/brain.js`
+- Modify: `src/private/trainers/poker/bots/index.js` (replace the whole file)
+- Modify: `src/private/trainers/poker/bots/contract.js` (BotContext JSDoc only)
+- Test: `src/private/trainers/poker/bots/brain.test.js`
+
+**Interfaces:**
+- Consumes: Tasks 2, 6–10.
+- Produces: `DEFAULT_BRAIN_OPTIONS = { iterations: 4000, budgetMs: 300 }`, `createHeuristicBrain({ iterations?, budgetMs?, now? }) → Brain`, `createBrain(persona, options?) → Brain` (caches one heuristic brain per persona object when `options` is omitted), `BRAIN_KEYS`, and `BOT_VERSION` (still `'placeholder'` until Task 18). `BotContext.heroSeat?: number|null`.
+
+- [ ] **Step 1: Write the failing test**
+
+```js
+// src/private/trainers/poker/bots/brain.test.js
+import { describe, it, expect } from 'vitest';
+import { mulberry32 } from '../../core/rng.js';
+import { applyEvent, legalActions } from '../engine/handState.js';
+import { dealHand } from '../engine/dealer.js';
+import { randomPolicy } from '../engine/simulate.js';
+import { viewFor, eventsFor } from '../engine/view.js';
+import { emptyProfile } from './contract.js';
+import { ARCHETYPES } from './dials.js';
+import { createHeuristicBrain } from './brain.js';
+import { createBrain, BRAIN_KEYS } from './index.js';
+import { contextAfter } from './testHands.js';
+
+const DECISIONS = Number(process.env.POKER_BRAIN_DECISIONS ?? 10000);
+const personas = Object.values(ARCHETYPES).map((dials, i) => ({ id: `p${i}`, name: 'P', tag: 'PPP', style: 's', brain: 'heuristic', dials }));
+
+// Walks random hands with random legal actions; at every decision the brain is asked too and its choice is
+// applied to a copy of the state, which throws if the choice is illegal.
+function checkLegality(total, seed) {
+  const rng = mulberry32(seed);
+  const brain = createHeuristicBrain({ iterations: 60, budgetMs: Infinity });
+  let decisions = 0;
+  let hand = 0;
+  const actions = new Set();
+  while (decisions < total) {
+    const n = 2 + Math.floor(rng() * 5);
+    const seats = Array.from({ length: n }, (_, seat) => ({ seat, stack: rng() < 0.3 ? 1 + Math.floor(rng() * 30) : 200 }));
+    const deal = dealHand({ seats, button: hand % n, sb: 1, bb: 2, rng });
+    const events = [];
+    let state = null;
+    const push = (e) => {
+      state = applyEvent(state, e);
+      events.push(e);
+    };
+    deal.events.forEach(push);
+    const heroSeat = Math.floor(rng() * n);
+    const profile = emptyProfile();
+    for (const k of Object.keys(profile.stats)) profile.stats[k] = { value: rng(), n: 40 };
+    while (state.street !== 'complete') {
+      if (state.needsBoard) {
+        push(deal.boardEvent(state.needsBoard));
+        continue;
+      }
+      const legal = legalActions(state);
+      const ctx = {
+        view: viewFor(state, legal.seat), seat: legal.seat, legal, events: eventsFor(events, legal.seat),
+        persona: personas[decisions % personas.length], profile, heroSeat, bb: 2,
+      };
+      const choice = brain.decide(ctx, rng);
+      actions.add(choice.action);
+      applyEvent(state, { type: 'act', seat: legal.seat, ...choice }); // throws on an illegal choice
+      decisions += 1;
+      const next = randomPolicy(state, legal, rng);
+      push({ type: 'act', seat: legal.seat, ...next });
+    }
+    hand += 1;
+  }
+  return actions;
+}
+
+describe('heuristic brain', () => {
+  it(`makes only legal choices over ${DECISIONS} random states`, () => {
+    const actions = checkLegality(DECISIONS, 20260916);
+    expect([...actions].sort()).toEqual(['bet', 'call', 'check', 'fold', 'raise']);
+  }, 120_000);
+
+  it('is deterministic for a seed', () => {
+    const cx = contextAfter(['r 2 5', 'f 3', 'c 4', 'f 5', 'f 0', 'f 1', 'B Kh8d4s', 'k 2']);
+    const ctx = { view: cx.view, seat: cx.seat, legal: cx.legal, events: cx.seatEvents, persona: personas[1], profile: null, bb: 2 };
+    const run = () => createHeuristicBrain({ iterations: 400, budgetMs: Infinity }).decide(ctx, mulberry32(9));
+    expect(run()).toEqual(run());
+  });
+
+  it('never reads hidden cards: the full log and the seat-filtered log give the same choice', () => {
+    const steps = ['r 2 5', 'f 3', 'c 4', 'f 5', 'f 0', 'f 1', 'B Kh8d4s', 'b 2 8'];
+    const cx = contextAfter(steps);
+    const base = { view: cx.view, seat: cx.seat, legal: cx.legal, persona: personas[0], profile: null, bb: 2 };
+    const a = createHeuristicBrain({ iterations: 300, budgetMs: Infinity }).decide({ ...base, events: cx.events }, mulberry32(3));
+    const b = createHeuristicBrain({ iterations: 300, budgetMs: Infinity }).decide({ ...base, events: cx.seatEvents }, mulberry32(3));
+    expect(a).toEqual(b);
+  });
+
+  it('respects its time budget', () => {
+    const cx = contextAfter(['r 2 5', 'c 3', 'c 4', 'c 5', 'c 0', 'c 1', 'B Kh8d4s', 'k 0', 'k 1']);
+    const ctx = { view: cx.view, seat: cx.seat, legal: cx.legal, events: cx.seatEvents, persona: personas[2], profile: null, bb: 2 };
+    const brain = createHeuristicBrain({ iterations: 1e9, budgetMs: 40 });
+    const started = performance.now();
+    brain.decide(ctx, mulberry32(1));
+    expect(performance.now() - started).toBeLessThan(400);
+  });
+});
+
+describe('createBrain registry', () => {
+  it('knows the heuristic brain, baselines and probes, and caches heuristic brains per persona', () => {
+    expect(BRAIN_KEYS).toEqual(expect.arrayContaining(['heuristic', 'randomLegal', 'callingStation', 'rawEquity', 'tightPassive', 'always3Bet', 'alwaysCbet', 'alwaysOverbetRiver']));
+    for (const key of BRAIN_KEYS) expect(typeof createBrain({ brain: key }).decide).toBe('function');
+    expect(createBrain(personas[0])).toBe(createBrain(personas[0]));
+    expect(createBrain(personas[0], { iterations: 10 })).not.toBe(createBrain(personas[0]));
+  });
+});
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `npx vitest run src/private/trainers/poker/bots/brain.test.js`
+Expected: FAIL, with a module-not-found error for `./brain.js`.
+
+- [ ] **Step 3: Write `brain.js`**
+
+```js
+// src/private/trainers/poker/bots/brain.js
+// The heuristic brain: charts preflop, Monte Carlo equity against tracked ranges postflop, persona dials,
+// and exploit shifts against the profiled hero. Decides only from ctx.view and ctx.events.
+import { resolveDials } from './dials.js';
+import { adaptDials } from './adapt.js';
+import { equityVsRanges } from './equity.js';
+import { legalize } from './legalize.js';
+import { postflopDecision } from './postflop.js';
+import { preflopDecision } from './preflop.js';
+import { createRangeTracker, DEFAULT_TYPE, typeFromProfile } from './ranges.js';
+import { actsByStreet, postflopContext } from './situation.js';
+import { boardTexture, handFeatures } from './texture.js';
+
+/** Production defaults: at most 4,000 samples or 300 ms per postflop decision (spec §5.3), whichever comes first. */
+export const DEFAULT_BRAIN_OPTIONS = Object.freeze({ iterations: 4000, budgetMs: 300 });
+
+/** True when the profile belongs to a live opponent at this table. */
+function profiledOpponentLive(ctx) {
+  if (!ctx.profile || !Number.isInteger(ctx.heroSeat) || ctx.heroSeat === ctx.seat) return false;
+  const hero = ctx.view.players.find((p) => p.seat === ctx.heroSeat);
+  return Boolean(hero && !hero.folded);
+}
+
+/**
+ * @param {{ iterations?:number, budgetMs?:number, now?:() => number }} [options]
+ *   Tests and training pass `budgetMs: Infinity` so decisions depend only on the rng.
+ * @returns {import('./contract.js').Brain}
+ */
+export function createHeuristicBrain(options = {}) {
+  const { iterations, budgetMs, now } = { ...DEFAULT_BRAIN_OPTIONS, ...options };
+  const tracker = createRangeTracker();
+
+  return {
+    decide(ctx, rng) {
+      const { view, seat, legal, events } = ctx;
+      const base = resolveDials(ctx.persona?.dials);
+      const dials = profiledOpponentLive(ctx) ? adaptDials(base, ctx.profile) : base;
+      const typeOf = (s) => (s === ctx.heroSeat && ctx.profile ? typeFromProfile(ctx.profile) : DEFAULT_TYPE);
+      const { classWeights, comboRanges } = tracker.track(view, events, seat, typeOf);
+
+      if (view.street === 'preflop') {
+        const raises = actsByStreet(events).preflop.filter((a) => a.action === 'raise');
+        const raiser = raises.length ? raises[raises.length - 1].seat : null;
+        const raiserWeights = raiser === null ? null : classWeights.get(raiser) ?? null;
+        const choice = preflopDecision({ view, events, seat, legal, dials, rng, bb: ctx.bb, raiserWeights });
+        return legalize(choice, legal);
+      }
+
+      const me = view.players.find((p) => p.seat === seat);
+      const context = postflopContext(view, events, seat, legal);
+      const { equity } = equityVsRanges({
+        hole: me.hole, board: view.board, ranges: [...comboRanges.values()], rng, iterations, budgetMs, now,
+      });
+      const features = handFeatures(me.hole, view.board);
+      const choice = postflopDecision({
+        ...context,
+        equity,
+        currentBet: view.currentBet,
+        maxRaiseTo: legal.maxRaiseTo ?? me.committed + me.stack,
+        canRaise: legal.canRaise,
+        wetness: boardTexture(view.board).wetness,
+        draw: features.flushDraw || features.straightDraw === 'oesd',
+        dials,
+        rng,
+      });
+      return legalize(choice, legal);
+    },
+  };
+}
+```
+
+- [ ] **Step 4: Replace `index.js`**
+
+```js
+// src/private/trainers/poker/bots/index.js
+import { randomLegal, callingStation, rawEquity, tightPassive } from './baselines.js';
+import { always3Bet, alwaysCbet, alwaysOverbetRiver } from './probes.js';
+import { createHeuristicBrain } from './brain.js';
+
+export const BOT_VERSION = 'placeholder';
+
+const FIXED = { randomLegal, callingStation, rawEquity, tightPassive, always3Bet, alwaysCbet, alwaysOverbetRiver };
+export const BRAIN_KEYS = Object.freeze([...Object.keys(FIXED), 'heuristic']);
+
+// Heuristic brains keep a per-hand range cache, so reuse one per persona object and options.
+const heuristicCache = new WeakMap();
+
+/**
+ * @param {import('./contract.js').Persona} persona
+ * @param {{ iterations?:number, budgetMs?:number, now?:() => number }} [options] heuristic brain equity budget
+ * @returns {import('./contract.js').Brain}
+ */
+export function createBrain(persona, options) {
+  if (persona.brain === 'heuristic') {
+    if (options) return createHeuristicBrain(options);
+    if (!heuristicCache.has(persona)) heuristicCache.set(persona, createHeuristicBrain());
+    return heuristicCache.get(persona);
+  }
+  const brain = FIXED[persona.brain];
+  if (!brain) throw new Error(`Unknown brain: ${persona.brain}`);
+  return brain;
+}
+```
+
+- [ ] **Step 5: Document `heroSeat` in the contract typedef**
+
+In `src/private/trainers/poker/bots/contract.js`, replace:
+
+```js
+ * @typedef {{ view:object, seat:number, legal:object, events:object[], persona:Persona, profile:PlayerProfile|null, bb:number }} BotContext
+ *   view = viewFor(state, seat); events = eventsFor(handEvents, seat); legal = legalActions(state); bb in units (2).
+```
+
+with:
+
+```js
+ * @typedef {{ view:object, seat:number, legal:object, events:object[], persona:Persona, profile:PlayerProfile|null, heroSeat?:number|null, bb:number }} BotContext
+ *   view = viewFor(state, seat); events = eventsFor(handEvents, seat); legal = legalActions(state); bb in units (2).
+ *   heroSeat: the seat whose tendencies the profile describes (the human). Brains adapt only when it is set.
+```
+
+- [ ] **Step 6: Run the bot tests to verify they pass**
+
+Run: `npx vitest run src/private/trainers/poker/bots`
+Expected: PASS for every bot test file, including the Phase 0 `index.test.js`, `personas.test.js`, `runner.test.js` and `baselines.test.js`. `brain.test.js` has 5 tests, and the legality test takes about 4 s.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add src/private/trainers/poker/bots/brain.js src/private/trainers/poker/bots/index.js src/private/trainers/poker/bots/contract.js src/private/trainers/poker/bots/brain.test.js
+git commit -m "Add heuristic poker brain with range-aware equity, adaptation and brain registry
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 12: Web Worker runner
+
+**Files:**
+- Create: `src/private/trainers/poker/worker/protocol.js`
+- Create: `src/private/trainers/poker/worker/workerClient.js`
+- Create: `src/private/trainers/poker/worker/pokerWorker.js`
+- Test: `src/private/trainers/poker/worker/worker.test.js`
+
+**Interfaces:**
+- Consumes: `createBrain` (Task 11), `mulberry32`, `contextAfter` (Task 5).
+- Produces:
+  - `REQUEST = { DECIDE:'decide' }`, `RESPONSE = { DECISION:'decision', ERROR:'error' }`, `createMessageHandler({ createBrain, rng }) → (message) → response`. The protocol is request `{ type:'decide', id, ctx }` and response `{ type:'decision', id, choice }` or `{ type:'error', id, error:{ message } }`.
+  - `DEFAULT_TIMEOUT_MS = 3000`, `safeChoice(legal)`, `createWorkerRunner({ createWorker?, timeoutMs?, onTimeout? }) → BotRunner`.
+
+- [ ] **Step 1: Write the failing test**
+
+```js
+// src/private/trainers/poker/worker/worker.test.js
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { mulberry32 } from '../../core/rng.js';
+import { createBrain } from '../bots/index.js';
+import { contextAfter } from '../bots/testHands.js';
+import { createMessageHandler } from './protocol.js';
+import { createWorkerRunner, safeChoice } from './workerClient.js';
+
+const persona = { id: 'test', name: 'Test', tag: 'TST', style: 's', brain: 'callingStation' };
+const ctxFor = (steps, p = persona) => {
+  const cx = contextAfter(steps);
+  return { view: cx.view, seat: cx.seat, legal: cx.legal, events: cx.seatEvents, persona: p, profile: null, bb: 2 };
+};
+// Round-trips through structured clone like a real postMessage.
+const clone = (x) => structuredClone(x);
+
+describe('createMessageHandler', () => {
+  it('answers decide requests with the brain choice', () => {
+    const handle = createMessageHandler({ createBrain, rng: mulberry32(1) });
+    expect(handle(clone({ type: 'decide', id: 7, ctx: ctxFor(['r 2 5']) }))).toEqual({ type: 'decision', id: 7, choice: { action: 'call' } });
+  });
+
+  it('matches a local heuristic decision for the same seed', () => {
+    const heuristic = { ...persona, brain: 'heuristic', dials: { cbetFlop: 0.9 } };
+    const ctx = ctxFor(['r 2 5', 'f 3', 'c 4', 'f 5', 'f 0', 'f 1', 'B Kh8d4s', 'k 2'], heuristic);
+    const handle = createMessageHandler({ createBrain, rng: mulberry32(4) });
+    const local = createBrain(heuristic).decide(ctx, mulberry32(4));
+    expect(handle(clone({ type: 'decide', id: 1, ctx })).choice).toEqual(local);
+  });
+
+  it('reuses one brain per persona id and dials across cloned messages', () => {
+    const factory = vi.fn(createBrain);
+    const handle = createMessageHandler({ createBrain: factory, rng: mulberry32(1) });
+    handle(clone({ type: 'decide', id: 1, ctx: ctxFor([]) }));
+    handle(clone({ type: 'decide', id: 2, ctx: ctxFor(['r 2 5']) }));
+    expect(factory).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns errors for malformed, unknown and failing requests', () => {
+    const handle = createMessageHandler({ createBrain, rng: mulberry32(1) });
+    expect(handle(null)).toEqual({ type: 'error', id: null, error: { message: 'malformed message' } });
+    expect(handle({ type: 'nope', id: 3 })).toEqual({ type: 'error', id: 3, error: { message: 'unknown message type: nope' } });
+    expect(handle({ type: 'decide', id: 4, ctx: {} }).error.message).toBe('decide needs ctx.persona');
+    const bad = handle({ type: 'decide', id: 5, ctx: { ...ctxFor([]), persona: { ...persona, brain: 'missing' } } });
+    expect(bad).toEqual({ type: 'error', id: 5, error: { message: 'Unknown brain: missing' } });
+  });
+});
+
+/** In-memory worker: replies asynchronously through the real handler, unless `silent`. */
+function fakeWorker({ silent = false } = {}) {
+  const listeners = { message: [], error: [] };
+  const handle = createMessageHandler({ createBrain, rng: mulberry32(2) });
+  const worker = {
+    posted: [],
+    terminated: false,
+    addEventListener: (type, fn) => listeners[type].push(fn),
+    postMessage(message) {
+      worker.posted.push(message);
+      if (!silent) queueMicrotask(() => listeners.message.forEach((fn) => fn({ data: handle(clone(message)) })));
+    },
+    terminate() {
+      worker.terminated = true;
+    },
+    crash: (message) => listeners.error.forEach((fn) => fn({ message })),
+  };
+  return worker;
+}
+
+describe('createWorkerRunner', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('resolves decisions from the worker and matches ids', async () => {
+    const worker = fakeWorker();
+    const runner = createWorkerRunner({ createWorker: () => worker });
+    const [a, b] = await Promise.all([runner.decide(ctxFor([])), runner.decide(ctxFor(['r 2 5']))]);
+    expect(a).toEqual({ action: 'call' }); // UTG facing the big blind
+    expect(b).toEqual({ action: 'call' });
+    expect(worker.posted.map((m) => m.id)).toEqual([1, 2]);
+  });
+
+  it('falls back to a safe choice on timeout', async () => {
+    vi.useFakeTimers();
+    const worker = fakeWorker({ silent: true });
+    const onTimeout = vi.fn();
+    const runner = createWorkerRunner({ createWorker: () => worker, timeoutMs: 100, onTimeout });
+    const facing = ctxFor(['r 2 5']);
+    const promise = runner.decide(facing);
+    vi.advanceTimersByTime(100);
+    await expect(promise).resolves.toEqual({ action: 'fold' });
+    expect(onTimeout).toHaveBeenCalledTimes(1);
+    expect(safeChoice({ canCheck: true })).toEqual({ action: 'check' });
+  });
+
+  it('rejects pending decisions on a worker error and after dispose', async () => {
+    const worker = fakeWorker({ silent: true });
+    const runner = createWorkerRunner({ createWorker: () => worker, timeoutMs: 10_000 });
+    const pending = runner.decide(ctxFor([]));
+    worker.crash('boom');
+    await expect(pending).rejects.toThrow('boom');
+    const second = runner.decide(ctxFor([]));
+    runner.dispose();
+    await expect(second).rejects.toThrow('runner disposed');
+    await expect(runner.decide(ctxFor([]))).rejects.toThrow('runner disposed');
+    expect(worker.terminated).toBe(true);
+  });
+});
+
+describe('pokerWorker entry', () => {
+  it('registers a message listener that posts handler responses', async () => {
+    const posted = [];
+    let listener = null;
+    vi.stubGlobal('self', { addEventListener: (type, fn) => { if (type === 'message') listener = fn; }, postMessage: (m) => posted.push(m) });
+    await import('./pokerWorker.js');
+    listener({ data: clone({ type: 'decide', id: 9, ctx: ctxFor(['r 2 5']) }) });
+    expect(posted).toEqual([{ type: 'decision', id: 9, choice: { action: 'call' } }]);
+    vi.unstubAllGlobals();
+  });
+});
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `npx vitest run src/private/trainers/poker/worker/worker.test.js`
+Expected: FAIL, with module-not-found errors for `./protocol.js`, `./workerClient.js` and `./pokerWorker.js`.
+
+- [ ] **Step 3: Write `protocol.js`**
+
+```js
+// src/private/trainers/poker/worker/protocol.js
+// Message protocol between the page and pokerWorker.js. The handler is a pure function of its injected
+// dependencies so it can be tested in Node without a real Worker.
+//   request:  { type:'decide', id:number, ctx:BotContext }
+//   response: { type:'decision', id, choice:BotChoice } | { type:'error', id, error:{ message:string } }
+
+export const REQUEST = Object.freeze({ DECIDE: 'decide' });
+export const RESPONSE = Object.freeze({ DECISION: 'decision', ERROR: 'error' });
+
+/**
+ * @param {{ createBrain:(persona:object) => import('../bots/contract.js').Brain, rng:() => number }} deps
+ * @returns {(message:unknown) => object} maps one request to one response
+ */
+export function createMessageHandler({ createBrain, rng }) {
+  // Structured clone gives a new persona object per message; keep one brain per persona id and dial set.
+  const brains = new Map();
+  const brainFor = (persona) => {
+    const key = `${persona.brain}|${persona.id}|${JSON.stringify(persona.dials ?? null)}`;
+    if (!brains.has(key)) brains.set(key, createBrain(persona));
+    return brains.get(key);
+  };
+
+  return (message) => {
+    const id = message && typeof message === 'object' && Number.isInteger(message.id) ? message.id : null;
+    const fail = (text) => ({ type: RESPONSE.ERROR, id, error: { message: text } });
+    if (id === null) return fail('malformed message');
+    if (message.type !== REQUEST.DECIDE) return fail(`unknown message type: ${message.type}`);
+    if (!message.ctx || !message.ctx.persona) return fail('decide needs ctx.persona');
+    try {
+      return { type: RESPONSE.DECISION, id, choice: brainFor(message.ctx.persona).decide(message.ctx, rng) };
+    } catch (err) {
+      return fail(err instanceof Error ? err.message : String(err));
+    }
+  };
+}
+```
+
+- [ ] **Step 4: Write `workerClient.js`**
+
+```js
+// src/private/trainers/poker/worker/workerClient.js
+// BotRunner backed by a Web Worker (same shape as bots/runner.js createLocalRunner).
+import { REQUEST, RESPONSE } from './protocol.js';
+
+export const DEFAULT_TIMEOUT_MS = 3000;
+
+/** The choice used when the worker does not answer in time: check when free, otherwise fold. */
+export const safeChoice = (legal) => (legal.canCheck ? { action: 'check' } : { action: 'fold' });
+
+const defaultCreateWorker = () => new Worker(new URL('./pokerWorker.js', import.meta.url), { type: 'module' });
+
+/**
+ * @param {{ createWorker?:() => { postMessage:(m:object) => void, addEventListener:(type:string, fn:(e:object) => void) => void, terminate:() => void },
+ *   timeoutMs?:number, onTimeout?:(ctx:object) => void }} [options]
+ * @returns {{ decide:(ctx:import('../bots/contract.js').BotContext) => Promise<import('../bots/contract.js').BotChoice>, dispose:() => void }}
+ *   decide rejects on a worker error or after dispose, and resolves with safeChoice(ctx.legal) on timeout.
+ */
+export function createWorkerRunner({ createWorker = defaultCreateWorker, timeoutMs = DEFAULT_TIMEOUT_MS, onTimeout = () => {} } = {}) {
+  const worker = createWorker();
+  const pending = new Map();
+  let nextId = 1;
+  let disposed = false;
+
+  const settle = (id) => {
+    const entry = pending.get(id);
+    if (!entry) return null;
+    pending.delete(id);
+    clearTimeout(entry.timer);
+    return entry;
+  };
+
+  worker.addEventListener('message', (event) => {
+    const message = event.data;
+    const entry = message && settle(message.id);
+    if (!entry) return; // late reply after a timeout, or unknown id
+    if (message.type === RESPONSE.DECISION) entry.resolve(message.choice);
+    else entry.reject(new Error(message.error?.message ?? 'worker error'));
+  });
+
+  worker.addEventListener('error', (event) => {
+    for (const id of [...pending.keys()]) settle(id).reject(new Error(event.message ?? 'worker crashed'));
+  });
+
+  return {
+    decide(ctx) {
+      if (disposed) return Promise.reject(new Error('runner disposed'));
+      return new Promise((resolve, reject) => {
+        const id = nextId;
+        nextId += 1;
+        const timer = setTimeout(() => {
+          settle(id);
+          onTimeout(ctx);
+          resolve(safeChoice(ctx.legal));
+        }, timeoutMs);
+        pending.set(id, { resolve, reject, timer });
+        worker.postMessage({ type: REQUEST.DECIDE, id, ctx });
+      });
+    },
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      for (const id of [...pending.keys()]) settle(id).reject(new Error('runner disposed'));
+      worker.terminate();
+    },
+  };
+}
+```
+
+- [ ] **Step 5: Write `pokerWorker.js`**
+
+```js
+// src/private/trainers/poker/worker/pokerWorker.js
+// Web Worker entry. Loaded with new Worker(new URL('./pokerWorker.js', import.meta.url), { type: 'module' }).
+import { mulberry32 } from '../../core/rng.js';
+import { createBrain } from '../bots/index.js';
+import { createMessageHandler } from './protocol.js';
+
+const seed = crypto.getRandomValues(new Uint32Array(1))[0];
+const handle = createMessageHandler({ createBrain, rng: mulberry32(seed) });
+
+self.addEventListener('message', (event) => {
+  self.postMessage(handle(event.data));
+});
+```
+
+- [ ] **Step 6: Run the test to verify it passes**
+
+Run: `npx vitest run src/private/trainers/poker/worker/worker.test.js`
+Expected: PASS (8 tests).
+
+- [ ] **Step 7: Verify the production build still succeeds**
+
+Run: `npm run build`
+Expected: the build succeeds. Nothing imports the worker yet, so no worker chunk is emitted. The Vite 6 module-worker pattern was verified separately during planning.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add src/private/trainers/poker/worker/protocol.js src/private/trainers/poker/worker/workerClient.js src/private/trainers/poker/worker/pokerWorker.js src/private/trainers/poker/worker/worker.test.js
+git commit -m "Add Web Worker bot runner with pure message handler and timeouts
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 13: Pacing
+
+**Files:**
+- Create: `src/private/trainers/poker/bots/pacing.js`
+- Test: `src/private/trainers/poker/bots/pacing.test.js`
+
+**Interfaces:**
+- Consumes: `contextAfter` (Task 5).
+- Produces: `PACE = { fast:[250,600], normal:[600,1800] }`, `BIG_DECISION_FACTOR = 1.6`, `BIG_DECISION_BB = 20`, `isBigDecision(ctx, choice)`, `thinkTimeMs({ speed, ctx, choice, rng }) → ms`, `withPacing(runner, { speed, rng, now, sleep }) → BotRunner`.
+
+- [ ] **Step 1: Write the failing test**
+
+```js
+// src/private/trainers/poker/bots/pacing.test.js
+import { describe, it, expect } from 'vitest';
+import { thinkTimeMs, withPacing, isBigDecision, PACE } from './pacing.js';
+import { contextAfter } from './testHands.js';
+
+const ctxOf = (steps) => {
+  const cx = contextAfter(steps);
+  return { view: cx.view, seat: cx.seat, legal: cx.legal, events: cx.seatEvents, persona: null, profile: null, bb: 2 };
+};
+
+describe('thinkTimeMs', () => {
+  it('stays inside the fast and normal windows for small decisions', () => {
+    const ctx = ctxOf([]);
+    const call = { action: 'call' };
+    expect(thinkTimeMs({ speed: 'fast', ctx, choice: call, rng: () => 0 })).toBe(250);
+    expect(thinkTimeMs({ speed: 'fast', ctx, choice: call, rng: () => 0.999999 })).toBe(600);
+    expect(thinkTimeMs({ speed: 'normal', ctx, choice: call, rng: () => 0.5 })).toBe(1200);
+    expect(PACE.normal).toEqual([600, 1800]);
+  });
+
+  it('takes 1.6x longer for all-ins and actions of 20 BB or more', () => {
+    const ctx = ctxOf([]);
+    const jam = { action: 'raise', amount: ctx.legal.maxRaiseTo };
+    expect(isBigDecision(ctx, jam)).toBe(true);
+    expect(isBigDecision(ctx, { action: 'raise', amount: 5 })).toBe(false);
+    expect(thinkTimeMs({ speed: 'normal', ctx, choice: jam, rng: () => 0 })).toBe(960);
+    const small = ctxOf(['r 2 5', 'f 3', 'f 4', 'f 5', 'f 0', 'c 1', 'B Kh8d4s', 'b 1 10']);
+    expect(isBigDecision(small, { action: 'call' })).toBe(false);
+    const big = ctxOf(['r 2 5', 'f 3', 'f 4', 'f 5', 'f 0', 'c 1', 'B Kh8d4s', 'b 1 40']);
+    expect(isBigDecision(big, { action: 'call' })).toBe(true);
+    expect(isBigDecision(big, { action: 'fold' })).toBe(false);
+  });
+});
+
+describe('withPacing', () => {
+  it('waits only the remainder of the think time and passes dispose through', async () => {
+    let t = 0;
+    const slept = [];
+    let disposed = false;
+    const inner = {
+      decide: async () => {
+        t += 100; // compute took 100 ms
+        return { action: 'call' };
+      },
+      dispose: () => {
+        disposed = true;
+      },
+    };
+    const paced = withPacing(inner, { speed: 'fast', rng: () => 0, now: () => t, sleep: async (ms) => slept.push(ms) });
+    expect(await paced.decide(ctxOf([]))).toEqual({ action: 'call' });
+    expect(slept).toEqual([150]);
+    paced.dispose();
+    expect(disposed).toBe(true);
+  });
+});
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `npx vitest run src/private/trainers/poker/bots/pacing.test.js`
+Expected: FAIL, with a module-not-found error for `./pacing.js`.
+
+- [ ] **Step 3: Write the implementation**
+
+```js
+// src/private/trainers/poker/bots/pacing.js
+// Humanized think time for bot decisions (spec §5.6): fast 250-600 ms, normal 600-1800 ms, x1.6 for big decisions.
+
+export const PACE = Object.freeze({ fast: Object.freeze([250, 600]), normal: Object.freeze([600, 1800]) });
+export const BIG_DECISION_FACTOR = 1.6;
+
+export const BIG_DECISION_BB = 20;
+
+/** A big decision: going all-in, or putting at least 20 BB into the pot with this action. */
+export function isBigDecision(ctx, choice) {
+  const me = ctx.view.players.find((p) => p.seat === ctx.seat);
+  const aggressive = choice.action === 'bet' || choice.action === 'raise';
+  if (aggressive && choice.amount >= ctx.legal.maxRaiseTo) return true;
+  const chips = aggressive ? choice.amount - me.committed : choice.action === 'call' ? ctx.legal.toCall : 0;
+  return chips >= me.stack || chips >= BIG_DECISION_BB * ctx.bb;
+}
+
+/** @returns {number} whole milliseconds */
+export function thinkTimeMs({ speed, ctx, choice, rng }) {
+  const [lo, hi] = PACE[speed] ?? PACE.normal;
+  const ms = lo + rng() * (hi - lo);
+  return Math.round(isBigDecision(ctx, choice) ? ms * BIG_DECISION_FACTOR : ms);
+}
+
+/**
+ * Wraps a BotRunner so each decision takes at least its think time (compute time counts toward it).
+ * @param {{ decide:(ctx:object) => Promise<object>, dispose:() => void }} runner
+ * @param {{ speed?:'fast'|'normal', rng?:() => number, now?:() => number, sleep?:(ms:number) => Promise<void> }} [options]
+ */
+export function withPacing(runner, { speed = 'normal', rng = Math.random, now = () => performance.now(), sleep = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
+  return {
+    async decide(ctx) {
+      const started = now();
+      const choice = await runner.decide(ctx);
+      const wait = thinkTimeMs({ speed, ctx, choice, rng }) - (now() - started);
+      if (wait > 0) await sleep(wait);
+      return choice;
+    },
+    dispose: () => runner.dispose(),
+  };
+}
+```
+
+- [ ] **Step 4: Run the test to verify it passes**
+
+Run: `npx vitest run src/private/trainers/poker/bots/pacing.test.js`
+Expected: PASS (3 tests).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/private/trainers/poker/bots/pacing.js src/private/trainers/poker/bots/pacing.test.js
+git commit -m "Add humanized bot think time and pacing runner wrapper
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 14: Table jobs, CI statistics and the worker_threads pool
+
+**Files:**
+- Create: `scripts/poker/lib/ciStats.js`
+- Create: `scripts/poker/lib/tableJob.js`
+- Create: `scripts/poker/lib/pool.js`
+- Create: `scripts/poker/lib/tableWorker.js`
+- Test: `scripts/poker/lib/tableJob.test.js`
+
+**Interfaces:**
+- Consumes: `playDuplicateDeal` (Task 10), `createBrain` (Task 11), `accumulateProfile` (Task 5), `emptyProfile`, `mulberry32`.
+- Produces:
+  - `Z95`, `emptyAcc()`, `addSample(acc, x)`, `mergeAcc(a, b)`, `summarize(acc, scale = 1) → { n, mean, sd, lower, upper }`.
+  - `PlayerSpec = { kind:'dials', dials } | { kind:'brain', name }`, `TableJob = { players, seed, firstDeal, deals, equityIterations, subject?, trackStyles? }`, `runTableJob(job) → { nets, hands, dealAccs, styles|null }`, `dealSeed(seed, index)`.
+  - `defaultThreads()`, `createPool({ size }) → { run, runAll, close }` (size 0 runs inline).
+
+- [ ] **Step 1: Write the failing test**
+
+```js
+// scripts/poker/lib/tableJob.test.js
+import { describe, it, expect } from 'vitest';
+import { defaultDials } from '../../../src/private/trainers/poker/bots/dials.js';
+import { emptyAcc, addSample, mergeAcc, summarize } from './ciStats.js';
+import { runTableJob, dealSeed } from './tableJob.js';
+import { createPool } from './pool.js';
+
+const job = (overrides = {}) => ({
+  players: [{ kind: 'brain', name: 'callingStation' }, ...Array.from({ length: 5 }, () => ({ kind: 'dials', dials: defaultDials() }))],
+  seed: 3, firstDeal: 0, deals: 4, equityIterations: 40, subject: 0, trackStyles: true, ...overrides,
+});
+
+describe('ciStats', () => {
+  it('computes mean, sample sd and a 95% interval, and merges accumulators', () => {
+    let a = emptyAcc();
+    for (const x of [1, 2, 3, 4]) a = addSample(a, x);
+    const s = summarize(a);
+    expect(s.mean).toBe(2.5);
+    expect(s.sd).toBeCloseTo(Math.sqrt(5 / 3), 10);
+    expect(s.lower).toBeCloseTo(2.5 - (1.96 * Math.sqrt(5 / 3)) / 2, 10);
+    const b = mergeAcc(addSample(addSample(emptyAcc(), 1), 2), addSample(addSample(emptyAcc(), 3), 4));
+    expect(b).toEqual(a);
+    const flipped = summarize(a, -10);
+    expect(flipped.mean).toBe(-25);
+    expect(flipped.lower).toBeLessThan(flipped.upper);
+    expect(summarize(emptyAcc()).lower).toBe(-Infinity);
+  });
+});
+
+describe('runTableJob', () => {
+  it('is deterministic, zero-sum, and counts hands and deals', () => {
+    const a = runTableJob(job());
+    const b = runTableJob(job());
+    expect(a).toEqual(b);
+    expect(a.hands).toBe(24);
+    expect(a.nets.reduce((x, y) => x + y, 0)).toBe(0);
+    expect(a.dealAccs[0].n).toBe(4);
+    expect(a.dealAccs[0].sum).toBe(a.nets[0]);
+    expect(a.styles[1].hands).toBe(24);
+  });
+
+  it('covers consecutive deal ranges and seeds each deal deterministically', () => {
+    const first = runTableJob(job({ deals: 2, trackStyles: false, subject: null }));
+    const second = runTableJob(job({ firstDeal: 2, deals: 2, trackStyles: false, subject: null }));
+    expect(first.dealAccs[0].n + second.dealAccs[0].n).toBe(4);
+    expect(first.styles).toBeNull();
+    expect(dealSeed(3, 0)).not.toBe(dealSeed(3, 1));
+    expect(dealSeed(3, 0)).toBe(dealSeed(3, 0));
+  });
+});
+
+describe('createPool', () => {
+  it('runs jobs inline with size 0 and in worker threads with the same results', async () => {
+    const small = job({ deals: 2 });
+    const inline = createPool({ size: 0 });
+    const threaded = createPool({ size: 2 });
+    try {
+      const [x] = await inline.runAll([small]);
+      const [y, z] = await threaded.runAll([small, small]);
+      expect(y).toEqual(x);
+      expect(z).toEqual(x);
+    } finally {
+      await inline.close();
+      await threaded.close();
+    }
+  }, 60_000);
+});
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `npx vitest run scripts/poker/lib/tableJob.test.js`
+Expected: FAIL, with module-not-found errors for `./ciStats.js`, `./tableJob.js` and `./pool.js`.
+
+- [ ] **Step 3: Write `ciStats.js`**
+
+```js
+// scripts/poker/lib/ciStats.js
+// Streaming mean and 95% confidence interval over per-deal samples, mergeable across worker jobs.
+
+export const Z95 = 1.96;
+
+/** @typedef {{ n:number, sum:number, sumSq:number }} Acc */
+
+/** @returns {Acc} */
+export const emptyAcc = () => ({ n: 0, sum: 0, sumSq: 0 });
+
+/** @returns {Acc} a new accumulator including x */
+export const addSample = (acc, x) => ({ n: acc.n + 1, sum: acc.sum + x, sumSq: acc.sumSq + x * x });
+
+/** @returns {Acc} */
+export const mergeAcc = (a, b) => ({ n: a.n + b.n, sum: a.sum + b.sum, sumSq: a.sumSq + b.sumSq });
+
+/**
+ * @param {Acc} acc
+ * @param {number} [scale] multiplies every sample (e.g. units per deal -> BB per 100 hands)
+ * @returns {{ n:number, mean:number, sd:number, lower:number, upper:number }} sd of one sample; bounds of the 95% CI of the mean
+ */
+export function summarize(acc, scale = 1) {
+  if (acc.n === 0) return { n: 0, mean: 0, sd: 0, lower: -Infinity, upper: Infinity };
+  const mean = acc.sum / acc.n;
+  const variance = acc.n > 1 ? Math.max(0, (acc.sumSq - acc.n * mean * mean) / (acc.n - 1)) : Infinity;
+  const half = (Z95 * Math.sqrt(variance)) / Math.sqrt(acc.n);
+  const s = Math.abs(scale);
+  const lo = (mean - half) * scale;
+  const hi = (mean + half) * scale;
+  return { n: acc.n, mean: mean * scale, sd: Math.sqrt(variance) * s, lower: Math.min(lo, hi), upper: Math.max(lo, hi) };
+}
+```
+
+- [ ] **Step 4: Write `tableJob.js`**
+
+```js
+// scripts/poker/lib/tableJob.js
+// One unit of offline work: a 6-seat table played for a range of duplicate deals. Pure given its input,
+// so it runs the same inline, in a worker thread, or in a test.
+import { mulberry32 } from '../../../src/private/trainers/core/rng.js';
+import { playDuplicateDeal } from '../../../src/private/trainers/poker/bots/arena.js';
+import { createBrain } from '../../../src/private/trainers/poker/bots/index.js';
+import { emptyProfile } from '../../../src/private/trainers/poker/bots/contract.js';
+import { accumulateProfile } from '../../../src/private/trainers/poker/bots/profileStats.js';
+import { emptyAcc, addSample } from './ciStats.js';
+
+/**
+ * @typedef {{ kind:'dials', dials:Record<string,number> } | { kind:'brain', name:string }} PlayerSpec
+ * @typedef {{ players:PlayerSpec[], seed:number, firstDeal:number, deals:number, equityIterations:number,
+ *   subject?:number|null, trackStyles?:boolean }} TableJob
+ *   subject: player index whose profile is tracked and passed to the others (the "hero" chair).
+ * @typedef {{ nets:number[], hands:number, dealAccs:import('./ciStats.js').Acc[], styles:object[]|null }} TableResult
+ *   nets: units won per player; dealAccs: per-player accumulators of units won per deal (all rotations).
+ */
+
+/** Deterministic 32-bit seed for deal `index` of a run. */
+export const dealSeed = (seed, index) => (Math.imul(seed >>> 0, 0x9e3779b1) ^ Math.imul(index + 1, 0x85ebca6b)) >>> 0;
+
+function playerFrom(spec, index, equityIterations) {
+  if (spec.kind === 'dials') {
+    const persona = { id: `p${index}`, name: `P${index}`, tag: 'TRN', style: 'training', brain: 'heuristic', dials: spec.dials };
+    return { brain: createBrain(persona, { iterations: equityIterations, budgetMs: Infinity }), persona };
+  }
+  const persona = { id: spec.name, name: spec.name, tag: 'BAS', style: 'baseline', brain: spec.name };
+  return { brain: createBrain(persona), persona };
+}
+
+/** @param {TableJob} job @returns {TableResult} */
+export function runTableJob(job) {
+  const { players: specs, seed, firstDeal, deals, equityIterations, subject = null, trackStyles = false } = job;
+  const players = specs.map((spec, i) => playerFrom(spec, i, equityIterations));
+  const decisionRng = mulberry32(dealSeed(seed ^ 0x5bd1e995, firstDeal));
+  const nets = new Array(players.length).fill(0);
+  let dealAccs = players.map(() => emptyAcc());
+  const styles = trackStyles ? players.map(() => emptyProfile()) : null;
+  let profile = subject === null ? null : emptyProfile();
+  const onHand = trackStyles
+    ? (events, seatOf) => players.forEach((_, p) => { styles[p] = accumulateProfile(styles[p], seatOf(p), events); })
+    : undefined;
+  for (let d = firstDeal; d < firstDeal + deals; d += 1) {
+    const result = playDuplicateDeal({
+      players, dealSeed: dealSeed(seed, d), decisionRng, button: d % players.length, subject, profile, onHand,
+    });
+    profile = result.profile;
+    result.nets.forEach((x, p) => { nets[p] += x; });
+    dealAccs = dealAccs.map((acc, p) => addSample(acc, result.nets[p]));
+  }
+  return { nets, hands: deals * players.length, dealAccs, styles };
+}
+```
+
+- [ ] **Step 5: Write `pool.js` and `tableWorker.js`**
+
+```js
+// scripts/poker/lib/pool.js
+// Runs table jobs on node:worker_threads, or inline when size is 0 (tests and debugging).
+import { Worker } from 'node:worker_threads';
+import { availableParallelism } from 'node:os';
+import { runTableJob } from './tableJob.js';
+
+export const defaultThreads = () => Math.max(1, availableParallelism() - 1);
+
+/**
+ * @param {{ size:number }} options
+ * @returns {{ run:(job:import('./tableJob.js').TableJob) => Promise<import('./tableJob.js').TableResult>,
+ *   runAll:(jobs:object[]) => Promise<object[]>, close:() => Promise<void> }}
+ */
+export function createPool({ size }) {
+  if (size === 0) {
+    const run = async (job) => runTableJob(job);
+    return { run, runAll: (jobs) => Promise.all(jobs.map(run)), close: async () => {} };
+  }
+  const idle = [];
+  const queue = [];
+  const callbacks = new Map();
+  let nextId = 1;
+
+  const dispatch = () => {
+    while (idle.length && queue.length) {
+      const worker = idle.pop();
+      const { id, job } = queue.shift();
+      worker.postMessage({ id, job });
+    }
+  };
+
+  const workers = Array.from({ length: size }, () => {
+    const worker = new Worker(new URL('./tableWorker.js', import.meta.url));
+    worker.on('message', ({ id, result, error }) => {
+      const cb = callbacks.get(id);
+      callbacks.delete(id);
+      idle.push(worker);
+      if (error) cb.reject(new Error(error));
+      else cb.resolve(result);
+      dispatch();
+    });
+    worker.on('error', (err) => {
+      for (const cb of callbacks.values()) cb.reject(err);
+      callbacks.clear();
+    });
+    idle.push(worker);
+    return worker;
+  });
+
+  const run = (job) => new Promise((resolve, reject) => {
+    const id = nextId;
+    nextId += 1;
+    callbacks.set(id, { resolve, reject });
+    queue.push({ id, job });
+    dispatch();
+  });
+
+  return {
+    run,
+    runAll: (jobs) => Promise.all(jobs.map(run)),
+    close: async () => {
+      await Promise.all(workers.map((w) => w.terminate()));
+    },
+  };
+}
+```
+
+```js
+// scripts/poker/lib/tableWorker.js
+// worker_threads entry for pool.js.
+import { parentPort } from 'node:worker_threads';
+import { runTableJob } from './tableJob.js';
+
+parentPort.on('message', ({ id, job }) => {
+  try {
+    parentPort.postMessage({ id, result: runTableJob(job) });
+  } catch (err) {
+    parentPort.postMessage({ id, error: err instanceof Error ? err.stack ?? err.message : String(err) });
+  }
+});
+```
+
+- [ ] **Step 6: Run the test to verify it passes**
+
+Run: `npx vitest run scripts/poker/lib/tableJob.test.js`
+Expected: PASS (4 tests). The pool test starts 2 worker threads.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add scripts/poker/lib/ciStats.js scripts/poker/lib/tableJob.js scripts/poker/lib/pool.js scripts/poker/lib/tableWorker.js scripts/poker/lib/tableJob.test.js
+git commit -m "Add poker table jobs, streaming confidence intervals and worker_threads pool
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 15: Benchmark gate
+
+**Files:**
+- Create: `scripts/poker/lib/gate.js`
+- Test: `scripts/poker/lib/gate.test.js`
+- Create: `scripts/poker/benchmark.js`
+- Create: `scripts/poker/cli.slow.test.js`
+- Modify: `package.json` (`scripts`)
+
+**Interfaces:**
+- Consumes: Task 14 (`createPool`, `defaultThreads`, `emptyAcc`, `mergeAcc`, `summarize`), `ARCHETYPES` (Task 7).
+- Produces: `BASELINES`, `PROBES`, `OPPONENTS`, `RELEASE_HANDS = 200000`, `SMOKE_HANDS = 3000`, `matchupJobs({ dials, opponent, hands, seed, equityIterations, chunkDeals = 250 })`, `summarizeMatchup(results) → { hands, bbPer100, lower, upper, opponentBbPer100, passed }`, `runMatchups({ personas, opponents?, hands, seed, equityIterations, runAll, chunkDeals? }) → matchup[]`, `gateVerdict(matchups) → { passed, failures }`, `formatReport(matchups) → string`. The CLI is `node scripts/poker/benchmark.js [--hands N | --smoke] [--threads N] [--equity-iterations 150] [--seed 20260917] [--data path] [--write]`, which exits 0 on pass and 1 on fail. When `--write` is set, it stores `benchmark = { date, hands, equityIterations, seed, minutes, passed, matchups }` in the data file.
+
+- [ ] **Step 1: Write the failing test**
+
+```js
+// scripts/poker/lib/gate.test.js
+import { describe, it, expect } from 'vitest';
+import { ARCHETYPES } from '../../../src/private/trainers/poker/bots/dials.js';
+import { emptyAcc, addSample } from './ciStats.js';
+import { createPool } from './pool.js';
+import { matchupJobs, summarizeMatchup, runMatchups, gateVerdict, formatReport, OPPONENTS, BASELINES, PROBES } from './gate.js';
+
+const accOf = (xs) => xs.reduce(addSample, emptyAcc());
+
+describe('gate logic', () => {
+  it('lists the spec baselines and probes', () => {
+    expect([...BASELINES]).toEqual(['callingStation', 'randomLegal', 'rawEquity', 'tightPassive']);
+    expect([...PROBES]).toEqual(['always3Bet', 'alwaysCbet', 'alwaysOverbetRiver']);
+    expect(OPPONENTS.length).toBe(7);
+  });
+
+  it('splits a matchup into chunks of deals with the opponent in the profiled chair', () => {
+    const jobs = matchupJobs({ dials: ARCHETYPES['tight-aggressive'], opponent: 'rawEquity', hands: 3000, seed: 1, equityIterations: 50, chunkDeals: 200 });
+    expect(jobs.map((j) => j.deals)).toEqual([200, 200, 100]);
+    expect(jobs.map((j) => j.firstDeal)).toEqual([0, 200, 400]);
+    expect(jobs[0].players[0]).toEqual({ kind: 'brain', name: 'rawEquity' });
+    expect(jobs[0].players.slice(1).every((p) => p.kind === 'dials')).toBe(true);
+    expect(jobs[0].subject).toBe(0);
+  });
+
+  it('converts the opponent per-deal losses to persona BB/100 per seat with a 95% CI', () => {
+    // the opponent loses 60 units per deal: 60 units over 5 persona seats x 6 hands = 2 units = 1 BB per seat-hand
+    const constant = summarizeMatchup([{ dealAccs: [accOf([-60, -60, -60])] }]);
+    expect(constant.bbPer100).toBeCloseTo(100, 10);
+    expect(constant.hands).toBe(18);
+    expect(constant.opponentBbPer100).toBeCloseTo(-500, 10);
+    expect(constant.passed).toBe(true);
+    const noisy = summarizeMatchup([{ dealAccs: [accOf([-600, 600, -60])] }, { dealAccs: [accOf([30])] }]);
+    expect(noisy.lower).toBeLessThan(0);
+    expect(noisy.passed).toBe(false);
+  });
+
+  it('fails the gate when any matchup fails and formats a report', () => {
+    const good = { personaId: 'duchess', opponent: 'rawEquity', hands: 6, bbPer100: 5, lower: 1, upper: 9, opponentBbPer100: -25, passed: true };
+    const bad = { ...good, opponent: 'always3Bet', bbPer100: -1, lower: -3, upper: 1, passed: false };
+    expect(gateVerdict([good])).toEqual({ passed: true, failures: [] });
+    const verdict = gateVerdict([good, bad]);
+    expect(verdict.passed).toBe(false);
+    expect(verdict.failures).toEqual(['duchess vs always3Bet: -1.00 BB/100, 95% CI [-3.00, 1.00]']);
+    expect(gateVerdict([]).passed).toBe(false);
+    expect(formatReport([good, bad])).toContain('FAIL');
+  });
+});
+
+describe('runMatchups (inline, tiny budget)', () => {
+  it('runs matchups for two personas', async () => {
+    const pool = createPool({ size: 0 });
+    const personas = [{ id: 'a', dials: ARCHETYPES['tight-aggressive'] }, { id: 'b', dials: ARCHETYPES['loose-passive'] }];
+    const matchups = await runMatchups({ personas, opponents: ['callingStation', 'rawEquity'], hands: 12, seed: 2, equityIterations: 20, runAll: pool.runAll });
+    expect(matchups.map((m) => `${m.personaId}:${m.opponent}:${m.hands}`)).toEqual(['a:callingStation:12', 'a:rawEquity:12', 'b:callingStation:12', 'b:rawEquity:12']);
+  }, 60_000);
+});
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `npx vitest run scripts/poker/lib/gate.test.js`
+Expected: FAIL, with a module-not-found error for `./gate.js`.
+
+- [ ] **Step 3: Write `gate.js`**
+
+```js
+// scripts/poker/lib/gate.js
+// Benchmark gate: every persona against every baseline and exploit probe, with duplicate deals.
+// Matchup format: the opponent sits in the hero chair (player 0, profiled so personas can adapt to it) and five
+// copies of the persona fill the other seats. Each deal is played in all 6 rotations. A persona passes a matchup
+// when the lower bound of the 95% CI of its BB/100 is above 0. For probes this is stricter than "does not lose".
+import { emptyAcc, mergeAcc, summarize } from './ciStats.js';
+
+export const BASELINES = Object.freeze(['callingStation', 'randomLegal', 'rawEquity', 'tightPassive']);
+export const PROBES = Object.freeze(['always3Bet', 'alwaysCbet', 'alwaysOverbetRiver']);
+export const OPPONENTS = Object.freeze([...BASELINES, ...PROBES]);
+
+const SEATS = 6;
+const PERSONA_SEATS = 5;
+const UNITS_PER_BB = 2;
+export const RELEASE_HANDS = 200_000;
+export const SMOKE_HANDS = 3_000;
+
+/** Table jobs for one persona against one opponent, `hands` rounded up to whole deals of 6 hands. */
+export function matchupJobs({ dials, opponent, hands, seed, equityIterations, chunkDeals = 250 }) {
+  const deals = Math.ceil(hands / SEATS);
+  const players = [{ kind: 'brain', name: opponent }, ...Array.from({ length: PERSONA_SEATS }, () => ({ kind: 'dials', dials }))];
+  const jobs = [];
+  for (let first = 0; first < deals; first += chunkDeals) {
+    jobs.push({ players, seed, firstDeal: first, deals: Math.min(chunkDeals, deals - first), equityIterations, subject: 0, trackStyles: false });
+  }
+  return jobs;
+}
+
+/**
+ * Persona BB/100 per seat: the persona seats win what the opponent loses, over 5 seats and 6 hands per deal.
+ * @returns {{ hands:number, bbPer100:number, lower:number, upper:number, opponentBbPer100:number, passed:boolean }}
+ */
+export function summarizeMatchup(results) {
+  const acc = results.reduce((a, r) => mergeAcc(a, r.dealAccs[0]), emptyAcc());
+  const s = summarize(acc, -100 / (SEATS * PERSONA_SEATS * UNITS_PER_BB));
+  return { hands: acc.n * SEATS, bbPer100: s.mean, lower: s.lower, upper: s.upper, opponentBbPer100: -s.mean * PERSONA_SEATS, passed: s.lower > 0 };
+}
+
+/**
+ * Runs every persona against every opponent in one batch of jobs.
+ * @param {{ personas:{ id:string, dials:Record<string,number> }[], opponents?:readonly string[], hands:number, seed:number,
+ *   equityIterations:number, runAll:(jobs:object[]) => Promise<object[]>, chunkDeals?:number }} input
+ * @returns {Promise<{ personaId:string, opponent:string, hands:number, bbPer100:number, lower:number, upper:number, opponentBbPer100:number, passed:boolean }[]>}
+ */
+export async function runMatchups({ personas, opponents = OPPONENTS, hands, seed, equityIterations, runAll, chunkDeals }) {
+  const plan = [];
+  const jobs = [];
+  for (const persona of personas) {
+    for (const opponent of opponents) {
+      const mine = matchupJobs({ dials: persona.dials, opponent, hands, seed, equityIterations, chunkDeals });
+      plan.push({ personaId: persona.id, opponent, from: jobs.length, count: mine.length });
+      jobs.push(...mine);
+    }
+  }
+  const results = await runAll(jobs);
+  return plan.map(({ personaId, opponent, from, count }) => ({ personaId, opponent, ...summarizeMatchup(results.slice(from, from + count)) }));
+}
+
+/** @returns {{ passed:boolean, failures:string[] }} */
+export function gateVerdict(matchups) {
+  const failures = matchups
+    .filter((m) => !m.passed)
+    .map((m) => `${m.personaId} vs ${m.opponent}: ${m.bbPer100.toFixed(2)} BB/100, 95% CI [${m.lower.toFixed(2)}, ${m.upper.toFixed(2)}]`);
+  return { passed: failures.length === 0 && matchups.length > 0, failures };
+}
+
+/** Fixed-width text table of matchup results. */
+export function formatReport(matchups) {
+  const header = `${'persona'.padEnd(10)}${'opponent'.padEnd(20)}${'hands'.padStart(9)}${'BB/100'.padStart(10)}${'95% CI'.padStart(22)}  result`;
+  const rows = matchups.map((m) => `${m.personaId.padEnd(10)}${m.opponent.padEnd(20)}${String(m.hands).padStart(9)}${m.bbPer100.toFixed(2).padStart(10)}${`[${m.lower.toFixed(2)}, ${m.upper.toFixed(2)}]`.padStart(22)}  ${m.passed ? 'pass' : 'FAIL'}`);
+  return [header, ...rows].join('\n');
+}
+```
+
+- [ ] **Step 4: Run the test to verify it passes**
+
+Run: `npx vitest run scripts/poker/lib/gate.test.js`
+Expected: PASS (5 tests).
+
+- [ ] **Step 5: Write the CLI**
+
+```js
+// scripts/poker/benchmark.js
+// Ship gate: every persona vs every baseline and exploit probe. Exits 1 when any matchup fails.
+// Usage: npm run poker:benchmark -- [--hands 200000 | --smoke] [--threads N] [--equity-iterations 150]
+//   [--seed 20260917] [--data src/private/trainers/poker/data/bots-v1.json] [--write]
+import { readFileSync, writeFileSync } from 'node:fs';
+import { parseArgs } from 'node:util';
+import { createPool, defaultThreads } from './lib/pool.js';
+import { runMatchups, gateVerdict, formatReport, RELEASE_HANDS, SMOKE_HANDS } from './lib/gate.js';
+
+const { values } = parseArgs({
+  options: {
+    hands: { type: 'string' }, smoke: { type: 'boolean', default: false }, threads: { type: 'string' },
+    'equity-iterations': { type: 'string', default: '150' }, seed: { type: 'string', default: '20260917' },
+    data: { type: 'string', default: 'src/private/trainers/poker/data/bots-v1.json' }, write: { type: 'boolean', default: false },
+  },
+});
+let hands = RELEASE_HANDS;
+if (values.smoke) hands = SMOKE_HANDS;
+if (values.hands !== undefined) hands = Number(values.hands);
+const threads = values.threads === undefined ? defaultThreads() : Number(values.threads);
+const equityIterations = Number(values['equity-iterations']);
+const seed = Number(values.seed);
+if (![hands, threads, equityIterations, seed].every(Number.isFinite)) {
+  console.error('--hands, --threads, --equity-iterations and --seed must be numbers.');
+  process.exit(2);
+}
+
+const data = JSON.parse(readFileSync(values.data, 'utf8'));
+const started = Date.now();
+const pool = createPool({ size: threads });
+let verdict;
+try {
+  console.log(`benchmarking ${data.version}: ${data.personas.length} personas, ${hands} hands per matchup, ${threads} threads`);
+  const matchups = await runMatchups({ personas: data.personas, hands, seed, equityIterations, runAll: pool.runAll });
+  verdict = gateVerdict(matchups);
+  console.log(formatReport(matchups));
+  console.log('group vs previous version: skipped (no previous shipped version)');
+  const minutes = Number(((Date.now() - started) / 60_000).toFixed(1));
+  console.log(`${verdict.passed ? 'PASS' : 'FAIL'} in ${minutes} min`);
+  for (const failure of verdict.failures) console.log(`  ${failure}`);
+  if (values.write) {
+    data.benchmark = { date: new Date().toISOString(), hands, equityIterations, seed, minutes, passed: verdict.passed, matchups };
+    writeFileSync(values.data, `${JSON.stringify(data, null, 2)}\n`);
+    console.log(`wrote results to ${values.data}`);
+  }
+} finally {
+  await pool.close();
+}
+process.exit(verdict.passed ? 0 : 1);
+```
+
+- [ ] **Step 6: Add the npm script**
+
+In `package.json` `"scripts"`, add after `"poker:gen-preflop"` (add a comma to the previous line):
+
+```json
+    "poker:benchmark": "node scripts/poker/benchmark.js"
+```
+
+- [ ] **Step 7: Write the opt-in CLI test**
+
+```js
+// scripts/poker/cli.slow.test.js
+// Opt-in (POKER_SLOW=1): runs the real CLIs end to end on tiny budgets in a temp directory.
+import { describe, it, expect } from 'vitest';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { ARCHETYPES } from '../../src/private/trainers/poker/bots/dials.js';
+
+const run = (args) => spawnSync(process.execPath, args, { encoding: 'utf8' });
+
+describe.skipIf(!process.env.POKER_SLOW)('poker CLIs', () => {
+  it('benchmark --smoke writes results and exits 0 on pass or 1 on fail', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'poker-bench-'));
+    const data = join(dir, 'bots-test.json');
+    const personas = [{ id: 'duchess', name: 'Duchess', tag: 'DCH', style: 'tight-aggressive', brain: 'heuristic', dials: ARCHETYPES['tight-aggressive'] }];
+    writeFileSync(data, JSON.stringify({ version: 'bots-test', personas, benchmark: null }));
+    const result = run(['scripts/poker/benchmark.js', '--smoke', '--threads', '2', '--data', data, '--write']);
+    expect([0, 1]).toContain(result.status);
+    expect(result.stdout).toContain('group vs previous version: skipped');
+    const written = JSON.parse(readFileSync(data, 'utf8'));
+    expect(written.benchmark.matchups.length).toBe(7);
+    expect(written.benchmark.passed).toBe(result.status === 0);
+    expect(written.benchmark.hands).toBe(3000);
+  }, 600_000);
+});
+```
+
+- [ ] **Step 8: Run the slow CLI test and the normal suite**
+
+Run: `POKER_SLOW=1 npx vitest run scripts/poker/cli.slow.test.js` (PowerShell: `$env:POKER_SLOW=1; npx vitest run scripts/poker/cli.slow.test.js; Remove-Item Env:POKER_SLOW`)
+Expected: PASS (1 test) in about 20–40 s. The smoke run prints a 7-row report and `group vs previous version: skipped (no previous shipped version)`.
+
+Run: `npx vitest run scripts/poker/cli.slow.test.js`
+Expected: 1 test skipped.
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add scripts/poker/lib/gate.js scripts/poker/lib/gate.test.js scripts/poker/benchmark.js scripts/poker/cli.slow.test.js package.json
+git commit -m "Add poker benchmark gate with baselines, exploit probes and 95% CIs
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 16: Evolutionary search primitives
+
+**Files:**
+- Create: `scripts/poker/lib/evolve.js`
+- Test: `scripts/poker/lib/evolve.test.js`
+
+**Interfaces:**
+- Consumes: `DIALS`, `ARCHETYPES`, `clampDial`, `resolveDials` (Task 7), `emptyProfile`.
+- Produces: `NICHES`, `STYLE_THRESHOLDS = { vpip: 0.23, aggFreq: 0.35 }`, `ANCHORS`, `nicheOf(profile)`, `fitnessOf(ind)` (BB/100 relative to tablemates), `mutate(dials, rng, { rate = 0.3, sigma = 0.1 })`, `crossover(a, b, rng)`, `newIndividual(id, dials)`, `initialPopulation(size, rng)`, `scheduleTables(populationSize, rng, perTable = 5) → { members, anchor }[]`, `updateArchive(archive, population, { perNiche = 5, minHands = 1 })`, `nextGeneration(population, { rng, eliteCount = 10, nextId }) → { population, nextId }`, `hasStalled(bestByGeneration, { patience, minDelta })`, `mergeProfiles(a, b)`. `Individual = { id, dials, bbWon, hands, profile }`.
+
+- [ ] **Step 1: Write the failing test**
+
+```js
+// scripts/poker/lib/evolve.test.js
+import { describe, it, expect } from 'vitest';
+import { mulberry32 } from '../../../src/private/trainers/core/rng.js';
+import { DIALS, ARCHETYPES, resolveDials } from '../../../src/private/trainers/poker/bots/dials.js';
+import { emptyProfile } from '../../../src/private/trainers/poker/bots/contract.js';
+import {
+  NICHES, nicheOf, fitnessOf, mutate, crossover, initialPopulation, scheduleTables, updateArchive, nextGeneration,
+  hasStalled, mergeProfiles, newIndividual,
+} from './evolve.js';
+
+const styled = (vpip, aggFreq) => {
+  const p = emptyProfile();
+  p.stats.vpip = { value: vpip, n: 100 };
+  p.stats.aggFreq = { value: aggFreq, n: 100 };
+  return p;
+};
+const withResult = (id, bbWon, profile) => ({ ...newIndividual(id, ARCHETYPES['tight-aggressive']), bbWon, hands: 1000, profile });
+
+describe('niches and fitness', () => {
+  it('classifies by VPIP 0.23 and aggression 0.35', () => {
+    expect(nicheOf(styled(0.2, 0.5))).toBe('tight-aggressive');
+    expect(nicheOf(styled(0.3, 0.5))).toBe('loose-aggressive');
+    expect(nicheOf(styled(0.2, 0.2))).toBe('tight-passive');
+    expect(nicheOf(styled(0.23, 0.35))).toBe('loose-aggressive');
+    expect(nicheOf(emptyProfile())).toBe('tight-passive');
+    expect(fitnessOf(withResult(1, 25, emptyProfile()))).toBe(2.5);
+    expect(fitnessOf(newIndividual(2, {}))).toBe(0);
+  });
+});
+
+describe('variation operators', () => {
+  it('mutate keeps dials in bounds and is deterministic for a seed', () => {
+    const base = resolveDials({});
+    const a = mutate(base, mulberry32(1), { rate: 1, sigma: 5 });
+    expect(mutate(base, mulberry32(1), { rate: 1, sigma: 5 })).toEqual(a);
+    for (const d of DIALS) {
+      expect(a[d.key]).toBeGreaterThanOrEqual(d.min);
+      expect(a[d.key]).toBeLessThanOrEqual(d.max);
+    }
+    expect(mutate(base, mulberry32(1), { rate: 0 })).toEqual(base);
+  });
+
+  it('crossover takes every dial from one parent', () => {
+    const a = ARCHETYPES['tight-passive'];
+    const b = ARCHETYPES['loose-aggressive'];
+    const child = crossover(a, b, mulberry32(2));
+    for (const d of DIALS) expect([a[d.key], b[d.key]]).toContain(child[d.key]);
+  });
+
+  it('initialPopulation starts with the four archetypes', () => {
+    const pop = initialPopulation(50, mulberry32(3));
+    expect(pop.length).toBe(50);
+    expect(pop.slice(0, 4).map((p) => p.dials)).toEqual(Object.values(ARCHETYPES));
+    expect(new Set(pop.map((p) => p.id)).size).toBe(50);
+  });
+});
+
+describe('scheduleTables', () => {
+  it('seats every individual once per round at tables of five plus an anchor', () => {
+    const tables = scheduleTables(50, mulberry32(4));
+    expect(tables.length).toBe(10);
+    expect(tables.flatMap((t) => t.members).sort((x, y) => x - y)).toEqual(Array.from({ length: 50 }, (_, i) => i));
+    for (const t of tables) expect(typeof t.anchor).toBe('string');
+    const uneven = scheduleTables(12, mulberry32(4));
+    expect(uneven.length).toBe(3);
+    for (const t of uneven) expect(t.members.length).toBe(5);
+  });
+});
+
+describe('archive and generations', () => {
+  it('keeps the best per niche, one niche per individual', () => {
+    let archive = updateArchive({}, [withResult(1, 10, styled(0.2, 0.5)), withResult(2, 30, styled(0.2, 0.5)), withResult(3, 5, styled(0.3, 0.2))], { perNiche: 1 });
+    expect(archive['tight-aggressive'].map((e) => e.id)).toEqual([2]);
+    expect(archive['loose-passive'].map((e) => e.id)).toEqual([3]);
+    archive = updateArchive(archive, [withResult(3, 50, styled(0.2, 0.5))], { perNiche: 1 });
+    expect(archive['tight-aggressive'].map((e) => e.id)).toEqual([3]);
+    expect(archive['loose-passive']).toEqual([]);
+    expect(Object.keys(archive).sort()).toEqual([...NICHES].sort());
+  });
+
+  it('nextGeneration keeps niche champions and top performers and fills with new children', () => {
+    const pop = Array.from({ length: 20 }, (_, i) => withResult(i, i, i === 0 ? styled(0.3, 0.1) : styled(0.2, 0.5)));
+    const { population, nextId } = nextGeneration(pop, { rng: mulberry32(5), eliteCount: 4, nextId: 20 });
+    expect(population.length).toBe(20);
+    expect(population.slice(0, 4).map((p) => p.id)).toEqual([19, 0, 18, 17]);
+    expect(population.slice(4).every((p) => p.hands === 0)).toBe(true);
+    expect(nextId).toBe(36);
+  });
+
+  it('detects stalls', () => {
+    expect(hasStalled([1, 2, 3], { patience: 3, minDelta: 1 })).toBe(false);
+    expect(hasStalled([10, 10.5, 10.2, 9], { patience: 3, minDelta: 1 })).toBe(true);
+    expect(hasStalled([10, 10.5, 12, 9], { patience: 3, minDelta: 1 })).toBe(false);
+  });
+
+  it('merges profiles as weighted means', () => {
+    const a = styled(0.2, 0.4);
+    const b = emptyProfile();
+    b.stats.vpip = { value: 0.5, n: 300 };
+    const m = mergeProfiles(a, b);
+    expect(m.stats.vpip.n).toBe(400);
+    expect(m.stats.vpip.value).toBeCloseTo(0.425, 10);
+    expect(m.stats.aggFreq).toEqual({ value: 0.4, n: 100 });
+    expect(m.stats.wsd).toEqual({ value: null, n: 0 });
+  });
+});
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `npx vitest run scripts/poker/lib/evolve.test.js`
+Expected: FAIL, with a module-not-found error for `./evolve.js`.
+
+- [ ] **Step 3: Write the implementation**
+
+```js
+// scripts/poker/lib/evolve.js
+// Evolutionary search over persona dials, with style niches (tight/loose x passive/aggressive).
+import { DIALS, ARCHETYPES, clampDial, resolveDials } from '../../../src/private/trainers/poker/bots/dials.js';
+import { emptyProfile } from '../../../src/private/trainers/poker/bots/contract.js';
+
+export const NICHES = Object.freeze(['tight-aggressive', 'loose-aggressive', 'tight-passive', 'loose-passive']);
+/** Measured in mixed training tables: VPIP at or above 0.23 is loose, postflop aggression frequency at or above 0.35 is aggressive. */
+export const STYLE_THRESHOLDS = Object.freeze({ vpip: 0.23, aggFreq: 0.35 });
+export const ANCHORS = Object.freeze(['rawEquity', 'tightPassive', 'callingStation', 'always3Bet', 'alwaysCbet', 'alwaysOverbetRiver']);
+
+/**
+ * @typedef {{ id:number, dials:Record<string,number>, bbWon:number, hands:number, profile:import('../../../src/private/trainers/poker/bots/contract.js').PlayerProfile }} Individual
+ *   bbWon (relative to tablemates) and hands accumulate over every generation the individual survives.
+ */
+
+/** @returns {string} niche label from measured VPIP and aggression frequency */
+export function nicheOf(profile) {
+  const vpip = profile.stats.vpip.value ?? 0;
+  const agg = profile.stats.aggFreq.value ?? 0;
+  return `${vpip >= STYLE_THRESHOLDS.vpip ? 'loose' : 'tight'}-${agg >= STYLE_THRESHOLDS.aggFreq ? 'aggressive' : 'passive'}`;
+}
+
+/** BB won per 100 hands relative to tablemates (0 before any hands). */
+export const fitnessOf = (ind) => (ind.hands > 0 ? (100 * ind.bbWon) / ind.hands : 0);
+
+function gaussian(rng) {
+  const u = Math.max(rng(), 1e-12);
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rng());
+}
+
+/** Each dial moves with probability `rate` by N(0, sigma * range), clamped. */
+export function mutate(dials, rng, { rate = 0.3, sigma = 0.1 } = {}) {
+  const out = { ...dials };
+  for (const d of DIALS) {
+    if (rng() < rate) out[d.key] = clampDial(d.key, out[d.key] + gaussian(rng) * sigma * (d.max - d.min));
+  }
+  return out;
+}
+
+/** Uniform crossover: each dial comes from either parent. */
+export function crossover(a, b, rng) {
+  return Object.fromEntries(DIALS.map((d) => [d.key, rng() < 0.5 ? a[d.key] : b[d.key]]));
+}
+
+export const newIndividual = (id, dials) => ({ id, dials: resolveDials(dials), bbWon: 0, hands: 0, profile: emptyProfile() });
+
+/** The four archetypes unmutated, then mutated copies of them in turn. */
+export function initialPopulation(size, rng) {
+  const seeds = Object.values(ARCHETYPES);
+  return Array.from({ length: size }, (_, i) => {
+    const base = seeds[i % seeds.length];
+    return newIndividual(i, i < seeds.length ? base : mutate(base, rng, { rate: 0.5, sigma: 0.15 }));
+  });
+}
+
+/**
+ * Random tables of five individuals plus one anchor bot, as index lists into `population`.
+ * @returns {{ members:number[], anchor:string }[]}
+ */
+export function scheduleTables(populationSize, rng, perTable = 5) {
+  const order = Array.from({ length: populationSize }, (_, i) => i);
+  for (let i = order.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rng() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  const tables = [];
+  for (let t = 0; t * perTable < order.length; t += 1) {
+    const members = order.slice(t * perTable, (t + 1) * perTable);
+    while (members.length < perTable) members.push(order[Math.floor(rng() * order.length)]);
+    tables.push({ members, anchor: ANCHORS[Math.floor(rng() * ANCHORS.length)] });
+  }
+  return tables;
+}
+
+/**
+ * Keeps the best `perNiche` individuals per niche across all generations, each individual in its latest niche only.
+ * @returns {Record<string, { dials:Record<string,number>, fitness:number, hands:number, style:{ vpip:number, pfr:number, aggFreq:number } }[]>}
+ */
+export function updateArchive(archive, population, { perNiche = 5, minHands = 1 } = {}) {
+  const next = Object.fromEntries(NICHES.map((n) => [n, [...(archive[n] ?? [])]]));
+  for (const ind of population) {
+    if (ind.hands < minHands) continue;
+    const entry = {
+      id: ind.id,
+      dials: ind.dials,
+      fitness: fitnessOf(ind),
+      hands: ind.hands,
+      style: { vpip: ind.profile.stats.vpip.value ?? 0, pfr: ind.profile.stats.pfr.value ?? 0, aggFreq: ind.profile.stats.aggFreq.value ?? 0 },
+    };
+    for (const niche of NICHES) next[niche] = next[niche].filter((e) => e.id !== ind.id); // an individual lives in one niche
+    const niche = nicheOf(ind.profile);
+    next[niche].push(entry);
+    next[niche].sort((a, b) => b.fitness - a.fitness);
+    next[niche] = next[niche].slice(0, perNiche);
+  }
+  return next;
+}
+
+/**
+ * Elitism (the best of each niche, then the best overall) plus children from tournament selection,
+ * crossover and mutation. Survivors keep their accumulated results.
+ */
+export function nextGeneration(population, { rng, eliteCount = 10, nextId }) {
+  const ranked = [...population].sort((a, b) => fitnessOf(b) - fitnessOf(a));
+  const elites = [];
+  for (const niche of NICHES) {
+    const best = ranked.find((ind) => nicheOf(ind.profile) === niche);
+    if (best && !elites.includes(best)) elites.push(best);
+  }
+  for (const ind of ranked) {
+    if (elites.length >= eliteCount) break;
+    if (!elites.includes(ind)) elites.push(ind);
+  }
+  const tournament = () => {
+    let best = ranked[Math.floor(rng() * ranked.length)];
+    for (let k = 0; k < 2; k += 1) {
+      const other = ranked[Math.floor(rng() * ranked.length)];
+      if (fitnessOf(other) > fitnessOf(best)) best = other;
+    }
+    return best;
+  };
+  let id = nextId;
+  const children = [];
+  while (elites.length + children.length < population.length) {
+    const child = mutate(crossover(tournament().dials, tournament().dials, rng), rng);
+    children.push(newIndividual(id, child));
+    id += 1;
+  }
+  return { population: [...elites, ...children], nextId: id };
+}
+
+/** True when the best fitness has not improved by `minDelta` over the last `patience` generations. */
+export function hasStalled(bestByGeneration, { patience, minDelta }) {
+  if (bestByGeneration.length <= patience) return false;
+  const recent = Math.max(...bestByGeneration.slice(-patience));
+  const before = Math.max(...bestByGeneration.slice(0, -patience));
+  return recent < before + minDelta;
+}
+
+/** Combines two profiles as if every observation had been folded into one. */
+export function mergeProfiles(a, b) {
+  const stats = {};
+  for (const key of Object.keys(a.stats)) {
+    const x = a.stats[key];
+    const y = b.stats[key];
+    const n = x.n + y.n;
+    stats[key] = { value: n === 0 ? null : ((x.value ?? 0) * x.n + (y.value ?? 0) * y.n) / n, n };
+  }
+  return { hands: a.hands + b.hands, stats };
+}
+```
+
+- [ ] **Step 4: Run the test to verify it passes**
+
+Run: `npx vitest run scripts/poker/lib/evolve.test.js`
+Expected: PASS (9 tests).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add scripts/poker/lib/evolve.js scripts/poker/lib/evolve.test.js
+git commit -m "Add evolutionary search primitives with style niches and stall detection
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 17: Training loop and CLI
+
+**Files:**
+- Create: `scripts/poker/lib/trainLoop.js`
+- Test: `scripts/poker/lib/trainLoop.test.js`
+- Create: `scripts/poker/train.js`
+- Modify: `scripts/poker/cli.slow.test.js` (add the train test)
+- Modify: `package.json` (`scripts`)
+
+**Interfaces:**
+- Consumes: Task 16 (all), Task 15 (`runMatchups`, `OPPONENTS`), Task 14 (`createPool`, `defaultThreads`).
+- Produces: `TRAIN_DEFAULTS = { population: 50, generations: 150, patience: 20, minDelta: 1, rounds: 4, deals: 250, equityIterations: 150, eliteCount: 10, seed: 20260916, minutes: 0, gateHands: 12000 }`, `PERSONA_SLOTS` (niche → two `{ id, name, tag }`), `train({ options, runAll, log?, now? }) → { archive, history, generations, hands, stoppedBecause:'stalled'|'time'|'max-generations' }`, and `selectPersonas({ archive, runAll, gateHands, seed, equityIterations, log? }) → persona[]` (8 when the archive holds at least 8 candidates). The CLI writes `{ version, createdAt, training:{…options, threads, generations, hands, stoppedBecause, minutes, bestByGeneration}, personas:[{ id, name, tag, style, brain:'heuristic', dials, fitness, styleStats, quickGateWorst }], candidates, benchmark:null }`.
+
+- [ ] **Step 1: Write the failing test**
+
+```js
+// scripts/poker/lib/trainLoop.test.js
+import { describe, it, expect } from 'vitest';
+import { createPool } from './pool.js';
+import { train, selectPersonas, PERSONA_SLOTS, TRAIN_DEFAULTS } from './trainLoop.js';
+
+const inline = () => createPool({ size: 0 }).runAll;
+
+describe('training loop (inline, tiny budgets)', () => {
+  it('uses the spec population of 50 by default and names the eight contract personas', () => {
+    expect(TRAIN_DEFAULTS.population).toBe(50);
+    const slots = Object.values(PERSONA_SLOTS).flat();
+    expect(slots.map((s) => s.tag).sort()).toEqual(['BRK', 'DCH', 'INK', 'LRK', 'MOS', 'ROK', 'SBL', 'VIP']);
+  });
+
+  it('stops when the time budget runs out', async () => {
+    let t = 0;
+    const result = await train({
+      options: { population: 5, generations: 10, rounds: 1, deals: 1, equityIterations: 10, minutes: 1 },
+      runAll: inline(),
+      now: () => {
+        t += 61_000;
+        return t;
+      },
+    });
+    expect(result.stoppedBecause).toBe('time');
+    expect(result.generations).toBe(1);
+  }, 60_000);
+
+  it('trains a tiny population and selects named personas', async () => {
+    const runAll = inline();
+    const lines = [];
+    const result = await train({
+      options: { population: 10, generations: 2, rounds: 1, deals: 2, equityIterations: 20, eliteCount: 4, patience: 5 },
+      runAll,
+      log: (line) => lines.push(line),
+    });
+    expect(result.generations).toBe(2);
+    expect(result.stoppedBecause).toBe('max-generations');
+    expect(result.hands).toBe(2 * 2 * 2 * 6); // generations x tables x deals x rotations
+    expect(lines.length).toBe(2);
+    const personas = await selectPersonas({ archive: result.archive, runAll, gateHands: 6, seed: 3, equityIterations: 20 });
+    const candidates = Object.values(result.archive).reduce((n, list) => n + list.length, 0);
+    const slotIds = Object.values(PERSONA_SLOTS).flat().map((slot) => slot.id);
+    expect(personas.length).toBe(Math.min(8, candidates));
+    expect(new Set(personas.map((p) => p.id)).size).toBe(personas.length);
+    for (const p of personas) {
+      expect(slotIds).toContain(p.id);
+      expect(p.brain).toBe('heuristic');
+      expect(p.tag).toMatch(/^[A-Z]{3}$/);
+      expect(Object.keys(p.dials).length).toBeGreaterThan(20);
+    }
+  }, 120_000);
+});
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `npx vitest run scripts/poker/lib/trainLoop.test.js`
+Expected: FAIL, with a module-not-found error for `./trainLoop.js`.
+
+- [ ] **Step 3: Write `trainLoop.js`**
+
+```js
+// scripts/poker/lib/trainLoop.js
+// The training loop and persona selection, with job execution injected (worker pool or inline).
+import { mulberry32 } from '../../../src/private/trainers/core/rng.js';
+import {
+  NICHES, fitnessOf, initialPopulation, scheduleTables, updateArchive, nextGeneration, hasStalled, mergeProfiles,
+} from './evolve.js';
+import { runMatchups, OPPONENTS } from './gate.js';
+
+export const TRAIN_DEFAULTS = Object.freeze({
+  population: 50, generations: 150, patience: 20, minDelta: 1, rounds: 4, deals: 250, equityIterations: 150,
+  eliteCount: 10, seed: 20260916, minutes: 0, gateHands: 12_000,
+});
+
+/** Named persona slots per niche (contracts §3.3 names and tags). */
+export const PERSONA_SLOTS = Object.freeze({
+  'tight-aggressive': [{ id: 'duchess', name: 'Duchess', tag: 'DCH' }, { id: 'sable', name: 'Sable', tag: 'SBL' }],
+  'loose-aggressive': [{ id: 'viper', name: 'Viper', tag: 'VIP' }, { id: 'ink', name: 'Ink', tag: 'INK' }],
+  'tight-passive': [{ id: 'rook', name: 'Rook', tag: 'ROK' }, { id: 'moss', name: 'Moss', tag: 'MOS' }],
+  'loose-passive': [{ id: 'brick', name: 'Brick', tag: 'BRK' }, { id: 'lark', name: 'Lark', tag: 'LRK' }],
+});
+
+/**
+ * @param {{ options:typeof TRAIN_DEFAULTS, runAll:(jobs:object[]) => Promise<object[]>, log?:(line:string) => void, now?:() => number }} input
+ * @returns {Promise<{ archive:object, history:number[], generations:number, hands:number, stoppedBecause:string }>}
+ */
+export async function train({ options, runAll, log = () => {}, now = Date.now }) {
+  const o = { ...TRAIN_DEFAULTS, ...options };
+  const rng = mulberry32(o.seed);
+  const started = now();
+  let population = initialPopulation(o.population, rng);
+  let nextId = population.length;
+  let archive = {};
+  const history = [];
+  let hands = 0;
+  let stoppedBecause = 'max-generations';
+  let generation = 0;
+
+  for (; generation < o.generations; generation += 1) {
+    const jobs = [];
+    const seatings = [];
+    for (let round = 0; round < o.rounds; round += 1) {
+      for (const table of scheduleTables(population.length, rng)) {
+        seatings.push(table.members);
+        jobs.push({
+          players: [...table.members.map((i) => ({ kind: 'dials', dials: population[i].dials })), { kind: 'brain', name: table.anchor }],
+          seed: o.seed,
+          firstDeal: jobs.length * o.deals + generation * 1_000_000,
+          deals: o.deals,
+          equityIterations: o.equityIterations,
+          subject: table.members.length, // the anchor sits in the profiled hero chair
+          trackStyles: true,
+        });
+      }
+    }
+    const genStart = now();
+    const results = await runAll(jobs);
+    results.forEach((result, j) => {
+      hands += result.hands;
+      // Fitness is relative to tablemates, so the anchor bot drawn for a table does not add noise.
+      const members = seatings[j];
+      const tableMean = members.reduce((sum, _, k) => sum + result.nets[k], 0) / members.length;
+      members.forEach((index, k) => {
+        const ind = population[index];
+        ind.bbWon += (result.nets[k] - tableMean) / 2;
+        ind.hands += result.hands;
+        ind.profile = mergeProfiles(ind.profile, result.styles[k]);
+      });
+    });
+    archive = updateArchive(archive, population, { minHands: o.rounds * o.deals * 6 });
+    const best = Math.max(...population.map(fitnessOf));
+    history.push(best);
+    const counts = NICHES.map((n) => `${n}:${(archive[n] ?? []).length}`).join(' ');
+    const seconds = (now() - genStart) / 1000;
+    log(`gen ${generation + 1}: best ${best.toFixed(1)} BB/100 vs tablemates, ${(results.reduce((s, r) => s + r.hands, 0) / Math.max(seconds, 1e-3)).toFixed(0)} hands/s, archive ${counts}`);
+    if (hasStalled(history, { patience: o.patience, minDelta: o.minDelta })) {
+      stoppedBecause = 'stalled';
+      generation += 1;
+      break;
+    }
+    if (o.minutes > 0 && now() - started >= o.minutes * 60_000) {
+      stoppedBecause = 'time';
+      generation += 1;
+      break;
+    }
+    ({ population, nextId } = nextGeneration(population, { rng, eliteCount: o.eliteCount, nextId }));
+  }
+  return { archive, history, generations: generation, hands, stoppedBecause };
+}
+
+/**
+ * Picks two personas per niche: archive candidates in fitness order, keeping the first that beat every
+ * opponent on the quick gate (mean BB/100 above 0). Short niches are filled with the best unused
+ * candidates from any niche, labelled with their measured niche.
+ * @returns {Promise<object[]>} Persona objects with dials, fitness and measured style
+ */
+export async function selectPersonas({ archive, runAll, gateHands, seed, equityIterations, log = () => {} }) {
+  const all = NICHES.flatMap((niche) => (archive[niche] ?? []).map((c) => ({ ...c, niche })));
+  const quick = await runMatchups({
+    personas: all.map((c) => ({ id: String(c.id), dials: c.dials })), opponents: OPPONENTS, hands: gateHands, seed, equityIterations, runAll,
+  });
+  const worstMean = (c) => Math.min(...quick.filter((m) => m.personaId === String(c.id)).map((m) => m.bbPer100));
+  const used = new Set();
+  const picks = {};
+  for (const niche of NICHES) {
+    picks[niche] = (archive[niche] ?? []).map((c) => ({ ...c, niche })).filter((c) => worstMean(c) > 0).slice(0, 2);
+    picks[niche].forEach((c) => used.add(c.id));
+  }
+  const spare = all.filter((c) => !used.has(c.id)).sort((a, b) => worstMean(b) - worstMean(a));
+  const personas = [];
+  for (const niche of NICHES) {
+    while (picks[niche].length < 2 && spare.length) {
+      const c = spare.shift();
+      log(`niche ${niche}: filling a slot with candidate ${c.id} from ${c.niche} (worst quick-gate mean ${worstMean(c).toFixed(1)})`);
+      picks[niche].push(c);
+    }
+    picks[niche].forEach((c, i) => {
+      personas.push({
+        ...PERSONA_SLOTS[niche][i], style: c.niche, brain: 'heuristic', dials: c.dials,
+        fitness: Number(c.fitness.toFixed(2)), styleStats: c.style, quickGateWorst: Number(worstMean(c).toFixed(2)),
+      });
+    });
+  }
+  return personas;
+}
+```
+
+- [ ] **Step 4: Run the test to verify it passes**
+
+Run: `npx vitest run scripts/poker/lib/trainLoop.test.js`
+Expected: PASS (3 tests).
+
+- [ ] **Step 5: Write the CLI**
+
+```js
+// scripts/poker/train.js
+// Offline evolutionary training of persona dials. Writes src/private/trainers/poker/data/bots-vN.json.
+// Usage: npm run poker:train -- [--population 50] [--generations 150] [--patience 20] [--min-delta 1]
+//   [--rounds 4] [--deals 250] [--equity-iterations 150] [--threads N] [--seed 20260916] [--minutes 0]
+//   [--gate-hands 12000] [--version bots-v1] [--out path]
+import { writeFileSync } from 'node:fs';
+import { parseArgs } from 'node:util';
+import { createPool, defaultThreads } from './lib/pool.js';
+import { train, selectPersonas, TRAIN_DEFAULTS } from './lib/trainLoop.js';
+
+const { values } = parseArgs({
+  options: {
+    population: { type: 'string' }, generations: { type: 'string' }, patience: { type: 'string' },
+    'min-delta': { type: 'string' }, rounds: { type: 'string' }, deals: { type: 'string' },
+    'equity-iterations': { type: 'string' }, threads: { type: 'string' }, seed: { type: 'string' },
+    minutes: { type: 'string' }, 'gate-hands': { type: 'string' }, version: { type: 'string', default: 'bots-v1' },
+    out: { type: 'string' },
+  },
+});
+const num = (key, fallback) => (values[key] === undefined ? fallback : Number(values[key]));
+const options = {
+  population: num('population', TRAIN_DEFAULTS.population),
+  generations: num('generations', TRAIN_DEFAULTS.generations),
+  patience: num('patience', TRAIN_DEFAULTS.patience),
+  minDelta: num('min-delta', TRAIN_DEFAULTS.minDelta),
+  rounds: num('rounds', TRAIN_DEFAULTS.rounds),
+  deals: num('deals', TRAIN_DEFAULTS.deals),
+  equityIterations: num('equity-iterations', TRAIN_DEFAULTS.equityIterations),
+  seed: num('seed', TRAIN_DEFAULTS.seed),
+  minutes: num('minutes', TRAIN_DEFAULTS.minutes),
+  gateHands: num('gate-hands', TRAIN_DEFAULTS.gateHands),
+  eliteCount: TRAIN_DEFAULTS.eliteCount,
+};
+if (Object.values(options).some((v) => !Number.isFinite(v))) {
+  console.error('All numeric flags must be numbers.');
+  process.exit(2);
+}
+const threads = num('threads', defaultThreads());
+const out = values.out ?? `src/private/trainers/poker/data/${values.version}.json`;
+
+const started = Date.now();
+const pool = createPool({ size: threads });
+try {
+  console.log(`training ${values.version} with ${threads} threads: ${JSON.stringify(options)}`);
+  const result = await train({ options, runAll: pool.runAll, log: console.log });
+  console.log(`stopped after ${result.generations} generations (${result.stoppedBecause}); selecting personas`);
+  const personas = await selectPersonas({
+    archive: result.archive, runAll: pool.runAll, gateHands: options.gateHands, seed: options.seed + 1,
+    equityIterations: options.equityIterations, log: console.log,
+  });
+  const data = {
+    version: values.version,
+    createdAt: new Date().toISOString(),
+    training: {
+      ...options, threads, generations: result.generations, hands: result.hands, stoppedBecause: result.stoppedBecause,
+      minutes: Number(((Date.now() - started) / 60_000).toFixed(1)), bestByGeneration: result.history.map((x) => Number(x.toFixed(2))),
+    },
+    personas,
+    candidates: result.archive,
+    benchmark: null,
+  };
+  writeFileSync(out, `${JSON.stringify(data, null, 2)}\n`);
+  console.log(`wrote ${out}`);
+  for (const p of personas) console.log(`${p.tag} ${p.name.padEnd(8)} ${p.style.padEnd(17)} fitness ${p.fitness} quick-gate worst ${p.quickGateWorst}`);
+} finally {
+  await pool.close();
+}
+```
+
+- [ ] **Step 6: Add the npm script**
+
+In `package.json` `"scripts"`, add after `"poker:benchmark"` (add a comma to the previous line):
+
+```json
+    "poker:train": "node scripts/poker/train.js"
+```
+
+- [ ] **Step 7: Add the train CLI test**
+
+In `scripts/poker/cli.slow.test.js`, insert this test after the benchmark test, before the final `});`:
+
+```js
+  it('train writes a bots file with eight personas', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'poker-train-'));
+    const out = join(dir, 'bots-test.json');
+    const result = run(['scripts/poker/train.js', '--population', '10', '--generations', '2', '--rounds', '1', '--deals', '5', '--gate-hands', '60', '--threads', '2', '--version', 'bots-test', '--out', out]);
+    expect(result.status).toBe(0);
+    const data = JSON.parse(readFileSync(out, 'utf8'));
+    expect(data.version).toBe('bots-test');
+    expect(data.personas.length).toBe(8);
+    expect(data.training.generations).toBe(2);
+    expect(data.benchmark).toBeNull();
+  }, 600_000);
+```
+
+- [ ] **Step 8: Run the slow CLI tests and the full suite**
+
+Run: `POKER_SLOW=1 npx vitest run scripts/poker/cli.slow.test.js` (PowerShell: `$env:POKER_SLOW=1; npx vitest run scripts/poker/cli.slow.test.js; Remove-Item Env:POKER_SLOW`)
+Expected: PASS (2 tests).
+
+Run: `npm test`
+Expected: every test passes, 3 are skipped (the Phase 1 slow evaluator test and the 2 CLI tests), and the suite takes under 10 s.
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add scripts/poker/lib/trainLoop.js scripts/poker/lib/trainLoop.test.js scripts/poker/train.js scripts/poker/cli.slow.test.js package.json
+git commit -m "Add evolutionary poker bot training loop, persona selection and CLI
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 18: Train and ship bots-v1 personas
+
+**Files:**
+- Create (generated): `src/private/trainers/poker/data/bots-v1.json`
+- Modify: `src/private/trainers/poker/bots/personas.js` (replace the whole file)
+- Modify: `src/private/trainers/poker/bots/personas.test.js` (replace the whole file)
+- Modify: `src/private/trainers/poker/bots/runner.test.js` (replace the whole file)
+- Modify: `src/private/trainers/poker/bots/index.js` (`BOT_VERSION`)
+
+**Interfaces:**
+- Consumes: Task 17 CLI output.
+- Produces: `listPersonas()` returns the 8 trained personas `{ id, name, tag, style, brain:'heuristic', dials }` (frozen), with `getPersona(id)` unchanged and `BOT_VERSION = 'bots-v1'`.
+
+- [ ] **Step 1: Run training**
+
+Run: `npm run poker:train`
+Expected: a `gen N: best … BB/100 vs tablemates, ~10000 hands/s, archive …` line per generation (about 6 s each on 15 threads), then `stopped after N generations (stalled|max-generations)`, `wrote src/private/trainers/poker/data/bots-v1.json` and 8 persona lines (`DCH Duchess tight-aggressive …`). Wall time is about 8–20 min.
+
+Check the output before continuing:
+- All 8 personas are present, and each `quickGateWorst` is above 0. If any is 0 or below, or a "filling a slot" line names a candidate from another niche, rerun with a larger search, `npm run poker:train -- --seed 20260918 --generations 200 --patience 30`, and use that run's file.
+- The persona styles differ across the four niches. If a niche was filled from another niche, its `style` field shows the measured niche. This is acceptable, but note it in the commit message.
+
+- [ ] **Step 2: Write the failing persona test**
+
+```js
+// src/private/trainers/poker/bots/personas.test.js
+import { describe, it, expect } from 'vitest';
+import data from '../data/bots-v1.json' with { type: 'json' };
+import { DIALS, resolveDials } from './dials.js';
+import { BOT_VERSION, createBrain } from './index.js';
+import { listPersonas, getPersona } from './personas.js';
+
+const CONTRACT = { moss: ['Moss', 'MOS'], viper: ['Viper', 'VIP'], duchess: ['Duchess', 'DCH'], rook: ['Rook', 'ROK'], ink: ['Ink', 'INK'], brick: ['Brick', 'BRK'], lark: ['Lark', 'LRK'], sable: ['Sable', 'SBL'] };
+const STYLES = ['tight-aggressive', 'loose-aggressive', 'tight-passive', 'loose-passive'];
+
+describe('personas', () => {
+  it('ships the 8 contract personas with their names and tags', () => {
+    const personas = listPersonas();
+    expect(personas.length).toBe(8);
+    expect(Object.fromEntries(personas.map((p) => [p.id, [p.name, p.tag]]))).toEqual(CONTRACT);
+  });
+
+  it('every persona is a trained heuristic persona with a real style and complete in-bounds dials', () => {
+    for (const p of listPersonas()) {
+      expect(p.brain).toBe('heuristic');
+      expect(STYLES).toContain(p.style);
+      expect(Object.keys(p.dials).sort()).toEqual(DIALS.map((d) => d.key).sort());
+      expect(resolveDials(p.dials)).toEqual({ ...p.dials });
+      expect(typeof createBrain(p).decide).toBe('function');
+    }
+  });
+
+  it('matches the data file version and BOT_VERSION', () => {
+    expect(data.version).toBe('bots-v1');
+    expect(BOT_VERSION).toBe('bots-v1');
+    expect(data.training.population).toBe(50);
+  });
+
+  it('getPersona returns the matching persona', () => {
+    expect(getPersona('duchess').tag).toBe('DCH');
+  });
+
+  it('getPersona throws on an unknown id', () => {
+    expect(() => getPersona('nope')).toThrow('Unknown persona: nope');
+  });
+});
+```
+
+- [ ] **Step 3: Run it to verify it fails**
+
+Run: `npx vitest run src/private/trainers/poker/bots/personas.test.js`
+Expected: FAIL. The personas still have placeholder brains and styles, and `BOT_VERSION` is `'placeholder'`.
+
+- [ ] **Step 4: Replace `personas.js`**
+
+```js
+// src/private/trainers/poker/bots/personas.js
+// The shipped personas: trained dial sets from data/bots-v1.json (scripts/poker/train.js).
+import data from '../data/bots-v1.json' with { type: 'json' };
+
+/** @type {import('./contract.js').Persona[]} */
+const PERSONAS = Object.freeze(
+  data.personas.map(({ id, name, tag, style, brain, dials }) => Object.freeze({ id, name, tag, style, brain, dials: Object.freeze({ ...dials }) })),
+);
+
+/** @returns {import('./contract.js').Persona[]} */
+export function listPersonas() {
+  return PERSONAS;
+}
+
+/** @returns {import('./contract.js').Persona} */
+export function getPersona(id) {
+  const persona = PERSONAS.find((p) => p.id === id);
+  if (!persona) throw new Error(`Unknown persona: ${id}`);
+  return persona;
+}
+```
+
+- [ ] **Step 5: Bump `BOT_VERSION`**
+
+In `src/private/trainers/poker/bots/index.js`, replace `export const BOT_VERSION = 'placeholder';` with `export const BOT_VERSION = 'bots-v1';`.
+
+- [ ] **Step 6: Replace `runner.test.js`** (Moss is no longer a calling station)
+
+```js
+// src/private/trainers/poker/bots/runner.test.js
+import { describe, it, expect } from 'vitest';
+import { mulberry32 } from '../../core/rng.js';
+import { getPersona } from './personas.js';
+import { createLocalRunner } from './runner.js';
+import { contextAfter } from './testHands.js';
+
+const station = { id: 'station', name: 'Station', tag: 'STN', style: 'baseline', brain: 'callingStation' };
+
+describe('createLocalRunner', () => {
+  it('resolves decide to the brain choice for a callingStation persona', async () => {
+    const runner = createLocalRunner({ rng: () => 0.5 });
+    const ctx = { view: {}, seat: 0, legal: { canCheck: true }, events: [], persona: station, profile: null, bb: 2 };
+    const choice = await runner.decide(ctx);
+    expect(choice).toEqual({ action: 'check' });
+  });
+
+  it('runs a shipped heuristic persona to a legal choice', async () => {
+    const cx = contextAfter(['r 2 5']);
+    const runner = createLocalRunner({ rng: mulberry32(1) });
+    const choice = await runner.decide({ view: cx.view, seat: cx.seat, legal: cx.legal, events: cx.seatEvents, persona: getPersona('duchess'), profile: null, bb: 2 });
+    expect(['fold', 'call', 'raise']).toContain(choice.action);
+  });
+
+  it('rejects after dispose', async () => {
+    const runner = createLocalRunner({ rng: () => 0.5 });
+    runner.dispose();
+    const ctx = { view: {}, seat: 0, legal: { canCheck: true }, events: [], persona: station, profile: null, bb: 2 };
+    await expect(runner.decide(ctx)).rejects.toThrow('runner disposed');
+  });
+});
+```
+
+- [ ] **Step 7: Run the full suite and the build**
+
+Run: `npm test`
+Expected: every test passes, with 3 skipped.
+
+Run: `npm run build`
+Expected: the build succeeds.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add src/private/trainers/poker/data/bots-v1.json src/private/trainers/poker/bots/personas.js src/private/trainers/poker/bots/personas.test.js src/private/trainers/poker/bots/runner.test.js src/private/trainers/poker/bots/index.js
+git commit -m "Ship bots-v1: eight trained heuristic personas across four style niches
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 19: Run the release benchmark gate
+
+**Files:**
+- Modify (generated): `src/private/trainers/poker/data/bots-v1.json` (`benchmark` field)
+
+**Interfaces:**
+- Consumes: Task 15 CLI, Task 18 data.
+- Produces: `bots-v1.json` with `benchmark.passed === true` and 56 matchups of 200,000 hands each.
+
+- [ ] **Step 1: Smoke-check the gate on the shipped personas**
+
+Run: `npm run poker:benchmark -- --smoke`
+Expected: a 56-row report in about 20 s. Some rows may fail at this size because the intervals are wide, so the exit code is informational here.
+
+- [ ] **Step 2: Run the release gate and write the results**
+
+Run: `npm run poker:benchmark -- --write`
+Expected: `benchmarking bots-v1: 8 personas, 200000 hands per matchup, 15 threads`, then a 56-row report with every row marked `pass`, then `group vs previous version: skipped (no previous shipped version)`, `PASS in N min` (about 20–30 min) and `wrote results to src/private/trainers/poker/data/bots-v1.json`. The exit code is 0.
+
+If it prints `FAIL`, do not commit. Rerun training with a new seed and a bigger search (`npm run poker:train -- --seed 20260919 --generations 200 --patience 30 --gate-hands 30000`), redo Task 18 Steps 7–8 with the new file (amend nothing; make a new commit), then repeat this step. After 2 failed attempts, stop and report the failing matchups (persona, opponent, BB/100, CI) to the controller.
+
+- [ ] **Step 3: Verify the recorded result**
+
+Run: `node -e "const d=JSON.parse(require('fs').readFileSync('src/private/trainers/poker/data/bots-v1.json','utf8')); console.log(d.benchmark.passed, d.benchmark.hands, d.benchmark.matchups.length, Math.min(...d.benchmark.matchups.map(m=>m.lower)).toFixed(2))"`
+Expected: `true 200000 56 <positive number>`.
+
+Run: `npm test`
+Expected: every test passes, with 3 skipped.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add src/private/trainers/poker/data/bots-v1.json
+git commit -m "Record bots-v1 benchmark gate: all personas beat baselines and probes at 200k hands
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+```
+
+- [ ] **Step 5: Report the open release item**
+
+Tell the controller that the automated gate passed and that §5's last gate bullet is still open: the user plays a manual playtest of at least 300 hands once Phase 2's table UI has merged.
+
+---
+
+## Execution order
+
+- Tasks 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 18 → 19, one fresh implementer per task, reviewed after each.
+- Dependencies, if anything is reordered: Task 5 and Task 7 depend only on Phase 0. Task 6 needs 1, 4 and 5. Task 8 needs 4, 6 and 7. Task 9 needs 3, 4, 6 and 7. Task 10 needs 2, 5 and 9. Task 11 needs 8–10. Task 12 needs 11. Task 13 needs only 5. Task 14 needs 10 and 11. Task 15 needs 14. Task 16 needs 7. Task 17 needs 15 and 16. Task 18 needs 17. Task 19 needs 18.
+- Tasks 18 and 19 run long jobs (about 20 min and 30 min). Run them in the foreground of one implementer session with a generous command timeout, or in the background with polling.
