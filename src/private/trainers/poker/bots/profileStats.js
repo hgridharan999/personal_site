@@ -4,7 +4,9 @@
 // accumulateProfile(profile, heroSeat, events) folds ONE completed hand into a profile. `events` must be
 // the full log (every hole card) of a hand that reached street 'complete'. It never throws: anything else
 // (a hidden-card log from eventsFor, a malformed or incomplete log, a non-array, or a log in which heroSeat
-// was not dealt in) returns the profile unchanged. Each stat is a running mean of 0/1 observations; `n`
+// was not dealt in) returns the profile unchanged. A malformed `profile` (not an object with an integer
+// `hands` >= 0 and a `stats` object, e.g. null or { hands: 0 }) is replaced by emptyProfile() first, so the
+// result is always a valid PlayerProfile. Each stat is a running mean of 0/1 observations; `n`
 // counts opportunities. "Decision" means an `act` event by the hero, judged on the state just before it.
 // Preflop raise counts exclude the blinds, and an all-in raise counts like any other raise (a shove over
 // one raise is a 3-bet).
@@ -25,7 +27,7 @@
 // foldToRiverBet  | first hero river decision facing exactly one river bet (no raise)        | hero folded
 // riverBetFreq    | first hero river decision with no river bet yet                          | hero bet
 import { applyEvent, legalActions } from '../engine/handState.js';
-import { PROFILE_STATS } from './contract.js';
+import { PROFILE_STATS, emptyProfile } from './contract.js';
 
 const isAggressive = (action) => action === 'bet' || action === 'raise';
 
@@ -128,15 +130,20 @@ export function handObservations(events, heroSeat) {
   return obs;
 }
 
+/** @returns {boolean} whether `profile` has the PlayerProfile shape accumulateProfile reads */
+const isProfile = (profile) => typeof profile === 'object' && profile !== null
+  && Number.isInteger(profile.hands) && profile.hands >= 0 && typeof profile.stats === 'object' && profile.stats !== null;
+
 /**
- * Folds one completed hand into `profile` without mutating it. Never throws: a log that does not count
- * (see the header) returns `profile` itself.
+ * Folds one completed hand into `profile` without mutating it. Never throws: a malformed `profile` is replaced
+ * by emptyProfile(), and a log that does not count (see the header) returns the (possibly replaced) profile.
  * @param {import('./contract.js').PlayerProfile} profile
  * @param {number} heroSeat
  * @param {object[]} events full event log of one completed hand
  * @returns {import('./contract.js').PlayerProfile}
  */
 export function accumulateProfile(profile, heroSeat, events) {
+  if (!isProfile(profile)) profile = emptyProfile();
   let obs;
   try {
     obs = handObservations(events, heroSeat); // replaying a hidden-card or malformed log throws EngineError

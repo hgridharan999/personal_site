@@ -219,6 +219,20 @@ describe('accumulateProfile', () => {
     expect(accumulateProfile(p, 2, full).hands).toBe(1);
   });
 
+  it('never throws on a malformed profile: it starts from emptyProfile() instead', () => {
+    const full = log(['r 2 5', 'f 3', 'f 4', 'f 5', 'f 0', 'c 1', 'B Kh8d4s', 'k 1', 'b 2 6', 'f 1']);
+    const expected = accumulateProfile(emptyProfile(), 2, full);
+    const malformed = [null, undefined, 'profile', 7, [], { hands: 0 }, { stats: {} }, { hands: -1, stats: {} }, { hands: 1.5, stats: {} }, { hands: 2, stats: null }];
+    for (const profile of malformed) {
+      const at = JSON.stringify(profile) ?? 'undefined';
+      expect(() => accumulateProfile(profile, 2, full), at).not.toThrow();
+      expect(accumulateProfile(profile, 2, full), at).toEqual(expected);
+      expect(accumulateProfile(profile, 2, null), at).toEqual(emptyProfile());
+    }
+    // A profile with some stat keys missing is still valid: the missing stats start empty.
+    expect(accumulateProfile({ hands: 0, stats: {} }, 2, full)).toEqual(expected);
+  });
+
   it('ignores incomplete hands and seats that were not dealt in', () => {
     const events = log(['r 2 5', 'f 3']);
     const p = emptyProfile();

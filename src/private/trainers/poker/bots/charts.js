@@ -63,6 +63,8 @@ const PREMIUM_BY_PREFIX = [
 // Hands whose continue core is never tightened, like the top CORE_FLOOR of combos. Facing a 4-bet AKo
 // continues ahead of AQs and JJ (the vs4bet charts continue by the raiser order), but by plain strength it
 // sits just outside CORE_FLOOR, so a tighter calling dial would otherwise fold it before them.
+// These hands also scale across kinds in the raiser order: no offsuit hand is stronger than AKo, so a
+// same-kind window could never widen it into a 5-bet, while the raiser order puts it just behind AKs and JJ.
 const KEEP_CORE_BY_PREFIX = [[/^vs4bet\./, ['AKo']]];
 const classSets = new Map();
 
@@ -82,6 +84,12 @@ function inClassSet(byPrefix, key, cls) {
 // BY_KIND lists run strongest first (increasing RANK_PCT); KIND_INDEX[cls] is the position in its list.
 const KIND_INDEX = new Int16Array(CLASS_COUNT);
 for (const list of Object.values(BY_KIND)) list.forEach((cls, i) => { KIND_INDEX[cls] = i; });
+const RAISER_INDEX = new Int16Array(CLASS_COUNT);
+data.raiserOrder.forEach((cls, i) => { RAISER_INDEX[cls] = i; });
+
+// Where windowed() looks: same-kind hands by strength, or (keep-core hands) every hand by the raiser order.
+const BY_STRENGTH = { list: (cls) => BY_KIND[kindOf(cls)], index: KIND_INDEX, pct: RANK_PCT };
+const BY_RAISER = { list: () => data.raiserOrder, index: RAISER_INDEX, pct: RAISER_PCT };
 
 const prepared = new Map();
 
@@ -114,27 +122,28 @@ function prepare(key) {
   return out;
 }
 
-const lerpAt = (values, a, b, x) => values[a] + ((values[b] - values[a]) * (x - RANK_PCT[a])) / (RANK_PCT[b] - RANK_PCT[a]);
+const lerpAt = (values, pct, a, b, x) => values[a] + ((values[b] - values[a]) * (x - pct[a])) / (pct[b] - pct[a]);
 
-// Max (widening) or min (tightening) of `values` over same-kind hands between cls and target strength x.
-// Tightening maps strength p to floor + (p - floor) / mul, leaving hands stronger than `floor` unchanged.
-function windowed(values, cls, mul, floor = 0) {
+// Max (widening) or min (tightening) of `values` over the hands of `order` between cls and target position x.
+// Tightening maps position p to floor + (p - floor) / mul, leaving hands ahead of `floor` unchanged.
+function windowed(values, cls, mul, floor = 0, order = BY_STRENGTH) {
   if (mul === 1) return values[cls];
-  const list = BY_KIND[kindOf(cls)];
-  const p = RANK_PCT[cls];
+  const list = order.list(cls);
+  const { pct } = order;
+  const p = pct[cls];
   let out = values[cls];
   if (mul > 1) {
     const x = p / mul;
-    let j = KIND_INDEX[cls] - 1;
-    for (; j >= 0 && RANK_PCT[list[j]] >= x; j -= 1) out = Math.max(out, values[list[j]]);
-    if (j >= 0) out = Math.max(out, lerpAt(values, list[j], list[j + 1], x));
+    let j = order.index[cls] - 1;
+    for (; j >= 0 && pct[list[j]] >= x; j -= 1) out = Math.max(out, values[list[j]]);
+    if (j >= 0) out = Math.max(out, lerpAt(values, pct, list[j], list[j + 1], x));
     return out;
   }
   if (p <= floor) return out;
   const x = floor + (p - floor) / mul;
-  let j = KIND_INDEX[cls] + 1;
-  for (; j < list.length && RANK_PCT[list[j]] <= x; j += 1) out = Math.min(out, values[list[j]]);
-  if (j < list.length) out = Math.min(out, lerpAt(values, list[j - 1], list[j], x));
+  let j = order.index[cls] + 1;
+  for (; j < list.length && pct[list[j]] <= x; j += 1) out = Math.min(out, values[list[j]]);
+  if (j < list.length) out = Math.min(out, lerpAt(values, pct, list[j - 1], list[j], x));
   return out;
 }
 
@@ -143,16 +152,18 @@ function windowed(values, cls, mul, floor = 0) {
  * Guarantees, per class: continue (raise + call) never falls when either multiplier grows, raise never falls
  * when either grows, tightening raiseMul turns lost value raises into calls (only bluffs fold, and in
  * raise-or-fold charts everything folds), premium value hands (PREMIUM_BY_PREFIX) keep their base raise frequency
- * when raiseMul < 1, the continue core of KEEP_CORE_BY_PREFIX hands never tightens, and both multipliers at 1
+ * when raiseMul < 1, the continue core of KEEP_CORE_BY_PREFIX hands never tightens (and they scale across kinds in
+ * the raiser order), and both multipliers at 1
  * return the chart unchanged.
  */
 export function scaledFreqs(key, cls, raiseMul = 1, callMul = 1) {
   if (raiseMul === 1 && callMul === 1) return chartFreqs(key, cls);
   const { valueRaise, core, bluff } = prepare(key);
-  const value = windowed(valueRaise, cls, raiseMul);
-  const bluffs = windowed(bluff, cls, raiseMul);
-  const coreFloor = inClassSet(KEEP_CORE_BY_PREFIX, key, cls) ? 1 : CORE_FLOOR;
-  let cont = Math.min(1, Math.max(windowed(core, cls, callMul, coreFloor), value) + bluffs);
+  const keepCore = inClassSet(KEEP_CORE_BY_PREFIX, key, cls);
+  const order = keepCore ? BY_RAISER : BY_STRENGTH;
+  const value = windowed(valueRaise, cls, raiseMul, 0, order);
+  const bluffs = windowed(bluff, cls, raiseMul, 0, order);
+  let cont = Math.min(1, Math.max(windowed(core, cls, callMul, keepCore ? 1 : CORE_FLOOR, order), value) + bluffs);
   let raise = Math.min(cont, value + bluffs);
   if (raiseMul < 1 && inClassSet(PREMIUM_BY_PREFIX, key, cls)) {
     // Floor at the base raise; at raiseMul = 1 the scaled raise already equals it, so this stays monotone.

@@ -16,15 +16,18 @@ const SUITED_LINK = [0.065, 0.038, 0.016]; // straight potential by gap (connect
 const LINK_HIGH = 0.003; // extra per rank of the lower card up to a 9: higher straights win more often
 const KING_LINK_SHARE = 0.75; // K-high suited broadways already score well on high-card equity
 const OFFSUIT_LINK = [0.03, 0.016, 0.005];
+const OFFSUIT_LOW_LINK = 0.01; // 98o and lower offsuit connectors: low straights, rarely a good top pair
 const OFFSUIT_KING_LINK_SHARE = 0.25; // K-high offsuit broadways already score well on high-card equity
 const OFFSUIT_NINE = 0.01; // offsuit hands with both cards 9 or higher make top pairs with decent kickers
+const OFFSUIT_EIGHT = 0.025; // T8o-Q8o: a broadway top card with an 8 kicker still makes playable top pairs
 const WHEEL_ACE = 0.02; // A5s-A2s make wheels and block strong aces
+const OFFSUIT_WHEEL_ACE = 0.008; // A5o-A2o make wheels too; offsuit ace kicker order is enforced separately
 const SUITED_GAPPED_LOW = 0.012; // Q/J/T-high suited with a 6 or lower and no straight potential
 const SUITED_KING = 0.022; // K8s-K2s make the second-nut flush
 const BROADWAY = 0.01; // both cards T or higher
 // Offsuit A-x and K-x with a 9 kicker / a lower kicker: dominated, and rarely make a strong second hand.
 // K-x also gets the offsuit nine term and a share of the link term, so its penalty stays small.
-const DOMINATED = { 12: [0.012, 0.028], 11: [0.008, 0.024] };
+const DOMINATED = { 12: [0.012, 0.004], 11: [0.008, 0.02] };
 const DOMINANCE_STEP = 1e-6; // score margin that keeps a dominating offsuit hand strictly ahead
 
 /** Postflop playability that all-in equity misses (equity points added to the ordering score). */
@@ -44,8 +47,11 @@ export function playability(cls) {
     if (hi === 11 && lo <= 6) bonus += SUITED_KING;
   } else {
     if (hi < 12) bonus += (OFFSUIT_LINK[gap] ?? 0) * (hi === 11 ? OFFSUIT_KING_LINK_SHARE : 1);
+    if (gap === 0 && hi <= 7) bonus -= OFFSUIT_LOW_LINK;
     if (lo >= 7 && hi < 12) bonus += OFFSUIT_NINE;
+    if (lo === 6 && hi >= 8 && hi < 11) bonus += OFFSUIT_EIGHT;
     if (hi >= 11 && lo <= 7) bonus -= DOMINATED[hi][lo === 7 ? 0 : 1];
+    if (hi === 12 && lo <= 3) bonus += OFFSUIT_WHEEL_ACE;
   }
   return bonus;
 }
@@ -60,8 +66,13 @@ const AQ_RAISE_BIAS = 0.015;
 /**
  * Offsuit hands with a T or higher top card score at least as high as the hand one rank lower with the
  * same kicker (A-x >= K-x >= Q-x >= J-x >= T-x), even where the lower hand's straight potential scores more.
+ * Offsuit aces also keep kicker order (A9o >= A8o >= ... >= A2o), which the wheel term alone could break.
  */
 function enforceOffsuitDominance(score) {
+  for (let kicker = 1; kicker < 11; kicker += 1) {
+    const cls = kicker * 13 + 12; // A-x offsuit
+    score[cls] = Math.max(score[cls], score[cls - 13] + DOMINANCE_STEP);
+  }
   for (let kicker = 0; kicker < 12; kicker += 1) {
     for (let hi = Math.max(8, kicker + 1) + 1; hi <= 12; hi += 1) {
       const cls = kicker * 13 + hi; // offsuit: row = low rank, col = high rank
@@ -131,11 +142,11 @@ const quantize = (x) => Math.round(x * 10);
 const DIGITS = '0123456789X';
 
 /**
- * @param {{ value:number, call?:number, continueBy?:'raiser', valueFade?:number, bluff?:{ from:number, to:number, freq:number } }} spec
+ * @param {{ value:number, call?:number, continueBy?:'raiser', raiseBy?:'raiser', valueFade?:number, bluff?:{ from:number, to:number, freq:number } }} spec
  *   Raise-or-fold charts (no `call`): the top `value` share by strength raises.
  *   Charts with `call`: the top `value + call` share by strength continues (by the raiser order when
- *   continueBy is 'raiser'), and within it the top `value` share by the re-raise order raises while the
- *   rest calls; valueFade widens the mixed band at the raise edge. bluff: suited hands in [from, to] (strength combo share) raise with probability freq.
+ *   continueBy is 'raiser'), and within it the top `value` share by the re-raise order (the raiser order when
+ *   raiseBy is 'raiser') raises while the rest calls; valueFade widens the mixed band at the raise edge. bluff: suited hands in [from, to] (strength combo share) raise with probability freq.
  * @param {Float64Array} rankPct strength-order position of each class
  * @param {Float64Array} [raisePct] re-raise-order position of each class (defaults to rankPct)
  * @param {Float64Array} [raiserPct] raiser-order position of each class (defaults to rankPct)
@@ -150,7 +161,7 @@ export function buildChart(spec, rankPct, raisePct = rankPct, raiserPct = rankPc
     let cont;
     if (spec.call) {
       cont = below(spec.continueBy === 'raiser' ? raiserPct[cls] : p, spec.value + spec.call);
-      r = Math.min(cont, below(raisePct[cls], spec.value, spec.valueFade));
+      r = Math.min(cont, below(spec.raiseBy === 'raiser' ? raiserPct[cls] : raisePct[cls], spec.value, spec.valueFade));
     } else {
       r = below(p, spec.value);
       cont = r;
@@ -173,8 +184,8 @@ export const CHART_SPECS = {
   'open.UTG': { value: 0.168 },
   'open.HJ': { value: 0.19 },
   'open.CO': { value: 0.26 },
-  'open.BTN': { value: 0.43 },
-  'open.SB': { value: 0.36 },
+  'open.BTN': { value: 0.448 },
+  'open.SB': { value: 0.375 },
 
   'vsOpen.HJ.UTG': { value: 0.03, call: 0.06, bluff: bluffAfter(0.03, 0.06) },
   'vsOpen.CO.UTG': { value: 0.035, call: 0.07, bluff: bluffAfter(0.035, 0.07) },
@@ -209,10 +220,12 @@ export const CHART_SPECS = {
   'vs4bet.ip': { value: 0.0135, call: 0.0185, continueBy: 'raiser', valueFade: 0.01 },
   'vs4bet.oop': { value: 0.0135, call: 0.0165, continueBy: 'raiser', valueFade: 0.01 },
 
-  'vsLimp.HJ': { value: 0.1, call: 0.02 },
-  'vsLimp.CO': { value: 0.14, call: 0.03 },
-  'vsLimp.BTN': { value: 0.2, call: 0.05 },
-  'vsLimp.SB': { value: 0.16, call: 0.1 },
+  // Over a limp the raise is an isolation raise, not a re-raise: medium pairs raise for value rather than
+  // flat for set value, so the raise band uses the raiser order (no pair flat preference).
+  'vsLimp.HJ': { value: 0.1, call: 0.02, raiseBy: 'raiser' },
+  'vsLimp.CO': { value: 0.14, call: 0.03, raiseBy: 'raiser' },
+  'vsLimp.BTN': { value: 0.2, call: 0.05, raiseBy: 'raiser' },
+  'vsLimp.SB': { value: 0.16, call: 0.1, raiseBy: 'raiser' },
   'vsLimp.BB': { value: 0.12 },
 };
 

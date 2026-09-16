@@ -31,6 +31,9 @@ describe('preflop charts', () => {
     for (const key of ['open.UTG', 'open.HJ', 'open.CO', 'open.BTN', 'open.SB']) {
       expect(Math.abs(share(key, 'raise') - CHART_SPECS[key].value)).toBeLessThan(0.02);
     }
+    // Tuning the order must not move the opening widths far from their tuned values (in combo share).
+    const tuned = { 'open.UTG': 0.169, 'open.HJ': 0.191, 'open.CO': 0.259, 'open.BTN': 0.43, 'open.SB': 0.361 };
+    for (const [key, width] of Object.entries(tuned)) expect(Math.abs(share(key, 'raise') - width), key).toBeLessThanOrEqual(0.02);
     expect(share('open.UTG', 'raise')).toBeLessThan(share('open.CO', 'raise'));
     expect(share('open.CO', 'raise')).toBeLessThan(share('open.BTN', 'raise'));
   });
@@ -206,8 +209,21 @@ describe('chart landmarks', () => {
     expect(suited / 78).toBeGreaterThan(0.65); // most suited classes
     expect(raise('open.BTN', 'K6o')).toBeLessThanOrEqual(0.5);
     expect(raise('open.BTN', 'J6s')).toBeLessThanOrEqual(0.5);
-    for (const hand of ['A2o', 'A3o', 'A4o']) expect(raise('open.SB', hand), hand).toBe(0);
     for (const hand of ['65s', '54s', '22']) expect(raise('open.SB', hand), hand).toBeGreaterThanOrEqual(0.5);
+  });
+
+  it('late position opens offsuit aces, broadways and gappers before small offsuit connectors', () => {
+    const cont1 = (key, hand) => cont(chartFreqs(key, c(hand)));
+    for (const hand of ['K8o', 'Q8o', 'J8o', 'T8o']) {
+      expect(raise('open.BTN', hand), hand).toBeGreaterThanOrEqual(0.5);
+      for (const small of ['98o', '87o', '76o', '65o', '54o']) expect(cont1('open.BTN', hand), `${hand} ${small}`).toBeGreaterThanOrEqual(cont1('open.BTN', small));
+    }
+    for (const hand of ['76o', '65o', '54o']) expect(raise('open.BTN', hand), hand).toBe(0);
+    for (const hand of ['A5o', 'A4o', 'A3o', 'A2o']) {
+      expect(raise('open.SB', hand), hand).toBeGreaterThanOrEqual(0.5);
+      for (const small of ['54o', '65o', '76o', '87o']) expect(cont1('open.SB', hand), `${hand} ${small}`).toBeGreaterThanOrEqual(cont1('open.SB', small));
+    }
+    for (const hand of ['A5o', 'A4o', 'A3o', 'A2o']) expect(RANK_PCT[c(hand)], hand).toBeLessThan(RANK_PCT[c('98o')]);
   });
 
   it('the big blind defends about 40/45/50/60% against UTG/HJ/CO/BTN opens and 60-65% against the SB', () => {
@@ -249,6 +265,20 @@ describe('chart landmarks', () => {
       }
       expect(cont(chartFreqs(key, c('AKo'))), key).toBeGreaterThanOrEqual(0.9);
       expect(cont(chartFreqs(key, c('JJ'))), key).toBeGreaterThanOrEqual(cont(chartFreqs(key, c('AQs'))));
+    }
+  });
+
+  it('over a limp, TT and 99 iso-raise from every position while small pairs may mix', () => {
+    for (const key of chartKeys().filter((k) => k.startsWith('vsLimp.'))) {
+      for (const hand of ['AA', 'JJ', 'TT', '99']) expect(raise(key, hand), `${key} ${hand}`).toBeGreaterThanOrEqual(0.8);
+      for (const hand of ['AKo', 'AQs', 'KQs']) expect(raise(key, hand), `${key} ${hand}`).toBeGreaterThanOrEqual(0.8);
+    }
+  });
+
+  it('a wider raise dial lets AKo 5-bet against a 4-bet', () => {
+    for (const key of ['vs4bet.ip', 'vs4bet.oop']) {
+      expect(raise(key, 'AKo'), key).toBe(0);
+      for (const callMul of [0.5, 1, 1.5]) expect(scaledFreqs(key, c('AKo'), 1.5, callMul).raise, `${key} ${callMul}`).toBeGreaterThan(0);
     }
   });
 
