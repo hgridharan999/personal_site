@@ -1,25 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { loadEnv } from 'vite';
 
 // Vite re-imports this module when env/config files change, so the snapshot of genuine
 // OS environment keys must survive re-evaluation: capture it once per process on globalThis.
 const OS_ENV_SNAPSHOT = Symbol.for('journal_portfolio.apiDev.osEnvKeys');
 globalThis[OS_ENV_SNAPSHOT] ??= new Set(Object.keys(process.env));
 const OS_ENV_KEYS = globalThis[OS_ENV_SNAPSHOT];
-
-// Parse .env file contents directly (bypasses Vite's loadEnv cache which doesn't update within process)
-function parseEnvFile(filePath) {
-  if (!fs.existsSync(filePath)) return {};
-  const content = fs.readFileSync(filePath, 'utf-8');
-  const env = {};
-  for (const line of content.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const [k, ...rest] = trimmed.split('=');
-    env[k.trim()] = rest.join('=').trim();
-  }
-  return env;
-}
 
 /**
  * Dev-only: serve the Vercel functions in /api from the Vite dev server, so
@@ -32,11 +19,11 @@ export default function apiDevServer() {
     name: 'api-dev-server',
     apply: 'serve',
     configResolved(config) {
-      // Load .env.local directly to bypass Vite's loadEnv cache (survives process restart)
-      const envFile = path.resolve(config.root, '.env.local');
-      const env = parseEnvFile(envFile);
-      // Only set env vars that didn't come from the OS environment. This allows file
-      // values to refresh on reload while preserving OS-set values as permanent overrides.
+      // Vite's loadEnv reads all mode-specific files (.env, .env.development, .env.local, etc.)
+      // and refreshes values on every config reload. Only set env vars that didn't come from
+      // the OS environment—this allows file values to refresh while preserving OS-set values
+      // as permanent overrides.
+      const env = loadEnv(config.mode, config.root, '');
       for (const [k, v] of Object.entries(env)) if (!OS_ENV_KEYS.has(k)) process.env[k] = v;
     },
     configureServer(server) {
