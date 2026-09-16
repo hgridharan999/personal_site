@@ -26,9 +26,10 @@ function describeAct(event, before, after, nameOf) {
 function describe(event, before, after, { nameOf, heroSeat }) {
   if (event.type === 'start') {
     const blind = (seat) => after.players.find((p) => p.seat === seat).committed;
+    const allIn = (seat) => after.players.find((p) => p.seat === seat).stack === 0 ? ' (all-in)' : '';
     return [
-      `${says(nameOf(after.sbSeat), 'post')} ${formatBbLabel(blind(after.sbSeat))}`,
-      `${says(nameOf(after.bbSeat), 'post')} ${formatBbLabel(blind(after.bbSeat))}`,
+      `${says(nameOf(after.sbSeat), 'post')} ${formatBbLabel(blind(after.sbSeat))}${allIn(after.sbSeat)}`,
+      `${says(nameOf(after.bbSeat), 'post')} ${formatBbLabel(blind(after.bbSeat))}${allIn(after.bbSeat)}`,
     ];
   }
   if (event.type === 'hole') {

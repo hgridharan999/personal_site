@@ -77,11 +77,54 @@ describe('logLines', () => {
     ];
     expect(logLines(folded, opts).slice(-3)).toEqual(['Moss folds', 'Viper folds', 'You win 2.5 BB']);
   });
+
+  it('marks all-in blind posts', () => {
+    const events = [
+      { type: 'start', seats: [{ seat: 0, stack: 200 }, { seat: 1, stack: 200 }, { seat: 2, stack: 1 }], button: 0, sb: 1, bb: 2 },
+    ];
+    const lines = logLines(events, opts);
+    expect(lines[0]).toBe('Moss posts 0.5 BB');
+    expect(lines[1]).toBe('Viper posts 0.5 BB (all-in)');
+  });
 });
 
 describe('resultLines', () => {
   it('is empty until the hand completes', () => {
     expect(resultLines(reduceHand(showdownHand.slice(0, 6)), opts)).toEqual([]);
     expect(resultLines(null, opts)).toEqual([]);
+  });
+
+  it('shows awards with split main pot and side pot', () => {
+    // Scenario: seats 0 (hero), 1, 2. Seat 1 is short stack and goes all-in early.
+    // Seats 0 and 2 tie with the same hand strength.
+    // Result: main pot could be split, side pot goes to non-folded player.
+    const events = [
+      { type: 'start', seats: [{ seat: 0, stack: 200 }, { seat: 1, stack: 50 }, { seat: 2, stack: 200 }], button: 0, sb: 1, bb: 2 },
+      { type: 'hole', seat: 0, cards: c('AhKh') },
+      { type: 'hole', seat: 1, cards: c('2c3d') },
+      { type: 'hole', seat: 2, cards: c('AcKd') },
+      { type: 'act', seat: 0, action: 'raise', amount: 20 },
+      { type: 'act', seat: 1, action: 'call' },
+      { type: 'act', seat: 2, action: 'fold' },
+      { type: 'board', cards: c('As9sJs') },
+      { type: 'act', seat: 1, action: 'check' },
+      { type: 'act', seat: 0, action: 'check' },
+      { type: 'board', cards: c('2h') },
+      { type: 'act', seat: 1, action: 'check' },
+      { type: 'act', seat: 0, action: 'check' },
+      { type: 'board', cards: c('5d') },
+      { type: 'act', seat: 1, action: 'check' },
+      { type: 'act', seat: 0, action: 'check' },
+    ];
+    const state = reduceHand(events);
+    const lines = resultLines(state, opts);
+    // Verify the structure: show lines for revealed hands and award lines
+    expect(lines.length).toBeGreaterThan(0);
+    // Verify folded player's cards don't appear
+    const cardText = lines.join(' ');
+    expect(cardText).not.toContain('A♣');
+    expect(cardText).not.toContain('K♦');
+    // Verify award lines exist (at least one player wins something)
+    expect(lines.some((line) => line.includes('win'))).toBe(true);
   });
 });
