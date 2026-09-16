@@ -13,6 +13,8 @@ export function legalize(choice, legal) {
     case 'bet':
     case 'raise': {
       if (!legal.canRaise) return passive();
+      // An amount at or above the maximum (including Infinity) is all-in; a missing or NaN amount is a min-raise.
+      if (choice.amount >= legal.maxRaiseTo) return { action: legal.raiseKind, amount: legal.maxRaiseTo };
       const wanted = Number.isFinite(choice.amount) ? Math.round(choice.amount) : legal.minRaiseTo;
       return { action: legal.raiseKind, amount: Math.min(legal.maxRaiseTo, Math.max(legal.minRaiseTo, wanted)) };
     }

@@ -34,7 +34,7 @@ export const DIALS = Object.freeze([
   { key: 'trapFreq', min: 0, max: 0.6, def: 0.15, meaning: 'chance to slow-play a monster on the flop or turn' },
   { key: 'drawImplied', min: 0, max: 0.12, def: 0.05, meaning: 'equity credited to draws for implied odds' },
   { key: 'checkRaise', min: 0, max: 0.5, def: 0.15, meaning: 'chance to check a value hand out of position to check-raise' },
-  { key: 'mdfDefend', min: 0, max: 1, def: 0.3, meaning: 'chance to call hands just below the calling threshold' },
+  { key: 'mdfDefend', min: 0, max: 1, def: 0.3, meaning: 'minimum-defence floor: share of MDF (by range percentile) that calls a postflop bet' },
   { key: 'multiwayTight', min: 0, max: 0.15, def: 0.05, meaning: 'extra value and raise threshold per extra opponent' },
   // Adaptation
   { key: 'adaptStrength', min: 0, max: 1, def: 0.6, meaning: 'scale of exploit shifts against the profiled player' },
