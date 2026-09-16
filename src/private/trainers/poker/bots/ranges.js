@@ -35,7 +35,9 @@ export function preflopLikelihoods(spot, action, type) {
     let w = 1;
     if (action === 'raise') w = f.raise;
     else if (action === 'check') w = 1 - f.raise;
-    else if (action === 'call' && spot.kind === 'open') w = RANK_PCT[cls] < 0.6 ? 0.8 : 0.15; // open limp
+    // Open limp: premiums (top ~4%) almost always raise instead, so they limp far less than
+    // middling suited hands, which limp the most; weak hands mostly just fold.
+    else if (action === 'call' && spot.kind === 'open') w = RANK_PCT[cls] < 0.04 ? 0.05 : RANK_PCT[cls] < 0.6 ? 0.8 : 0.15;
     else if (action === 'call') w = f.call;
     out[cls] = FLOOR + (1 - FLOOR) * w;
   }
@@ -65,7 +67,7 @@ export function actionLikelihood(action, p, draw, facingBet, aggression, river) 
   return 1;
 }
 
-// Combos sorted weakest first by their hand value on a board, shared across seats (small LRU by board).
+// Combos sorted weakest first by their hand value on a board, shared across seats (small FIFO by board).
 const strengthCache = new Map();
 function boardStrength(board) {
   const key = board.join(',');
@@ -86,27 +88,43 @@ function boardStrength(board) {
     live.push(i);
   }
   live.sort((x, y) => scores[x] - scores[y]);
-  const entry = { order: Int16Array.from(live), draws: comboDraws(board) };
+  const entry = { order: Int16Array.from(live), scores, draws: comboDraws(board) };
   strengthCache.set(key, entry);
   if (strengthCache.size > 32) strengthCache.delete(strengthCache.keys().next().value);
   return entry;
 }
 
-/** Multiplies `range` (1,326 combo weights, mutated) by the likelihood of `action` on `board`. */
+/**
+ * Multiplies `range` (1,326 combo weights, mutated) by the likelihood of `action` on `board`.
+ * Combos that tie in hand value (e.g. every combo on a board that plays the board itself, or suit
+ * variants of one class that make the same hand) walk the sorted order as one group and share the
+ * group's midpoint percentile, so tied combos always come out with equal weight.
+ */
 export function reweightPostflop(range, board, action, facingBet, type) {
-  const { order, draws } = boardStrength(board);
+  const { order, scores, draws } = boardStrength(board);
   let total = 0;
   for (let k = 0; k < order.length; k += 1) total += range[order[k]];
   if (total <= 0) return;
   const river = board.length === 5;
   let before = 0;
-  for (let k = 0; k < order.length; k += 1) {
-    const i = order[k];
-    const w = range[i];
-    if (w <= 0) continue;
-    const p = (before + w / 2) / total;
-    before += w;
-    range[i] = w * actionLikelihood(action, p, draws[i] === 1, facingBet, type.aggression, river);
+  let k = 0;
+  while (k < order.length) {
+    let j = k;
+    let groupMass = 0;
+    while (j < order.length && scores[order[j]] === scores[order[k]]) {
+      groupMass += range[order[j]];
+      j += 1;
+    }
+    if (groupMass > 0) {
+      const p = (before + groupMass / 2) / total;
+      for (let m = k; m < j; m += 1) {
+        const i = order[m];
+        const w = range[i];
+        if (w > 0) range[i] = w * actionLikelihood(action, p, draws[i] === 1, facingBet, type.aggression, river);
+      }
+    }
+    before += groupMass;
+    k = j;
   }
 }
 
@@ -119,19 +137,31 @@ function comboRangeFrom(classWeights, dead) {
   return range;
 }
 
-const sameEvent = (a, b) => a === b || (a && b && a.type === 'hole' && b.type === 'hole' && a.seat === b.seat);
+// `eventsFor` returns a fresh copy of every event on each call, so caching on object identity
+// (`events[0] === entry.start`) never hits in production: every decision hands the tracker a new
+// array of new objects, even for the same hand. Key the cache on content instead: a hand is fully
+// identified by its start event (button + starting seats) and the hero seat we're tracking for, so
+// two `events` arrays with the same signature and a length no shorter than what we've already
+// processed are treated as the same, growing log, and only the new suffix is processed.
+const startSignature = (events, seat) => {
+  const start = events[0];
+  return `${start.button}|${JSON.stringify(start.seats)}|${seat}`;
+};
 
 /**
  * Tracks opponents' ranges for one seat through a hand, processing only new events when the log grows.
  * @returns {{ track:(view:object, events:object[], seat:number, typeOf:(seat:number) => PlayerType) =>
- *   { classWeights:Map<number, Float32Array>, comboRanges:Map<number, Float32Array> } }}
- *   classWeights: preflop range per live opponent; comboRanges: postflop combo weights per live opponent (empty preflop).
+ *   { classWeights:Map<number, Float32Array>, comboRanges:Map<number, Float32Array>, rebuilt:boolean } }}
+ *   classWeights: preflop range per live opponent; comboRanges: postflop combo weights per live opponent
+ *   (empty preflop). Both maps hold copies the caller may freely mutate. `rebuilt` is true when this call
+ *   started a fresh entry (first call, or a log whose signature didn't match what was cached) and false
+ *   when it reused and incrementally extended the previous entry.
  */
 export function createRangeTracker() {
   const bySeat = new Map();
 
-  const fresh = (events) => ({
-    start: events[0], processed: 0, last: null, preflopActs: [], boards: [],
+  const fresh = (events, sig) => ({
+    sig, processed: 0, preflopActs: [], boards: [],
     classWeights: new Map(), comboRanges: new Map(), folded: new Set(), facingBet: false,
   });
 
@@ -182,22 +212,23 @@ export function createRangeTracker() {
   }
 
   function track(view, events, seat, typeOf) {
+    const sig = startSignature(events, seat);
     let entry = bySeat.get(seat);
-    const valid = entry && entry.start === events[0] && entry.processed <= events.length
-      && (entry.processed === 0 || sameEvent(events[entry.processed - 1], entry.last));
+    const valid = entry && entry.sig === sig && entry.processed <= events.length;
+    const rebuilt = !valid;
     if (!valid) {
-      entry = fresh(events);
+      entry = fresh(events, sig);
       bySeat.set(seat, entry);
     }
     for (let k = entry.processed; k < events.length; k += 1) step(entry, events[k], view, seat, typeOf);
     entry.processed = events.length;
-    entry.last = events[events.length - 1];
     const live = new Set(view.players.filter((p) => !p.folded && p.seat !== seat).map((p) => p.seat));
-    const pick = (map) => new Map([...map].filter(([s]) => live.has(s)));
+    // Copy every array out: callers must not be able to corrupt tracker state by mutating what they got back.
+    const pick = (map) => new Map([...map].filter(([s]) => live.has(s)).map(([s, arr]) => [s, Float32Array.from(arr)]));
     // Opponents who have not acted preflop yet (e.g. the blinds before their turn) hold any hand.
     const classWeights = pick(entry.classWeights);
     for (const s of live) if (!classWeights.has(s)) classWeights.set(s, new Float32Array(CLASS_COUNT).fill(1));
-    return { classWeights, comboRanges: pick(entry.comboRanges) };
+    return { classWeights, comboRanges: pick(entry.comboRanges), rebuilt };
   }
 
   return { track };
