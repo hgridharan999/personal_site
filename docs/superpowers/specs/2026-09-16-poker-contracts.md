@@ -133,6 +133,13 @@ Persistence stores amounts as **integer units** (not the spec's `numeric(10,1)` 
   - `Persona.style` is one of `tight-aggressive | loose-aggressive | tight-passive | loose-passive`.
   - `accumulateProfile` needs a completed hand's full log (every hole card). For anything else it returns the profile unchanged. Stats are not split by position.
   - `bots/pacing.js` exports `withPacing(runner, …)` and `thinkTimeMs(…)`, an optional additive helper.
+- **Phase 6 plan additions (accepted, binding on Phase 5):**
+  - **Spot strings:** `pf.<open|vs_limp|vs_open|squeeze|vs_3bet|vs_4bet>` or `<flop|turn|river>.<cbet|no_bet|facing_bet|facing_raise>`, with an optional `.ip` or `.oop` suffix. Other values are allowed and get generic text.
+  - **EV lost per 100 decisions** counts all graded decisions, confident or not, in BB. Leaks count only confident decisions.
+  - **`GET /api/trainers/poker/stats`** returns `{ summary, tendencies, leaks, trend, focus }`, and `?spot=` returns `{ spot, label, hands }`.
+  - **Migration 003** replaces `poker_decisions_spot` with a `(spot, hand_id)` covering index.
+  - **`data/targets.js`** is owned by Phase 6.
+  - **Hand links** use `/me/poker/hand/:id`, built in Phase 5.
 - **Phase 4 Task 11:** components rendered by `withPokerPersistence` (save status, profile loading) must render inside `PokerShell`, or be `.pk`-scoped, so the poker styles apply.
 - **`GET /api/trainers/poker/profile`** returns `{ profile: PlayerProfile, hands:number, decisions:number }`.
 - **Session close:** `onSessionEnd(summary)` keeps its shape, but the server trusts only `endedAt`. Server-side totals come from stored hands.
