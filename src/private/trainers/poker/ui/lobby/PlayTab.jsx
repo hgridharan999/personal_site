@@ -1,7 +1,9 @@
+// src/private/trainers/poker/ui/lobby/PlayTab.jsx
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listPersonas } from '../../bots/personas.js';
 import { randomLineup } from '../../lib/lineup.js';
+import TableBuilder from './TableBuilder';
 
 const SPEEDS = [
   { key: 'normal', label: 'Normal' },
@@ -39,6 +41,12 @@ export default function PlayTab() {
         >
           Sit down
         </button>
+      </section>
+
+      <section className="pk-box" aria-labelledby="pk-build-title">
+        <h2 id="pk-build-title" className="pk-h2">Build a table</h2>
+        <p className="pk-muted">Choose the bot in each seat. Uses the bot speed above.</p>
+        <TableBuilder personas={personas} onSitDown={(lineup) => sitDown('custom', lineup)} />
       </section>
 
       <section className="pk-box" aria-labelledby="pk-recent-title">
