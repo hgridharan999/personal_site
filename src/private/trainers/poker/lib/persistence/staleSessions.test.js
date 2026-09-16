@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { closeStaleSessions, STALE_AFTER_MS } from './staleSessions.js';
-import { closeEntry } from './pokerOutbox.js';
+import { staleCloseEntry } from './pokerOutbox.js';
 
 const NOW = Date.parse('2026-09-16T20:00:00.000Z');
 const ago = (ms) => new Date(NOW - ms).toISOString();
@@ -28,7 +28,8 @@ describe('closeStaleSessions', () => {
     });
     await expect(closeStaleSessions({ api, outbox, kick, now: () => NOW })).resolves.toEqual(['idle']);
     expect(outbox.refresh).toHaveBeenCalled();
-    expect(outbox.enqueue.mock.calls).toEqual([[closeEntry({ id: 'idle', endedAt: null })]]);
+    expect(outbox.enqueue.mock.calls).toEqual([[staleCloseEntry('idle')]]);
+    expect(outbox.enqueue.mock.calls[0][0].id).toBe('stale-close:idle');
     expect(kick).toHaveBeenCalledTimes(1);
   });
 

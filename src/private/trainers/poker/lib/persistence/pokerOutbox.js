@@ -24,7 +24,22 @@ export const handEntry = (item) => ({
   body: { hands: [item] },
 });
 
-export const closeEntry = ({ id, endedAt }) => ({ kind: 'close', id: `close:${id}`, sessionId: id, body: { endedAt } });
+/** An explicit close from the table; a summary without endedAt still sends null, never undefined. */
+export const closeEntry = (summary) => ({
+  kind: 'close',
+  id: `close:${summary.id}`,
+  sessionId: summary.id,
+  body: { endedAt: summary.endedAt ?? null },
+});
+
+// A stale close (lobby cleanup) has its own id in the same group, so an explicit close queued
+// while it is still pending is kept instead of being deduplicated into it.
+export const staleCloseEntry = (sessionId) => ({
+  kind: 'close',
+  id: `stale-close:${sessionId}`,
+  sessionId,
+  body: { endedAt: null },
+});
 
 export function sendPokerPayload(payload, api = pokerApi) {
   switch (payload?.kind) {
@@ -49,14 +64,30 @@ export function isPokerPermanentError(err, entry) {
   return isPermanentError(err);
 }
 
+// True when this session's open was rejected (failed, or failed and then discarded on this page):
+// its row will never exist, so waiting out SESSION_NOT_FOUND retries is pointless.
+function openHasFailed(snapshot, sessionId) {
+  const openId = `open:${sessionId}`;
+  return snapshot.failed.some((f) => f.id === openId) || snapshot.discardedIds.includes(openId);
+}
+
 export function createPokerOutbox({ storage, api = pokerApi, now }) {
-  return createOutbox({
+  const isPermanent = (err, entry) => {
+    const { kind, sessionId } = entry.payload ?? {};
+    if (err instanceof ApiError && err.code === 'SESSION_NOT_FOUND' && (kind === 'hand' || kind === 'close')
+      && openHasFailed(outbox.snapshot(), sessionId)) {
+      return true;
+    }
+    return isPokerPermanentError(err, entry);
+  };
+  const outbox = createOutbox({
     storage,
     now,
     key: POKER_OUTBOX_KEY,
     send: (payload) => sendPokerPayload(payload, api),
     idOf: (payload) => payload?.id,
     groupOf: (payload) => (typeof payload?.sessionId === 'string' ? payload.sessionId : null),
-    isPermanent: isPokerPermanentError,
+    isPermanent,
   });
+  return outbox;
 }

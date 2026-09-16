@@ -39,4 +39,10 @@ describe('createPokerPersistence', () => {
     expect(outbox.enqueue).toHaveBeenCalledWith(closeEntry(summary));
     expect(kick).toHaveBeenCalledTimes(1);
   });
+
+  it('queues a close with a null endedAt when the summary has none', () => {
+    const { outbox, handlers } = setup();
+    handlers.onSessionEnd({ id: 's1', hands: 0, net: 0, rebuys: 0 });
+    expect(outbox.enqueue.mock.calls[0][0].body).toEqual({ endedAt: null });
+  });
 });

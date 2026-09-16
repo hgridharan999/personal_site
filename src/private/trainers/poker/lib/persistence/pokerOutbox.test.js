@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { ApiError } from '../../../lib/api.js';
 import { memoryStorage, OUTBOX_KEY } from '../../../lib/outbox.js';
 import {
-  POKER_OUTBOX_KEY, SESSION_NOT_FOUND_RETRIES, SERVER_ERROR_RETRIES, openEntry, handEntry, closeEntry, sendPokerPayload,
+  POKER_OUTBOX_KEY, SESSION_NOT_FOUND_RETRIES, SERVER_ERROR_RETRIES, openEntry, handEntry, closeEntry, staleCloseEntry, sendPokerPayload,
   isPokerPermanentError, createPokerOutbox,
 } from './pokerOutbox.js';
 
@@ -159,5 +159,65 @@ describe('server errors', () => {
     }
     expect(outbox.snapshot().pendingIds).toEqual(['hand:h1']);
     expect(outbox.snapshot().failed).toEqual([]);
+  });
+});
+
+describe('a session whose open has failed', () => {
+  const notFound = () => new ApiError(409, 'SESSION_NOT_FOUND', 'Session not saved yet');
+
+  function setup() {
+    const api = fakeApi();
+    api.openPokerSession.mockImplementation(async () => { throw new ApiError(400, 'VALIDATION_ERROR', 'Invalid session payload'); });
+    api.savePokerHands.mockImplementation(async () => { throw notFound(); });
+    api.closePokerSession.mockImplementation(async () => { throw notFound(); });
+    const outbox = createPokerOutbox({ storage: memoryStorage(), api, now: () => 1000 });
+    return { api, outbox };
+  }
+
+  it('fails its hands and close on the first SESSION_NOT_FOUND instead of retrying', async () => {
+    const { api, outbox } = setup();
+    outbox.enqueue(openEntry(SESSION));
+    outbox.enqueue(handEntry(handItemFor(1)));
+    outbox.enqueue(closeEntry({ id: 's1', endedAt: null }));
+    await outbox.flush();
+    expect(api.savePokerHands).toHaveBeenCalledTimes(1);
+    expect(api.closePokerSession).toHaveBeenCalledTimes(1);
+    expect(outbox.snapshot().pendingIds).toEqual([]);
+    expect(outbox.snapshot().failed.map((f) => f.id)).toEqual(['open:s1', 'hand:h1', 'close:s1']);
+  });
+
+  it('still fails a later hand immediately after the failed open was discarded', async () => {
+    const { api, outbox } = setup();
+    outbox.enqueue(openEntry(SESSION));
+    await outbox.flush();
+    outbox.discard('open:s1');
+    outbox.enqueue(handEntry(handItemFor(2)));
+    await outbox.flush();
+    expect(api.savePokerHands).toHaveBeenCalledTimes(1);
+    expect(outbox.snapshot().failed.map((f) => f.id)).toEqual(['hand:h2']);
+  });
+
+  it('keeps retrying SESSION_NOT_FOUND while the open is only pending elsewhere', async () => {
+    const api = fakeApi();
+    api.savePokerHands.mockImplementation(async () => { throw notFound(); });
+    const outbox = createPokerOutbox({ storage: memoryStorage(), api, now: () => 1000 });
+    outbox.enqueue(handEntry(handItemFor(1)));
+    await outbox.flush();
+    expect(outbox.snapshot().pendingIds).toEqual(['hand:h1']);
+  });
+});
+
+describe('closes', () => {
+  it('sends a null endedAt when the summary has none', () => {
+    expect(closeEntry({ id: 's1' }).body).toEqual({ endedAt: null });
+    expect(closeEntry({ id: 's1', endedAt: undefined }).body).toEqual({ endedAt: null });
+  });
+
+  it('gives a stale close its own id in the same group, so an explicit close is not swallowed', () => {
+    expect(staleCloseEntry('s1')).toEqual({ kind: 'close', id: 'stale-close:s1', sessionId: 's1', body: { endedAt: null } });
+    const outbox = createPokerOutbox({ storage: memoryStorage(), api: fakeApi(), now: () => 1000 });
+    outbox.enqueue(staleCloseEntry('s1'));
+    outbox.enqueue(closeEntry({ id: 's1', endedAt: '2026-09-16T19:00:00.000Z' }));
+    expect(outbox.snapshot().pendingIds).toEqual(['stale-close:s1', 'close:s1']);
   });
 });

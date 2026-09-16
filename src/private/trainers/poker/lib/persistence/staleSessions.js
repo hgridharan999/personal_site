@@ -1,5 +1,5 @@
 import * as pokerApi from './api.js';
-import { closeEntry } from './pokerOutbox.js';
+import { staleCloseEntry } from './pokerOutbox.js';
 
 // Spec §6.1: a session left open (tab closed) is closed on a later load of /me/poker at its
 // last saved hand time. A session counts as stale only after 15 minutes without a saved hand
@@ -24,7 +24,7 @@ export async function closeStaleSessions({ api = pokerApi, outbox, kick = () => 
   if (!Array.isArray(sessions)) return [];
   outbox.refresh();
   const stale = sessions.filter((s) => now() - Date.parse(s.lastActivityAt) >= STALE_AFTER_MS && !outbox.hasQueued(s.id));
-  stale.forEach((s) => outbox.enqueue(closeEntry({ id: s.id, endedAt: null })));
+  stale.forEach((s) => outbox.enqueue(staleCloseEntry(s.id)));
   if (stale.length > 0) kick();
   return stale.map((s) => s.id);
 }
