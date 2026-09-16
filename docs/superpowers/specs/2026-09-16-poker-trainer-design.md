@@ -56,7 +56,7 @@ The engine is pure, with no DOM, network or clock, and deterministic given a see
 ## 4. Engine (`src/private/trainers/poker/engine/`)
 
 - **Deck and RNG:** 52-card deck, shuffled with the existing injectable RNG (`core/rng.js`). The hand seed is stored, so any hand can be re-dealt exactly.
-- **Hand state as an event log:** a hand is the sequence `deal → post_sb → post_bb → (fold | check | call | bet | raise | all_in)* per street → showdown → award`. `handState(events)` reduces the log into the current state: stacks, committed chips, pots, whose turn it is, legal actions and minimum/maximum raise sizes. The same log is what gets stored, replayed and, later, sent over the network.
+- **Hand state as an event log:** a hand is the sequence `deal → post_sb → post_bb → (fold | check | call | bet | raise | all_in)* per street → showdown → award`. `handState(events)` reduces the log into the current state: stacks, committed chips, pots, whose turn it is, legal actions and minimum/maximum raise sizes. The same log is what gets stored, replayed and, later, used by a multiplayer server, which must send each seat its own filtered view (never the raw log or state, which contain every hole card). Hidden cards will be added additively (`hole.cards: null`, then `show` events at showdown).
 - **Rules:**
   - The button rotates each hand. The small and big blind post automatically.
   - A minimum raise must be at least the size of the last full bet or raise. An all-in for less than a full raise does not reopen the betting to players who have already acted.

@@ -53,20 +53,24 @@ export function applyEvent(state, event) {
   return draft;
 }
 
+// legalActions(state) -> null | { seat, canCheck, toCall, canRaise,
+//   raiseKind: 'bet'|'raise', minRaiseTo: number|null, maxRaiseTo: number|null }
+// minRaiseTo/maxRaiseTo are null whenever canRaise is false.
 export function legalActions(s) {
   if (!s || s.toAct === null) return null;
   const p = playerAt(s, s.toAct);
   const maxRaiseTo = p.committed + p.stack;
   const othersCanRespond = s.players.some((q) => q !== p && !q.folded && !q.allIn);
   const match = amountToMatch(s, p);
+  const canRaise = !p.acted && othersCanRespond && maxRaiseTo > s.currentBet;
   return {
     seat: p.seat,
     canCheck: match <= p.committed,
     toCall: Math.min(Math.max(match - p.committed, 0), p.stack),
-    canRaise: !p.acted && othersCanRespond && maxRaiseTo > s.currentBet,
+    canRaise,
     raiseKind: s.currentBet === 0 ? 'bet' : 'raise',
-    minRaiseTo: Math.min(s.currentBet + s.minRaise, maxRaiseTo),
-    maxRaiseTo,
+    minRaiseTo: canRaise ? Math.min(s.currentBet + s.minRaise, maxRaiseTo) : null,
+    maxRaiseTo: canRaise ? maxRaiseTo : null,
   };
 }
 
@@ -183,7 +187,8 @@ function beginAction(s, afterSeat) {
 function act(s, { seat, action, amount }) {
   if (s.toAct === null) fail('HAND_NOT_READY', 'no action expected now');
   if (seat !== s.toAct) fail('NOT_YOUR_TURN', `seat ${s.toAct} is to act`);
-  if ((action === 'fold' || action === 'check' || action === 'call') && amount !== undefined) {
+  // A stored log may round-trip a missing amount as null; accept null and undefined alike.
+  if ((action === 'fold' || action === 'check' || action === 'call') && amount != null) {
     fail('BAD_AMOUNT', `${action} does not take an amount`);
   }
   const legal = legalActions(s);

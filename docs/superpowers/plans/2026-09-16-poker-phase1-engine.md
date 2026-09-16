@@ -27,6 +27,12 @@
 - Blinds are posted inside the `start` event rather than as separate `post_sb`/`post_bb` events.
 - The evaluator uses rank bitmasks and an 8,192-entry straight table instead of perfect-hash tables. Throughput is measured by `npm run poker:bench-eval` and is informational in this phase.
 - Several incomplete all-in raises do not add up to reopen the betting. Only a single full raise reopens it.
+- There is no separate `all_in` action. All-in is a bet, raise or call up to the stack (`maxRaiseTo`).
+- The hand log stores the actual dealt cards (`hole`/`board` events) instead of a seed. Replay needs no RNG.
+- `amountToMatch`: when no other live player can add chips, a player only has to match the most any other live player committed. This refines "preflop bet level is always bb", which still applies whenever someone could still bet.
+- `nextButton` is a simple moving button with no dead-button rule. When a table shrinks, a player can post the big blind twice in a row.
+- An all-in bet or raise below a full bet or raise does not reopen action for players who already acted, and the next minimum raise is `currentBet + last full raise size`.
+- `legalActions` returns `minRaiseTo`/`maxRaiseTo` as `null` when `canRaise` is false. Fold/check/call accept a null or undefined `amount`.
 
 ---
 
