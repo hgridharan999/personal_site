@@ -163,6 +163,7 @@ export function createOutbox({
 
   function enqueue(payload) {
     const id = idOf(payload);
+    if (typeof id !== 'string' || id === '') throw new TypeError('outbox: payload has no id');
     mutate((list) => (list.some((e) => e.id === id)
       ? list
       : [...list, { id, payload, attempts: 0, nextAt: 0, status: 'pending', lastError: null }]));
@@ -176,16 +177,26 @@ export function createOutbox({
     }));
   }
 
+  // groupOf can be handed a malformed stored payload; a throw from it must never
+  // break the rest of the flush or make hasQueued/nextDueIn unusable.
+  function safeGroup(entry) {
+    try {
+      return groupOf(entry.payload);
+    } catch {
+      return null;
+    }
+  }
+
   async function runFlush() {
     let sent = 0;
     const startedAt = now();
     // Groups whose earlier entry is still unsent in this pass: their later entries wait.
     const held = new Set();
     for (const entry of entries.filter((e) => e.status === 'pending')) {
-      const group = groupOf(entry.payload);
-      if (group !== null && held.has(group)) continue;
+      const group = safeGroup(entry);
+      if (group != null && held.has(group)) continue;
       if (entry.nextAt > startedAt) {
-        if (group !== null) held.add(group);
+        if (group != null) held.add(group);
         continue;
       }
       try {
@@ -198,7 +209,7 @@ export function createOutbox({
         if (isPermanent(err, entry)) {
           update(entry.id, () => ({ status: 'failed', lastError }));
         } else {
-          if (group !== null) held.add(group);
+          if (group != null) held.add(group);
           update(entry.id, (e) => ({ attempts: e.attempts + 1, nextAt: now() + backoffMs(e.attempts + 1), lastError }));
         }
       }
@@ -216,8 +227,8 @@ export function createOutbox({
     const heads = new Set();
     for (const e of entries) {
       if (e.status !== 'pending') continue;
-      const group = groupOf(e.payload);
-      if (group !== null) {
+      const group = safeGroup(e);
+      if (group != null) {
         if (heads.has(group)) continue; // waits behind an earlier entry of its group
         heads.add(group);
       }
@@ -228,7 +239,7 @@ export function createOutbox({
   }
 
   function hasQueued(group) {
-    return entries.some((e) => groupOf(e.payload) === group);
+    return entries.some((e) => safeGroup(e) === group);
   }
 
   return {

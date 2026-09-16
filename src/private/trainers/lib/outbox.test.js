@@ -536,3 +536,63 @@ describe('ordered groups and custom ids', () => {
     worker.stop();
   });
 });
+
+describe('enqueue requires an id', () => {
+  it('throws with the default idOf when the payload has no session id, leaving storage and pending lists unchanged', () => {
+    const { outbox, storage } = setup();
+    expect(() => outbox.enqueue({ attempts: [] })).toThrow(new TypeError('outbox: payload has no id'));
+    expect(outbox.snapshot().pendingIds).toEqual([]);
+    expect(storage.getItem(OUTBOX_KEY)).toBeNull();
+  });
+
+  it('throws when a custom idOf returns undefined', () => {
+    const outbox = createOutbox({ storage: memoryStorage(), send: vi.fn(), now: () => 1000, idOf: () => undefined });
+    expect(() => outbox.enqueue({ id: 'a' })).toThrow(TypeError);
+    expect(outbox.snapshot().pendingIds).toEqual([]);
+  });
+});
+
+describe('groupOf edge cases', () => {
+  it('treats a group of undefined as ungrouped, so a retryable failure of one entry does not hold back another', async () => {
+    const send = vi.fn(async (p) => {
+      if (p.id === 'a') throw new TypeError('offline');
+      return {};
+    });
+    const outbox = createOutbox({
+      storage: memoryStorage(),
+      send,
+      now: () => 1000,
+      idOf: (p) => p.id,
+      groupOf: () => undefined,
+    });
+    outbox.enqueue({ id: 'a' });
+    outbox.enqueue({ id: 'b' });
+    await outbox.flush();
+    expect(send.mock.calls.map(([p]) => p.id)).toEqual(['a', 'b']);
+    expect(outbox.snapshot().pendingIds).toEqual(['a']);
+  });
+
+  it('a groupOf that throws for one entry does not stop other entries from sending, and hasQueued does not throw', async () => {
+    const send = vi.fn(async (p) => {
+      if (p.id === 'bad') throw new TypeError('offline');
+      return {};
+    });
+    const outbox = createOutbox({
+      storage: memoryStorage(),
+      send,
+      now: () => 1000,
+      idOf: (p) => p.id,
+      groupOf: (p) => {
+        if (p.id === 'bad') throw new Error('malformed payload');
+        return null;
+      },
+    });
+    outbox.enqueue({ id: 'bad' });
+    outbox.enqueue({ id: 'good' });
+    await outbox.flush();
+    expect(send.mock.calls.map(([p]) => p.id)).toEqual(['bad', 'good']);
+    expect(outbox.snapshot().pendingIds).toEqual(['bad']);
+    expect(() => outbox.hasQueued('anything')).not.toThrow();
+    expect(outbox.hasQueued('anything')).toBe(false);
+  });
+});
