@@ -7,8 +7,11 @@ import { SEAT_COUNT } from './constants.js';
 
 /**
  * @typedef {{ seat:number, slot:number, isHero:boolean, name:string, tag:string, stack:number, bet:number,
- *   isButton:boolean, isActive:boolean, folded:boolean, allIn:boolean, cards:(number|null)[]|null, won:number }} SeatView
+ *   inPot:number, isButton:boolean, isActive:boolean, folded:boolean, allIn:boolean,
+ *   cards:(number|null)[]|null, won:number }} SeatView
  *   slot 0 is bottom center (hero); slots 1-5 run clockwise: left, top-left, top, top-right, right.
+ *   `bet` is the seat's chips on the current street (0 once the hand is complete); `inPot` is everything
+ *   the seat has put into this hand so far, including `bet` (the engine player's `total`, 0 with no hand).
  */
 
 export const slotOf = (seat, heroSeat) => (seat - heroSeat + SEAT_COUNT) % SEAT_COUNT;
@@ -27,10 +30,10 @@ export function seatViews(session) {
   const view = heroView(session);
   const handComplete = view?.street === 'complete';
   // A hand stays live (and its engine stacks are the truth) from the deal through 'complete',
-  // until finishHand settles it and moves the session out of 'playing'. tableCore.finishHand
-  // does not clear session.hand, so `handComplete` alone can't tell "just finished" apart from
-  // "settled" — session.phase is the signal for that.
-  const settled = session.phase !== 'playing';
+  // until finishHand settles it. tableCore.finishHand does not clear session.hand, but it does set
+  // handsCompleted to the hand's number, so that is the signal. session.phase is not: abandonSession
+  // ends the session mid-hand without settling, and the engine stacks (with bets out) stay the truth.
+  const settled = !session.hand || session.handsCompleted >= session.hand.no;
   return session.seats
     .map((info) => {
       const persona = info.kind === 'bot' ? getPersona(info.personaId) : null;
@@ -45,6 +48,7 @@ export function seatViews(session) {
         // (including a queued rebuy) is the truth; until then, the engine's live stack is.
         stack: p && !settled ? p.stack : info.stack,
         bet: p && !handComplete ? p.committed : 0,
+        inPot: p ? p.total : 0,
         isButton: (view ? view.button : session.button) === info.seat,
         isActive: Boolean(view && view.toAct === info.seat),
         folded: Boolean(p?.folded),
@@ -76,23 +80,28 @@ export function heroTurn(session) {
 /** Changes whenever bets are swept into the pot: a new street, the end of a hand or a new hand. */
 export const streetKey = (session) => (session.hand ? `${session.hand.no}:${session.hand.state.street}` : 'none');
 
+const handOfKey = (key) => key.split(':')[0];
+
 /**
- * Bets to animate into the pot when the street key changes. When the street's closing action
- * triggers an uncalled-bet refund (engine/handState.js returnUncalled), the excess goes straight
- * back to the raiser's stack before `next` is captured, so the swept amount is the seat's `prev`
- * bet minus whatever came back to their stack, not the raw bet.
+ * Chips to animate into the pot when the street key changes, per seat. Within one hand this is what
+ * each seat actually added to the pot on the street that just closed: `next.inPot` minus the seat's
+ * contribution before that street (`prev.inPot - prev.bet`). That counts the action that closed the
+ * street (which `prev` never saw), leaves out an uncalled bet that engine/handState.js returnUncalled
+ * refunded, and ignores pot winnings (which change stacks, not contributions). Across hands it falls
+ * back to the bets shown in `prev`.
  * @param {{ key:string, seats:SeatView[] }} prev
  * @param {{ key:string, seats:SeatView[] }} next
  * @returns {{ slot:number, amount:number }[]}
  */
 export function chipsToCollect(prev, next) {
   if (!prev || prev.key === next.key) return [];
+  const sameHand = handOfKey(prev.key) === handOfKey(next.key);
   const nextBySeat = new Map(next.seats.map((s) => [s.seat, s]));
   return prev.seats
-    .filter((s) => s.bet > 0)
-    .map(({ seat, slot, bet, stack }) => {
+    .map(({ seat, slot, bet, inPot }) => {
       const after = nextBySeat.get(seat);
-      const refunded = after ? Math.max(0, after.stack - stack) : 0;
-      return { slot, amount: bet - refunded };
-    });
+      const amount = sameHand && after ? after.inPot - (inPot - bet) : bet;
+      return { slot, amount };
+    })
+    .filter((x) => x.amount > 0);
 }

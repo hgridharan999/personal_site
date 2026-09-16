@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { mulberry32 } from '../../core/rng.js';
 import { legalActions } from '../engine/handState.js';
 import { listPersonas } from '../bots/personas.js';
-import { createSession, startHand, nextStep, applyAction, dealBoard, finishHand } from './tableCore.js';
+import { createSession, startHand, nextStep, applyAction, dealBoard, finishHand, abandonSession } from './tableCore.js';
 import { slotOf, heroView, seatName, seatViews, tableCenter, heroTurn, streetKey, chipsToCollect } from './tableView.js';
 
 const personas = listPersonas();
@@ -106,9 +106,25 @@ describe('seatViews', () => {
     expect(playing.phase).toBe('playing');
     const engineStacks = new Map(playing.hand.state.players.map((p) => [p.seat, p.stack]));
     const seats = seatViews(playing);
-    // At least one seat's stack must have moved from the 200 starting stack (the winner's gain).
-    expect(seats.some((s) => s.stack !== 200)).toBe(true);
     for (const seat of seats) expect(seat.stack).toBe(engineStacks.get(seat.seat));
+  });
+
+  it('keeps live engine stacks after the session is abandoned mid-hand, so bets are not counted twice', () => {
+    const s = dealt(1);
+    const abandoned = abandonSession(applyAction(s, 0, { action: 'call' }));
+    expect(abandoned.phase).toBe('ended');
+    const seats = seatViews(abandoned);
+    for (const seat of seats) {
+      const p = abandoned.hand.state.players.find((q) => q.seat === seat.seat);
+      expect(seat.stack).toBe(p.stack);
+      expect(seat.stack + seat.bet).toBe(200);
+    }
+  });
+
+  it('reports each seat’s contribution to the hand as inPot', () => {
+    expect(seatViews(fresh()).every((x) => x.inPot === 0)).toBe(true);
+    const s = advance(dealt(5), 'board');
+    for (const seat of seatViews(s)) expect(seat.inPot).toBe(s.hand.state.players.find((p) => p.seat === seat.seat).total);
   });
 
   it('never reveals a bot’s hole cards mid-hand or after a no-showdown finish', () => {
@@ -162,9 +178,9 @@ describe('chipsToCollect', () => {
     const flopDue = advance(preflop, 'board');
     expect(streetKey(preflop)).toBe('1:preflop');
     expect(streetKey(flopDue)).toBe('1:flop');
-    const snap = (s) => ({ key: streetKey(s), seats: seatViews(s) });
-    // Blinds (1 and 2) are the bets on the table in the preflop snapshot.
-    expect(chipsToCollect(snap(preflop), snap(flopDue)).map((x) => x.amount).sort()).toEqual([1, 2]);
+    // Only the blinds show in the preflop snapshot, but all six seats limp in before the street
+    // closes, so each seat's 2 is swept.
+    expect(chipsToCollect(snap(preflop), snap(flopDue)).map((x) => x.amount)).toEqual([2, 2, 2, 2, 2, 2]);
     expect(chipsToCollect(snap(flopDue), snap(dealBoard(flopDue)))).toEqual([]);
     expect(chipsToCollect(snap(preflop), snap(preflop))).toEqual([]);
     expect(chipsToCollect(null, snap(preflop))).toEqual([]);
@@ -219,5 +235,118 @@ describe('chipsToCollect', () => {
     const caller = swept.find((x) => x.slot === slotOf(2, 0));
     expect(hero.amount).toBe(20);
     expect(caller.amount).toBe(20);
+  });
+
+  const snap = (s) => ({ key: streetKey(s), seats: seatViews(s) });
+  const call = (legal) => (legal.canCheck ? { action: 'check' } : { action: 'call' });
+  const foldOrCheck = (legal) => (legal.canCheck ? { action: 'check' } : { action: 'fold' });
+
+  /**
+   * Plays `session` to the end with `policy(state, seat, legal)`, snapshotting around every step. Returns each
+   * street-key change as `{ from, to, swept, truth }`, both keyed by seat: `swept` from chipsToCollect and
+   * `truth` from the engine's per-seat `total` growth over the street that closed.
+   */
+  function sweeps(session, policy) {
+    let s = session;
+    let start = new Map(s.hand.state.players.map((p) => [p.seat, 0]));
+    const out = [];
+    for (let guard = 0; guard < 300; guard += 1) {
+      const step = nextStep(s);
+      if (step.type === 'complete') return out;
+      const prev = snap(s);
+      if (step.type === 'board') s = dealBoard(s);
+      else s = applyAction(s, step.seat, policy(s.hand.state, step.seat, legalActions(s.hand.state)));
+      const next = snap(s);
+      if (prev.key === next.key) continue;
+      const swept = {};
+      for (const x of chipsToCollect(prev, next)) swept[(x.slot + s.heroSeat) % 6] = x.amount;
+      const truth = {};
+      for (const p of s.hand.state.players) if (p.total > start.get(p.seat)) truth[p.seat] = p.total - start.get(p.seat);
+      out.push({ from: prev.key, to: next.key, swept, truth });
+      start = new Map(s.hand.state.players.map((p) => [p.seat, p.total]));
+    }
+    throw new Error('hand did not finish');
+  }
+
+  // Seed 1 deals button 3, small blind 4, big blind 5; the hero (seat 0) is first to act preflop.
+  const seed1 = (stacks = {}) => {
+    const base = fresh();
+    const seats = base.seats.map((x) => (x.seat in stacks ? { ...x, stack: stacks[x.seat] } : x));
+    return startHand({ ...base, seats }, { rng: mulberry32(1), now: NOW, personas });
+  };
+
+  it('sweeps the raise minus the refund when the hero raises and everyone folds', () => {
+    const [close] = sweeps(seed1(), (st, seat, legal) => (seat === 0 ? { action: legal.raiseKind, amount: 6 } : foldOrCheck(legal)));
+    expect(close).toMatchObject({ from: '1:preflop', to: '1:complete' });
+    expect(close.swept).toEqual({ 0: 2, 4: 1, 5: 2 });
+  });
+
+  it('sweeps the matched blinds on a walk to the big blind', () => {
+    const [close] = sweeps(seed1(), (st, seat, legal) => foldOrCheck(legal));
+    expect(close).toMatchObject({ from: '1:preflop', to: '1:complete' });
+    expect(close.swept).toEqual({ 4: 1, 5: 1 });
+  });
+
+  it('sweeps nothing when a flop bet makes everyone fold', () => {
+    const result = sweeps(seed1(), (st, seat, legal) => {
+      if (st.street === 'preflop') return call(legal);
+      return st.currentBet === 0 && !st.players.some((p) => p.acted) ? { action: legal.raiseKind, amount: 10 } : foldOrCheck(legal);
+    });
+    expect(result.map((x) => x.to)).toEqual(['1:flop', '1:complete']);
+    expect(result[0].swept).toEqual({ 0: 2, 1: 2, 2: 2, 3: 2, 4: 2, 5: 2 });
+    expect(result[1].swept).toEqual({});
+  });
+
+  it('sweeps both players’ 60 when a river bet is raised and called', () => {
+    const result = sweeps(seed1(), (st, seat, legal) => {
+      if (seat !== 0 && seat !== 2) return foldOrCheck(legal);
+      if (st.street === 'river' && seat === 0 && st.currentBet === 0) return { action: legal.raiseKind, amount: 20 };
+      if (st.street === 'river' && seat === 2 && st.currentBet === 20) return { action: legal.raiseKind, amount: 60 };
+      return call(legal);
+    });
+    const river = result.find((x) => x.from === '1:river');
+    expect(river.to).toBe('1:complete');
+    expect(river.swept).toEqual({ 0: 60, 2: 60 });
+  });
+
+  it('sweeps the whole short all-in call that closes preflop', () => {
+    const result = sweeps(seed1({ 5: 10 }), (st, seat, legal) => {
+      if (seat === 0 && st.street === 'preflop') return st.currentBet < 20 ? { action: legal.raiseKind, amount: 20 } : call(legal);
+      return seat === 5 ? call(legal) : foldOrCheck(legal);
+    });
+    expect(result[0]).toMatchObject({ from: '1:preflop', to: '1:flop' });
+    // The big blind calls all-in for 10 in total; the hero's uncalled 10 comes back.
+    expect(result[0].swept).toEqual({ 0: 10, 4: 1, 5: 10 });
+  });
+
+  it('falls back to the shown bets when the next snapshot is a different hand', () => {
+    const prev = snap(dealt(1));
+    const next = { key: '2:preflop', seats: seatViews(fresh()) };
+    expect(chipsToCollect(prev, next).map((x) => x.amount).sort()).toEqual([1, 2]);
+  });
+
+  it('matches every seat’s pot contribution over 200 random hands', () => {
+    const mismatches = [];
+    let transitions = 0;
+    for (let seed = 1; seed <= 200; seed += 1) {
+      const rng = mulberry32(seed * 7 + 1);
+      const base = fresh();
+      const short = { 1: 20 + (seed % 50), 3: 5 + (seed % 30) };
+      const seats = base.seats.map((x) => (x.seat in short ? { ...x, stack: short[x.seat] } : x));
+      const session = startHand({ ...base, seats }, { rng: mulberry32(seed), now: NOW, personas });
+      const result = sweeps(session, (st, seat, legal) => {
+        const r = rng();
+        if (r < 0.25 && legal.canRaise) return { action: legal.raiseKind, amount: r < 0.1 ? legal.maxRaiseTo : legal.minRaiseTo };
+        return r < 0.45 ? foldOrCheck(legal) : call(legal);
+      });
+      for (const x of result) {
+        transitions += 1;
+        if (Object.values(x.swept).some((amount) => amount <= 0) || JSON.stringify(x.swept) !== JSON.stringify(x.truth)) {
+          mismatches.push({ seed, ...x });
+        }
+      }
+    }
+    expect(transitions).toBeGreaterThan(200);
+    expect(mismatches).toEqual([]);
   });
 });
