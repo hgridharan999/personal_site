@@ -1,10 +1,25 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { loadEnv } from 'vite';
 
-// Capture OS environment keys once at module load. File-sourced env vars can refresh
-// on reload, but real OS environment values always take precedence.
-const OS_ENV_KEYS = new Set(Object.keys(process.env));
+// Vite re-imports this module when env/config files change, so the snapshot of genuine
+// OS environment keys must survive re-evaluation: capture it once per process on globalThis.
+const OS_ENV_SNAPSHOT = Symbol.for('journal_portfolio.apiDev.osEnvKeys');
+globalThis[OS_ENV_SNAPSHOT] ??= new Set(Object.keys(process.env));
+const OS_ENV_KEYS = globalThis[OS_ENV_SNAPSHOT];
+
+// Parse .env file contents directly (bypasses Vite's loadEnv cache which doesn't update within process)
+function parseEnvFile(filePath) {
+  if (!fs.existsSync(filePath)) return {};
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const env = {};
+  for (const line of content.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const [k, ...rest] = trimmed.split('=');
+    env[k.trim()] = rest.join('=').trim();
+  }
+  return env;
+}
 
 /**
  * Dev-only: serve the Vercel functions in /api from the Vite dev server, so
@@ -17,7 +32,9 @@ export default function apiDevServer() {
     name: 'api-dev-server',
     apply: 'serve',
     configResolved(config) {
-      const env = loadEnv(config.mode, config.root, '');
+      // Load .env.local directly to bypass Vite's loadEnv cache (survives process restart)
+      const envFile = path.resolve(config.root, '.env.local');
+      const env = parseEnvFile(envFile);
       // Only set env vars that didn't come from the OS environment. This allows file
       // values to refresh on reload while preserving OS-set values as permanent overrides.
       for (const [k, v] of Object.entries(env)) if (!OS_ENV_KEYS.has(k)) process.env[k] = v;
