@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ApiError } from './api.js';
 import {
-  OUTBOX_KEY, MAX_ERROR_CHARS, memoryStorage, backoffMs, isPermanentError, describeError, createOutbox, startOutboxWorker,
+  OUTBOX_KEY, MAX_ERROR_CHARS, memoryStorage, browserStorage, backoffMs, isPermanentError, describeError, createOutbox, startOutboxWorker,
 } from './outbox.js';
 
 const payload = (id) => ({ session: { id }, attempts: [] });
@@ -371,5 +371,168 @@ describe('startOutboxWorker', () => {
     const worker = startOutboxWorker(brokenOutbox, { win, setTimeoutImpl, clearTimeoutImpl });
     await expect(worker.run()).resolves.toBeUndefined();
     expect(setTimeoutImpl).toHaveBeenLastCalledWith(expect.any(Function), 60000);
+  });
+});
+
+describe('browserStorage', () => {
+  it('uses the window localStorage when it works', () => {
+    const storage = memoryStorage();
+    expect(browserStorage({ localStorage: storage })).toBe(storage);
+  });
+
+  it('falls back to memory when localStorage throws or there is no window', () => {
+    const blocked = { get localStorage() { throw new Error('blocked'); } };
+    const fallback = browserStorage(blocked);
+    fallback.setItem('k', 'v');
+    expect(fallback.getItem('k')).toBe('v');
+    expect(browserStorage(undefined).getItem('k')).toBeNull();
+  });
+});
+
+describe('ordered groups and custom ids', () => {
+  const item = (id, group) => (group === undefined ? { id } : { id, sessionId: group });
+
+  function grouped({ send = vi.fn(async () => ({})), storage = memoryStorage(), isPermanent } = {}) {
+    let t = 1000;
+    const clock = { now: () => t, advance: (ms) => { t += ms; } };
+    const outbox = createOutbox({
+      storage,
+      send,
+      now: clock.now,
+      key: 'test-outbox',
+      idOf: (p) => p?.id,
+      groupOf: (p) => p?.sessionId ?? null,
+      ...(isPermanent ? { isPermanent } : {}),
+    });
+    return { outbox, send, storage, clock };
+  }
+
+  const sentIds = (send) => send.mock.calls.map(([p]) => p.id);
+
+  it('uses idOf for de-duplication and stored-entry validation, under its own key', () => {
+    const { outbox, storage } = grouped();
+    outbox.enqueue(item('open:s1', 's1'));
+    outbox.enqueue(item('open:s1', 's1'));
+    expect(outbox.key).toBe('test-outbox');
+    expect(outbox.snapshot().pendingIds).toEqual(['open:s1']);
+    expect(storage.getItem(OUTBOX_KEY)).toBeNull();
+    const stored = JSON.parse(storage.getItem('test-outbox'));
+    storage.setItem('test-outbox', JSON.stringify([...stored, { ...stored[0], id: 'mismatch' }]));
+    expect(grouped({ storage }).outbox.snapshot().pendingIds).toEqual(['open:s1']);
+  });
+
+  it('holds later entries of a group while an earlier one is pending, then sends them in order', async () => {
+    let offline = true;
+    const send = vi.fn(async () => {
+      if (offline) throw new TypeError('offline');
+      return {};
+    });
+    const { outbox, clock } = grouped({ send });
+    outbox.enqueue(item('open:s1', 's1'));
+    outbox.enqueue(item('hand:h1', 's1'));
+    outbox.enqueue(item('close:s1', 's1'));
+    await outbox.flush();
+    expect(sentIds(send)).toEqual(['open:s1']);
+    // The held hand has nextAt 0, but only the group's head decides when to retry.
+    expect(outbox.nextDueIn()).toBe(1000);
+    offline = false;
+    clock.advance(1000);
+    await outbox.flush();
+    expect(sentIds(send)).toEqual(['open:s1', 'open:s1', 'hand:h1', 'close:s1']);
+    expect(outbox.snapshot().pendingIds).toEqual([]);
+    expect(outbox.nextDueIn()).toBeNull();
+  });
+
+  it('holds a group behind an earlier entry that is not due yet', async () => {
+    let openFailures = 1;
+    const send = vi.fn(async (p) => {
+      if (p.id === 'open:s1' && openFailures > 0) {
+        openFailures -= 1;
+        throw new TypeError('offline');
+      }
+      return {};
+    });
+    const { outbox } = grouped({ send });
+    outbox.enqueue(item('open:s1', 's1'));
+    await outbox.flush();
+    outbox.enqueue(item('hand:h1', 's1'));
+    await outbox.flush();
+    expect(sentIds(send)).toEqual(['open:s1']);
+    expect(outbox.snapshot().pendingIds).toEqual(['open:s1', 'hand:h1']);
+  });
+
+  it('does not let a failed entry hold back the rest of its group', async () => {
+    const send = vi.fn(async (p) => {
+      if (p.id === 'hand:h1') throw new ApiError(400, 'VALIDATION_ERROR', 'Invalid hands payload');
+      return {};
+    });
+    const { outbox } = grouped({ send });
+    ['open:s1', 'hand:h1', 'hand:h2', 'close:s1'].forEach((id) => outbox.enqueue(item(id, 's1')));
+    await outbox.flush();
+    expect(sentIds(send)).toEqual(['open:s1', 'hand:h1', 'hand:h2', 'close:s1']);
+    expect(outbox.snapshot()).toEqual({ pendingIds: [], failed: [{ id: 'hand:h1', lastError: 'Invalid hands payload' }], discardedIds: [] });
+  });
+
+  it('keeps groups independent and never holds ungrouped entries', async () => {
+    const send = vi.fn(async (p) => {
+      if (p.sessionId === 's1') throw new TypeError('offline');
+      return {};
+    });
+    const { outbox } = grouped({ send });
+    outbox.enqueue(item('open:s1', 's1'));
+    outbox.enqueue(item('hand:a', 's1'));
+    outbox.enqueue(item('open:s2', 's2'));
+    outbox.enqueue(item('solo'));
+    await outbox.flush();
+    expect(sentIds(send)).toEqual(['open:s1', 'open:s2', 'solo']);
+    expect(outbox.snapshot().pendingIds).toEqual(['open:s1', 'hand:a']);
+  });
+
+  it('passes the entry to isPermanent', async () => {
+    const isPermanent = vi.fn((_err, entry) => entry.attempts >= 1);
+    const send = vi.fn(async () => { throw new ApiError(409, 'SESSION_NOT_FOUND', 'Session not saved yet'); });
+    const { outbox, clock } = grouped({ send, isPermanent });
+    outbox.enqueue(item('hand:h1', 's1'));
+    await outbox.flush();
+    expect(isPermanent).toHaveBeenCalledWith(expect.any(ApiError), expect.objectContaining({ id: 'hand:h1', attempts: 0 }));
+    expect(outbox.snapshot().pendingIds).toEqual(['hand:h1']);
+    clock.advance(1000);
+    await outbox.flush();
+    expect(outbox.snapshot().failed).toEqual([{ id: 'hand:h1', lastError: 'Session not saved yet' }]);
+  });
+
+  it('hasQueued reports pending and failed entries of a group', async () => {
+    const send = vi.fn(async () => { throw new ApiError(400, 'VALIDATION_ERROR', 'Invalid'); });
+    const { outbox } = grouped({ send });
+    expect(outbox.hasQueued('s1')).toBe(false);
+    outbox.enqueue(item('open:s1', 's1'));
+    expect(outbox.hasQueued('s1')).toBe(true);
+    await outbox.flush();
+    expect(outbox.snapshot().failed).toHaveLength(1);
+    expect(outbox.hasQueued('s1')).toBe(true);
+    expect(outbox.hasQueued('s2')).toBe(false);
+    outbox.discard('open:s1');
+    expect(outbox.hasQueued('s1')).toBe(false);
+  });
+
+  it('startOutboxWorker listens for the outbox\'s own storage key', async () => {
+    const send = vi.fn(async () => ({}));
+    const storage = memoryStorage();
+    const { outbox } = grouped({ send, storage });
+    const other = grouped({ storage }).outbox;
+    const listeners = {};
+    const win = { addEventListener: (e, fn) => { listeners[e] = fn; }, removeEventListener: vi.fn() };
+    const worker = startOutboxWorker(outbox, { win, setTimeoutImpl: vi.fn(() => 1), clearTimeoutImpl: vi.fn() });
+    await worker.run();
+
+    other.enqueue(item('open:s9', 's9'));
+    listeners.storage({ key: OUTBOX_KEY });
+    await worker.run();
+    expect(send).not.toHaveBeenCalled();
+
+    listeners.storage({ key: 'test-outbox' });
+    await worker.run();
+    expect(send).toHaveBeenCalledWith(item('open:s9', 's9'));
+    worker.stop();
   });
 });

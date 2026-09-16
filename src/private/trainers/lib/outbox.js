@@ -4,6 +4,9 @@ import { ApiError } from './api.js';
 // Entries persist in localStorage (memory fallback) until the server accepts them.
 // Several tabs can share one storage key: every mutation re-reads storage and
 // applies its change to that fresh list, so tabs never erase each other's games.
+// Optional ordered groups (groupOf): an entry is sent only after every earlier
+// pending entry of its group was sent, so a poker session row is saved before its
+// hands and its close. A failed (rejected) entry does not hold its group back.
 
 export const OUTBOX_KEY = 'trn-outbox-v1';
 export const MAX_ERROR_CHARS = 240;
@@ -45,6 +48,18 @@ export function memoryStorage() {
   };
 }
 
+/** window.localStorage when it is usable (not blocked or missing), otherwise memory storage. */
+export function browserStorage(win = globalThis.window) {
+  try {
+    const s = win.localStorage;
+    s.setItem('__trn_probe', '1');
+    s.removeItem('__trn_probe');
+    return s;
+  } catch {
+    return memoryStorage();
+  }
+}
+
 export const backoffMs = (attempts) => Math.min(60000, 1000 * 2 ** Math.max(0, attempts - 1));
 
 export function isPermanentError(err) {
@@ -52,12 +67,14 @@ export function isPermanentError(err) {
 }
 
 const isCount = (n) => Number.isFinite(n) && n >= 0;
+const sessionPayloadId = (payload) => payload?.session?.id;
+const ungrouped = () => null;
 
-function isValidEntry(e) {
+function isValidEntry(e, idOf) {
   return (
     e !== null && typeof e === 'object'
     && typeof e.id === 'string'
-    && e.payload?.session?.id === e.id
+    && idOf(e.payload) === e.id
     && isCount(e.attempts)
     && isCount(e.nextAt)
     && STATUSES.includes(e.status)
@@ -65,7 +82,15 @@ function isValidEntry(e) {
   );
 }
 
-export function createOutbox({ storage, send, now = Date.now, key = OUTBOX_KEY }) {
+export function createOutbox({
+  storage,
+  send,
+  now = Date.now,
+  key = OUTBOX_KEY,
+  idOf = sessionPayloadId,
+  groupOf = ungrouped,
+  isPermanent = isPermanentError,
+}) {
   let entries = [];
   // After a failed write (storage full or blocked) storage is stale, so the
   // in-memory list stays authoritative until a write succeeds again.
@@ -87,7 +112,7 @@ export function createOutbox({ storage, send, now = Date.now, key = OUTBOX_KEY }
     }
     try {
       const parsed = JSON.parse(raw || '[]');
-      return Array.isArray(parsed) ? parsed.filter(isValidEntry) : [];
+      return Array.isArray(parsed) ? parsed.filter((e) => isValidEntry(e, idOf)) : [];
     } catch {
       return [];
     }
@@ -137,7 +162,7 @@ export function createOutbox({ storage, send, now = Date.now, key = OUTBOX_KEY }
   }
 
   function enqueue(payload) {
-    const id = payload.session.id;
+    const id = idOf(payload);
     mutate((list) => (list.some((e) => e.id === id)
       ? list
       : [...list, { id, payload, attempts: 0, nextAt: 0, status: 'pending', lastError: null }]));
@@ -153,7 +178,16 @@ export function createOutbox({ storage, send, now = Date.now, key = OUTBOX_KEY }
 
   async function runFlush() {
     let sent = 0;
-    for (const entry of entries.filter((e) => e.status === 'pending' && e.nextAt <= now())) {
+    const startedAt = now();
+    // Groups whose earlier entry is still unsent in this pass: their later entries wait.
+    const held = new Set();
+    for (const entry of entries.filter((e) => e.status === 'pending')) {
+      const group = groupOf(entry.payload);
+      if (group !== null && held.has(group)) continue;
+      if (entry.nextAt > startedAt) {
+        if (group !== null) held.add(group);
+        continue;
+      }
       try {
         await send(entry.payload);
         mutate((list) => list.filter((e) => e.id !== entry.id));
@@ -161,9 +195,10 @@ export function createOutbox({ storage, send, now = Date.now, key = OUTBOX_KEY }
       } catch (err) {
         if (err instanceof ApiError && err.status === 401) return { sent, authRequired: true };
         const lastError = describeError(err);
-        if (isPermanentError(err)) {
+        if (isPermanent(err, entry)) {
           update(entry.id, () => ({ status: 'failed', lastError }));
         } else {
+          if (group !== null) held.add(group);
           update(entry.id, (e) => ({ attempts: e.attempts + 1, nextAt: now() + backoffMs(e.attempts + 1), lastError }));
         }
       }
@@ -177,17 +212,33 @@ export function createOutbox({ storage, send, now = Date.now, key = OUTBOX_KEY }
   }
 
   function nextDueIn() {
-    const pending = entries.filter((e) => e.status === 'pending');
-    if (pending.length === 0) return null;
-    return Math.max(0, Math.min(...pending.map((e) => e.nextAt)) - now());
+    const due = [];
+    const heads = new Set();
+    for (const e of entries) {
+      if (e.status !== 'pending') continue;
+      const group = groupOf(e.payload);
+      if (group !== null) {
+        if (heads.has(group)) continue; // waits behind an earlier entry of its group
+        heads.add(group);
+      }
+      due.push(e.nextAt);
+    }
+    if (due.length === 0) return null;
+    return Math.max(0, Math.min(...due) - now());
+  }
+
+  function hasQueued(group) {
+    return entries.some((e) => groupOf(e.payload) === group);
   }
 
   return {
+    key,
     enqueue,
     flush,
     discard,
     refresh,
     nextDueIn,
+    hasQueued,
     snapshot: () => snap,
     subscribe(listener) {
       listeners.add(listener);
@@ -197,6 +248,7 @@ export function createOutbox({ storage, send, now = Date.now, key = OUTBOX_KEY }
 }
 
 export function startOutboxWorker(outbox, { win = window, setTimeoutImpl = setTimeout, clearTimeoutImpl = clearTimeout } = {}) {
+  const watchedKey = outbox.key ?? OUTBOX_KEY;
   let timer = null;
   let stopped = false;
   // Concurrent run() calls (from online, a due timer, and every submitGame)
@@ -247,11 +299,11 @@ export function startOutboxWorker(outbox, { win = window, setTimeoutImpl = setTi
     return inFlightRun;
   }
 
-  // Another tab changed the outbox: show its entries here and send anything
+  // Another tab changed this outbox: show its entries here and send anything
   // due. A null key means the whole storage area was cleared (e.g.
   // localStorage.clear()), which must also trigger a refresh.
   function onStorage(event) {
-    if (event.key !== null && event.key !== OUTBOX_KEY) return;
+    if (event.key !== null && event.key !== watchedKey) return;
     outbox.refresh();
     run();
   }

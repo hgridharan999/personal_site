@@ -1,16 +1,5 @@
 import { saveSession } from './api.js';
-import { createOutbox, memoryStorage, startOutboxWorker } from './outbox.js';
-
-function browserStorage() {
-  try {
-    const s = window.localStorage;
-    s.setItem('__trn_probe', '1');
-    s.removeItem('__trn_probe');
-    return s;
-  } catch {
-    return memoryStorage();
-  }
-}
+import { browserStorage, createOutbox, startOutboxWorker } from './outbox.js';
 
 export const outbox = createOutbox({ storage: browserStorage(), send: (payload) => saveSession(payload) });
 
