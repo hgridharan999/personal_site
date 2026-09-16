@@ -132,7 +132,7 @@ Persistence stores amounts as **integer units** (not the spec's `numeric(10,1)` 
   - `createWorkerRunner(options?)` lives in `worker/workerClient.js` with `{ createWorker, timeoutMs = 3000, onTimeout }`. On timeout it returns check if free, otherwise fold.
   - `Persona.style` is one of `tight-aggressive | loose-aggressive | tight-passive | loose-passive`.
   - `accumulateProfile` needs a completed hand's full log (every hole card). For anything else it returns the profile unchanged. Stats are not split by position.
-  - `bots/pacing.js` exports `withPacing(runner, …)` and `thinkTimeMs(…)`, an optional additive helper.
+  - `bots/pacing.js` exports `withPacing(runner, …)` and `thinkTimeMs(…)`, an optional additive helper. **Decision (Phase 2 review):** the UI table driver owns bot pacing, so the UI does NOT wrap its runner with `withPacing`.
 - **Phase 6 plan additions (accepted, binding on Phase 5):**
   - **Spot strings:** `pf.<open|vs_limp|vs_open|squeeze|vs_3bet|vs_4bet>` or `<flop|turn|river>.<cbet|no_bet|facing_bet|facing_raise>`, with an optional `.ip` or `.oop` suffix. Other values are allowed and get generic text.
   - **EV lost per 100 decisions** counts all graded decisions, confident or not, in BB. Leaks count only confident decisions.
@@ -140,6 +140,32 @@ Persistence stores amounts as **integer units** (not the spec's `numeric(10,1)` 
   - **Migration 003** replaces `poker_decisions_spot` with a `(spot, hand_id)` covering index.
   - **`data/targets.js`** is owned by Phase 6.
   - **Hand links** use `/me/poker/hand/:id`, built in Phase 5.
+- **Phase 5 plan additions (accepted):**
+  - **Session review response:** `GET sessions?id=` becomes paginated and summary-only: `{ session, summary, costliest, opponents, hands (≤300), nextAfterHandNo }`, with `&afterHandNo=` for later pages. It no longer returns events, bot hole cards or decisions.
+  - **New modes on existing functions:**
+    - `GET sessions?status=recent`
+    - `GET hands?id=`
+    - `GET hands?ungraded=1&sessionId=&belowVersion=&afterHandNo=&limit=`
+    - `PATCH hands {grades}` → `{updated, skipped, missing}`
+  - **Re-grade rules:**
+    - A hand counts as ungraded when `hero_actions > 0` and its max `analysis_version` is below `ANALYSIS_VERSION` (`analysis/version.js`).
+    - Re-grading at a newer version replaces all decisions, sets `hero_allin_ev`, and changes `allin_adj_net` by `COALESCE(new, hero_net) − COALESCE(old, hero_net)`.
+  - **DecisionRecord:**
+    - `evByOption` keys are `fold|check|call|bet:<units>|raise:<units>`, and `{}` for chart-graded preflop decisions.
+    - EVs are rounded to 2 decimals, equities to 4.
+    - Preflop spots have no ip/oop suffix; postflop spots always have one.
+  - **Confidence:**
+    - The vague-range rule applies postflop only.
+    - The dominant opponent is the latest live bettor or raiser, otherwise the largest contributor.
+    - Chart-graded decisions are always confident.
+  - **Table driver:**
+    - Adds `analyzeHand`, `analysisTimeoutMs` and `flushAnalyses()`.
+    - `onHandComplete` becomes async and is still called in hand order.
+    - `onSessionEnd` waits for the last pending hand.
+    - `abandon`/`pagehide` deliver pending hands with empty grades.
+  - **Grading worker** lives in `analysis/worker/**`.
+  - **Shared with Phase 6:** `analysis/spots.js` (`parseSpot`/`spotLabel`) and `ui/shared/usePokerResource(load, key, loginFrom)`. Phase 5 merges first, and Phase 6 imports them instead of creating its own.
+  - **Lobby:** Recent Sessions becomes a live list with review links, and the session end panel links to the review.
 - **Phase 4 Task 11:** components rendered by `withPokerPersistence` (save status, profile loading) must render inside `PokerShell`, or be `.pk`-scoped, so the poker styles apply.
 - **`GET /api/trainers/poker/profile`** returns `{ profile: PlayerProfile, hands:number, decisions:number }`.
 - **Session close:** `onSessionEnd(summary)` keeps its shape, but the server trusts only `endedAt`. Server-side totals come from stored hands.
