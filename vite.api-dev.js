@@ -8,6 +8,11 @@ const OS_ENV_SNAPSHOT = Symbol.for('journal_portfolio.apiDev.osEnvKeys');
 globalThis[OS_ENV_SNAPSHOT] ??= new Set(Object.keys(process.env));
 const OS_ENV_KEYS = globalThis[OS_ENV_SNAPSHOT];
 
+// Keys this plugin copied from env files into process.env (also kept across re-imports).
+const APPLIED_ENV = Symbol.for('journal_portfolio.apiDev.appliedEnvKeys');
+globalThis[APPLIED_ENV] ??= new Set();
+const APPLIED_KEYS = globalThis[APPLIED_ENV];
+
 /**
  * Dev-only: serve the Vercel functions in /api from the Vite dev server, so
  * `npm run dev` works without `vercel dev`. Shims the bits of Vercel's
@@ -19,12 +24,17 @@ export default function apiDevServer() {
     name: 'api-dev-server',
     apply: 'serve',
     configResolved(config) {
-      // Vite's loadEnv reads all mode-specific files (.env, .env.development, .env.local, etc.)
-      // and refreshes values on every config reload. Only set env vars that didn't come from
-      // the OS environment—this allows file values to refresh while preserving OS-set values
-      // as permanent overrides.
+      // loadEnv reads every env file for the mode, but lets values already in process.env win.
+      // Drop the file values applied on the previous load first, so edits to .env.local take
+      // effect on reload. Real OS env vars and values set by other code are never touched.
+      for (const k of APPLIED_KEYS) delete process.env[k];
+      APPLIED_KEYS.clear();
       const env = loadEnv(config.mode, config.root, '');
-      for (const [k, v] of Object.entries(env)) if (!OS_ENV_KEYS.has(k)) process.env[k] = v;
+      for (const [k, v] of Object.entries(env)) {
+        if (OS_ENV_KEYS.has(k) || process.env[k] !== undefined) continue;
+        process.env[k] = v;
+        APPLIED_KEYS.add(k);
+      }
     },
     configureServer(server) {
       server.middlewares.use('/api', async (req, res, next) => {
