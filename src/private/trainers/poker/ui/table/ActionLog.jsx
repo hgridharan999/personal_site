@@ -1,7 +1,25 @@
 // src/private/trainers/poker/ui/table/ActionLog.jsx
 import { useEffect, useRef, useState } from 'react';
+import { newAnnouncement } from '../../lib/announce.js';
 
 const NO_LINES = [];
+
+/**
+ * What the live region says: every line added since the last announcement (lib/announce.js), kept
+ * until more lines arrive. Render only reads the refs; the effect records what was announced, so a
+ * re-render or StrictMode double render never drops or repeats lines.
+ */
+function useAnnouncement(lines, handNo) {
+  const mark = useRef(null);
+  const spoken = useRef('');
+  const { text } = newAnnouncement(mark.current, lines, handNo);
+  const current = text || spoken.current;
+  useEffect(() => {
+    mark.current = newAnnouncement(mark.current, lines, handNo).mark;
+    spoken.current = current;
+  }, [lines, handNo, current]);
+  return current;
+}
 
 /**
  * Collapsible log of the current hand, plus the aria-live region that announces each new line.
@@ -17,7 +35,8 @@ export default function ActionLog({ session, yourTurn }) {
     if (list.current) list.current.scrollTop = list.current.scrollHeight;
   }, [lines, open]);
 
-  const announcement = [lines.at(-1), yourTurn && 'Your turn'].filter(Boolean).join('. ');
+  const spoken = useAnnouncement(lines, hand ? hand.no : 0);
+  const announcement = [spoken, yourTurn && 'Your turn'].filter(Boolean).join('. ');
 
   return (
     <aside className="pk-log" aria-label="Action log">
