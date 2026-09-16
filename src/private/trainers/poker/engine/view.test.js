@@ -92,4 +92,73 @@ describe('eventsFor', () => {
     expect(view[4]).toEqual(events[4]);
     void s0;
   });
+
+  it('returns independent copies where mutating event cards leaves originals unchanged', () => {
+    const events = [
+      { type: 'board', cards: parseCards('2c7s9d') },
+      { type: 'board', cards: parseCards('2c7s9dKh') },
+    ];
+    const before = structuredClone(events);
+    const view = eventsFor(events, 1);
+
+    // Mutate the returned events' cards arrays
+    if (view[0].cards) view[0].cards.pop();
+    if (view[1].cards) view[1].cards[0] = -1;
+
+    // Original events should be unchanged
+    expect(events).toEqual(before);
+  });
+
+  it('returns independent copies where mutating event seats leaves originals unchanged', () => {
+    const events = [
+      { type: 'start', button: 0, sb: 1, bb: 2, seats: [{ seat: 0, stack: 100 }, { seat: 1, stack: 200 }] },
+    ];
+    const before = structuredClone(events);
+    const view = eventsFor(events, 1);
+
+    // Mutate the returned event's seats array
+    if (view[0].seats) {
+      view[0].seats[0].stack = 999;
+    }
+
+    // Original events should be unchanged
+    expect(events).toEqual(before);
+  });
+});
+
+describe('viewFor returns independent copies', () => {
+  it('mutating viewer hole does not affect original state', () => {
+    const s = setup([200, 200, 200, 200, 200, 200], HOLES6);
+    const before = structuredClone(s);
+    const view = viewFor(s, 1);
+
+    // Mutate the view's hole cards
+    if (view.players[1].hole) {
+      view.players[1].hole[0] = -1;
+    }
+
+    // Original state should be unchanged
+    expect(s).toEqual(before);
+  });
+
+  it('mutating result pots on completed hand does not affect original state', () => {
+    const rng = makeRng(42);
+    let state = null;
+    for (let i = 0; i < 500; i += 1) {
+      const { state: finalState } = playHand({ seats: seats6(), button: 0, sb: 1, bb: 2, rng, policy: randomPolicy });
+      if (finalState.street === 'complete' && finalState.result) { state = finalState; break; }
+    }
+    expect(state).not.toBeNull();
+
+    const before = structuredClone(state);
+    const view = viewFor(state, 0);
+
+    // Mutate the view's result pots
+    if (view.result && view.result.pots && view.result.pots.length > 0) {
+      view.result.pots[0].chips = 9999;
+    }
+
+    // Original state should be unchanged
+    expect(state).toEqual(before);
+  });
 });

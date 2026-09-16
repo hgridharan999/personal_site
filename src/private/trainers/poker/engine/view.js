@@ -9,11 +9,24 @@ export function viewFor(state, seat) {
     board: state.board.slice(),
     players: state.players.map((p) => ({
       ...p,
-      hole: p.seat === seat || shown.includes(p.seat) ? p.hole : null,
+      hole: p.seat === seat || shown.includes(p.seat) ? p.hole.slice() : null,
     })),
+    result: state.result ? structuredClone(state.result) : null,
   };
 }
 
 /** A copy of `events` in which other seats' `hole` events have `cards: null`. */
 export const eventsFor = (events, seat) =>
-  events.map((e) => (e.type === 'hole' && e.seat !== seat ? { ...e, cards: null } : e));
+  events.map((e) => {
+    if (e.type === 'hole' && e.seat !== seat) {
+      return { ...e, cards: null };
+    }
+    const result = { ...e };
+    if (e.cards) {
+      result.cards = e.cards.slice();
+    }
+    if (e.seats) {
+      result.seats = e.seats.map((s) => ({ ...s }));
+    }
+    return result;
+  });

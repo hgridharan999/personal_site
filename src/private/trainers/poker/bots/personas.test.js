@@ -21,4 +21,12 @@ describe('personas', () => {
   it('getPersona throws on an unknown id', () => {
     expect(() => getPersona('nope')).toThrow('Unknown persona: nope');
   });
+
+  it('listPersonas returns a frozen array', () => {
+    expect(Object.isFrozen(listPersonas())).toBe(true);
+  });
+
+  it('each persona in listPersonas is frozen', () => {
+    expect(Object.isFrozen(listPersonas()[0])).toBe(true);
+  });
 });
