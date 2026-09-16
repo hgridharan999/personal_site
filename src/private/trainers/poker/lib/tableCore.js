@@ -106,7 +106,10 @@ export function applyAction(session, seat, choice) {
   return withEvent(session, event);
 }
 
-/** The BotContext (contracts §3.2) for a bot seat. Only seat-filtered views go to the bot. */
+/**
+ * The BotContext (contracts §3.2) for a bot seat. Only seat-filtered views go to the bot.
+ * `heroSeat` (contracts §4.1) is the seat `profile` belongs to; bots adapt only when it is set.
+ */
 export function botContext(session, seat, profile = null) {
   const { state, events } = session.hand;
   const info = session.seats.find((s) => s.seat === seat);
@@ -117,6 +120,7 @@ export function botContext(session, seat, profile = null) {
     events: eventsFor(events, seat),
     persona: getPersona(info.personaId),
     profile,
+    heroSeat: session.heroSeat,
     bb: BB,
   };
 }

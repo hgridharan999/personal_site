@@ -113,6 +113,7 @@ describe('botContext', () => {
     expect(ctx.seat).toBe(seat);
     expect(ctx.bb).toBe(2);
     expect(ctx.profile).toBeNull();
+    expect(ctx.heroSeat).toBe(0);
     expect(ctx.persona.id).toBe(lineup.find((x) => x.seat === seat).personaId);
     expect(ctx.legal).toEqual(legalActions(s.hand.state));
     expect(ctx.view.players.find((p) => p.seat === seat).hole).toHaveLength(2);
