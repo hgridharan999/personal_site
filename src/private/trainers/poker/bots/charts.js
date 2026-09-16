@@ -7,15 +7,23 @@ export const CHART_VERSION = data.version;
 /** Classes strongest first. */
 export const STRENGTH_ORDER = Object.freeze(data.order.slice());
 
-/** RANK_PCT[cls] = share of combos stronger than the middle of `cls` (0 = strongest). */
-export const RANK_PCT = new Float64Array(CLASS_COUNT);
-{
+/** @returns {Float64Array} share of combos ahead of the middle of each class when walking `order` (0 = first) */
+function centers(order) {
+  const pct = new Float64Array(CLASS_COUNT);
   let before = 0;
-  for (const cls of STRENGTH_ORDER) {
-    RANK_PCT[cls] = (before + combosIn(cls) / 2) / 1326;
+  for (const cls of order) {
+    pct[cls] = (before + combosIn(cls) / 2) / 1326;
     before += combosIn(cls);
   }
+  return pct;
 }
+
+/** RANK_PCT[cls] = share of combos stronger than the middle of `cls` (0 = strongest). */
+export const RANK_PCT = centers(STRENGTH_ORDER);
+
+// The raiser order: strength plus the preference of AK and AQ to get it in, without the pairs' preference
+// to flat. It ranks a raiser's range, so a narrow 4-bet share holds AKo ahead of 99 and KQs.
+const RAISER_PCT = centers(data.raiserOrder);
 
 // Classes of one kind (pair/suited/offsuit) sorted strongest first, for width scaling.
 const BY_KIND = { pair: [], suited: [], offsuit: [] };
@@ -52,15 +60,21 @@ const PREMIUM_BY_PREFIX = [
   [/^(vsOpen|vs4bet)\./, ['AA', 'KK']],
   [/^(vs3bet|squeeze)\./, ['AA', 'KK', 'QQ', 'AKs', 'AKo']],
 ];
-const premiumSets = new Map();
+// Hands whose continue core is never tightened, like the top CORE_FLOOR of combos. Facing a 4-bet AKo
+// continues ahead of AQs and JJ (the vs4bet charts continue by the raiser order), but by plain strength it
+// sits just outside CORE_FLOOR, so a tighter calling dial would otherwise fold it before them.
+const KEEP_CORE_BY_PREFIX = [[/^vs4bet\./, ['AKo']]];
+const classSets = new Map();
 
-/** @returns {boolean} whether `cls` is a premium value hand in chart `key` */
-function isPremium(key, cls) {
-  let set = premiumSets.get(key);
+/** @returns {boolean} whether `cls` is in the class set that `byPrefix` gives chart `key` */
+function inClassSet(byPrefix, key, cls) {
+  let sets = classSets.get(byPrefix);
+  if (!sets) classSets.set(byPrefix, (sets = new Map()));
+  let set = sets.get(key);
   if (!set) {
-    const hands = PREMIUM_BY_PREFIX.find(([re]) => re.test(key))?.[1] ?? [];
+    const hands = byPrefix.find(([re]) => re.test(key))?.[1] ?? [];
     set = new Set(hands.map(parseClass));
-    premiumSets.set(key, set);
+    sets.set(key, set);
   }
   return set.has(cls);
 }
@@ -128,17 +142,19 @@ function windowed(values, cls, mul, floor = 0) {
  * Chart frequencies with the raise range (raiseMul) and calling range (callMul) widened (> 1) or tightened (< 1).
  * Guarantees, per class: continue (raise + call) never falls when either multiplier grows, raise never falls
  * when either grows, tightening raiseMul turns lost value raises into calls (only bluffs fold, and in
- * raise-or-fold charts everything folds), premium value hands (see isPremium) keep their base raise frequency
- * when raiseMul < 1, and both multipliers at 1 return the chart unchanged.
+ * raise-or-fold charts everything folds), premium value hands (PREMIUM_BY_PREFIX) keep their base raise frequency
+ * when raiseMul < 1, the continue core of KEEP_CORE_BY_PREFIX hands never tightens, and both multipliers at 1
+ * return the chart unchanged.
  */
 export function scaledFreqs(key, cls, raiseMul = 1, callMul = 1) {
   if (raiseMul === 1 && callMul === 1) return chartFreqs(key, cls);
   const { valueRaise, core, bluff } = prepare(key);
   const value = windowed(valueRaise, cls, raiseMul);
   const bluffs = windowed(bluff, cls, raiseMul);
-  let cont = Math.min(1, Math.max(windowed(core, cls, callMul, CORE_FLOOR), value) + bluffs);
+  const coreFloor = inClassSet(KEEP_CORE_BY_PREFIX, key, cls) ? 1 : CORE_FLOOR;
+  let cont = Math.min(1, Math.max(windowed(core, cls, callMul, coreFloor), value) + bluffs);
   let raise = Math.min(cont, value + bluffs);
-  if (raiseMul < 1 && isPremium(key, cls)) {
+  if (raiseMul < 1 && inClassSet(PREMIUM_BY_PREFIX, key, cls)) {
     // Floor at the base raise; at raiseMul = 1 the scaled raise already equals it, so this stays monotone.
     raise = Math.max(raise, chartFreqs(key, cls).raise);
     cont = Math.max(cont, raise);
@@ -146,9 +162,9 @@ export function scaledFreqs(key, cls, raiseMul = 1, callMul = 1) {
   return { raise, call: cont - raise };
 }
 
-/** 169 class weights: 1 for the strongest `share` of combos, 0 otherwise. */
+/** 169 class weights: 1 for the strongest `share` of combos in the raiser order, 0 otherwise. */
 export function topShareWeights(share) {
   const out = new Float32Array(CLASS_COUNT);
-  for (let cls = 0; cls < CLASS_COUNT; cls += 1) out[cls] = RANK_PCT[cls] <= share ? 1 : 0;
+  for (let cls = 0; cls < CLASS_COUNT; cls += 1) out[cls] = RAISER_PCT[cls] <= share ? 1 : 0;
   return out;
 }

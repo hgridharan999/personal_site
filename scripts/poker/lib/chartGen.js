@@ -16,13 +16,16 @@ const SUITED_LINK = [0.065, 0.038, 0.016]; // straight potential by gap (connect
 const LINK_HIGH = 0.003; // extra per rank of the lower card up to a 9: higher straights win more often
 const KING_LINK_SHARE = 0.75; // K-high suited broadways already score well on high-card equity
 const OFFSUIT_LINK = [0.03, 0.016, 0.005];
+const OFFSUIT_KING_LINK_SHARE = 0.25; // K-high offsuit broadways already score well on high-card equity
 const OFFSUIT_NINE = 0.01; // offsuit hands with both cards 9 or higher make top pairs with decent kickers
 const WHEEL_ACE = 0.02; // A5s-A2s make wheels and block strong aces
 const SUITED_GAPPED_LOW = 0.012; // Q/J/T-high suited with a 6 or lower and no straight potential
 const SUITED_KING = 0.022; // K8s-K2s make the second-nut flush
 const BROADWAY = 0.01; // both cards T or higher
 // Offsuit A-x and K-x with a 9 kicker / a lower kicker: dominated, and rarely make a strong second hand.
-const DOMINATED = { 12: [0.012, 0.028], 11: [0.015, 0.04] };
+// K-x also gets the offsuit nine term and a share of the link term, so its penalty stays small.
+const DOMINATED = { 12: [0.012, 0.028], 11: [0.008, 0.024] };
+const DOMINANCE_STEP = 1e-6; // score margin that keeps a dominating offsuit hand strictly ahead
 
 /** Postflop playability that all-in equity misses (equity points added to the ordering score). */
 export function playability(cls) {
@@ -40,8 +43,8 @@ export function playability(cls) {
     if (hi === 12 && lo <= 3) bonus += WHEEL_ACE;
     if (hi === 11 && lo <= 6) bonus += SUITED_KING;
   } else {
-    if (hi < 11) bonus += OFFSUIT_LINK[gap] ?? 0;
-    if (lo >= 7 && hi < 11) bonus += OFFSUIT_NINE;
+    if (hi < 12) bonus += (OFFSUIT_LINK[gap] ?? 0) * (hi === 11 ? OFFSUIT_KING_LINK_SHARE : 1);
+    if (lo >= 7 && hi < 12) bonus += OFFSUIT_NINE;
     if (hi >= 11 && lo <= 7) bonus -= DOMINATED[hi][lo === 7 ? 0 : 1];
   }
   return bonus;
@@ -53,6 +56,19 @@ const PAIR_RAISE_BIAS = { 10: -0.02, 9: -0.13, 8: -0.15 }; // QQ, JJ, TT; lower 
 const PAIR_RAISE_LOW = -0.17;
 const AK_RAISE_BIAS = 0.045;
 const AQ_RAISE_BIAS = 0.015;
+
+/**
+ * Offsuit hands with a T or higher top card score at least as high as the hand one rank lower with the
+ * same kicker (A-x >= K-x >= Q-x >= J-x >= T-x), even where the lower hand's straight potential scores more.
+ */
+function enforceOffsuitDominance(score) {
+  for (let kicker = 0; kicker < 12; kicker += 1) {
+    for (let hi = Math.max(8, kicker + 1) + 1; hi <= 12; hi += 1) {
+      const cls = kicker * 13 + hi; // offsuit: row = low rank, col = high rank
+      score[cls] = Math.max(score[cls], score[cls - 1] + DOMINANCE_STEP);
+    }
+  }
+}
 
 /** Added to the ordering score to get the raise order used for re-raises facing aggression. */
 export function raiseBias(cls) {
@@ -91,17 +107,21 @@ function centers(order) {
 const sortedBy = (score) => [...Array(CLASS_COUNT).keys()].sort((a, b) => score[b] - score[a] || a - b);
 
 /**
- * @returns {{ order:number[], rankPct:Float64Array, raisePct:Float64Array }} strongest class first;
- *   raisePct is the combo-share position in the re-raise order (score plus raiseBias).
+ * @returns {{ order:number[], raiserOrder:number[], rankPct:Float64Array, raisePct:Float64Array, raiserPct:Float64Array }}
+ *   strongest class first; raisePct is the combo-share position in the re-raise order (score plus raiseBias).
+ *   The raiser order adds only the positive part of raiseBias (AK and AQ like to get it in) and leaves out the
+ *   pairs' flat preference: it ranks what a player continues with facing a 4-bet, and a raiser's range.
  */
 export function strengthOrder(table) {
   const any = Float64Array.from({ length: CLASS_COUNT }, (_, a) => equityVs(table, a, new Float64Array(CLASS_COUNT).fill(1)));
   const pctAny = centers(sortedBy(any));
   const top = Float64Array.from({ length: CLASS_COUNT }, (_, cls) => (pctAny[cls] < TOP_SHARE ? 1 : 0));
   const score = Float64Array.from({ length: CLASS_COUNT }, (_, a) => W_ANY * any[a] + (1 - W_ANY) * equityVs(table, a, top) + playability(a));
+  enforceOffsuitDominance(score);
   const order = sortedBy(score);
   const raiseScore = score.map((s, cls) => s + raiseBias(cls));
-  return { order, rankPct: centers(order), raisePct: centers(sortedBy(raiseScore)) };
+  const raiserOrder = sortedBy(score.map((s, cls) => s + Math.max(0, raiseBias(cls))));
+  return { order, raiserOrder, rankPct: centers(order), raisePct: centers(sortedBy(raiseScore)), raiserPct: centers(raiserOrder) };
 }
 
 const clamp01 = (x) => Math.min(1, Math.max(0, x));
@@ -111,16 +131,17 @@ const quantize = (x) => Math.round(x * 10);
 const DIGITS = '0123456789X';
 
 /**
- * @param {{ value:number, call?:number, continueBy?:'raise', valueFade?:number, bluff?:{ from:number, to:number, freq:number } }} spec
+ * @param {{ value:number, call?:number, continueBy?:'raiser', valueFade?:number, bluff?:{ from:number, to:number, freq:number } }} spec
  *   Raise-or-fold charts (no `call`): the top `value` share by strength raises.
- *   Charts with `call`: the top `value + call` share by strength continues (by the re-raise order when
- *   continueBy is 'raise'), and within it the top `value` share by the re-raise order raises while the
+ *   Charts with `call`: the top `value + call` share by strength continues (by the raiser order when
+ *   continueBy is 'raiser'), and within it the top `value` share by the re-raise order raises while the
  *   rest calls; valueFade widens the mixed band at the raise edge. bluff: suited hands in [from, to] (strength combo share) raise with probability freq.
  * @param {Float64Array} rankPct strength-order position of each class
  * @param {Float64Array} [raisePct] re-raise-order position of each class (defaults to rankPct)
+ * @param {Float64Array} [raiserPct] raiser-order position of each class (defaults to rankPct)
  * @returns {{ raise:string, call:string }} one digit per class (0-9, X = 10 tenths)
  */
-export function buildChart(spec, rankPct, raisePct = rankPct) {
+export function buildChart(spec, rankPct, raisePct = rankPct, raiserPct = rankPct) {
   let raise = '';
   let call = '';
   for (let cls = 0; cls < CLASS_COUNT; cls += 1) {
@@ -128,7 +149,7 @@ export function buildChart(spec, rankPct, raisePct = rankPct) {
     let r;
     let cont;
     if (spec.call) {
-      cont = below(spec.continueBy === 'raise' ? raisePct[cls] : p, spec.value + spec.call);
+      cont = below(spec.continueBy === 'raiser' ? raiserPct[cls] : p, spec.value + spec.call);
       r = Math.min(cont, below(raisePct[cls], spec.value, spec.valueFade));
     } else {
       r = below(p, spec.value);
@@ -149,7 +170,7 @@ const bluffAfter = (value, call, freq = 0.35, width = 0.08) => ({ from: value + 
 
 /** Chart widths as combo shares. Keys: situation.position[.detail]. */
 export const CHART_SPECS = {
-  'open.UTG': { value: 0.165 },
+  'open.UTG': { value: 0.168 },
   'open.HJ': { value: 0.19 },
   'open.CO': { value: 0.26 },
   'open.BTN': { value: 0.43 },
@@ -185,8 +206,8 @@ export const CHART_SPECS = {
   'vs3bet.BTN.ip': { value: 0.035, call: 0.08, bluff: bluffAfter(0.035, 0.08, 0.2, 0.06) },
   'vs3bet.SB.oop': { value: 0.035, call: 0.06, bluff: bluffAfter(0.035, 0.06, 0.2, 0.05) },
 
-  'vs4bet.ip': { value: 0.0135, call: 0.013, continueBy: 'raise', valueFade: 0.01 },
-  'vs4bet.oop': { value: 0.0135, call: 0.011, continueBy: 'raise', valueFade: 0.01 },
+  'vs4bet.ip': { value: 0.0135, call: 0.0185, continueBy: 'raiser', valueFade: 0.01 },
+  'vs4bet.oop': { value: 0.0135, call: 0.0165, continueBy: 'raiser', valueFade: 0.01 },
 
   'vsLimp.HJ': { value: 0.1, call: 0.02 },
   'vsLimp.CO': { value: 0.14, call: 0.03 },
@@ -195,10 +216,10 @@ export const CHART_SPECS = {
   'vsLimp.BB': { value: 0.12 },
 };
 
-/** @returns {{ version:string, order:number[], charts:Record<string,{raise:string, call:string}> }} */
+/** @returns {{ version:string, order:number[], raiserOrder:number[], charts:Record<string,{raise:string, call:string}> }} */
 export function buildCharts(table) {
-  const { order, rankPct, raisePct } = strengthOrder(table);
+  const { order, raiserOrder, rankPct, raisePct, raiserPct } = strengthOrder(table);
   const charts = {};
-  for (const [key, spec] of Object.entries(CHART_SPECS)) charts[key] = buildChart(spec, rankPct, raisePct);
-  return { version: 'charts-v1', order, charts };
+  for (const [key, spec] of Object.entries(CHART_SPECS)) charts[key] = buildChart(spec, rankPct, raisePct, raiserPct);
+  return { version: 'charts-v1', order, raiserOrder, charts };
 }

@@ -68,6 +68,12 @@ describe('preflop charts', () => {
     expect(w[c('AA')]).toBe(1);
     expect(w[c('72o')]).toBe(0);
   });
+
+  it('topShareWeights ranks AK with the hands a raiser re-raises, so a 4-bet range holds AKo', () => {
+    const w = topShareWeights(0.035);
+    for (const hand of ['AA', 'KK', 'QQ', 'AKs', 'AKo']) expect(w[c(hand)], hand).toBe(1);
+    for (const hand of ['99', 'KQs']) expect(w[c(hand)], hand).toBe(0);
+  });
 });
 
 const facingAggression = () => chartKeys().filter((key) => /^(vsOpen|squeeze|vs3bet|vs4bet)\./.test(key));
@@ -242,6 +248,37 @@ describe('chart landmarks', () => {
         expect(cont(chartFreqs(key, c(hand))), `${key} ${hand}`).toBe(1);
       }
       expect(cont(chartFreqs(key, c('AKo'))), key).toBeGreaterThanOrEqual(0.9);
+      expect(cont(chartFreqs(key, c('JJ'))), key).toBeGreaterThanOrEqual(cont(chartFreqs(key, c('AQs'))));
     }
+  });
+
+  it('facing a 4-bet, AKo continues at least as often as AQs at any dial', () => {
+    const MULS = [0.3, 0.4, 0.5, 0.6, 0.8, 1, 1.25, 1.6, 2.5];
+    for (const key of ['vs4bet.ip', 'vs4bet.oop']) {
+      for (const raiseMul of MULS) {
+        for (const callMul of MULS) {
+          const ako = cont(scaledFreqs(key, c('AKo'), raiseMul, callMul));
+          const aqs = cont(scaledFreqs(key, c('AQs'), raiseMul, callMul));
+          expect(ako, `${key} ${raiseMul} ${callMul}`).toBeGreaterThanOrEqual(aqs - 1e-9);
+        }
+      }
+    }
+  });
+
+  it('a higher offsuit card with the same kicker continues at least as often (A-x >= K-x >= Q-x >= J-x >= T-x)', () => {
+    const RANKS = '23456789TJQKA';
+    const failures = [];
+    for (const key of chartKeys()) {
+      for (let kicker = 0; kicker < 12; kicker += 1) {
+        for (let hi = Math.max(8, kicker + 1) + 1; hi <= 12; hi += 1) {
+          const strong = `${RANKS[hi]}${RANKS[kicker]}o`;
+          const weak = `${RANKS[hi - 1]}${RANKS[kicker]}o`;
+          const [s, w] = [cont(chartFreqs(key, c(strong))), cont(chartFreqs(key, c(weak)))];
+          if (s < w) failures.push(`${key} ${strong} ${s} < ${weak} ${w}`);
+        }
+      }
+    }
+    expect(failures).toEqual([]);
+    for (const key of chartKeys()) expect(cont(chartFreqs(key, c('KJo'))), key).toBeGreaterThanOrEqual(cont(chartFreqs(key, c('QJo'))));
   });
 });
