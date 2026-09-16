@@ -114,6 +114,17 @@ Session lifecycle props on the table page (Phase 2 defines them and defaults the
 
 Persistence stores amounts as **integer units** (not the spec's `numeric(10,1)` BB). The API and DB use units, and the UI converts to BB for display.
 
+### 4.1 Additions accepted from the Phase 4 plan
+- **`buildHandRecord` signature** (Phase 2, `lib/handRecord.js`): `buildHandRecord({ id, sessionId, handNo, playedAt, botVersion, heroSeat, lineup, events, state }) -> HandRecord`.
+- **Analysis argument:** `onHandComplete(record, analysis?)` takes an optional second argument `analysis = { decisions: DecisionRecord[], heroAllinEv: number|null }`. Phase 5 produces it, and Phase 2 passes `undefined` until then.
+- **`DecisionRecord`** (all amounts in units):
+  - `{ idx, street, position, spot, action, size:int|null, pot:int, toCall:int, equity:number|null, neededEquity:number|null, recommended:{ action, size:int|null, evByOption:Record<string,number> }, evLoss:number, grade:'good'|'inaccuracy'|'mistake'|'blunder', confident:boolean, analysisVersion:int }`
+  - `idx` indexes into `record.events`.
+- **Hands POST item:** `{ hand: HandRecord, decisions?: DecisionRecord[] (default []), heroAllinEv?: number|null (default null) }`.
+- **`profile` prop:** the table page takes `profile: PlayerProfile|null`, the hero profile loaded at sit-down. During play the table folds each finished hand in with Phase 3's `accumulateProfile` and passes the running profile to bots through `BotContext.profile`.
+- **`GET /api/trainers/poker/profile`** returns `{ profile: PlayerProfile, hands:number, decisions:number }`.
+- **Session close:** `onSessionEnd(summary)` keeps its shape, but the server trusts only `endedAt`. Server-side totals come from stored hands.
+
 ## 5. Branches and worktrees
 
 - The integration branch is `feat/poker`. Phase 0 lands directly on it.
