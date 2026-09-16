@@ -1,5 +1,6 @@
 // Builds the HandRecord for a completed hand (contracts §4). Pure apart from the default id.
 import { reduceHand } from '../engine/handState.js';
+import { potTotal } from './pot.js';
 
 /**
  * @typedef {{
@@ -37,7 +38,7 @@ export function buildHandRecord({
     startStacks: start.seats.map(({ seat, stack }) => ({ seat, stack })),
     events: structuredClone(events),
     heroNet: final.result.net[heroSeat],
-    pot: final.players.reduce((sum, p) => sum + p.total, 0),
+    pot: potTotal(final),
     showdown: final.result.showdown,
   };
 }

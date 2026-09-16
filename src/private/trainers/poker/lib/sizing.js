@@ -1,6 +1,7 @@
 // Bet sizing for the hero: pot-relative presets, clamping to legal bounds and the sizing panel reducer.
 // All amounts are integer units and "raise to" street totals, as in engine act events.
 import { formatBb, formatBbInput, parseBbInput } from './format.js';
+import { potTotal } from './pot.js';
 
 export const PRESETS = [
   { key: 'third', label: '⅓', num: 1, den: 3 },
@@ -11,9 +12,6 @@ export const PRESETS = [
 ];
 
 export const SIZING_CLOSED = Object.freeze({ open: false, amount: null, text: '' });
-
-/** Every chip put in this hand, including bets on the current street. */
-export const potTotal = (view) => view.players.reduce((sum, p) => sum + p.total, 0);
 
 /** Rounds to a whole unit and clamps into [minRaiseTo, maxRaiseTo]. Null when raising is not allowed. */
 export function clampRaise(legal, amount) {

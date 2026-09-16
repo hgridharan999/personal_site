@@ -2,8 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { reduceHand, legalActions } from '../engine/handState.js';
 import { parseCards } from '../engine/cards.js';
 import {
-  PRESETS, SIZING_CLOSED, potTotal, clampRaise, presetRaiseTo, sizingReducer, resolveRaise, callLabel, raiseLabel,
+  PRESETS, SIZING_CLOSED, clampRaise, presetRaiseTo, sizingReducer, resolveRaise, callLabel, raiseLabel,
 } from './sizing.js';
+import { potTotal } from './pot.js';
 
 const deck = parseCards('AhKhQhJhTh9h');
 const hole = (seat) => ({ type: 'hole', seat, cards: [deck[seat * 2], deck[seat * 2 + 1]] });
@@ -124,6 +125,21 @@ describe('sizingReducer', () => {
     const open = run([{ type: 'openSizing' }]);
     expect(sizingReducer(open, { type: 'fold' }, { view, legal })).toBe(open);
     expect(sizingReducer(open, { type: 'preset', index: 7 }, { view, legal })).toBe(open);
+  });
+});
+
+describe('all-in is the only raise (minRaiseTo === maxRaiseTo)', () => {
+  // Seat 0 has 3 units facing the big blind: any raise is all-in to 3.
+  const { view, legal } = spot(preflop([3, 200, 200]));
+
+  it('sizes every preset, nudge and typed amount to the all-in', () => {
+    expect(legal).toMatchObject({ canRaise: true, minRaiseTo: 3, maxRaiseTo: 3 });
+    for (let index = 0; index < PRESETS.length; index += 1) expect(presetRaiseTo(view, legal, index)).toBe(3);
+    expect(sizingReducer(SIZING_CLOSED, { type: 'openSizing' }, { view, legal })).toEqual({ open: true, amount: 3, text: '1.5' });
+    expect(sizingReducer(SIZING_CLOSED, { type: 'nudge', units: 10 }, { view, legal })).toEqual({ open: true, amount: 3, text: '1.5' });
+    expect(sizingReducer(SIZING_CLOSED, { type: 'nudge', units: -10 }, { view, legal })).toEqual({ open: true, amount: 3, text: '1.5' });
+    expect(resolveRaise({ open: true, amount: null, text: '50' }, legal)).toEqual({ action: 'raise', amount: 3 });
+    expect(raiseLabel(legal, 3)).toBe('All-in 1.5');
   });
 });
 

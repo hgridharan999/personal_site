@@ -4,6 +4,7 @@ import { legalActions } from '../engine/handState.js';
 import { viewFor } from '../engine/view.js';
 import { getPersona } from '../bots/personas.js';
 import { SEAT_COUNT } from './constants.js';
+import { potTotal } from './pot.js';
 
 /**
  * @typedef {{ seat:number, slot:number, isHero:boolean, name:string, tag:string, stack:number, bet:number,
@@ -64,7 +65,7 @@ export function seatViews(session) {
 export function tableCenter(session) {
   const view = heroView(session);
   if (!view) return { board: [], pot: 0, handNo: 0, street: null };
-  const total = view.players.reduce((sum, p) => sum + p.total, 0);
+  const total = potTotal(view);
   const onStreet = view.street === 'complete' ? 0 : view.players.reduce((sum, p) => sum + p.committed, 0);
   return { board: view.board, pot: total - onStreet, handNo: session.hand.no, street: view.street };
 }

@@ -158,6 +158,13 @@ describe('rebuy, bust and get up', () => {
     expect(sessionSummary(s, NOW)).toEqual({ id: 's1', endedAt: NOW, hands: 0, net: -121, rebuys: 1 });
   });
 
+  it('does not offer a rebuy while getting up after the current hand', () => {
+    const leaving = requestGetUp(setStack(startHand(newSession(), { rng: mulberry32(8), now: NOW, personas }), 0, 10));
+    expect(leaving.getUpPending).toBe(true);
+    expect(canRebuy(leaving)).toBe(false);
+    expect(requestRebuy(leaving)).toBe(leaving);
+  });
+
   it('does not offer a rebuy at 40 BB or more', () => {
     const s = { ...setStack(newSession(), 0, 80), phase: 'between' };
     expect(canRebuy(s)).toBe(false);
@@ -195,6 +202,17 @@ describe('rebuy, bust and get up', () => {
       expect(next.hand.lineup.find((x) => x.seat === 3).personaId).toBe(seat3.personaId);
       expect(new Set(next.seats.filter((x) => x.kind === 'bot').map((x) => x.personaId)).size).toBe(5);
     }
+  });
+
+  it.skipIf(personas.length < 6)('remembers every persona that sat at the table, in order, once each', () => {
+    expect(newSession().seenPersonaIds).toEqual(lineup.map((x) => x.personaId));
+    const s = { ...setStack(newSession(), 3, 0), phase: 'between', button: 0 };
+    const next = startHand(s, { rng: mulberry32(1), now: NOW, personas });
+    const newcomer = next.seats[3].personaId;
+    expect(next.seenPersonaIds).toEqual([...lineup.map((x) => x.personaId), newcomer]);
+    const again = startHand({ ...playOut(next).session }, { rng: mulberry32(2), now: NOW, personas });
+    expect(new Set(again.seenPersonaIds).size).toBe(again.seenPersonaIds.length);
+    expect(again.seenPersonaIds.slice(0, 6)).toEqual(next.seenPersonaIds);
   });
 
   it('gets up immediately between hands', () => {

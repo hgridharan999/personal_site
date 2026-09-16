@@ -56,24 +56,24 @@ export const DEFAULT_DECIDE_TIMEOUT_MS = 5000;
  * a throw reach the driver's loop: a throwing callback used to freeze the table (the loop's own
  * try/catch would stop the pump and never deal again). Logs and swallows instead.
  */
-function safeCall(name, fn, ...args) {
+function safeCall(d, name, fn, ...args) {
   try {
     return fn(...args);
   } catch (err) {
-    console.warn(`poker table: ${name} failed`, err);
+    d.opts.logger.warn(`poker table: ${name} failed`, err);
     return undefined;
   }
 }
 
 function set(d, next) {
   d.current = next;
-  if (!d.disposed) safeCall('onChange', d.opts.onChange, next);
+  if (!d.disposed) safeCall(d, 'onChange', d.opts.onChange, next);
 }
 
 function endOnce(d) {
   if (d.ended || d.disposed) return;
   d.ended = true;
-  safeCall('onSessionEnd', d.opts.onSessionEnd, sessionSummary(d.current, d.opts.now()));
+  safeCall(d, 'onSessionEnd', d.opts.onSessionEnd, sessionSummary(d.current, d.opts.now()));
 }
 
 const DECIDE_TIMED_OUT = Symbol('decide-timed-out');
@@ -108,7 +108,7 @@ function settleHand(d) {
     logger.warn('could not update the hero profile', err);
   }
   // The optional second argument (analysis) arrives with Phase 5.
-  safeCall('onHandComplete', onHandComplete, record);
+  safeCall(d, 'onHandComplete', onHandComplete, record);
 }
 
 const deal = (d) => set(d, startHand(d.current, { rng: d.opts.rng, now: d.opts.now(), personas: d.opts.personas }));
@@ -196,7 +196,7 @@ export function createTableDriver({ session, profile = null, ...options }) {
     start() {
       if (!d.started) {
         d.started = true;
-        safeCall('onSessionStart', opts.onSessionStart, sessionStartInfo(d.current, opts.botVersion));
+        safeCall(d, 'onSessionStart', opts.onSessionStart, sessionStartInfo(d.current, opts.botVersion));
       }
       return run(d);
     },

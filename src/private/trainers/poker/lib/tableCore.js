@@ -18,8 +18,9 @@ import { SEAT_COUNT, HERO_SEAT, SB, BB, BUY_IN, REBUY_BELOW } from './constants.
  *   id:string, tableMode:'random'|'custom', startedAt:string, heroSeat:number,
  *   seats:SeatInfo[], button:number|null, hand:LiveHand|null, handsCompleted:number,
  *   phase:'idle'|'playing'|'between'|'needsRebuy'|'ended',
- *   buyIns:number, rebuys:number, rebuyPending:boolean, getUpPending:boolean,
+ *   buyIns:number, rebuys:number, rebuyPending:boolean, getUpPending:boolean, seenPersonaIds:string[],
  * }} TableSession
+ *   seenPersonaIds: every persona that has sat at the table this session, in order of arrival, once each.
  * @typedef {{type:'idle'} | {type:'board'} | {type:'hero', seat:number} | {type:'bot', seat:number} | {type:'complete'}} Step
  */
 
@@ -41,6 +42,7 @@ export function createSession({ id, tableMode, lineup, startedAt }) {
   return {
     id, tableMode, startedAt, heroSeat: HERO_SEAT, seats, button: null, hand: null, handsCompleted: 0,
     phase: 'idle', buyIns: BUY_IN, rebuys: 0, rebuyPending: false, getUpPending: false,
+    seenPersonaIds: [...new Set(lineup.map((x) => x.personaId))],
   };
 }
 
@@ -55,11 +57,13 @@ export function startHand(session, { rng, now, personas }) {
   if (session.phase !== 'idle' && session.phase !== 'between') fail(`cannot start a hand while ${session.phase}`);
   if (heroInfo(session).stack <= 0) fail('hero has no chips');
   const seats = session.seats.map((s) => ({ ...s }));
+  const seen = new Set(session.seenPersonaIds);
   for (const s of seats) {
     if (s.kind !== 'bot' || s.stack > 0) continue;
     const seated = seats.filter((x) => x.kind === 'bot').map((x) => x.personaId);
     s.personaId = refillPersonaId(seated, personas, rng, s.personaId);
     s.stack = BUY_IN;
+    seen.add(s.personaId);
   }
   const seatIds = seats.map((s) => s.seat);
   const button = session.button === null ? seatIds[Math.floor(rng() * seatIds.length)] : nextButton(seatIds, session.button);
@@ -73,7 +77,7 @@ export function startHand(session, { rng, now, personas }) {
     state: reduceHand(deal.events),
     boardEvent: deal.boardEvent,
   };
-  return { ...session, seats, button, hand, phase: 'playing' };
+  return { ...session, seats, button, hand, phase: 'playing', seenPersonaIds: [...seen] };
 }
 
 /** What has to happen next. Only a `playing` session has steps. */
@@ -158,9 +162,12 @@ export function finishHand(session, { botVersion, createId }) {
   return { session: { ...next, phase }, record };
 }
 
-/** True when the rebuy prompt should show: under 40 BB (as of the last completed hand) and not already queued. */
+/**
+ * True when the rebuy prompt should show: under 40 BB (as of the last completed hand), not already
+ * queued, and not getting up after this hand (a queued rebuy would be dropped anyway).
+ */
 export function canRebuy(session) {
-  return session.phase !== 'ended' && !session.rebuyPending && heroInfo(session).stack < REBUY_BELOW;
+  return session.phase !== 'ended' && !session.rebuyPending && !session.getUpPending && heroInfo(session).stack < REBUY_BELOW;
 }
 
 /** Tops up to 100 BB now, or after the current hand if one is being played. */

@@ -11,7 +11,8 @@ import { tableSnapshot } from './tableSnapshot.js';
 
 /**
  * @param {{ id:string, config:{tableMode:'random'|'custom', speed:'fast'|'normal', lineup:object[]},
- *   profile:object|null, onSessionStart:(info:object) => void, onHandComplete:(record:object) => void, onSessionEnd:(summary:object) => void }} args
+ *   profile:object|null, onSessionStart:(info:object) => void, onHandComplete:(record:object, analysis?:object) => void,
+ *   onSessionEnd:(summary:object) => void }} args
  * @returns {{ session:ReturnType<typeof tableSnapshot>|null, act:(choice:object) => void, rebuy:() => void, getUp:() => void }}
  *   `session` is a hero-safe snapshot (lib/tableSnapshot.js), never the driver's raw TableSession,
  *   which carries every seat's hole cards and the undealt board.
@@ -38,9 +39,10 @@ export function useTableSession({ id, config, profile, onSessionStart, onHandCom
       profile,
       accumulateProfile: foldHandIntoProfile,
       onChange: (next) => setSession(tableSnapshot(next)),
-      onSessionStart: (info) => callbacks.current.onSessionStart(info),
-      onHandComplete: (record) => callbacks.current.onHandComplete(record),
-      onSessionEnd: (summary) => callbacks.current.onSessionEnd(summary),
+      // Every argument is forwarded, so Phase 5's onHandComplete(record, analysis) reaches the page.
+      onSessionStart: (...args) => callbacks.current.onSessionStart(...args),
+      onHandComplete: (...args) => callbacks.current.onHandComplete(...args),
+      onSessionEnd: (...args) => callbacks.current.onSessionEnd(...args),
     });
     driverRef.current = driver;
     setSession(tableSnapshot(initial));

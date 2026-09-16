@@ -266,41 +266,38 @@ describe('createTableDriver', () => {
 
   describe('a throwing callback does not freeze the table', () => {
     it('keeps dealing when onSessionStart throws', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const logger = { warn: vi.fn(), error: vi.fn() };
       const onSessionStart = vi.fn(() => { throw new Error('boom'); });
-      const { driver } = setup({ onSessionStart });
+      const { driver } = setup({ onSessionStart, logger });
       driver.start();
       await settle(driver);
       expect(onSessionStart).toHaveBeenCalledTimes(1);
       expect(nextStep(driver.getSession()).type).toBe('hero');
-      expect(warn).toHaveBeenCalledWith('poker table: onSessionStart failed', expect.any(Error));
-      warn.mockRestore();
+      expect(logger.warn).toHaveBeenCalledWith('poker table: onSessionStart failed', expect.any(Error));
     });
 
     it('deals the next hand when onHandComplete throws', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const logger = { warn: vi.fn(), error: vi.fn() };
       const onHandComplete = vi.fn(() => { throw new Error('boom'); });
-      const { driver } = setup({ onHandComplete });
+      const { driver } = setup({ onHandComplete, logger });
       driver.start();
       await settle(driver);
       await heroPlaysUntil(driver, 2);
       expect(onHandComplete).toHaveBeenCalledTimes(2);
       expect(driver.getSession().hand.no).toBe(3);
-      expect(warn).toHaveBeenCalledWith('poker table: onHandComplete failed', expect.any(Error));
-      warn.mockRestore();
+      expect(logger.warn).toHaveBeenCalledWith('poker table: onHandComplete failed', expect.any(Error));
     });
 
     it('keeps the session progressing when onChange throws on every change', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const logger = { warn: vi.fn(), error: vi.fn() };
       const onChange = vi.fn(() => { throw new Error('boom'); });
-      const { driver } = setup({ onChange });
+      const { driver } = setup({ onChange, logger });
       driver.start();
       await settle(driver);
       await heroPlaysUntil(driver, 1);
       expect(driver.getSession().handsCompleted).toBe(1);
       expect(onChange).toHaveBeenCalled();
-      expect(warn).toHaveBeenCalledWith('poker table: onChange failed', expect.any(Error));
-      warn.mockRestore();
+      expect(logger.warn).toHaveBeenCalledWith('poker table: onChange failed', expect.any(Error));
     });
   });
 
