@@ -11,9 +11,12 @@ const noop = () => {};
 /**
  * Route: /me/poker/table/:sessionId. The lobby passes { tableMode, lineup, speed } as router state.
  * Session callbacks (contracts §4) default to no-ops and `profile` (contracts §4.1) to null;
- * Phase 4 wires persistence and the loaded profile through them.
+ * Phase 4 wires persistence and the loaded profile through them. `children` (e.g. Phase 4's save status)
+ * render inside the poker frame, above the table.
  */
-export default function TablePage({ profile = null, onSessionStart = noop, onHandComplete = noop, onSessionEnd = noop }) {
+export default function TablePage({
+  profile = null, onSessionStart = noop, onHandComplete = noop, onSessionEnd = noop, children = null,
+}) {
   const { sessionId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -47,6 +50,8 @@ export default function TablePage({ profile = null, onSessionStart = noop, onHan
       onSessionStart={onSessionStart}
       onHandComplete={onHandComplete}
       onSessionEnd={onSessionEnd}
-    />
+    >
+      {children}
+    </TableScreen>
   );
 }

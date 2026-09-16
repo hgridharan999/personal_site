@@ -1,5 +1,5 @@
 // src/private/trainers/poker/ui/table/TableScreen.jsx
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PokerShell from '../PokerShell';
 import TableView from './TableView';
@@ -15,15 +15,32 @@ const LOBBY = { to: '/me/poker', label: 'Lobby' };
 const LEAVE_MESSAGE = 'Leave the table? The session ends now and the hand in progress is discarded.';
 
 /**
+ * The hero's act, then focus on the table region when focus was on an action control (which unmounts
+ * once the turn passes) or nowhere, so keyboard focus never drops to <body>.
+ */
+function useActAndRefocus(act) {
+  const region = useRef(null);
+  const onAct = useCallback((choice) => {
+    const active = document.activeElement;
+    const lost = !active || active === document.body || Boolean(active.closest('.pk-actions'));
+    act(choice);
+    if (lost) region.current?.focus({ preventScroll: true });
+  }, [act]);
+  return [region, onAct];
+}
+
+/**
  * A running table session: the table, the hero's controls, the log and the end-of-session panel.
  * `session` here is the hero-safe snapshot from useTableSession, not the driver's raw session.
+ * `children` (TablePage's, e.g. save status) render above the table.
  */
-export default function TableScreen({ id, config, profile, onSessionStart, onHandComplete, onSessionEnd }) {
+export default function TableScreen({ id, config, profile, onSessionStart, onHandComplete, onSessionEnd, children }) {
   const navigate = useNavigate();
   const { session, act, rebuy, getUp } = useTableSession({ id, config, profile, onSessionStart, onHandComplete, onSessionEnd });
   const turn = useMemo(() => (session ? heroTurn(session) : null), [session]);
   const turnKey = session?.hand ? `${session.hand.no}:${session.hand.eventCount}` : '';
-  const { sizing, dispatch } = useHeroControls({ turn, turnKey, onAct: act });
+  const [tableRegion, onAct] = useActAndRefocus(act);
+  const { sizing, dispatch } = useHeroControls({ turn, turnKey, onAct });
   const live = Boolean(session) && session.phase !== 'ended';
 
   useEffect(() => {
@@ -45,6 +62,7 @@ export default function TableScreen({ id, config, profile, onSessionStart, onHan
   if (!session) {
     return (
       <PokerShell back={LOBBY} onBack={onBack}>
+        {children}
         <p className="pk-muted" role="status">Shuffling up</p>
       </PokerShell>
     );
@@ -55,13 +73,16 @@ export default function TableScreen({ id, config, profile, onSessionStart, onHan
 
   return (
     <PokerShell back={LOBBY} onBack={onBack}>
+      {children}
       <div className="pk-tablepage">
         <div className="pk-tablepage__main">
-          <TableView session={session} />
           {session.phase === 'ended' ? (
             <SessionEnd session={session} />
           ) : (
             <>
+              <div ref={tableRegion} className="pk-table-region" tabIndex={-1} role="region" aria-label="Poker table">
+                <TableView session={session} />
+              </div>
               <RebuyBanner session={session} onRebuy={rebuy} onGetUp={getUp} />
               <ActionBar turn={turn} sizing={sizing} dispatch={dispatch} />
               <div className="pk-tablepage__meta">

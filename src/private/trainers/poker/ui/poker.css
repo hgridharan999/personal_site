@@ -17,8 +17,11 @@
   --pk-accent-2: #8fa8ff;
   --pk-text: #dcdcf0;
   --pk-muted: #6a6c8c;
+  /* Small (< 12px) secondary text on the felt or rail. Contrast 5.64 on felt, 4.88 on felt-hi, 6.83 on rail, 5.81 on rail-hi. */
+  --pk-muted-strong: #a0a2c2;
   --pk-back: #3b3f8a;
   --pk-back-2: #2a2d66;
+  --pk-shadow: #000;
   --pk-font: 'Silkscreen', ui-monospace, monospace;
   background: var(--pk-bg);
   color: var(--pk-text);
@@ -39,7 +42,7 @@
   font-family: var(--pk-font); font-size: 12px; text-transform: uppercase; text-decoration: none; line-height: 1;
   background: none; color: var(--pk-text); border: 3px solid var(--pk-muted); padding: 9px 16px; cursor: pointer;
 }
-.pk .pk-btn:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: 2px 2px 0 #000; }
+.pk .pk-btn:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: 2px 2px 0 var(--pk-shadow); }
 .pk .pk-btn:focus-visible, .pk .pk-tab:focus-visible, .pk .pk-select:focus-visible, .pk input:focus-visible {
   outline: 2px solid var(--pk-text); outline-offset: 3px;
 }

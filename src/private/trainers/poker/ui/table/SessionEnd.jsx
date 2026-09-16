@@ -4,10 +4,10 @@ import { getPersona } from '../../bots/personas.js';
 import { sessionSummary } from '../../lib/tableCore.js';
 import { formatNetBb } from '../../lib/format.js';
 
-/** Shown after getting up: totals and the opponents' hidden style labels. */
+/** Shown after getting up: totals and the hidden style labels of every opponent who sat in this session. */
 export default function SessionEnd({ session }) {
   const { hands, net, rebuys } = sessionSummary(session, new Date().toISOString());
-  const bots = session.seats.filter((s) => s.kind === 'bot').map((s) => getPersona(s.personaId));
+  const bots = session.seenPersonaIds.map((id) => getPersona(id));
 
   return (
     <section className="pk-end" aria-labelledby="pk-end-title">
@@ -17,7 +17,7 @@ export default function SessionEnd({ session }) {
         <div><dt>Net</dt><dd>{formatNetBb(net)} BB</dd></div>
         <div><dt>Rebuys</dt><dd>{rebuys}</dd></div>
       </dl>
-      <h3 className="pk-h3">Opponents at the table</h3>
+      <h3 className="pk-h3">Opponents this session</h3>
       <ul className="pk-end__bots">
         {bots.map((p) => <li key={p.id}>{p.tag} &middot; {p.name} &middot; {p.style}</li>)}
       </ul>

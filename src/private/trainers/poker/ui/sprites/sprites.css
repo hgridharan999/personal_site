@@ -4,10 +4,10 @@
 .pk .pk-ink-black { color: var(--pk-black); }
 
 /* The drop-shadow sits on the wrapper because clip-path on the face would clip a box-shadow. */
-.pk .pk-card { --pk-notch: 3px; position: relative; flex: none; filter: drop-shadow(3px 3px 0 rgba(0, 0, 0, 0.6)); }
+.pk .pk-card { --pk-notch: 3px; position: relative; flex: none; filter: drop-shadow(3px 3px 0 color-mix(in srgb, var(--pk-shadow) 60%, transparent)); }
 .pk .pk-card--board { width: 46px; height: 64px; }
 .pk .pk-card--hero { width: 64px; height: 90px; }
-.pk .pk-card--mini { --pk-notch: 2px; width: 22px; height: 30px; filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.6)); }
+.pk .pk-card--mini { --pk-notch: 2px; width: 22px; height: 30px; filter: drop-shadow(2px 2px 0 color-mix(in srgb, var(--pk-shadow) 60%, transparent)); }
 .pk .pk-card__face {
   position: absolute; inset: 0; background: var(--pk-card);
   clip-path: polygon(
