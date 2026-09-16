@@ -21,6 +21,7 @@ export function isBigDecision(ctx) {
   const { legal, view, seat } = ctx;
   if (!legal || legal.canCheck) return false;
   const me = view.players.find((p) => p.seat === seat);
+  if (!me) return false;
   return legal.toCall >= BIG_CALL_UNITS || legal.toCall >= me.stack;
 }
 
@@ -45,29 +46,55 @@ export function applyWithFallback(session, seat, choice, logger = console) {
 /** Real-time scheduler for the browser. Tests pass one whose wait resolves immediately. */
 export const realScheduler = { wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)) };
 
+/** How long a bot's `decide` gets before its choice is treated as missing (falls back to check/fold). */
+export const DEFAULT_DECIDE_TIMEOUT_MS = 5000;
+
 // ---- internals: `d` is the driver's mutable state (see createTableDriver) ----
+
+/**
+ * Calls an outside callback (onChange, onSessionStart, onHandComplete, onSessionEnd) without letting
+ * a throw reach the driver's loop: a throwing callback used to freeze the table (the loop's own
+ * try/catch would stop the pump and never deal again). Logs and swallows instead.
+ */
+function safeCall(name, fn, ...args) {
+  try {
+    return fn(...args);
+  } catch (err) {
+    console.warn(`poker table: ${name} failed`, err);
+    return undefined;
+  }
+}
 
 function set(d, next) {
   d.current = next;
-  if (!d.disposed) d.opts.onChange(next);
+  if (!d.disposed) safeCall('onChange', d.opts.onChange, next);
 }
 
 function endOnce(d) {
-  if (d.ended) return;
+  if (d.ended || d.disposed) return;
   d.ended = true;
-  d.opts.onSessionEnd(sessionSummary(d.current, d.opts.now()));
+  safeCall('onSessionEnd', d.opts.onSessionEnd, sessionSummary(d.current, d.opts.now()));
 }
 
+const DECIDE_TIMED_OUT = Symbol('decide-timed-out');
+
 async function botTurn(d, seat) {
-  const { runner, scheduler, rng, speed, logger } = d.opts;
+  const { runner, scheduler, rng, speed, logger, decideTimeoutMs } = d.opts;
   const handNo = d.current.hand.no;
   const ctx = botContext(d.current, seat, d.profile);
-  const decision = runner.decide(ctx).catch((err) => {
+  // Wrapped in Promise.resolve().then() so a runner that throws synchronously (instead of
+  // returning a rejected promise) still lands in .catch instead of freezing the table.
+  const decision = Promise.resolve().then(() => runner.decide(ctx)).catch((err) => {
     logger.warn(`bot in seat ${seat} failed to decide`, err);
     return null;
   });
-  const [choice] = await Promise.all([decision, scheduler.wait(botDelayMs(speed, rng, isBigDecision(ctx)))]);
+  // A decide() that never settles is raced against a timeout through the injected scheduler
+  // (so tests stay instant); the timeout treats the choice as missing, same as a rejection.
+  const timedOut = scheduler.wait(decideTimeoutMs).then(() => DECIDE_TIMED_OUT);
+  const pacing = scheduler.wait(botDelayMs(speed, rng, isBigDecision(ctx)));
+  const [raced] = await Promise.all([Promise.race([decision, timedOut]), pacing]);
   if (d.disposed || d.current.phase !== 'playing' || d.current.hand?.no !== handNo) return;
+  const choice = raced === DECIDE_TIMED_OUT ? null : raced;
   set(d, applyWithFallback(d.current, seat, choice, logger));
 }
 
@@ -81,7 +108,7 @@ function settleHand(d) {
     logger.warn('could not update the hero profile', err);
   }
   // The optional second argument (analysis) arrives with Phase 5.
-  onHandComplete(record);
+  safeCall('onHandComplete', onHandComplete, record);
 }
 
 const deal = (d) => set(d, startHand(d.current, { rng: d.opts.rng, now: d.opts.now(), personas: d.opts.personas }));
@@ -143,20 +170,25 @@ function run(d) {
  *   rng: () => number, personas: object[], botVersion: string, speed?: 'fast'|'normal',
  *   createId?: () => string, now?: () => string, logger?: Pick<Console, 'warn'|'error'>,
  *   profile?: object|null, accumulateProfile?: (profile:object|null, heroSeat:number, events:object[]) => object|null,
- *   onChange?: (session:object) => void, onSessionStart?: (info:object) => void,
+ *   decideTimeoutMs?: number, onChange?: (session:object) => void, onSessionStart?: (info:object) => void,
  *   onHandComplete?: (record:object) => void, onSessionEnd?: (summary:object) => void,
  * }} options
+ *   onChange and getSession() both expose the live TableSession, which carries every seat's hole
+ *   cards (including bots') and the undealt board. UI code must never render it directly — filter
+ *   it per seat first through `viewFor(state, HERO_SEAT)` (engine/view.js).
  */
 export function createTableDriver({ session, profile = null, ...options }) {
   const opts = {
     speed: 'normal', createId: () => crypto.randomUUID(), now: () => new Date().toISOString(), logger: console,
-    accumulateProfile: (p) => p, onChange: noop, onSessionStart: noop, onHandComplete: noop, onSessionEnd: noop,
+    accumulateProfile: (p) => p, decideTimeoutMs: DEFAULT_DECIDE_TIMEOUT_MS,
+    onChange: noop, onSessionStart: noop, onHandComplete: noop, onSessionEnd: noop,
     // An option passed as undefined keeps its default.
     ...Object.fromEntries(Object.entries(options).filter(([, value]) => value !== undefined)),
   };
   const d = { opts, current: session, profile, started: false, ended: false, disposed: false, running: false, again: false, pumping: null };
 
   return {
+    /** The live TableSession — see the caveat above `createTableDriver` about hole cards and the board. */
     getSession: () => d.current,
     /** The hero profile bots currently receive. */
     getProfile: () => d.profile,
@@ -164,7 +196,7 @@ export function createTableDriver({ session, profile = null, ...options }) {
     start() {
       if (!d.started) {
         d.started = true;
-        opts.onSessionStart(sessionStartInfo(d.current, opts.botVersion));
+        safeCall('onSessionStart', opts.onSessionStart, sessionStartInfo(d.current, opts.botVersion));
       }
       return run(d);
     },

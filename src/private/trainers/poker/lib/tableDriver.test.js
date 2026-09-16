@@ -42,6 +42,19 @@ async function heroPlaysUntil(driver, handsCompleted) {
   }
 }
 
+/** A freshly-dealt session whose first seat to act is a bot, not the hero (deterministic search over seeds). */
+function dealtWithBotFirst() {
+  for (let seed = 1; seed < 50; seed += 1) {
+    const dealt = startHand(createSession({ id: 's1', tableMode: 'random', lineup, startedAt: NOW }), {
+      rng: mulberry32(seed), now: NOW, personas,
+    });
+    if (nextStep(dealt).seat !== 0) return dealt;
+  }
+  throw new Error('could not find a seed dealing to a bot first');
+}
+
+const flushMicrotasks = () => new Promise((resolve) => setTimeout(resolve, 0));
+
 describe('pacing helpers', () => {
   it('draws bot think time from the speed range, longer for big decisions', () => {
     expect(botDelayMs('fast', () => 0, false)).toBe(250);
@@ -57,6 +70,10 @@ describe('pacing helpers', () => {
     expect(isBigDecision({ seat: 1, view, legal: { canCheck: false, toCall: 4 } })).toBe(false);
     expect(isBigDecision({ seat: 1, view, legal: { canCheck: false, toCall: 20 } })).toBe(true);
     expect(isBigDecision({ seat: 1, view: { players: [{ seat: 1, stack: 6 }] }, legal: { canCheck: false, toCall: 6 } })).toBe(true);
+  });
+
+  it('is never a big decision when the seat is missing from view.players', () => {
+    expect(isBigDecision({ seat: 9, view: { players: [] }, legal: { canCheck: false, toCall: 40 } })).toBe(false);
   });
 });
 
@@ -187,5 +204,158 @@ describe('createTableDriver', () => {
     expect(driver.getSession().phase).toBe('idle');
     expect(onSessionEnd).not.toHaveBeenCalled();
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  describe('a throwing callback does not freeze the table', () => {
+    it('keeps dealing when onSessionStart throws', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const onSessionStart = vi.fn(() => { throw new Error('boom'); });
+      const { driver } = setup({ onSessionStart });
+      driver.start();
+      await settle(driver);
+      expect(onSessionStart).toHaveBeenCalledTimes(1);
+      expect(nextStep(driver.getSession()).type).toBe('hero');
+      expect(warn).toHaveBeenCalledWith('poker table: onSessionStart failed', expect.any(Error));
+      warn.mockRestore();
+    });
+
+    it('deals the next hand when onHandComplete throws', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const onHandComplete = vi.fn(() => { throw new Error('boom'); });
+      const { driver } = setup({ onHandComplete });
+      driver.start();
+      await settle(driver);
+      await heroPlaysUntil(driver, 2);
+      expect(onHandComplete).toHaveBeenCalledTimes(2);
+      expect(driver.getSession().hand.no).toBe(3);
+      expect(warn).toHaveBeenCalledWith('poker table: onHandComplete failed', expect.any(Error));
+      warn.mockRestore();
+    });
+
+    it('keeps the session progressing when onChange throws on every change', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const onChange = vi.fn(() => { throw new Error('boom'); });
+      const { driver } = setup({ onChange });
+      driver.start();
+      await settle(driver);
+      await heroPlaysUntil(driver, 1);
+      expect(driver.getSession().handsCompleted).toBe(1);
+      expect(onChange).toHaveBeenCalled();
+      expect(warn).toHaveBeenCalledWith('poker table: onChange failed', expect.any(Error));
+      warn.mockRestore();
+    });
+  });
+
+  describe('a bot that never decides, or decides badly', () => {
+    it('falls back to check or fold when decide() never resolves', async () => {
+      const runner = { decide: vi.fn(() => new Promise(() => {})), dispose: vi.fn() };
+      const { driver } = setup({ runner });
+      driver.start();
+      await settle(driver);
+      const acts = driver.getSession().hand.events.filter((e) => e.type === 'act' && e.seat !== 0);
+      for (const e of acts) expect(['check', 'fold']).toContain(e.action);
+    });
+
+    it('falls back to check or fold when decide() throws synchronously', async () => {
+      const runner = { decide: vi.fn(() => { throw new Error('sync boom'); }), dispose: vi.fn() };
+      const { driver } = setup({ runner });
+      driver.start();
+      await settle(driver);
+      const acts = driver.getSession().hand.events.filter((e) => e.type === 'act' && e.seat !== 0);
+      for (const e of acts) expect(['check', 'fold']).toContain(e.action);
+    });
+  });
+
+  describe('async guards', () => {
+    it('does not emit onSessionEnd from a late call once disposed', async () => {
+      let release;
+      const gate = new Promise((resolve) => { release = resolve; });
+      const scheduler = { wait: vi.fn((ms) => (ms === PACING.fast.handPause ? gate : Promise.resolve())) };
+      const { driver, onSessionEnd } = setup({ scheduler });
+      driver.start();
+      await settle(driver);
+      await heroPlaysUntil(driver, 1);
+      expect(driver.getSession().phase).toBe('between');
+      driver.dispose();
+      driver.getUp();
+      expect(driver.getSession().phase).toBe('ended');
+      expect(onSessionEnd).not.toHaveBeenCalled();
+      release();
+    });
+
+    it('ignores a bot decision that resolves after abandon() (no event applied, no onChange)', async () => {
+      const dealt = dealtWithBotFirst();
+      let resolveDecide;
+      const runner = {
+        decide: vi.fn(() => new Promise((resolve) => { resolveDecide = resolve; })),
+        dispose: vi.fn(),
+      };
+      const scheduler = { wait: vi.fn((ms) => (ms === 12345 ? new Promise(() => {}) : Promise.resolve())) };
+      const { driver, onChange } = setup({ runner, session: dealt, scheduler, decideTimeoutMs: 12345 });
+      driver.start();
+      await vi.waitFor(() => expect(runner.decide).toHaveBeenCalled());
+      const eventsBefore = driver.getSession().hand.events.length;
+      const changesBefore = onChange.mock.calls.length;
+      driver.abandon();
+      resolveDecide({ action: 'call' });
+      await flushMicrotasks();
+      expect(driver.getSession().hand.events.length).toBe(eventsBefore);
+      expect(onChange.mock.calls.length).toBe(changesBefore);
+    });
+
+    it('ignores a bot decision that resolves after dispose() (no event applied, no onChange)', async () => {
+      const dealt = dealtWithBotFirst();
+      let resolveDecide;
+      const runner = {
+        decide: vi.fn(() => new Promise((resolve) => { resolveDecide = resolve; })),
+        dispose: vi.fn(),
+      };
+      const scheduler = { wait: vi.fn((ms) => (ms === 12345 ? new Promise(() => {}) : Promise.resolve())) };
+      const { driver, onChange } = setup({ runner, session: dealt, scheduler, decideTimeoutMs: 12345 });
+      driver.start();
+      await vi.waitFor(() => expect(runner.decide).toHaveBeenCalled());
+      const eventsBefore = driver.getSession().hand.events.length;
+      const changesBefore = onChange.mock.calls.length;
+      driver.dispose();
+      resolveDecide({ action: 'call' });
+      await flushMicrotasks();
+      expect(driver.getSession().hand.events.length).toBe(eventsBefore);
+      expect(onChange.mock.calls.length).toBe(changesBefore);
+    });
+
+    it('deals the next hand once rebuy() clears a needsRebuy session', async () => {
+      const base = createSession({ id: 's1', tableMode: 'random', lineup, startedAt: NOW });
+      const bustedSession = {
+        ...base,
+        phase: 'needsRebuy',
+        handsCompleted: 1,
+        button: 1,
+        seats: base.seats.map((s) => (s.seat === 0 ? { ...s, stack: 0 } : s)),
+      };
+      const { driver } = setup({ session: bustedSession });
+      driver.start();
+      expect(driver.getSession().phase).toBe('needsRebuy');
+      // Await the pump directly: right after rebuy() the phase is already 'between' synchronously,
+      // so settle() (which treats 'between' as settled) could resolve before the deal happens.
+      await driver.rebuy();
+      expect(driver.getSession().phase).toBe('playing');
+      expect(driver.getSession().hand.no).toBe(2);
+    });
+
+    it('dispose() while the scheduler is waiting between hands stops further dealing', async () => {
+      let release;
+      const gate = new Promise((resolve) => { release = resolve; });
+      const scheduler = { wait: vi.fn((ms) => (ms === PACING.fast.handPause ? gate : Promise.resolve())) };
+      const { driver } = setup({ scheduler });
+      driver.start();
+      await settle(driver);
+      await heroPlaysUntil(driver, 1);
+      expect(driver.getSession().phase).toBe('between');
+      driver.dispose();
+      release();
+      await flushMicrotasks();
+      expect(driver.getSession().phase).toBe('between');
+      expect(driver.getSession().hand.no).toBe(1);
+    });
   });
 });
