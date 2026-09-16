@@ -1,25 +1,69 @@
 // Builds our own 6-max preflop charts from the class-vs-class equity table.
-// Hands are ordered by a blend of equity against any hand and against a strong range; each chart
-// is then a set of bands over that order (value raise, flat call, suited bluff raise) whose widths
-// are our own approximations of common 100 BB 6-max play. No third-party chart data is used.
+// Hands are ordered by a blend of equity against any hand and against a strong range, plus a
+// playability term for what all-in equity misses. Each chart is then a set of bands over that order
+// (continue, value raise, suited bluff raise) whose widths are our own approximations of common
+// 100 BB 6-max play. No third-party chart data is used.
 import { CLASS_COUNT, combosIn, kindOf } from '../../../src/private/trainers/poker/bots/handClass.js';
 
 const MAX_FADE = 0.02; // band edges mix linearly over up to 2% of combos
 const TOP_SHARE = 0.25; // "strong range" used for the second ordering term
 const W_ANY = 0.4;
 
-// Postflop playability that all-in equity misses: suited, connected and broadway hands realize more equity.
+// Playability terms (in equity points). Rank indices: 0 = 2 ... 8 = T ... 12 = A.
+const PAIR_SET_VALUE = 0.065; // set-mining value, full for 22 and fading to 0 for AA
+const SUITED = 0.025; // flushes and backdoor equity
+const SUITED_LINK = [0.065, 0.038, 0.016]; // straight potential by gap (connector, one-gapper, two-gapper)
+const LINK_HIGH = 0.003; // extra per rank of the lower card up to a 9: higher straights win more often
+const KING_LINK_SHARE = 0.75; // K-high suited broadways already score well on high-card equity
+const OFFSUIT_LINK = [0.03, 0.016, 0.005];
+const OFFSUIT_NINE = 0.01; // offsuit hands with both cards 9 or higher make top pairs with decent kickers
+const WHEEL_ACE = 0.02; // A5s-A2s make wheels and block strong aces
+const SUITED_GAPPED_LOW = 0.012; // Q/J/T-high suited with a 6 or lower and no straight potential
+const SUITED_KING = 0.022; // K8s-K2s make the second-nut flush
+const BROADWAY = 0.01; // both cards T or higher
+// Offsuit A-x and K-x with a 9 kicker / a lower kicker: dominated, and rarely make a strong second hand.
+const DOMINATED = { 12: [0.012, 0.028], 11: [0.015, 0.04] };
+
+/** Postflop playability that all-in equity misses (equity points added to the ordering score). */
 export function playability(cls) {
   const row = Math.floor(cls / 13);
   const col = cls % 13;
-  if (row === col) return 0;
+  if (row === col) return (PAIR_SET_VALUE * (12 - row)) / 12;
   const hi = Math.max(row, col);
   const lo = Math.min(row, col);
   const gap = hi - lo - 1;
-  let bonus = row > col ? 0.02 : 0;
-  bonus += [0.012, 0.007, 0.003][gap] ?? 0;
-  if (lo >= 8) bonus += 0.01;
+  let bonus = lo >= 8 ? BROADWAY : 0;
+  if (row > col) {
+    bonus += SUITED;
+    if (gap < SUITED_LINK.length && hi < 12) bonus += (SUITED_LINK[gap] + LINK_HIGH * Math.min(lo, 7)) * (hi === 11 ? KING_LINK_SHARE : 1);
+    if (hi <= 10 && gap >= 3 && lo <= 4) bonus -= SUITED_GAPPED_LOW;
+    if (hi === 12 && lo <= 3) bonus += WHEEL_ACE;
+    if (hi === 11 && lo <= 6) bonus += SUITED_KING;
+  } else {
+    if (hi < 11) bonus += OFFSUIT_LINK[gap] ?? 0;
+    if (lo >= 7 && hi < 11) bonus += OFFSUIT_NINE;
+    if (hi >= 11 && lo <= 7) bonus -= DOMINATED[hi][lo === 7 ? 0 : 1];
+  }
   return bonus;
+}
+
+// Re-raise preference facing aggression: medium pairs prefer to flat (set value, poor when called),
+// while AK and AQ prefer to raise (blockers, dominate calling ranges, happy to get it in).
+const PAIR_RAISE_BIAS = { 10: -0.02, 9: -0.13, 8: -0.15 }; // QQ, JJ, TT; lower pairs use PAIR_RAISE_LOW
+const PAIR_RAISE_LOW = -0.17;
+const AK_RAISE_BIAS = 0.045;
+const AQ_RAISE_BIAS = 0.015;
+
+/** Added to the ordering score to get the raise order used for re-raises facing aggression. */
+export function raiseBias(cls) {
+  const row = Math.floor(cls / 13);
+  const col = cls % 13;
+  if (row === col) return row >= 11 ? 0 : (PAIR_RAISE_BIAS[row] ?? PAIR_RAISE_LOW);
+  const hi = Math.max(row, col);
+  const lo = Math.min(row, col);
+  if (hi === 12 && lo === 11) return AK_RAISE_BIAS;
+  if (hi === 12 && lo === 10) return AQ_RAISE_BIAS;
+  return 0;
 }
 
 const equityVs = (table, a, weights) => {
@@ -44,41 +88,59 @@ function centers(order) {
   return pct;
 }
 
-/** @returns {{ order:number[], rankPct:Float64Array }} strongest class first */
+const sortedBy = (score) => [...Array(CLASS_COUNT).keys()].sort((a, b) => score[b] - score[a] || a - b);
+
+/**
+ * @returns {{ order:number[], rankPct:Float64Array, raisePct:Float64Array }} strongest class first;
+ *   raisePct is the combo-share position in the re-raise order (score plus raiseBias).
+ */
 export function strengthOrder(table) {
   const any = Float64Array.from({ length: CLASS_COUNT }, (_, a) => equityVs(table, a, new Float64Array(CLASS_COUNT).fill(1)));
-  const byAny = [...Array(CLASS_COUNT).keys()].sort((a, b) => any[b] - any[a]);
-  const pctAny = centers(byAny);
+  const pctAny = centers(sortedBy(any));
   const top = Float64Array.from({ length: CLASS_COUNT }, (_, cls) => (pctAny[cls] < TOP_SHARE ? 1 : 0));
   const score = Float64Array.from({ length: CLASS_COUNT }, (_, a) => W_ANY * any[a] + (1 - W_ANY) * equityVs(table, a, top) + playability(a));
-  const order = [...Array(CLASS_COUNT).keys()].sort((a, b) => score[b] - score[a] || a - b);
-  return { order, rankPct: centers(order) };
+  const order = sortedBy(score);
+  const raiseScore = score.map((s, cls) => s + raiseBias(cls));
+  return { order, rankPct: centers(order), raisePct: centers(sortedBy(raiseScore)) };
 }
 
 const clamp01 = (x) => Math.min(1, Math.max(0, x));
 const fadeFor = (edge) => Math.min(MAX_FADE, edge * 0.3);
-const below = (p, hi) => clamp01((hi + fadeFor(hi) / 2 - p) / fadeFor(hi));
-const above = (p, lo) => (lo <= 0 ? 1 : clamp01((p - (lo - fadeFor(lo) / 2)) / fadeFor(lo)));
+const below = (p, hi, fade = fadeFor(hi)) => clamp01((hi + fade / 2 - p) / fade);
 const quantize = (x) => Math.round(x * 10);
 const DIGITS = '0123456789X';
 
 /**
- * @param {{ value:number, call?:number, bluff?:{ from:number, to:number, freq:number } }} spec
- *   value: top share of combos that raises; call: the next share that calls; bluff: suited hands in
- *   [from, to] (combo share) raise with probability freq.
+ * @param {{ value:number, call?:number, continueBy?:'raise', valueFade?:number, bluff?:{ from:number, to:number, freq:number } }} spec
+ *   Raise-or-fold charts (no `call`): the top `value` share by strength raises.
+ *   Charts with `call`: the top `value + call` share by strength continues (by the re-raise order when
+ *   continueBy is 'raise'), and within it the top `value` share by the re-raise order raises while the
+ *   rest calls; valueFade widens the mixed band at the raise edge. bluff: suited hands in [from, to] (strength combo share) raise with probability freq.
+ * @param {Float64Array} rankPct strength-order position of each class
+ * @param {Float64Array} [raisePct] re-raise-order position of each class (defaults to rankPct)
  * @returns {{ raise:string, call:string }} one digit per class (0-9, X = 10 tenths)
  */
-export function buildChart(spec, rankPct) {
+export function buildChart(spec, rankPct, raisePct = rankPct) {
   let raise = '';
   let call = '';
   for (let cls = 0; cls < CLASS_COUNT; cls += 1) {
     const p = rankPct[cls];
-    let r = below(p, spec.value);
-    if (spec.bluff && kindOf(cls) === 'suited' && p >= spec.bluff.from && p <= spec.bluff.to) r = Math.max(r, spec.bluff.freq);
-    const c = spec.call ? Math.min(1 - r, Math.min(above(p, spec.value), below(p, spec.value + spec.call))) : 0;
+    let r;
+    let cont;
+    if (spec.call) {
+      cont = below(spec.continueBy === 'raise' ? raisePct[cls] : p, spec.value + spec.call);
+      r = Math.min(cont, below(raisePct[cls], spec.value, spec.valueFade));
+    } else {
+      r = below(p, spec.value);
+      cont = r;
+    }
+    if (spec.bluff && kindOf(cls) === 'suited' && p >= spec.bluff.from && p <= spec.bluff.to && cont < 0.05) {
+      r = Math.max(r, spec.bluff.freq);
+      cont = Math.max(cont, r);
+    }
     const rq = quantize(r);
     raise += DIGITS[rq];
-    call += DIGITS[Math.min(quantize(c), 10 - rq)];
+    call += DIGITS[Math.max(0, Math.min(quantize(cont) - rq, 10 - rq))];
   }
   return { raise, call };
 }
@@ -87,7 +149,7 @@ const bluffAfter = (value, call, freq = 0.35, width = 0.08) => ({ from: value + 
 
 /** Chart widths as combo shares. Keys: situation.position[.detail]. */
 export const CHART_SPECS = {
-  'open.UTG': { value: 0.15 },
+  'open.UTG': { value: 0.165 },
   'open.HJ': { value: 0.19 },
   'open.CO': { value: 0.26 },
   'open.BTN': { value: 0.43 },
@@ -103,11 +165,11 @@ export const CHART_SPECS = {
   'vsOpen.SB.HJ': { value: 0.04, call: 0.035, bluff: bluffAfter(0.04, 0.035) },
   'vsOpen.SB.CO': { value: 0.05, call: 0.04, bluff: bluffAfter(0.05, 0.04) },
   'vsOpen.SB.BTN': { value: 0.07, call: 0.05, bluff: bluffAfter(0.07, 0.05) },
-  'vsOpen.BB.UTG': { value: 0.035, call: 0.22, bluff: bluffAfter(0.035, 0.22, 0.25) },
-  'vsOpen.BB.HJ': { value: 0.04, call: 0.25, bluff: bluffAfter(0.04, 0.25, 0.25) },
-  'vsOpen.BB.CO': { value: 0.05, call: 0.3, bluff: bluffAfter(0.05, 0.3, 0.25) },
-  'vsOpen.BB.BTN': { value: 0.07, call: 0.36, bluff: bluffAfter(0.07, 0.36, 0.25) },
-  'vsOpen.BB.SB': { value: 0.09, call: 0.4, bluff: bluffAfter(0.09, 0.4, 0.25) },
+  'vsOpen.BB.UTG': { value: 0.04, call: 0.35, bluff: bluffAfter(0.04, 0.35, 0.25) },
+  'vsOpen.BB.HJ': { value: 0.045, call: 0.4, bluff: bluffAfter(0.045, 0.4, 0.25) },
+  'vsOpen.BB.CO': { value: 0.055, call: 0.44, bluff: bluffAfter(0.055, 0.44, 0.25) },
+  'vsOpen.BB.BTN': { value: 0.075, call: 0.52, bluff: bluffAfter(0.075, 0.52, 0.25) },
+  'vsOpen.BB.SB': { value: 0.09, call: 0.53, bluff: bluffAfter(0.09, 0.53, 0.25) },
 
   'squeeze.CO': { value: 0.03, call: 0.03, bluff: bluffAfter(0.03, 0.03, 0.2) },
   'squeeze.BTN': { value: 0.035, call: 0.05, bluff: bluffAfter(0.035, 0.05, 0.2) },
@@ -123,8 +185,8 @@ export const CHART_SPECS = {
   'vs3bet.BTN.ip': { value: 0.035, call: 0.08, bluff: bluffAfter(0.035, 0.08, 0.2, 0.06) },
   'vs3bet.SB.oop': { value: 0.035, call: 0.06, bluff: bluffAfter(0.035, 0.06, 0.2, 0.05) },
 
-  'vs4bet.ip': { value: 0.015, call: 0.02 },
-  'vs4bet.oop': { value: 0.015, call: 0.012 },
+  'vs4bet.ip': { value: 0.0135, call: 0.013, continueBy: 'raise', valueFade: 0.01 },
+  'vs4bet.oop': { value: 0.0135, call: 0.011, continueBy: 'raise', valueFade: 0.01 },
 
   'vsLimp.HJ': { value: 0.1, call: 0.02 },
   'vsLimp.CO': { value: 0.14, call: 0.03 },
@@ -135,8 +197,8 @@ export const CHART_SPECS = {
 
 /** @returns {{ version:string, order:number[], charts:Record<string,{raise:string, call:string}> }} */
 export function buildCharts(table) {
-  const { order, rankPct } = strengthOrder(table);
+  const { order, rankPct, raisePct } = strengthOrder(table);
   const charts = {};
-  for (const [key, spec] of Object.entries(CHART_SPECS)) charts[key] = buildChart(spec, rankPct);
+  for (const [key, spec] of Object.entries(CHART_SPECS)) charts[key] = buildChart(spec, rankPct, raisePct);
   return { version: 'charts-v1', order, charts };
 }

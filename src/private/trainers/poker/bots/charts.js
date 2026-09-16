@@ -34,26 +34,90 @@ export function chartFreqs(key, cls) {
   return { raise: digit(chart.raise[cls]), call: digit(chart.call[cls]) };
 }
 
-// The class of the same kind whose strength percentile is closest to `pct`.
-function nearestOfKind(cls, pct) {
-  const list = BY_KIND[kindOf(cls)];
-  let best = list[0];
-  for (const other of list) {
-    if (Math.abs(RANK_PCT[other] - pct) < Math.abs(RANK_PCT[best] - pct)) best = other;
+// Width scaling. Each chart is split per class into three parts:
+//   value raise + call = the continue core (monotone in strength within a kind),
+//   bluff raise        = raise frequency on top of the core (suited bluffs below the calling range).
+// A multiplier moves a hand toward the same-kind hands it now plays like: widening (mul > 1) takes the
+// best frequency among same-kind hands between strength p / mul and p, tightening (mul < 1) the worst
+// among hands between p and the tightened target. Taking the max/min over that whole window (not the
+// nearest class) keeps every frequency monotone in the multiplier even where bands are skipped.
+// The continue core of the top CORE_FLOOR of combos is never tightened, so premiums (AA, KK, AKs) always
+// continue; a tighter raise dial still turns their raises into calls.
+const CORE_FLOOR = 0.03;
+
+// BY_KIND lists run strongest first (increasing RANK_PCT); KIND_INDEX[cls] is the position in its list.
+const KIND_INDEX = new Int16Array(CLASS_COUNT);
+for (const list of Object.values(BY_KIND)) list.forEach((cls, i) => { KIND_INDEX[cls] = i; });
+
+const prepared = new Map();
+
+/** @returns {{ valueRaise:Float64Array, core:Float64Array, bluff:Float64Array }} */
+function prepare(key) {
+  const hit = prepared.get(key);
+  if (hit) return hit;
+  const raise = new Float64Array(CLASS_COUNT);
+  const call = new Float64Array(CLASS_COUNT);
+  for (let cls = 0; cls < CLASS_COUNT; cls += 1) ({ raise: raise[cls], call: call[cls] } = chartFreqs(key, cls));
+  // Raise-or-fold charts (no calls anywhere) have no core: tightening folds instead of calling.
+  const hasCalls = call.some((x) => x > 0);
+  const out = { valueRaise: new Float64Array(CLASS_COUNT), core: new Float64Array(CLASS_COUNT), bluff: new Float64Array(CLASS_COUNT) };
+  for (const list of Object.values(BY_KIND)) {
+    let floor = 1; // lowest core continue frequency among stronger same-kind hands
+    let calledAbove = false; // a stronger same-kind hand calls
+    for (const cls of list) {
+      const total = raise[cls] + call[cls];
+      // A mixed raise with no call below a calling hand is a bluff; so is continue above the core floor.
+      const mixedRaiseOnly = call[cls] === 0 && raise[cls] > 0 && raise[cls] < 1 && calledAbove;
+      const bluff = mixedRaiseOnly ? raise[cls] : Math.min(raise[cls], Math.max(0, total - floor));
+      floor = Math.min(floor, total - bluff);
+      calledAbove ||= call[cls] > 0;
+      out.bluff[cls] = bluff;
+      out.valueRaise[cls] = raise[cls] - bluff;
+      out.core[cls] = hasCalls ? total - bluff : 0;
+    }
   }
-  return best;
+  prepared.set(key, out);
+  return out;
+}
+
+const lerpAt = (values, a, b, x) => values[a] + ((values[b] - values[a]) * (x - RANK_PCT[a])) / (RANK_PCT[b] - RANK_PCT[a]);
+
+// Max (widening) or min (tightening) of `values` over same-kind hands between cls and target strength x.
+// Tightening maps strength p to floor + (p - floor) / mul, leaving hands stronger than `floor` unchanged.
+function windowed(values, cls, mul, floor = 0) {
+  if (mul === 1) return values[cls];
+  const list = BY_KIND[kindOf(cls)];
+  const p = RANK_PCT[cls];
+  let out = values[cls];
+  if (mul > 1) {
+    const x = p / mul;
+    let j = KIND_INDEX[cls] - 1;
+    for (; j >= 0 && RANK_PCT[list[j]] >= x; j -= 1) out = Math.max(out, values[list[j]]);
+    if (j >= 0) out = Math.max(out, lerpAt(values, list[j], list[j + 1], x));
+    return out;
+  }
+  if (p <= floor) return out;
+  const x = floor + (p - floor) / mul;
+  let j = KIND_INDEX[cls] + 1;
+  for (; j < list.length && RANK_PCT[list[j]] <= x; j += 1) out = Math.min(out, values[list[j]]);
+  if (j < list.length) out = Math.min(out, lerpAt(values, list[j - 1], list[j], x));
+  return out;
 }
 
 /**
- * Chart frequencies with the raise and call ranges widened (mul > 1) or tightened (mul < 1).
- * A hand at strength percentile p plays like the hand of the same kind at p / mul.
+ * Chart frequencies with the raise range (raiseMul) and calling range (callMul) widened (> 1) or tightened (< 1).
+ * Guarantees, per class: continue (raise + call) never falls when either multiplier grows, raise never falls
+ * when either grows, tightening raiseMul turns lost value raises into calls (only bluffs fold, and in
+ * raise-or-fold charts everything folds), and both multipliers at 1 return the chart unchanged.
  */
 export function scaledFreqs(key, cls, raiseMul = 1, callMul = 1) {
-  const raiseFrom = raiseMul === 1 ? cls : nearestOfKind(cls, RANK_PCT[cls] / raiseMul);
-  const callFrom = callMul === 1 ? cls : nearestOfKind(cls, RANK_PCT[cls] / callMul);
-  const raise = chartFreqs(key, raiseFrom).raise;
-  const call = Math.min(chartFreqs(key, callFrom).call, 1 - raise);
-  return { raise, call };
+  if (raiseMul === 1 && callMul === 1) return chartFreqs(key, cls);
+  const { valueRaise, core, bluff } = prepare(key);
+  const value = windowed(valueRaise, cls, raiseMul);
+  const bluffs = windowed(bluff, cls, raiseMul);
+  const cont = Math.min(1, Math.max(windowed(core, cls, callMul, CORE_FLOOR), value) + bluffs);
+  const raise = Math.min(cont, value + bluffs);
+  return { raise, call: cont - raise };
 }
 
 /** 169 class weights: 1 for the strongest `share` of combos, 0 otherwise. */
