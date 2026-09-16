@@ -2,6 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { loadEnv } from 'vite';
 
+// Capture OS environment keys once at module load. File-sourced env vars can refresh
+// on reload, but real OS environment values always take precedence.
+const OS_ENV_KEYS = new Set(Object.keys(process.env));
+
 /**
  * Dev-only: serve the Vercel functions in /api from the Vite dev server, so
  * `npm run dev` works without `vercel dev`. Shims the bits of Vercel's
@@ -14,7 +18,9 @@ export default function apiDevServer() {
     apply: 'serve',
     configResolved(config) {
       const env = loadEnv(config.mode, config.root, '');
-      for (const [k, v] of Object.entries(env)) if (process.env[k] === undefined) process.env[k] = v;
+      // Only set env vars that didn't come from the OS environment. This allows file
+      // values to refresh on reload while preserving OS-set values as permanent overrides.
+      for (const [k, v] of Object.entries(env)) if (!OS_ENV_KEYS.has(k)) process.env[k] = v;
     },
     configureServer(server) {
       server.middlewares.use('/api', async (req, res, next) => {
