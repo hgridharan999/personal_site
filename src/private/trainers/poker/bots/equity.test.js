@@ -116,8 +116,11 @@ describe('equityVsRanges', () => {
   it('deals in-range combos when an opponent range is mostly blocked by another', () => {
     const r1 = rangeOf('AsAh');
     const r2 = rangeOf(['AsKs', 1], ['QcQd', 0.01]);
-    const { equity, stderr } = equityVsRanges({ hole: parseCards('JcJd'), board: [], ranges: [r1, r2], rng: mulberry32(73), iterations: 60000 });
-    expectClose(equity, stderr, EXACT_JJ_VS_AA_QQ);
+    const hole = parseCards('JcJd');
+    const a = equityVsRanges({ hole, board: [], ranges: [r1, r2], rng: mulberry32(73), iterations: 60000 });
+    const b = equityVsRanges({ hole, board: [], ranges: [r2, r1], rng: mulberry32(74), iterations: 60000 });
+    expectClose(a.equity, a.stderr, EXACT_JJ_VS_AA_QQ);
+    expectClose(b.equity, b.stderr, EXACT_JJ_VS_AA_QQ);
   });
 
   it('removes combos that touch dead cards before sampling', () => {

@@ -74,10 +74,23 @@ function seatCards(oppCards, used, o, a, b) {
   oppCards[o][1] = b;
 }
 
+// Opponent indices sorted by ascending live-combo count (stable), so the fallback deals the most
+// constrained range first and its result does not depend on the order the ranges were passed in.
+function constrainedOrder(prepared) {
+  const order = new Uint8Array(prepared.length);
+  for (let i = 0; i < order.length; i += 1) {
+    let j = i;
+    for (; j > 0 && prepared[order[j - 1]].count > prepared[i].count; j -= 1) order[j] = order[j - 1];
+    order[j] = i;
+  }
+  return order;
+}
+
 // Deals every opponent a combo from its range, conditioned on no shared cards.
 // Whole-set rejection keeps the joint distribution exact; only after DEAL_ATTEMPTS failures does
-// it deal opponents one by one from their live in-range combos, and only then from random cards.
-function dealOpponents(prepared, dead, used, oppCards, rng) {
+// it deal opponents one by one (most constrained first, per `order`) from their live in-range combos,
+// and only then from random cards.
+function dealOpponents(prepared, order, dead, used, oppCards, rng) {
   for (let attempt = 0; attempt < DEAL_ATTEMPTS; attempt += 1) {
     used.set(dead);
     let o = 0;
@@ -89,7 +102,8 @@ function dealOpponents(prepared, dead, used, oppCards, rng) {
     if (o === prepared.length) return;
   }
   used.set(dead);
-  for (let o = 0; o < prepared.length; o += 1) {
+  for (let k = 0; k < order.length; k += 1) {
+    const o = order[k];
     const combo = pickLiveCombo(prepared[o], used, rng);
     if (combo >= 0) {
       seatCards(oppCards, used, o, COMBO_CARDS[2 * combo], COMBO_CARDS[2 * combo + 1]);
@@ -106,6 +120,8 @@ function dealOpponents(prepared, dead, used, oppCards, rng) {
  *   iterations?:number, budgetMs?:number, now?:() => number }} input
  *   ranges: one 1,326-entry combo weight array per live opponent (NaN or negative weights count as 0).
  *   With a finite budget at least MIN_ITERATIONS (32) iterations run before the clock is read.
+ *   Deals that cannot be satisfied from the ranges (an opponent with no live in-range combo left after the
+ *   others are seated) silently give that opponent random live cards instead of failing.
  * @returns {{ equity:number, iterations:number, stderr:number }} equity = expected share of the pot (ties split).
  *   No opponents gives equity 1; zero iterations gives { equity: 0.5, iterations: 0, stderr: 1 }.
  */
@@ -115,6 +131,7 @@ export function equityVsRanges({ hole, board, ranges, rng, iterations = 1000, bu
   for (const c of hole) dead[c] = 1;
   for (const c of board) dead[c] = 1;
   const prepared = ranges.map((r) => prepareRange(r, dead));
+  const order = constrainedOrder(prepared);
   const used = new Uint8Array(52);
   const need = 5 - board.length;
   const heroCards = [hole[0], hole[1], ...board, 0, 0, 0, 0, 0].slice(0, 7);
@@ -127,7 +144,7 @@ export function equityVsRanges({ hole, board, ranges, rng, iterations = 1000, bu
 
   while (n < iterations) {
     if (timed && n >= MIN_ITERATIONS && (n - MIN_ITERATIONS) % CLOCK_EVERY === 0 && now() - started >= budgetMs) break;
-    dealOpponents(prepared, dead, used, oppCards, rng);
+    dealOpponents(prepared, order, dead, used, oppCards, rng);
     for (let k = 2 + board.length; k < 7; k += 1) {
       const card = randomLiveCard(used, rng);
       used[card] = 1;
