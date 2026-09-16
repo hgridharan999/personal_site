@@ -98,15 +98,42 @@ describe('scaled chart properties', () => {
 
   it('tightening the raise dial turns value raises into calls instead of folds', () => {
     expect(cont(scaledFreqs('vsOpen.BB.BTN', c('AQo'), 0.6))).toBeGreaterThanOrEqual(cont(chartFreqs('vsOpen.BB.BTN', c('AQo'))));
-    const kk = scaledFreqs('vs4bet.oop', c('KK'), 0.5);
-    expect(kk.raise).toBeLessThan(1);
-    expect(cont(kk)).toBeGreaterThanOrEqual(0.95);
+    const qq = scaledFreqs('vs4bet.oop', c('QQ'), 0.5);
+    expect(qq.raise).toBeLessThan(chartFreqs('vs4bet.oop', c('QQ')).raise);
+    expect(cont(qq)).toBeGreaterThanOrEqual(cont(chartFreqs('vs4bet.oop', c('QQ'))));
     expect(cont(scaledFreqs('vs4bet.oop', c('AKs'), 0.5))).toBeGreaterThanOrEqual(0.95);
     // Suited bluffs below the calling range fold instead.
     expect(chartFreqs('vsOpen.HJ.UTG', c('A5s'))).toEqual({ raise: 0.4, call: 0 });
     expect(scaledFreqs('vsOpen.HJ.UTG', c('A5s'), 0.5)).toEqual({ raise: 0, call: 0 });
     // Raise-or-fold charts stay raise-or-fold.
     expect(scaledFreqs('open.CO', c('KTo'), 0.5).call).toBe(0);
+  });
+
+  it('a tighter raise dial keeps the raise frequency of premium value hands', () => {
+    const premiumKeys = chartKeys().filter((key) => /^(vs3bet|vs4bet|squeeze)\./.test(key));
+    for (const key of premiumKeys) {
+      for (const hand of ['AA', 'KK']) {
+        const base = chartFreqs(key, c(hand)).raise;
+        for (const raiseMul of [0.3, 0.5]) {
+          for (const callMul of [0.5, 1, 1.5]) {
+            expect(scaledFreqs(key, c(hand), raiseMul, callMul).raise, `${key} ${hand} ${raiseMul} ${callMul}`).toBe(base);
+          }
+        }
+      }
+    }
+    for (const key of premiumKeys.filter((k) => !k.startsWith('vs4bet.'))) {
+      for (const hand of ['QQ', 'AKs', 'AKo']) {
+        const base = chartFreqs(key, c(hand)).raise;
+        for (const raiseMul of [0.3, 0.5]) expect(scaledFreqs(key, c(hand), raiseMul).raise, `${key} ${hand} ${raiseMul}`).toBe(base);
+      }
+    }
+    for (const key of facingAggression().filter((k) => k.startsWith('vsOpen.'))) {
+      for (const hand of ['AA', 'KK']) expect(scaledFreqs(key, c(hand), 0.3).raise, `${key} ${hand}`).toBe(chartFreqs(key, c(hand)).raise);
+    }
+    // Tightening still shrinks the raising range as a whole.
+    for (const key of premiumKeys) {
+      expect(scaledShare(key, 0.5, 1, (f) => f.raise), key).toBeLessThan(scaledShare(key, 1, 1, (f) => f.raise));
+    }
   });
 
   it('frequencies are valid and monotone in both multipliers for every chart and class', () => {
