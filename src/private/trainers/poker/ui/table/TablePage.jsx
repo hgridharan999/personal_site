@@ -32,9 +32,10 @@ export default function TablePage({
   if (!config) {
     return (
       <PokerShell back={{ to: '/me/poker', label: 'Lobby' }}>
+        {children}
         <div className="pk-closed">
           <h1 className="pk-title">Table closed</h1>
-          <p className="pk-muted">This table is no longer running. Sessions are not saved yet, so a reloaded table cannot be resumed.</p>
+          <p className="pk-muted">This table is no longer running and a reloaded table cannot be resumed. The hands you finished were saved.</p>
           <Link to="/me/poker" className="pk-btn pk-btn--raise" data-hot>Back to the lobby</Link>
         </div>
       </PokerShell>

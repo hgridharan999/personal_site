@@ -21,7 +21,7 @@ export default function SessionEnd({ session }) {
       <ul className="pk-end__bots">
         {bots.map((p) => <li key={p.id}>{p.tag} &middot; {p.name} &middot; {p.style}</li>)}
       </ul>
-      <p className="pk-muted">Sessions are not saved yet, so this session has no review.</p>
+      <p className="pk-muted">This session was saved.</p>
       <Link to="/me/poker" className="pk-btn pk-btn--raise" data-hot>Back to the lobby</Link>
     </section>
   );

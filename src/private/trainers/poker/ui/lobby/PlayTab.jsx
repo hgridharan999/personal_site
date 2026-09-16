@@ -51,7 +51,7 @@ export default function PlayTab() {
 
       <section className="pk-box" aria-labelledby="pk-recent-title">
         <h2 id="pk-recent-title" className="pk-h2">Recent sessions</h2>
-        <p className="pk-muted">Sessions are not saved yet. Your recent sessions and their reviews will be listed here.</p>
+        <p className="pk-muted">Your sessions are saved. A list of recent sessions will appear here.</p>
       </section>
     </div>
   );

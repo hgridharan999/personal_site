@@ -1,0 +1,5 @@
+/* Save status above the poker table (Phase 4). Scoped under .pk; uses the poker tokens only. */
+.pk .pk-save { margin: 0 0 12px; }
+.pk .pk-save__list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pk .pk-save__item { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.pk .pk-save__item .pk-error { flex: 1 1 24ch; overflow-wrap: anywhere; }
