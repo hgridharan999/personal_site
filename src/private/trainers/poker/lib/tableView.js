@@ -25,7 +25,12 @@ export function seatName(session, seat) {
 /** @returns {SeatView[]} ordered by slot */
 export function seatViews(session) {
   const view = heroView(session);
-  const complete = view?.street === 'complete';
+  const handComplete = view?.street === 'complete';
+  // A hand stays live (and its engine stacks are the truth) from the deal through 'complete',
+  // until finishHand settles it and moves the session out of 'playing'. tableCore.finishHand
+  // does not clear session.hand, so `handComplete` alone can't tell "just finished" apart from
+  // "settled" — session.phase is the signal for that.
+  const settled = session.phase !== 'playing';
   return session.seats
     .map((info) => {
       const persona = info.kind === 'bot' ? getPersona(info.personaId) : null;
@@ -36,15 +41,16 @@ export function seatViews(session) {
         isHero: info.kind === 'hero',
         name: persona ? persona.name : 'You',
         tag: persona ? persona.tag : 'YOU',
-        // Once a hand is complete the seat's settled stack (including a queued rebuy) is the truth.
-        stack: p && !complete ? p.stack : info.stack,
-        bet: p && !complete ? p.committed : 0,
+        // Once the session has settled the hand (finishHand ran), the seat's settled stack
+        // (including a queued rebuy) is the truth; until then, the engine's live stack is.
+        stack: p && !settled ? p.stack : info.stack,
+        bet: p && !handComplete ? p.committed : 0,
         isButton: (view ? view.button : session.button) === info.seat,
         isActive: Boolean(view && view.toAct === info.seat),
         folded: Boolean(p?.folded),
-        allIn: Boolean(p && !complete && p.stack === 0 && !p.folded),
+        allIn: Boolean(p && !handComplete && p.stack === 0 && !p.folded),
         cards: p && !p.folded ? (p.hole ?? [null, null]) : null,
-        won: complete ? (view.result.awards[info.seat] ?? 0) : 0,
+        won: handComplete ? (view.result.awards[info.seat] ?? 0) : 0,
       };
     })
     .sort((a, b) => a.slot - b.slot);
@@ -71,12 +77,22 @@ export function heroTurn(session) {
 export const streetKey = (session) => (session.hand ? `${session.hand.no}:${session.hand.state.street}` : 'none');
 
 /**
- * Bets to animate into the pot when the street key changes.
+ * Bets to animate into the pot when the street key changes. When the street's closing action
+ * triggers an uncalled-bet refund (engine/handState.js returnUncalled), the excess goes straight
+ * back to the raiser's stack before `next` is captured, so the swept amount is the seat's `prev`
+ * bet minus whatever came back to their stack, not the raw bet.
  * @param {{ key:string, seats:SeatView[] }} prev
  * @param {{ key:string, seats:SeatView[] }} next
  * @returns {{ slot:number, amount:number }[]}
  */
 export function chipsToCollect(prev, next) {
   if (!prev || prev.key === next.key) return [];
-  return prev.seats.filter((s) => s.bet > 0).map(({ slot, bet }) => ({ slot, amount: bet }));
+  const nextBySeat = new Map(next.seats.map((s) => [s.seat, s]));
+  return prev.seats
+    .filter((s) => s.bet > 0)
+    .map(({ seat, slot, bet, stack }) => {
+      const after = nextBySeat.get(seat);
+      const refunded = after ? Math.max(0, after.stack - stack) : 0;
+      return { slot, amount: bet - refunded };
+    });
 }

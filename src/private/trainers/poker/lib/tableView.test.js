@@ -100,6 +100,17 @@ describe('seatViews', () => {
     expect(seatViews(settled).map((x) => x.stack)).toEqual(settled.seats.map((x) => x.stack));
   });
 
+  it('shows live engine stacks between "complete" and settlement, not the pre-hand stacks', () => {
+    const playing = advance(dealt(6), 'complete');
+    // The hand is over but finishHand has not run yet: session.phase is still 'playing'.
+    expect(playing.phase).toBe('playing');
+    const engineStacks = new Map(playing.hand.state.players.map((p) => [p.seat, p.stack]));
+    const seats = seatViews(playing);
+    // At least one seat's stack must have moved from the 200 starting stack (the winner's gain).
+    expect(seats.some((s) => s.stack !== 200)).toBe(true);
+    for (const seat of seats) expect(seat.stack).toBe(engineStacks.get(seat.seat));
+  });
+
   it('never reveals a bot’s hole cards mid-hand or after a no-showdown finish', () => {
     const mid = dealt(7);
     for (const bot of seatViews(mid).filter((x) => !x.isHero)) expect(bot.cards).toEqual([null, null]);
@@ -158,5 +169,55 @@ describe('chipsToCollect', () => {
     expect(chipsToCollect(snap(preflop), snap(preflop))).toEqual([]);
     expect(chipsToCollect(null, snap(preflop))).toEqual([]);
     expect(streetKey(fresh())).toBe('none');
+  });
+
+  /**
+   * Hero (seat 0) raises to `raiseTo`, seat 2 calls (all-in if short), everyone else folds.
+   * Returns the seatViews snapshot from just before the street-closing action (so any bets still
+   * show their raw, pre-refund committed amount) and the snapshot from just after it.
+   */
+  function raiseAndShortCall(session, raiseTo) {
+    let s = session;
+    let prev = null;
+    for (let guard = 0; guard < 200; guard += 1) {
+      const step = nextStep(s);
+      if (step.type !== 'hero' && step.type !== 'bot') return { prev, next: { key: streetKey(s), seats: seatViews(s) } };
+      const legal = legalActions(s.hand.state);
+      let choice;
+      if (step.seat === 0 && s.hand.state.currentBet < raiseTo) choice = { action: legal.raiseKind, amount: raiseTo };
+      else if (step.seat === 0 || step.seat === 2) choice = legal.canCheck ? { action: 'check' } : { action: 'call' };
+      else choice = { action: 'fold' };
+      prev = { key: streetKey(s), seats: seatViews(s) };
+      s = applyAction(s, step.seat, choice);
+    }
+    throw new Error('did not reach board');
+  }
+
+  it('sweeps the refunded amount, not the raw bet, when a call is short and the excess is returned', () => {
+    const seats = fresh().seats.map((x) => (x.seat === 2 ? { ...x, stack: 6 } : x));
+    const session = { ...fresh(), seats };
+    const preflop = startHand(session, { rng: mulberry32(9), now: NOW, personas });
+    const { prev, next } = raiseAndShortCall(preflop, 50);
+    // Just before the street closed, seat 0's raw commitment (50) still included the uncalled
+    // 44 that's about to be refunded.
+    expect(prev.seats.find((x) => x.seat === 0).bet).toBe(50);
+    const swept = chipsToCollect(prev, next);
+    // Seat 0 raised to 50 but seat 2 could only call 6 (their whole stack); the uncalled 44 is
+    // refunded, so only 6 units from seat 0's raise actually went into the pot.
+    const hero = swept.find((x) => x.slot === slotOf(0, 0));
+    const caller = swept.find((x) => x.slot === slotOf(2, 0));
+    expect(hero.amount).toBe(6);
+    expect(caller.amount).toBe(6);
+  });
+
+  it('still sweeps the full bet on an ordinary street close with no refund', () => {
+    const session = fresh();
+    const preflop = startHand(session, { rng: mulberry32(9), now: NOW, personas });
+    const { prev, next } = raiseAndShortCall(preflop, 20);
+    const swept = chipsToCollect(prev, next);
+    const hero = swept.find((x) => x.slot === slotOf(0, 0));
+    const caller = swept.find((x) => x.slot === slotOf(2, 0));
+    expect(hero.amount).toBe(20);
+    expect(caller.amount).toBe(20);
   });
 });
