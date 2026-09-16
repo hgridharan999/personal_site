@@ -1,0 +1,80 @@
+/* ============================================================
+   POKER: Midnight Indigo. Every rule is scoped under .pk so
+   nothing leaks into the rest of the site.
+   ============================================================ */
+.pk {
+  --pk-bg: #0a0a14;
+  --pk-rail: #1a1b2b;
+  --pk-rail-hi: #26283d;
+  --pk-felt: #23265a;
+  --pk-felt-dk: #1d2050;
+  --pk-felt-hi: #2c3068;
+  --pk-line: #343a7a;
+  --pk-card: #eeeae0;
+  --pk-red: #ff5f6d;
+  --pk-black: #14142a;
+  --pk-accent: #f5c451;
+  --pk-accent-2: #8fa8ff;
+  --pk-text: #dcdcf0;
+  --pk-muted: #6a6c8c;
+  --pk-back: #3b3f8a;
+  --pk-back-2: #2a2d66;
+  --pk-font: 'Silkscreen', ui-monospace, monospace;
+  background: var(--pk-bg);
+  color: var(--pk-text);
+}
+
+.pk .pk-main { width: min(100% - 32px, 1320px); margin: 0 auto; padding: 8px 0 64px; font-family: var(--pk-font); }
+.pk .pk-title { font-family: var(--pk-font); font-weight: 400; font-size: clamp(32px, 5vw, 56px); line-height: 1; margin: 0; text-transform: uppercase; }
+.pk .pk-h2 { font-family: var(--pk-font); font-weight: 400; font-size: 18px; margin: 0 0 12px; text-transform: uppercase; }
+.pk .pk-h3 { font-family: var(--pk-font); font-weight: 400; font-size: 14px; margin: 16px 0 8px; text-transform: uppercase; color: var(--pk-muted); }
+.pk .pk-muted { color: var(--pk-muted); font-size: 12px; line-height: 1.6; margin: 0; }
+.pk .pk-error { color: var(--pk-red); font-size: 12px; margin: 0; }
+.pk .pk-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.pk kbd { font-family: var(--pk-font); font-size: 9px; opacity: 0.7; margin-left: 6px; }
+
+/* ---- buttons -------------------------------------------- */
+.pk .pk-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  font-family: var(--pk-font); font-size: 12px; text-transform: uppercase; text-decoration: none; line-height: 1;
+  background: none; color: var(--pk-text); border: 3px solid var(--pk-muted); padding: 9px 16px; cursor: pointer;
+}
+.pk .pk-btn:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: 2px 2px 0 #000; }
+.pk .pk-btn:focus-visible, .pk .pk-tab:focus-visible, .pk .pk-select:focus-visible, .pk input:focus-visible {
+  outline: 2px solid var(--pk-text); outline-offset: 3px;
+}
+.pk .pk-btn:disabled { opacity: 0.4; cursor: default; }
+.pk .pk-btn--fold { border-color: var(--pk-muted); color: var(--pk-muted); }
+.pk .pk-btn--call { border-color: var(--pk-accent-2); color: var(--pk-accent-2); }
+.pk .pk-btn--raise { background: var(--pk-accent); border-color: var(--pk-accent); color: var(--pk-bg); }
+
+/* ---- lobby ---------------------------------------------- */
+.pk .pk-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 24px;
+  padding: 16px 0 20px; border-bottom: 3px solid var(--pk-rail-hi); }
+.pk .pk-head .pk-muted { flex-basis: 100%; order: 2; }
+.pk .pk-tabs { display: flex; gap: 8px; }
+.pk .pk-tab { font-family: var(--pk-font); font-size: 12px; text-transform: uppercase; background: none; color: var(--pk-muted);
+  border: 3px solid var(--pk-rail-hi); padding: 8px 14px; cursor: pointer; }
+.pk .pk-tab[aria-selected="true"] { color: var(--pk-accent); border-color: var(--pk-accent); }
+.pk .pk-panel { padding-top: 28px; }
+.pk .pk-lobby { display: grid; gap: 24px; }
+@media (min-width: 1024px) { .pk .pk-lobby { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.pk .pk-box { background: var(--pk-rail); border: 3px solid var(--pk-rail-hi); padding: 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+.pk .pk-speed { border: 0; margin: 0; padding: 0; display: flex; gap: 16px; font-size: 12px; }
+.pk .pk-speed legend { color: var(--pk-muted); margin-bottom: 8px; padding: 0; }
+.pk .pk-radio { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.pk .pk-radio input { accent-color: var(--pk-accent); }
+.pk .pk-empty-state { max-width: 60ch; display: flex; flex-direction: column; gap: 10px; }
+
+/* ---- table builder -------------------------------------- */
+.pk .pk-builder { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.pk .pk-builder__seats { list-style: none; margin: 0; padding: 0; width: 100%; display: grid; gap: 8px; }
+.pk .pk-builder__seat { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); align-items: center; gap: 12px; font-size: 12px; }
+.pk .pk-select { font-family: var(--pk-font); font-size: 12px; color: var(--pk-text); background: var(--pk-bg);
+  border: 3px solid var(--pk-rail-hi); padding: 6px 8px; }
+
+/* ---- motion --------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .pk *, .pk *::before, .pk *::after { animation: none !important; transition: none !important; }
+  .pk .pk-btn:hover:not(:disabled) { transform: none; }
+}

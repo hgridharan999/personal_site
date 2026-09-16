@@ -16,6 +16,7 @@ const SECTIONS = [
     items: [
       { name: 'Zetamac', desc: 'Arithmetic sprint · auto-advance · drills', to: '/me/zetamac' },
       { name: 'Optiver 80 in 8', desc: '80 questions · 8 minutes · +1 / −1', to: '/me/optiver' },
+      { name: 'Poker', desc: 'No-Limit Hold’em · 6-max · you vs. 5 bots', to: '/me/poker' },
     ],
   },
 ];

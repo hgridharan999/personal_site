@@ -21,6 +21,7 @@ import RequireAuth from './private/RequireAuth';
 // Trainer code is lazy-loaded: public visitors never download it.
 const TrainerPage = lazy(() => import('./private/trainers/TrainerPage'));
 const GameDetail = lazy(() => import('./private/trainers/stats/GameDetail'));
+const PokerLobbyPage = lazy(() => import('./private/trainers/poker/ui/lobby/PokerLobbyPage'));
 
 const privateFallback = (
   <PrivateShell className="prv-center">
@@ -54,6 +55,11 @@ function AnimatedRoutes() {
       {/* Private area — reached via the hidden link on the home page. */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/me" element={<RequireAuth>{({ logout }) => <PrivateHome onLogout={logout} />}</RequireAuth>} />
+      {/* Poker has its own pages; these must come before the generic /me/:trainer route. */}
+      <Route
+        path="/me/poker"
+        element={<RequireAuth>{() => <Suspense fallback={privateFallback}><PokerLobbyPage /></Suspense>}</RequireAuth>}
+      />
       <Route
         path="/me/:trainer"
         element={<RequireAuth>{() => <Suspense fallback={privateFallback}><TrainerPage /></Suspense>}</RequireAuth>}
