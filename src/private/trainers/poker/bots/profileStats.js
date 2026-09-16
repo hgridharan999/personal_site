@@ -2,25 +2,27 @@
 // The one definition of every PROFILE_STATS stat. Phase 4's GET profile imports this module.
 //
 // accumulateProfile(profile, heroSeat, events) folds ONE completed hand into a profile. `events` must be
-// the full log (every hole card) of a hand that reached street 'complete'; anything else, or a log in
-// which heroSeat was not dealt in, returns the profile unchanged. Each stat is a running mean of 0/1
-// observations; `n` counts opportunities. "Decision" means an `act` event by the hero, judged on the
-// state just before it. Preflop raise counts exclude the blinds.
+// the full log (every hole card) of a hand that reached street 'complete'. It never throws: anything else
+// (a hidden-card log from eventsFor, a malformed or incomplete log, a non-array, or a log in which heroSeat
+// was not dealt in) returns the profile unchanged. Each stat is a running mean of 0/1 observations; `n`
+// counts opportunities. "Decision" means an `act` event by the hero, judged on the state just before it.
+// Preflop raise counts exclude the blinds, and an all-in raise counts like any other raise (a shove over
+// one raise is a 3-bet).
 //
 // Stat            | Opportunity (at most once per hand unless noted)                        | Hit
 // vpip            | hero made at least one preflop decision                                  | hero called or raised preflop
 // pfr             | same as vpip                                                             | hero raised preflop
-// threeBet        | first hero preflop decision facing exactly one raise, made by someone else | hero raised
+// threeBet        | first hero preflop decision facing exactly one raise, made by someone else, with a raise allowed | hero raised
 // foldTo3Bet      | first hero preflop decision facing exactly two raises where hero made the first | hero folded
 // cbetFlop        | first hero flop decision with no flop bet yet, hero made the last preflop raise | hero bet
 // cbetTurn        | first hero turn decision with no turn bet yet, hero's flop c-bet opportunity was a bet and hero made the last flop bet or raise | hero bet
 // foldToCbetFlop  | first hero flop decision facing exactly one flop bet, made by the last preflop raiser (not hero) | hero folded
-// foldToCbetTurn  | first hero turn decision facing exactly one turn bet, made by the player who made the last preflop raise and the first flop bet (not hero) | hero folded
+// foldToCbetTurn  | first hero turn decision facing exactly one turn bet, made by the player who made the last preflop raise, the first flop bet and the last flop bet or raise (not hero) | hero folded
 // checkRaise      | per postflop street: first hero decision after hero checked on that street, facing a bet, with a raise allowed | hero raised
 // wtsd            | hero had not folded when the flop was dealt                             | hand went to showdown with hero not folded
-// wsd             | hand went to showdown with hero not folded                              | hero was awarded chips
-// aggFreq         | every hero postflop decision (not once per hand)                         | hero bet or raised
-// foldToRiverBet  | first hero river decision facing a bet (toCall > 0)                      | hero folded
+// wsd             | hand went to showdown with hero not folded                              | hero was awarded chips (any pot, including a split or a side pot)
+// aggFreq         | every hero postflop bet, raise, call or fold; checks excluded (HUD AFq)  | hero bet or raised
+// foldToRiverBet  | first hero river decision facing exactly one river bet (no raise)        | hero folded
 // riverBetFreq    | first hero river decision with no river bet yet                          | hero bet
 import { applyEvent, legalActions } from '../engine/handState.js';
 import { PROFILE_STATS } from './contract.js';
@@ -29,8 +31,9 @@ const isAggressive = (action) => action === 'bet' || action === 'raise';
 
 /** @returns {{ stat:string, hit:0|1 }[] | null} observations for one hand, or null if the hand does not count */
 export function handObservations(events, heroSeat) {
+  if (!Array.isArray(events)) return null;
   const start = events[0];
-  if (!start || start.type !== 'start' || !start.seats.some((s) => s.seat === heroSeat)) return null;
+  if (!start || start.type !== 'start' || !Array.isArray(start.seats) || !start.seats.some((s) => s?.seat === heroSeat)) return null;
 
   const obs = [];
   const seen = new Set();
@@ -65,12 +68,12 @@ export function handObservations(events, heroSeat) {
         preflopActed = true;
         if (action === 'call' || action === 'raise') vpip = true;
         if (action === 'raise') pfr = true;
-        if (pfRaisers.length === 1 && pfRaisers[0] !== heroSeat) observe('threeBet', action === 'raise');
+        if (pfRaisers.length === 1 && pfRaisers[0] !== heroSeat && legal.canRaise) observe('threeBet', action === 'raise');
         if (pfRaisers.length === 2 && pfRaisers[0] === heroSeat && pfRaisers[1] !== heroSeat) {
           observe('foldTo3Bet', action === 'fold');
         }
       } else {
-        observe('aggFreq', isAggressive(action), false);
+        if (action !== 'check') observe('aggFreq', isAggressive(action), false);
         const pfAggressor = pfRaisers[pfRaisers.length - 1];
         if (street === 'flop') {
           if (bets === 0 && pfAggressor === heroSeat && !seen.has('cbetFlop')) {
@@ -83,12 +86,13 @@ export function handObservations(events, heroSeat) {
         }
         if (street === 'turn') {
           if (bets === 0 && flopCbetWasBet && lastAggressor.flop === heroSeat) observe('cbetTurn', action === 'bet');
-          if (bets === 1 && pfAggressor !== heroSeat && firstBettor.turn === pfAggressor && firstBettor.flop === pfAggressor) {
+          const barrel = firstBettor.turn === pfAggressor && firstBettor.flop === pfAggressor && lastAggressor.flop === pfAggressor;
+          if (bets === 1 && pfAggressor !== heroSeat && barrel) {
             observe('foldToCbetTurn', action === 'fold');
           }
         }
         if (street === 'river') {
-          if (legal.toCall > 0) observe('foldToRiverBet', action === 'fold');
+          if (bets === 1 && legal.toCall > 0) observe('foldToRiverBet', action === 'fold');
           if (bets === 0) observe('riverBetFreq', action === 'bet');
         }
         const crKey = `checkRaise.${street}`;
@@ -125,14 +129,20 @@ export function handObservations(events, heroSeat) {
 }
 
 /**
- * Folds one completed hand into `profile` without mutating it.
+ * Folds one completed hand into `profile` without mutating it. Never throws: a log that does not count
+ * (see the header) returns `profile` itself.
  * @param {import('./contract.js').PlayerProfile} profile
  * @param {number} heroSeat
  * @param {object[]} events full event log of one completed hand
  * @returns {import('./contract.js').PlayerProfile}
  */
 export function accumulateProfile(profile, heroSeat, events) {
-  const obs = handObservations(events, heroSeat);
+  let obs;
+  try {
+    obs = handObservations(events, heroSeat); // replaying a hidden-card or malformed log throws EngineError
+  } catch {
+    return profile;
+  }
   if (!obs) return profile;
   const stats = {};
   for (const key of PROFILE_STATS) stats[key] = { ...(profile.stats[key] ?? { value: null, n: 0 }) };
