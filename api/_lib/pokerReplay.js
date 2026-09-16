@@ -24,6 +24,13 @@ export function replayHandRecord(record) {
   if (seatStacks(start.seats) !== seatStacks(record.startStacks)) return { error: 'startStacks do not match the start event' };
   const hero = state.players.find((p) => p.seat === record.heroSeat);
   if (!hero) return { error: 'heroSeat is not seated in this hand' };
+  const seatedBots = new Set(start.seats.map((s) => s.seat).filter((seat) => seat !== record.heroSeat));
+  const lineupSeats = record.lineup.map((entry) => entry.seat);
+  const lineupSet = new Set(lineupSeats);
+  const lineupMatches = lineupSet.size === lineupSeats.length
+    && lineupSet.size === seatedBots.size
+    && [...lineupSet].every((seat) => seatedBots.has(seat));
+  if (!lineupMatches) return { error: 'lineup does not match the seated bots' };
   if (record.heroNet !== state.result.net[record.heroSeat]) return { error: 'heroNet does not match the replayed result' };
   const pot = state.players.reduce((sum, p) => sum + p.total, 0);
   if (record.pot !== pot) return { error: 'pot does not match the replayed contributions' };

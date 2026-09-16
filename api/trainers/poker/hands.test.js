@@ -16,7 +16,7 @@ async function call(sql, options) {
   return res;
 }
 
-function db({ sessions = [{ id: POKER_SESSION_ID }], inserted = 1 } = {}) {
+function db({ sessions = [{ id: POKER_SESSION_ID, heroSeat: 0 }], inserted = 1 } = {}) {
   return mockSql((text) => {
     if (text.includes('jsonb_array_elements_text')) return sessions;
     if (text.includes('WITH ins AS')) return [{ inserted }];
@@ -64,6 +64,26 @@ describe('api/trainers/poker/hands', () => {
     expect(res.statusCode).toBe(409);
     expect(res.body.details).toEqual({ sessionIds: [OTHER_SESSION_ID] });
     expect(JSON.parse(sql.queries[0].values[0])).toEqual([POKER_SESSION_ID, OTHER_SESSION_ID]);
+  });
+
+  it('409 HERO_SEAT_MISMATCH before inserting anything, when a hand disagrees with the session seat', async () => {
+    const sql = db({ sessions: [{ id: POKER_SESSION_ID, heroSeat: 3 }] });
+    const hand = pokerHandRecord();
+    const res = await call(sql, { method: 'POST', body: { hands: [{ hand }] } });
+    expect(res.statusCode).toBe(409);
+    expect(res.body).toEqual({
+      error: "heroSeat does not match the session's hero seat",
+      code: 'HERO_SEAT_MISMATCH',
+      details: { handIds: [hand.id] },
+    });
+    expect(sql.queries).toHaveLength(1);
+  });
+
+  it('behaves as before when heroSeat matches the session', async () => {
+    const sql = db({ sessions: [{ id: POKER_SESSION_ID, heroSeat: 0 }] });
+    const res = await call(sql, { method: 'POST', body: { hands: [{ hand: pokerHandRecord() }] } });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ saved: true, inserted: 1, duplicate: 0 });
   });
 
   it('inserts hands, decisions and session totals in one statement', async () => {

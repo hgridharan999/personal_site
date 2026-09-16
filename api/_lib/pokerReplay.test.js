@@ -49,6 +49,24 @@ describe('replayHandRecord', () => {
     expect(replayHandRecord(record)).toEqual({ error: 'heroSeat is not seated in this hand' });
   });
 
+  it('rejects a lineup with a seat that is not seated', () => {
+    const record = pokerHandRecord({ seatIds: [0, 1, 2, 3, 4], heroSeat: 0 });
+    record.lineup[0] = { ...record.lineup[0], seat: 5 };
+    expect(replayHandRecord(record)).toEqual({ error: 'lineup does not match the seated bots' });
+  });
+
+  it('rejects a lineup missing a seated bot', () => {
+    const record = pokerHandRecord({ seatIds: [0, 1, 2, 3, 4], heroSeat: 0 });
+    record.lineup.pop();
+    expect(replayHandRecord(record)).toEqual({ error: 'lineup does not match the seated bots' });
+  });
+
+  it('rejects a lineup that contains the hero seat', () => {
+    const record = pokerHandRecord({ heroSeat: 0 });
+    record.lineup[0] = { ...record.lineup[0], seat: record.heroSeat };
+    expect(replayHandRecord(record)).toEqual({ error: 'lineup does not match the seated bots' });
+  });
+
   it('never throws on logs that cannot be replayed', () => {
     const record = pokerHandRecord();
     expect(replayHandRecord({ ...record, events: [] })).toEqual({ error: 'events do not describe a complete hand' });

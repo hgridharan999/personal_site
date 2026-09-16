@@ -63,11 +63,21 @@ async function save(sql, req, res) {
   // so the outbox retries it once the session is saved.
   const sessionIds = [...new Set(hands.map((item) => item.hand.sessionId))];
   const found = await sql`
-    SELECT id FROM poker_sessions
+    SELECT id, hero_seat AS "heroSeat" FROM poker_sessions
     WHERE id IN (SELECT value::uuid FROM jsonb_array_elements_text(${JSON.stringify(sessionIds)}::jsonb))`;
   const known = new Set(found.map((r) => r.id));
   const missing = sessionIds.filter((id) => !known.has(id));
   if (missing.length > 0) return sendSessionNotFound(res, missing);
+
+  // A hand's heroSeat must match the seat the session was opened with; the table doesn't
+  // change seats mid-session.
+  const heroSeatBySession = new Map(found.map((r) => [r.id, r.heroSeat]));
+  const mismatched = hands
+    .filter((item) => item.hand.heroSeat !== heroSeatBySession.get(item.hand.sessionId))
+    .map((item) => item.hand.id);
+  if (mismatched.length > 0) {
+    return sendError(res, 409, 'HERO_SEAT_MISMATCH', "heroSeat does not match the session's hero seat", { handIds: mismatched });
+  }
 
   // One statement, so it is atomic. Conflicts on id or (session_id, hand_no) insert nothing,
   // and decisions and session totals only follow the hands this statement actually inserted.
