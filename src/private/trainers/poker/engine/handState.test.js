@@ -144,10 +144,82 @@ describe('hand state', () => {
     expect(s.players.map((p) => p.stack)).toEqual([200, 199, 201]);
   });
 
-  it('posts a short blind all-in', () => {
+  it('posts a short big blind all-in', () => {
     const s = setup([200, 1, 200], HOLES6.slice(0, 3));
     expect(s.players[1]).toMatchObject({ stack: 0, allIn: true, committed: 1 });
     expect(s.toAct).toBe(0);
+  });
+
+  it('does not force action on a short all-in big blind when nobody else can respond (heads-up)', () => {
+    let s = applyEvent(null, {
+      type: 'start',
+      seats: [{ seat: 0, stack: 200 }, { seat: 1, stack: 1 }],
+      button: 0,
+      sb: 1,
+      bb: 2,
+    });
+    s = applyEvent(s, { type: 'hole', seat: 0, cards: parseCards('AhAd') });
+    s = applyEvent(s, { type: 'hole', seat: 1, cards: parseCards('KhKd') });
+    expect(s.toAct).toBeNull();
+    expect(s.street).toBe('flop');
+    expect(s.needsBoard).toBe('flop');
+    s = board(s, '2c7s9d');
+    s = board(s, 'Ts');
+    s = board(s, '3c');
+    expect(s.street).toBe('complete');
+    expect(stackSum(s)).toBe(201);
+  });
+
+  it('does not force action on a short all-in big blind when nobody else can respond (3-handed)', () => {
+    let s = setup([200, 200, 1], HOLES6.slice(0, 3));
+    s = act(s, 0, 'fold');
+    expect(s.toAct).toBeNull();
+    expect(s.needsBoard).toBe('flop');
+  });
+
+  it('still requires the full big blind multi-way even with a short all-in blind', () => {
+    const s = setup([200, 200, 1], HOLES6.slice(0, 3));
+    expect(legalActions(s)).toMatchObject({ seat: 0, toCall: 2 });
+  });
+
+  it('rejects malformed events with BAD_EVENT instead of throwing a raw TypeError', () => {
+    expect(codeOf(() => applyEvent(null, null))).toBe('BAD_EVENT');
+    expect(codeOf(() => applyEvent(null, undefined))).toBe('BAD_EVENT');
+    expect(codeOf(() => applyEvent(null, 'nope'))).toBe('BAD_EVENT');
+    const s = setup([200, 200], ['AhAd', 'KhKd']);
+    expect(codeOf(() => applyEvent(s, null))).toBe('BAD_EVENT');
+    expect(codeOf(() => applyEvent(s, undefined))).toBe('BAD_EVENT');
+    expect(codeOf(() => applyEvent(null, {
+      type: 'start',
+      button: 0,
+      sb: 1,
+      bb: 2,
+      seats: [{ seat: 0, stack: 200 }, null],
+    }))).toBe('BAD_EVENT');
+  });
+
+  it('rejects an amount on fold, check or call', () => {
+    let s = setup([200, 200], ['AhAd', 'KhKd']);
+    expect(codeOf(() => applyEvent(s, { type: 'act', seat: 0, action: 'call', amount: 1 }))).toBe('BAD_AMOUNT');
+    expect(codeOf(() => applyEvent(s, { type: 'act', seat: 0, action: 'fold', amount: 0 }))).toBe('BAD_AMOUNT');
+    s = act(s, 0, 'call');
+    expect(codeOf(() => applyEvent(s, { type: 'act', seat: 1, action: 'check', amount: 1 }))).toBe('BAD_AMOUNT');
+  });
+
+  it('returns uncalled chips when a street closes on an all-in call', () => {
+    let s = setup([200, 50], ['AhAd', 'KhKd']);
+    s = act(s, 0, 'raise', 200);
+    s = act(s, 1, 'call');
+    expect(s.needsBoard).toBe('flop');
+    expect(s.players[0].stack).toBe(150);
+    expect(s.players[0].total).toBe(50);
+  });
+
+  it('rejects a board card that duplicates a hole card', () => {
+    let s = setup([200, 200], ['AhAd', 'KhKd']);
+    s = act(s, 0, 'call');
+    s = act(s, 1, 'check');
+    expect(codeOf(() => board(s, 'Ah7s9d'))).toBe('DUPLICATE_CARD');
   });
 
   it('rejects illegal events with codes', () => {

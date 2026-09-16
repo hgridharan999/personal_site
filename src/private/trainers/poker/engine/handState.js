@@ -36,6 +36,9 @@ export function reduceHand(events) {
 
 /** Returns a new state; never mutates `state`. */
 export function applyEvent(state, event) {
+  if (!event || typeof event !== 'object' || typeof event.type !== 'string') {
+    fail('BAD_EVENT', 'event must be an object with a string type');
+  }
   if (event.type === 'start') {
     if (state) fail('BAD_EVENT', 'start must be the first event');
     return startHand(event);
@@ -55,15 +58,28 @@ export function legalActions(s) {
   const p = playerAt(s, s.toAct);
   const maxRaiseTo = p.committed + p.stack;
   const othersCanRespond = s.players.some((q) => q !== p && !q.folded && !q.allIn);
+  const match = amountToMatch(s, p);
   return {
     seat: p.seat,
-    canCheck: s.currentBet <= p.committed,
-    toCall: Math.min(Math.max(s.currentBet - p.committed, 0), p.stack),
+    canCheck: match <= p.committed,
+    toCall: Math.min(Math.max(match - p.committed, 0), p.stack),
     canRaise: !p.acted && othersCanRespond && maxRaiseTo > s.currentBet,
     raiseKind: s.currentBet === 0 ? 'bet' : 'raise',
     minRaiseTo: Math.min(s.currentBet + s.minRaise, maxRaiseTo),
     maxRaiseTo,
   };
+}
+
+// The amount `p` must match to continue. Normally `s.currentBet`, but if no
+// other live player could still put in more chips (all remaining opponents
+// are folded or all-in), a short all-in blind/bet cannot force real action:
+// the amount to match is capped at the highest commitment among the others.
+function amountToMatch(s, p) {
+  const others = s.players.filter((q) => q !== p && !q.folded);
+  const someoneCanRespond = others.some((q) => !q.allIn);
+  if (someoneCanRespond) return s.currentBet;
+  const highestOther = others.reduce((max, q) => Math.max(max, q.committed), 0);
+  return Math.min(s.currentBet, highestOther);
 }
 
 /** Seats clockwise starting left of the button. */
@@ -74,6 +90,7 @@ export function seatsFromButton(s) {
 
 function startHand({ seats, button, sb, bb }) {
   if (!Array.isArray(seats) || seats.length < 2 || seats.length > MAX_SEATS) fail('BAD_EVENT', 'need 2-6 seats');
+  if (seats.some((x) => !x || typeof x !== 'object')) fail('BAD_EVENT', 'seats must be objects');
   const ids = seats.map((x) => x.seat);
   if (new Set(ids).size !== ids.length || ids.some((x) => !Number.isInteger(x) || x < 0 || x >= MAX_SEATS)) {
     fail('BAD_EVENT', 'seats must be distinct integers 0-5');
@@ -142,7 +159,7 @@ function dealBoard(s, { cards }) {
 
 function needsToAct(s, p) {
   if (p.folded || p.allIn) return false;
-  if (p.committed < s.currentBet) return true;
+  if (p.committed < amountToMatch(s, p)) return true;
   if (p.acted) return false;
   return s.players.some((q) => q !== p && !q.folded && !q.allIn);
 }
@@ -166,6 +183,9 @@ function beginAction(s, afterSeat) {
 function act(s, { seat, action, amount }) {
   if (s.toAct === null) fail('HAND_NOT_READY', 'no action expected now');
   if (seat !== s.toAct) fail('NOT_YOUR_TURN', `seat ${s.toAct} is to act`);
+  if ((action === 'fold' || action === 'check' || action === 'call') && amount !== undefined) {
+    fail('BAD_AMOUNT', `${action} does not take an amount`);
+  }
   const legal = legalActions(s);
   const p = playerAt(s, seat);
   if (action === 'fold') {
