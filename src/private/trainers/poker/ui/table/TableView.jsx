@@ -6,16 +6,27 @@ import Board from './Board';
 import { seatViews, tableCenter, streetKey, chipsToCollect } from '../../lib/tableView.js';
 import './table.css';
 
-// Bets swept off the table when a street closes; each flies to the pot and is removed when its animation ends.
+// Bets swept off the table when a street closes; each flies to the pot and is removed when its
+// animation ends. Chips from an earlier sweep that are still in flight are kept, not replaced, so
+// they aren't unmounted mid-animation. Under reduced motion the pk-fly animation is disabled in CSS,
+// so onAnimationEnd never fires there: those chips are cleared right away instead of piling up.
 function useFlyingChips(key, seats) {
   const prev = useRef(null);
   const [flying, setFlying] = useState([]);
+  const landed = useCallback((id) => setFlying((list) => list.filter((chip) => chip.id !== id)), []);
   useEffect(() => {
     const swept = chipsToCollect(prev.current, { key, seats });
     prev.current = { key, seats };
-    if (swept.length > 0) setFlying(swept.map((chip) => ({ ...chip, id: `${key}-${chip.slot}` })));
+    if (swept.length === 0) return undefined;
+    const newChips = swept.map((chip) => ({ ...chip, id: `${key}-${chip.slot}` }));
+    setFlying((current) => [...current, ...newChips]);
+    const reducedMotion = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reducedMotion) return undefined;
+    const newIds = new Set(newChips.map((chip) => chip.id));
+    const timer = setTimeout(() => setFlying((current) => current.filter((chip) => !newIds.has(chip.id))), 0);
+    return () => clearTimeout(timer);
   }, [key, seats]);
-  const landed = useCallback((id) => setFlying((list) => list.filter((chip) => chip.id !== id)), []);
   return [flying, landed];
 }
 

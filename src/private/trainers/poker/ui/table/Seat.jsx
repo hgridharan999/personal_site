@@ -19,11 +19,12 @@ function cardSize(isHero, card) {
   return card === null ? 'mini' : 'board';
 }
 
-function seatLabel({ name, stack, allIn, folded, isButton }) {
+function seatLabel({ name, stack, allIn, folded, isButton, isActive }) {
   const parts = [name, `${formatBb(stack)} BB`];
   if (allIn) parts.push('all-in');
   if (folded) parts.push('folded');
   if (isButton) parts.push('dealer');
+  if (isActive) parts.push('to act');
   return parts.join(', ');
 }
 

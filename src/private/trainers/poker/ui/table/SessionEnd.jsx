@@ -6,7 +6,7 @@ import { formatNetBb } from '../../lib/format.js';
 
 /** Shown after getting up: totals and the opponents' hidden style labels. */
 export default function SessionEnd({ session }) {
-  const { hands, net, rebuys } = sessionSummary(session, session.startedAt);
+  const { hands, net, rebuys } = sessionSummary(session, new Date().toISOString());
   const bots = session.seats.filter((s) => s.kind === 'bot').map((s) => getPersona(s.personaId));
 
   return (
