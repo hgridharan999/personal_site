@@ -1,14 +1,15 @@
 // src/private/trainers/poker/bots/texture.js
 // Board texture and draw detection.
-import { evaluate } from '../engine/evaluator.js';
+import { evaluate, categoryOf } from '../engine/evaluator.js';
 import { COMBO_COUNT, COMBO_CARDS } from './handClass.js';
 
 const WHEEL_ACE = 13; // rank bit 13 stands for an ace playing low
+const WHEEL_ACE_BIT = 1 << WHEEL_ACE;
 
 function rankMask(cards) {
   let mask = 0;
   for (const c of cards) mask |= 1 << (c >> 2);
-  if (mask & (1 << 12)) mask |= 1 << WHEEL_ACE;
+  if (mask & (1 << 12)) mask |= WHEEL_ACE_BIT;
   return mask;
 }
 
@@ -20,6 +21,24 @@ const bits = (x) => {
 
 // 5-rank windows, lowest = A2345 (bits 13,0,1,2,3) ... highest = TJQKA.
 const WINDOWS = [(1 << WHEEL_ACE) | 0b1111, ...Array.from({ length: 9 }, (_, i) => 0b11111 << i)];
+
+/**
+ * Distinct ranks that would complete a straight in `mask` (the combined hole+board rank mask), requiring
+ * at least one card outside `boardOnly` to contribute to the 5-rank window (excludes windows the board
+ * completes by itself). A single missing rank can close more than one overlapping window; it still counts
+ * once, so a hand needing only that one rank is a gutshot even when two windows are one card short.
+ * @returns {Set<number>} missing rank bits (the wheel ace bit is normalized to the ace bit)
+ */
+function completingRanks(mask, boardOnly) {
+  const out = new Set();
+  for (const w of WINDOWS) {
+    if (bits(mask & w) === 4 && bits(boardOnly & w) < 4) {
+      const missing = w & ~mask;
+      out.add(missing === WHEEL_ACE_BIT ? 1 << 12 : missing);
+    }
+  }
+  return out;
+}
 
 /**
  * @param {number[]} board 3-5 cards
@@ -53,16 +72,14 @@ export function boardTexture(board) {
  * @returns {{ category:number, flushDraw:boolean, straightDraw:'oesd'|'gutshot'|null }}
  */
 export function handFeatures(hole, board) {
-  const category = evaluate([...hole, ...board]) >> 20;
+  const category = categoryOf(evaluate([...hole, ...board]));
   if (board.length >= 5 || category >= 4) return { category, flushDraw: false, straightDraw: null };
   const suitCount = (cards, suit) => cards.filter((c) => (c & 3) === suit).length;
   const flushDraw = hole.some((h) => suitCount([...hole, ...board], h & 3) === 4 && suitCount(board, h & 3) < 4);
   const all = rankMask([...hole, ...board]);
   const boardOnly = rankMask(board);
-  const drawWindows = WINDOWS.filter((w) => bits(all & w) === 4 && bits(boardOnly & w) < 4);
-  let straightDraw = null;
-  if (drawWindows.length >= 2) straightDraw = 'oesd';
-  else if (drawWindows.length === 1) straightDraw = 'gutshot';
+  const drawRanks = completingRanks(all, boardOnly);
+  const straightDraw = drawRanks.size >= 2 ? 'oesd' : drawRanks.size === 1 ? 'gutshot' : null;
   return { category, flushDraw, straightDraw };
 }
 
@@ -86,15 +103,10 @@ export function comboDraws(board) {
     if (onBoard[a] || onBoard[b]) continue;
     const flushDraw = (a & 3) === (b & 3) ? suits[a & 3] === 2 : suits[a & 3] === 3 || suits[b & 3] === 3;
     let mask = boardMask | (1 << (a >> 2)) | (1 << (b >> 2));
-    if (mask & (1 << 12)) mask |= 1 << WHEEL_ACE;
-    let draws = 0;
-    let made = false;
-    for (const w of WINDOWS) {
-      const n = bits(mask & w);
-      if (n === 5) made = true;
-      else if (n === 4 && bits(boardMask & w) < 4) draws += 1;
-    }
-    out[i] = flushDraw || (!made && draws >= 2) ? 1 : 0;
+    if (mask & (1 << 12)) mask |= WHEEL_ACE_BIT;
+    const made = WINDOWS.some((w) => bits(mask & w) === 5);
+    const drawRanks = completingRanks(mask, boardMask);
+    out[i] = flushDraw || (!made && drawRanks.size >= 2) ? 1 : 0;
   }
   return out;
 }
