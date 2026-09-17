@@ -225,9 +225,13 @@ async function saveGrades(sql, req, res) {
       ORDER BY id FOR UPDATE`,
     sql`
       WITH input AS (
+        -- hero_allin_ev is rounded to the same numeric(10,2) as poker_hands.hero_allin_ev right here,
+        -- so target.new_ev below already matches what hand_ev stores; the session_adj delta is then
+        -- exactly the sum of the per-hand changes, never off by the last-digit rounding an unbounded
+        -- scale numeric column would let through.
         SELECT g.hand_id, g.analysis_version, g.hero_allin_ev, g.decisions
         FROM jsonb_to_recordset(${JSON.stringify(rows)}::jsonb)
-          AS g(hand_id uuid, analysis_version int, hero_allin_ev numeric, decisions jsonb)
+          AS g(hand_id uuid, analysis_version int, hero_allin_ev numeric(10,2), decisions jsonb)
       ), target AS (
         SELECT h.id, h.session_id, h.hero_net, h.hero_allin_ev AS old_ev, i.hero_allin_ev AS new_ev, i.decisions
         FROM input i JOIN poker_hands h ON h.id = i.hand_id
@@ -258,11 +262,17 @@ async function saveGrades(sql, req, res) {
       ), hand_ev AS (
         UPDATE poker_hands h SET hero_allin_ev = t.new_ev FROM target t WHERE h.id = t.id RETURNING h.id
       ), session_adj AS (
+        -- One batch can touch hands from more than one session; ORDER BY session_id below locks
+        -- those sessions in id order so this UPDATE can't deadlock against another concurrent
+        -- re-grade batch that locks the same two sessions in the opposite order. Unlikely in
+        -- practice, since the UI always lists ungraded hands (and so builds a batch) for one
+        -- session at a time, but the ORDER BY is free insurance.
         UPDATE poker_sessions s
         SET allin_adj_net = s.allin_adj_net + x.delta
         FROM (
           SELECT session_id, sum(COALESCE(new_ev, hero_net) - COALESCE(old_ev, hero_net)) AS delta
           FROM target GROUP BY session_id
+          ORDER BY session_id
         ) x
         WHERE s.id = x.session_id
         RETURNING s.id

@@ -324,11 +324,13 @@ describe('PATCH /api/trainers/poker/hands (re-grade)', () => {
     const [lock, upsert] = sql.transactions[0];
     expect(lock.text).toContain('ORDER BY id FOR UPDATE');
     for (const fragment of [
+      'hero_allin_ev numeric(10,2)',
       'COALESCE((SELECT max(d.analysis_version) FROM poker_decisions d WHERE d.hand_id = h.id), 0) < i.analysis_version',
       'DELETE FROM poker_decisions d USING target t',
       'ON CONFLICT (hand_id, idx) DO UPDATE SET',
       'UPDATE poker_hands h SET hero_allin_ev = t.new_ev',
       'sum(COALESCE(new_ev, hero_net) - COALESCE(old_ev, hero_net))',
+      'ORDER BY session_id',
       'UPDATE poker_sessions s',
     ]) {
       expect(upsert.text).toContain(fragment);

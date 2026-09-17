@@ -21,6 +21,7 @@ async function call(handler, options) {
 describe.skipIf(!RUN)('poker persistence against a real database', () => {
   const sessionId = randomUUID();
   const openSessionId = randomUUID();
+  const regradeSessionId = randomUUID();
   const sessions = createPokerSessionsHandler({ auth });
   const hands = createPokerHandsHandler({ auth });
 
@@ -30,8 +31,16 @@ describe.skipIf(!RUN)('poker persistence against a real database', () => {
   const second = pokerHandRecord({ id: randomUUID(), sessionId, handNo: 2, seed: 99, button: 1 });
   const batch = { hands: [{ hand: first, decisions: [heroDecision(first)] }, { hand: second }] };
 
+  // Its own session so the GET-one-hand, ungraded-paging and re-grade cases below don't depend
+  // on the exact hand/handNo state the earlier tests in this file leave behind.
+  const h1 = findHandRecord(heroActed, { id: randomUUID(), sessionId: regradeSessionId, handNo: 1 });
+  const h2 = findHandRecord(heroActed, { id: randomUUID(), sessionId: regradeSessionId, handNo: 2 });
+  const h3 = findHandRecord(heroActed, { id: randomUUID(), sessionId: regradeSessionId, handNo: 3 });
+  const roundA = findHandRecord(heroActed, { id: randomUUID(), sessionId: regradeSessionId, handNo: 4 });
+  const roundB = findHandRecord(heroActed, { id: randomUUID(), sessionId: regradeSessionId, handNo: 5 });
+
   afterAll(async () => {
-    await getSql()`DELETE FROM poker_sessions WHERE id IN (${sessionId}, ${openSessionId})`;
+    await getSql()`DELETE FROM poker_sessions WHERE id IN (${sessionId}, ${openSessionId}, ${regradeSessionId})`;
   });
 
   it('saves, deduplicates, totals, closes and reads back a session', async () => {
@@ -150,5 +159,113 @@ describe.skipIf(!RUN)('poker persistence against a real database', () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.hands).toBeGreaterThanOrEqual(0);
     expect(typeof res.body.profile.hands).toBe('number');
+  });
+
+  it('opens a second session for the GET-one-hand, ungraded-paging and re-grade cases below', async () => {
+    const res = await call(sessions, { method: 'POST', body: pokerSessionBody({ id: regradeSessionId }) });
+    expect(res.body).toEqual({ id: regradeSessionId, saved: true, duplicate: false });
+    for (const hand of [h1, h2, h3, roundA, roundB]) {
+      const saved = await call(hands, { method: 'POST', body: { hands: [{ hand }] } });
+      expect(saved.body.inserted).toBe(1);
+    }
+  });
+
+  it('GET one hand returns its prev/next neighbours within the same session', async () => {
+    const mid = await call(hands, { query: { id: h2.id } });
+    expect(mid.statusCode).toBe(200);
+    expect(mid.body.hand.prevHandId).toBe(h1.id);
+    expect(mid.body.hand.nextHandId).toBe(h3.id);
+
+    const firstHand = await call(hands, { query: { id: h1.id } });
+    expect(firstHand.body.hand.prevHandId).toBeNull();
+    // roundA (handNo 4) is also stored in this session, so h3's neighbour is roundA, not null.
+    const lastHand = await call(hands, { query: { id: h3.id } });
+    expect(lastHand.body.hand.nextHandId).toBe(roundA.id);
+  });
+
+  it('GET ungraded pages hands after a cursor', async () => {
+    const page1 = await call(hands, { query: { ungraded: '1', sessionId: regradeSessionId, belowVersion: '1', limit: '2' } });
+    expect(page1.body.hands.map((h) => h.handNo)).toEqual([1, 2]);
+    expect(page1.body.nextAfterHandNo).toBe(2);
+
+    const page2 = await call(hands, {
+      query: { ungraded: '1', sessionId: regradeSessionId, belowVersion: '1', afterHandNo: '2', limit: '2' },
+    });
+    expect(page2.body.hands.map((h) => h.handNo)).toEqual([3, 4]);
+    expect(page2.body.nextAfterHandNo).toBe(4);
+
+    const page3 = await call(hands, {
+      query: { ungraded: '1', sessionId: regradeSessionId, belowVersion: '1', afterHandNo: '4', limit: '2' },
+    });
+    expect(page3.body.hands.map((h) => h.handNo)).toEqual([5]);
+    expect(page3.body.nextAfterHandNo).toBeNull();
+  });
+
+  it('re-grades a stored hand once per higher analysis version; equal or lower versions are skipped', async () => {
+    const before = await call(sessions, { query: { id: regradeSessionId } });
+    const startAdj = before.body.session.allinAdjNet;
+    const grade = (hand, version, heroAllinEv) => ({
+      grades: [{ handId: hand.id, analysisVersion: version, decisions: [heroDecision(hand, { analysisVersion: version })], heroAllinEv }],
+    });
+
+    let res = await call(hands, { method: 'PATCH', body: grade(h1, 1, h1.heroNet + 10) });
+    expect(res.body).toEqual({ updated: [h1.id], skipped: [], missing: [] });
+
+    // Re-running the exact same batch (same analysisVersion already stored) is a no-op, even
+    // though heroAllinEv differs: the delta must not be counted twice.
+    res = await call(hands, { method: 'PATCH', body: grade(h1, 1, h1.heroNet + 99) });
+    expect(res.body).toEqual({ updated: [], skipped: [h1.id], missing: [] });
+
+    // A strictly higher version updates again, moving allin_adj_net by only this new delta.
+    res = await call(hands, { method: 'PATCH', body: grade(h1, 2, h1.heroNet + 4) });
+    expect(res.body.updated).toEqual([h1.id]);
+
+    // A version lower than what is now stored (2) is skipped too.
+    res = await call(hands, { method: 'PATCH', body: grade(h1, 1, h1.heroNet + 500) });
+    expect(res.body).toEqual({ updated: [], skipped: [h1.id], missing: [] });
+
+    const after = await call(sessions, { query: { id: regradeSessionId } });
+    expect(after.body.session.allinAdjNet).toBeCloseTo(startAdj + 4, 2);
+    const one = await call(hands, { query: { id: h1.id } });
+    expect(one.body.hand.heroAllinEv).toBeCloseTo(h1.heroNet + 4, 2);
+    expect(one.body.decisions.map((d) => d.analysisVersion)).toEqual([2]);
+
+    const ungraded = await call(hands, { query: { ungraded: '1', sessionId: regradeSessionId, belowVersion: '2' } });
+    expect(ungraded.body.hands.map((h) => h.id)).not.toContain(h1.id);
+  });
+
+  it('rounds hero_allin_ev to 2 decimals before it feeds the allin_adj_net delta, so the session total matches the stored hands', async () => {
+    const before = await call(sessions, { query: { id: regradeSessionId } });
+    const startAdj = before.body.session.allinAdjNet;
+
+    // 0.004 rounds to 0.00 on each hand; summing the *unrounded* 0.004s first (0.008) would round
+    // to 0.01 once added to the numeric(12,2) session column instead, so this only passes when
+    // hero_allin_ev is rounded per-hand before it feeds the delta.
+    const res = await call(hands, {
+      method: 'PATCH',
+      body: {
+        grades: [roundA, roundB].map((hand) => ({
+          handId: hand.id,
+          analysisVersion: 1,
+          decisions: [heroDecision(hand, { analysisVersion: 1 })],
+          heroAllinEv: 0.004,
+        })),
+      },
+    });
+    // The upsert orders `updated` by hand id, not input order, so compare as a set.
+    expect(res.body.skipped).toEqual([]);
+    expect(res.body.missing).toEqual([]);
+    expect(res.body.updated.slice().sort()).toEqual([roundA.id, roundB.id].sort());
+
+    const [oneA, oneB] = await Promise.all([
+      call(hands, { query: { id: roundA.id } }),
+      call(hands, { query: { id: roundB.id } }),
+    ]);
+    expect(oneA.body.hand.heroAllinEv).toBeCloseTo(0, 2);
+    expect(oneB.body.hand.heroAllinEv).toBeCloseTo(0, 2);
+
+    const after = await call(sessions, { query: { id: regradeSessionId } });
+    const expectedDelta = (0 - roundA.heroNet) + (0 - roundB.heroNet);
+    expect(after.body.session.allinAdjNet).toBeCloseTo(startAdj + expectedDelta, 2);
   });
 });
