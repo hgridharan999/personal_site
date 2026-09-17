@@ -1,9 +1,10 @@
 // src/private/trainers/poker/lib/useTableSession.js
 // React binding for the table driver: owns the BotRunner and driver for one mounted table.
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { createLocalRunner } from '../bots/runner.js';
-import { BOT_VERSION } from '../bots/index.js';
+import { BOT_VERSION } from '../bots/version.js';
 import { listPersonas } from '../bots/personas.js';
+import { createWorkerRunner } from '../worker/workerClient.js';
+import { createFallbackRunner } from './fallbackRunner.js';
 import { createSession } from './tableCore.js';
 import { createTableDriver, realScheduler } from './tableDriver.js';
 import { foldHandIntoProfile } from './profile.js';
@@ -24,7 +25,12 @@ export function useTableSession({ id, config, profile, onSessionStart, onHandCom
   callbacks.current = { onSessionStart, onHandComplete, onSessionEnd };
 
   useEffect(() => {
-    const runner = createLocalRunner({ rng: Math.random });
+    // Bots decide in a Web Worker. If it cannot start or breaks, the rest of the session decides on the
+    // main thread; that code is imported only then, so the table chunk stays free of brains and chart data.
+    const runner = createFallbackRunner({
+      createPrimary: () => createWorkerRunner(),
+      loadFallback: () => import('../bots/runner.js').then(({ createLocalRunner }) => createLocalRunner({ rng: Math.random })),
+    });
     const initial = createSession({
       id, tableMode: config.tableMode, lineup: config.lineup, startedAt: new Date().toISOString(),
     });
