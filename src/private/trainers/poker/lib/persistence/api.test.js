@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   openPokerSession, closePokerSession, savePokerHands, getPokerSession, listOpenPokerSessions, getPokerProfile,
   getPokerSessionPage, listRecentPokerSessions, getPokerHand, listUngradedPokerHands, savePokerHandGrades,
+  getPokerStats, getPokerSpotHands,
 } from './api.js';
 
 describe('poker persistence api', () => {
@@ -38,6 +39,16 @@ describe('poker persistence api', () => {
       ['/api/trainers/poker/hands?id=h%201', 'GET', undefined],
       ['/api/trainers/poker/hands?ungraded=1&sessionId=s1&belowVersion=1&afterHandNo=9&limit=10', 'GET', undefined],
       ['/api/trainers/poker/hands', 'PATCH', '{"grades":[]}'],
+    ]);
+  });
+
+  it('calls the stats endpoints', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({}) }));
+    await getPokerStats({ fetchImpl });
+    await getPokerSpotHands('river.facing_bet.oop', { fetchImpl });
+    expect(fetchImpl.mock.calls.map(([url, init]) => [url, init.method])).toEqual([
+      ['/api/trainers/poker/stats', 'GET'],
+      ['/api/trainers/poker/stats?spot=river.facing_bet.oop', 'GET'],
     ]);
   });
 });

@@ -16,6 +16,7 @@ export const MAX_STACK = 1_000_000;
 export const MAX_POT = 6 * MAX_STACK;
 export const MAX_HAND_NO = 100_000;
 export const MAX_RECOMMENDED_CHARS = 2000;
+export const SPOT_PATTERN = /^[a-z0-9_.]{1,64}$/;
 
 export const MIN_YEAR = 2000;
 export const MAX_YEAR = 2100;
@@ -94,7 +95,7 @@ export const decision = z.object({
   idx: z.int().min(0).max(MAX_HAND_EVENTS - 1),
   street: z.enum(STREETS),
   position: z.enum(POSITIONS),
-  spot: freeText(1, 64).regex(/^[a-z0-9_.]+$/),
+  spot: freeText(1, 64).regex(SPOT_PATTERN),
   action: z.enum(POKER_ACTIONS),
   size: stack.nullable(),
   pot: z.int().min(0).max(MAX_POT),
@@ -209,3 +210,6 @@ export const handGradesBatch = z
 // GET sessions?id=&afterHandNo= (review page) and GET sessions?status=recent (lobby).
 export const pokerReviewQuery = z.object({ id: uuid, afterHandNo: queryInt(0, MAX_HAND_NO).default(0) });
 export const recentSessionsQuery = z.object({ status: z.literal('recent') });
+
+// GET /api/trainers/poker/stats[?spot=]. A repeated ?spot= arrives as an array and is rejected.
+export const pokerStatsQuery = z.object({ spot: z.string().regex(SPOT_PATTERN).optional() });

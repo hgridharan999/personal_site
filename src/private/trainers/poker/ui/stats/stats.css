@@ -1,0 +1,68 @@
+/* Stats tab (spec §7.4). Every rule is scoped under .pk. The shared trainer charts keep their
+   trn-* markup; these rules repaint them with the Midnight Indigo tokens. */
+.pk .pk-stats { display: grid; gap: 24px; }
+@media (min-width: 1024px) {
+  .pk .pk-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pk .pk-stats__wide { grid-column: 1 / -1; }
+}
+.pk .pk-box.pk-stats-panel { align-items: stretch; min-width: 0; } /* beats .pk .pk-box in poker.css */
+.pk .pk-panel-msg { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.pk .pk-panel-msg--locked { color: var(--pk-accent-2); }
+
+/* focus */
+.pk .pk-focus { display: flex; flex-direction: column; gap: 12px; max-width: 72ch; }
+.pk .pk-focus__label { margin: 0; font-size: 11px; color: var(--pk-muted); text-transform: uppercase; }
+.pk .pk-focus__title { margin: 0; font-family: var(--pk-font); font-weight: 400; font-size: 22px; color: var(--pk-accent); }
+.pk .pk-focus__body { margin: 0; font-size: 13px; line-height: 1.7; }
+.pk .pk-focus__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.pk .pk-example { color: var(--pk-accent-2); font-size: 11px; margin-right: 8px; }
+
+/* tables and details */
+.pk .pk-details summary { cursor: pointer; font-size: 11px; color: var(--pk-muted); text-transform: uppercase; }
+.pk .pk-details[open] summary { margin-bottom: 8px; }
+.pk .pk-table-wrap { overflow-x: auto; }
+.pk .pk-datatable { width: 100%; border-collapse: collapse; font-size: 11px; }
+.pk .pk-datatable th, .pk .pk-datatable td { text-align: left; padding: 6px 8px; border-bottom: 2px solid var(--pk-rail-hi); white-space: nowrap; }
+.pk .pk-datatable thead th { color: var(--pk-muted); font-weight: 400; }
+.pk .pk-datatable tbody th { font-weight: 400; }
+.pk .pk-datatable a { color: var(--pk-text); }
+.pk .pk-row--low { color: var(--pk-muted); }
+
+/* tendencies */
+.pk .pk-seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.pk .pk-tab[aria-pressed="true"] { color: var(--pk-accent); border-color: var(--pk-accent); }
+.pk .pk-meter { display: block; }
+.pk .pk-meter__track { fill: var(--pk-bg); }
+.pk .pk-meter__band { fill: var(--pk-accent-2); opacity: 0.45; }
+.pk .pk-meter__mark--in { fill: var(--pk-text); }
+.pk .pk-meter__mark--below, .pk .pk-meter__mark--above { fill: var(--pk-accent); }
+.pk .pk-meter__mark--low { fill: var(--pk-muted); }
+.pk .pk-flag--below, .pk .pk-flag--above { color: var(--pk-accent); }
+
+/* trend legend */
+.pk .pk-trend { display: grid; gap: 20px; }
+@media (min-width: 1024px) { .pk .pk-trend { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.pk .pk-trend__chart { margin: 0; min-width: 0; }
+.pk .pk-legend { list-style: none; display: flex; flex-wrap: wrap; gap: 16px; margin: 0 0 8px; padding: 0; font-size: 11px; }
+.pk .pk-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.pk .pk-swatch { display: inline-block; width: 18px; height: 0; border-top: 2px solid; }
+.pk .pk-swatch--net { border-top-style: dashed; border-color: var(--pk-accent-2); }
+.pk .pk-swatch--adj { border-color: var(--pk-accent); }
+
+/* shared trainer charts, KPI tiles and bars in the poker palette */
+.pk .trn-muted { color: var(--pk-muted); }
+.pk .trn-grid { stroke: var(--pk-rail-hi); }
+.pk .trn-axis { fill: var(--pk-muted); font-family: var(--pk-font); font-size: 9px; }
+.pk .trn-ref { stroke: var(--pk-muted); }
+.pk .trn-ref-label { fill: var(--pk-muted); }
+.pk .trn-line { stroke: var(--pk-accent-2); stroke-width: 2; stroke-dasharray: 5 3; opacity: 1; }
+.pk .trn-dot { fill: var(--pk-accent-2); }
+.pk .trn-overlay { stroke: var(--pk-accent); stroke-width: 2; }
+.pk .trn-kpi { border-top-color: var(--pk-rail-hi); }
+.pk .trn-kpi dt { color: var(--pk-muted); font-family: var(--pk-font); font-size: 10px; }
+.pk .trn-kpi dd { font-family: var(--pk-font); font-weight: 400; color: var(--pk-accent); }
+.pk .trn-kpi dd.trn-kpi-hint { font-family: var(--pk-font); color: var(--pk-muted); }
+.pk .trn-barlist-label { font-family: var(--pk-font); font-size: 11px; color: var(--pk-text); }
+.pk .trn-barlist-track { background: var(--pk-bg); }
+.pk .trn-barlist-fill { background: var(--pk-accent); }
+.pk .trn-barlist-value { font-size: 12px; }
