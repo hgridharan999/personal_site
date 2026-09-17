@@ -119,3 +119,15 @@ export function replayReducer(state, action) {
 const KEY_ACTIONS = { ArrowRight: 'next', ArrowLeft: 'prev', ' ': 'toggle', Spacebar: 'toggle', Home: 'first', End: 'last' };
 
 export const replayKeyAction = (key) => KEY_ACTIONS[key] ?? null;
+
+/**
+ * Whether the replay keyboard handler should act on this key, given whether the event's target sits
+ * inside an interactive control (a button, link or summary). Space is left alone there so the focused
+ * control (e.g. "Reveal all cards" or a decision mark) activates normally instead of also toggling
+ * play; ←/→/Home/End keep stepping the replay from those controls too.
+ */
+export function shouldHandleReplayKey({ key, insideInteractive }) {
+  const action = replayKeyAction(key);
+  if (!action) return false;
+  return action !== 'toggle' || !insideInteractive;
+}

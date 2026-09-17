@@ -4,7 +4,7 @@ import { buildLog, HOLES6 } from '../../bots/testHands.js';
 import { listPersonas } from '../../bots/personas.js';
 import {
   PLAY_INTERVAL_MS, REPLAY_START, buildSteps, nameOfSeat, frameAt, stepLines, stepDescription, decisionAt, decisionMarks,
-  initialStepIndex, chartForDecision, replayReducer, replayKeyAction,
+  initialStepIndex, chartForDecision, replayReducer, replayKeyAction, shouldHandleReplayKey,
 } from './replayModel.js';
 
 const personas = listPersonas();
@@ -118,5 +118,16 @@ describe('replayReducer and keys', () => {
 
   it('maps keys', () => {
     expect(['ArrowRight', 'ArrowLeft', ' ', 'Home', 'End', 'x'].map(replayKeyAction)).toEqual(['next', 'prev', 'toggle', 'first', 'last', null]);
+  });
+
+  it('leaves Space to a focused button, link or summary, but keeps stepping keys handled there', () => {
+    expect(shouldHandleReplayKey({ key: ' ', insideInteractive: true })).toBe(false);
+    expect(shouldHandleReplayKey({ key: 'Spacebar', insideInteractive: true })).toBe(false);
+    expect(shouldHandleReplayKey({ key: ' ', insideInteractive: false })).toBe(true);
+    expect(shouldHandleReplayKey({ key: 'ArrowRight', insideInteractive: true })).toBe(true);
+    expect(shouldHandleReplayKey({ key: 'ArrowLeft', insideInteractive: true })).toBe(true);
+    expect(shouldHandleReplayKey({ key: 'Home', insideInteractive: true })).toBe(true);
+    expect(shouldHandleReplayKey({ key: 'End', insideInteractive: true })).toBe(true);
+    expect(shouldHandleReplayKey({ key: 'x', insideInteractive: false })).toBe(false);
   });
 });
