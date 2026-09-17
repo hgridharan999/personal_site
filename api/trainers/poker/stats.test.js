@@ -5,6 +5,7 @@ import {
 import { mockRes, authedReq, mockSql, TEST_AUTH } from '../../_lib/testing.js';
 import { pokerHandRecord } from '../../_lib/pokerTesting.js';
 import { LEAK_EXAMPLES, LEAK_MIN_DECISIONS, shapeLeaks, pickFocus } from '../../_lib/pokerStatsShape.js';
+import { SEVERITY_GRADES } from '../../_lib/pokerReview.js';
 import { emptyTendencies, accumulateTendencies, shapeTendencies } from '../../../src/private/trainers/poker/leaks/tendencies.js';
 
 const make = (sql, extra = {}) => createPokerStatsHandler({ getSql: () => sql, auth: () => TEST_AUTH, ...extra });
@@ -63,16 +64,31 @@ describe('api/trainers/poker/stats', () => {
     for (const fragment of [
       'WHERE d.confident', 'GROUP BY spot, hand_id', 'DISTINCT ON (spot)',
       'array_agg(p.hand_id::text ORDER BY p.loss DESC, p.hand_id) FILTER (WHERE p.loss > 0)', 'HAVING sum(p.n) >=',
+      // ev_loss is real (float4); the exposed sum must go through numeric to avoid float4 noise
+      // (e.g. 1.100000023841858) leaking into the response.
+      'sum(ev_loss::numeric) AS loss', 'round(COALESCE(sum(p.loss), 0), 2)::float8 AS "evLoss"',
     ]) {
       expect(leaks.text).toContain(fragment);
     }
     expect(leaks.values).toEqual([LEAK_WINDOW_HANDS, LEAK_EXAMPLES, LEAK_MIN_DECISIONS, LEAK_LIMIT]);
-    for (const fragment of ['WHERE hands > 0', 'CROSS JOIN LATERAL', 'ORDER BY s.started_at, s.id']) {
+    for (const fragment of [
+      'WHERE hands > 0', 'CROSS JOIN LATERAL', 'ORDER BY s.started_at, s.id',
+      'round(COALESCE(sum(pd.ev_loss::numeric), 0), 2)::float8 AS ev_loss',
+    ]) {
       expect(trend.text).toContain(fragment);
     }
     expect(trend.values).toEqual([TREND_SESSIONS]);
     expect(hands.text).toContain('ORDER BY played_at DESC, id DESC');
     expect(hands.values).toEqual([TENDENCY_MAX_HANDS]);
+  });
+
+  it('excludes a spot with zero confident EV lost from leaks and focus', async () => {
+    const zeroLoss = { spot: 'pf.open', decisions: 40, hands: 40, mistakes: 0, evLoss: 0, costliestAction: 'raise', examples: [] };
+    const realLeak = { spot: 'river.facing_bet.oop', decisions: 20, hands: 18, mistakes: 4, evLoss: 60, costliestAction: 'call', examples: ['h1'] };
+    const sql = mockSql([[summaryRow({ gradedHands: 300 })], [zeroLoss, realLeak], [], []]);
+    const res = await call(make(sql));
+    expect(res.body.leaks.map((l) => l.spot)).toEqual(['river.facing_bet.oop']);
+    expect(res.body.focus.spot).toBe('river.facing_bet.oop');
   });
 
   it('folds stored hands oldest first and shapes leaks, focus and trend', async () => {
@@ -130,10 +146,23 @@ describe('api/trainers/poker/stats', () => {
       });
       expect(sql.queries).toHaveLength(1);
       const [query] = sql.queries;
-      for (const fragment of ['WHERE d.spot =', 'GROUP BY d.hand_id', 'bool_and(d.confident)', 'ORDER BY h.played_at DESC, h.id DESC']) {
+      for (const fragment of [
+        'WHERE d.spot =', 'GROUP BY d.hand_id', 'bool_and(d.confident)', 'ORDER BY h.played_at DESC, h.id DESC',
+        'round(COALESCE(sum(d.ev_loss::numeric), 0), 2)::float8 AS "evLoss"',
+      ]) {
         expect(query.text).toContain(fragment);
       }
       expect(query.values).toEqual(['river.facing_bet.oop', SPOT_HANDS_LIMIT]);
+    });
+
+    it("ties the severity CASE's grade order to SEVERITY_GRADES", async () => {
+      const sql = mockSql([[]]);
+      await call(make(sql), { query: { spot: 'pf.open' } });
+      const [query] = sql.queries;
+      SEVERITY_GRADES.forEach((grade, severity) => {
+        if (severity === 0) return; // the lowest grade ('good') is the CASE's ELSE 0 branch
+        expect(query.text).toContain(`WHEN '${grade}' THEN ${severity}`);
+      });
     });
   });
 

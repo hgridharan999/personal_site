@@ -14,7 +14,9 @@ const per100 = (units, count) => (count > 0 ? (toBb(units) / count) * 100 : null
 
 export function shapeLeaks(rows, gradedHands) {
   return rows
-    .filter((r) => r.decisions >= LEAK_MIN_DECISIONS)
+    // A spot needs the minimum decisions and > 0 confident EV lost: zero-loss spots
+    // can't be a leak (or the focus, which is always leaks[0]).
+    .filter((r) => r.decisions >= LEAK_MIN_DECISIONS && r.evLoss > 0)
     .map((r) => ({
       spot: r.spot,
       label: spotLabel(r.spot),

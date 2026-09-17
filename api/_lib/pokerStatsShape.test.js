@@ -47,6 +47,11 @@ describe('shapeLeaks', () => {
     expect(leaks[1]).toMatchObject({ costliestAction: null, examples: [] });
     expect(shapeLeaks(rows, 0)[0].bbPer100).toBeNull();
   });
+
+  it('drops a spot with zero confident EV lost, even with enough decisions', () => {
+    const rows = [leakRow({ spot: 'pf.open', evLoss: 0 }), leakRow({ spot: 'river.facing_bet.oop', evLoss: 60 })];
+    expect(shapeLeaks(rows, 300).map((l) => l.spot)).toEqual(['river.facing_bet.oop']);
+  });
 });
 
 describe('shapeTrend', () => {

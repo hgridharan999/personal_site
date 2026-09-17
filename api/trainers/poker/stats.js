@@ -47,7 +47,9 @@ const leaksQuery = (sql) => sql`
     FROM poker_decisions d JOIN recent r ON r.id = d.hand_id
     WHERE d.confident
   ), per_hand AS (
-    SELECT spot, hand_id, count(*)::int AS n, sum(ev_loss)::float8 AS loss,
+    -- ev_loss is real (float4); summing as numeric keeps the total exact instead of
+    -- accumulating float4 rounding noise (e.g. 1.100000023841858) before it's exposed below.
+    SELECT spot, hand_id, count(*)::int AS n, sum(ev_loss::numeric) AS loss,
            count(*) FILTER (WHERE grade IN ('mistake', 'blunder'))::int AS mistakes
     FROM confident GROUP BY spot, hand_id
   ), by_action AS (
@@ -56,7 +58,7 @@ const leaksQuery = (sql) => sql`
     ORDER BY spot, loss DESC, action
   )
   SELECT p.spot, sum(p.n)::int AS decisions, count(*)::int AS hands, sum(p.mistakes)::int AS mistakes,
-         sum(p.loss)::float8 AS "evLoss", b.action AS "costliestAction",
+         round(COALESCE(sum(p.loss), 0), 2)::float8 AS "evLoss", b.action AS "costliestAction",
          COALESCE(
            array_to_json((array_agg(p.hand_id::text ORDER BY p.loss DESC, p.hand_id) FILTER (WHERE p.loss > 0))[1:${LEAK_EXAMPLES}::int]),
            '[]'::json
@@ -76,7 +78,7 @@ const trendQuery = (sql) => sql`
   SELECT s.id, s.started_at AS "startedAt", s.hands, s.net, s.allin_adj_net::float8 AS "allinAdjNet",
          d.decisions, d.ev_loss AS "evLoss"
   FROM s CROSS JOIN LATERAL (
-    SELECT count(pd.hand_id)::int AS decisions, COALESCE(sum(pd.ev_loss), 0)::float8 AS ev_loss
+    SELECT count(pd.hand_id)::int AS decisions, round(COALESCE(sum(pd.ev_loss::numeric), 0), 2)::float8 AS ev_loss
     FROM poker_hands h JOIN poker_decisions pd ON pd.hand_id = h.id
     WHERE h.session_id = s.id
   ) d
@@ -103,7 +105,7 @@ async function loadSpotHands(sql, spot) {
     SELECT h.id AS "handId", h.session_id AS "sessionId", h.hand_no AS "handNo", h.played_at AS "playedAt",
            h.hero_net AS "heroNet", x.decisions, x."evLoss", x.severity, x.confident
     FROM (
-      SELECT d.hand_id, count(*)::int AS decisions, sum(d.ev_loss)::float8 AS "evLoss",
+      SELECT d.hand_id, count(*)::int AS decisions, round(COALESCE(sum(d.ev_loss::numeric), 0), 2)::float8 AS "evLoss",
              max(CASE d.grade WHEN 'blunder' THEN 3 WHEN 'mistake' THEN 2 WHEN 'inaccuracy' THEN 1 ELSE 0 END)::int AS severity,
              bool_and(d.confident) AS confident
       FROM poker_decisions d WHERE d.spot = ${spot} GROUP BY d.hand_id
