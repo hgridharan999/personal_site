@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   pokerSessionOpen, pokerSessionClose, openSessionsQuery, handItem, handsBatch,
   MAX_HANDS_PER_BATCH, MAX_DECISIONS_PER_HAND, MAX_HAND_EVENTS,
+  ungradedHandsQuery, handGradesBatch, decisionProblems, MAX_GRADES_PER_BATCH, MAX_UNGRADED_PAGE,
 } from './pokerSchemas.js';
 import {
   POKER_SESSION_ID, pokerSessionBody, pokerHandRecord, pokerHandId, findHandRecord, heroActed, heroDecision,
@@ -159,5 +160,38 @@ describe('values Postgres would reject', () => {
     expect(handItem.safeParse({ hand, decisions: [{ ...decision, spot: NUL }] }).success).toBe(false);
     const recommended = { ...decision.recommended, evByOption: { [NUL]: 1 } };
     expect(handItem.safeParse({ hand, decisions: [{ ...decision, recommended }] }).success).toBe(false);
+  });
+});
+
+describe('re-grade schemas', () => {
+  it('coerces the ungraded hands query with defaults', () => {
+    expect(ok(ungradedHandsQuery, { ungraded: '1', sessionId: POKER_SESSION_ID, belowVersion: '2' })).toEqual({
+      ungraded: '1', sessionId: POKER_SESSION_ID, belowVersion: 2, afterHandNo: 0, limit: 10,
+    });
+    expect(MAX_UNGRADED_PAGE).toBe(20);
+    for (const bad of [{ belowVersion: '0' }, { limit: '21' }, { afterHandNo: '-1' }, { sessionId: 'x' }, { ungraded: 'yes' }]) {
+      expect(ungradedHandsQuery.safeParse({ ungraded: '1', sessionId: POKER_SESSION_ID, belowVersion: '1', ...bad }).success, JSON.stringify(bad)).toBe(false);
+    }
+  });
+
+  it('caps grade batches and requires matching versions, decisions and distinct hands', () => {
+    const hand = findHandRecord(heroActed);
+    const grade = { handId: hand.id, analysisVersion: 1, decisions: [heroDecision(hand)], heroAllinEv: null };
+    expect(MAX_GRADES_PER_BATCH).toBe(20);
+    expect(ok(handGradesBatch, { grades: [grade] }).grades).toHaveLength(1);
+    expect(handGradesBatch.safeParse({ grades: Array.from({ length: 21 }, (_, i) => ({ ...grade, handId: pokerHandId(i + 1) })) }).success).toBe(false);
+    expect(messages(handGradesBatch, { grades: [grade, grade] })).toContain('duplicate handId in batch');
+    expect(messages(handGradesBatch, { grades: [{ ...grade, analysisVersion: 2 }] })).toContain('decision analysisVersion must match the grade');
+    expect(handGradesBatch.safeParse({ grades: [{ ...grade, decisions: [] }] }).success).toBe(false);
+  });
+
+  it('reports decision problems against a hand log', () => {
+    const hand = findHandRecord(heroActed);
+    const d = heroDecision(hand);
+    expect(decisionProblems([d], hand.events, hand.heroSeat)).toEqual([]);
+    expect(decisionProblems([d, d], hand.events, hand.heroSeat)).toEqual([{ index: 1, message: 'duplicate decision idx' }]);
+    expect(decisionProblems([{ ...d, idx: 0 }], hand.events, hand.heroSeat)).toEqual([
+      { index: 0, message: 'decision idx must point at a hero action with the same action' },
+    ]);
   });
 });

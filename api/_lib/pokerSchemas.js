@@ -90,7 +90,7 @@ const handRecord = z.object({
   showdown: z.boolean(),
 });
 
-const decision = z.object({
+export const decision = z.object({
   idx: z.int().min(0).max(MAX_HAND_EVENTS - 1),
   street: z.enum(STREETS),
   position: z.enum(POSITIONS),
@@ -116,6 +116,21 @@ const decision = z.object({
   analysisVersion: z.int().min(1).max(1000),
 });
 
+/** Problems with decisions against a hand log: a repeated idx, or an idx that is not a hero act with the same action. */
+export function decisionProblems(decisions, events, heroSeat) {
+  const problems = [];
+  const seen = new Set();
+  decisions.forEach((d, index) => {
+    if (seen.has(d.idx)) problems.push({ index, message: 'duplicate decision idx' });
+    seen.add(d.idx);
+    const event = events[d.idx];
+    if (!event || event.type !== 'act' || event.seat !== heroSeat || event.action !== d.action) {
+      problems.push({ index, message: 'decision idx must point at a hero action with the same action' });
+    }
+  });
+  return problems;
+}
+
 export const handItem = z
   .object({
     hand: handRecord,
@@ -130,15 +145,8 @@ export const handItem = z
       issue(replay.error, ['hand', 'events']);
       return;
     }
-    const seen = new Set();
-    decisions.forEach((d, i) => {
-      if (seen.has(d.idx)) issue('duplicate decision idx', ['decisions', i, 'idx']);
-      seen.add(d.idx);
-      const event = hand.events[d.idx];
-      if (!event || event.type !== 'act' || event.seat !== hand.heroSeat || event.action !== d.action) {
-        issue('decision idx must point at a hero action with the same action', ['decisions', i, 'idx']);
-      }
-    });
+    decisionProblems(decisions, hand.events, hand.heroSeat)
+      .forEach(({ index, message }) => issue(message, ['decisions', index, 'idx']));
   });
 
 export const handsBatch = z
@@ -153,5 +161,47 @@ export const handsBatch = z
       if (numbers.has(key)) issue('duplicate handNo for a session in batch', ['hands', i, 'hand', 'handNo']);
       ids.add(hand.id);
       numbers.add(key);
+    });
+  });
+
+// Phase 5: one hand for the replayer, hands without current grades, and the re-grade batch.
+export const MAX_GRADES_PER_BATCH = 20;
+export const MAX_UNGRADED_PAGE = 20;
+
+/** A query-string integer (Vercel passes strings; a repeated key arrives as an array and fails). */
+export const queryInt = (min, max) => z.coerce.number().pipe(z.int().min(min).max(max));
+
+export const handIdQuery = z.object({ id: uuid });
+
+export const ungradedHandsQuery = z.object({
+  ungraded: z.literal('1'),
+  sessionId: uuid,
+  belowVersion: queryInt(1, 1000),
+  afterHandNo: queryInt(0, MAX_HAND_NO).default(0),
+  limit: queryInt(1, MAX_UNGRADED_PAGE).default(10),
+});
+
+const handGrade = z
+  .object({
+    handId: uuid,
+    analysisVersion: z.int().min(1).max(1000),
+    decisions: z.array(decision).min(1).max(MAX_DECISIONS_PER_HAND),
+    heroAllinEv: z.number().min(-MAX_POT).max(MAX_POT).nullable(),
+  })
+  .superRefine((grade, ctx) => {
+    const issue = issuesFor(ctx);
+    grade.decisions.forEach((d, i) => {
+      if (d.analysisVersion !== grade.analysisVersion) issue('decision analysisVersion must match the grade', ['decisions', i, 'analysisVersion']);
+    });
+  });
+
+export const handGradesBatch = z
+  .object({ grades: z.array(handGrade).min(1).max(MAX_GRADES_PER_BATCH) })
+  .superRefine(({ grades }, ctx) => {
+    const issue = issuesFor(ctx);
+    const ids = new Set();
+    grades.forEach((grade, i) => {
+      if (ids.has(grade.handId)) issue('duplicate handId in batch', ['grades', i, 'handId']);
+      ids.add(grade.handId);
     });
   });
