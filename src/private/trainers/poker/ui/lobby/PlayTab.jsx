@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { listPersonas } from '../../bots/personas.js';
 import { randomLineup } from '../../lib/lineup.js';
 import TableBuilder from './TableBuilder';
+import RecentSessions from './RecentSessions';
+import '../review/review.css';
 
 const SPEEDS = [
   { key: 'normal', label: 'Normal' },
@@ -49,10 +51,7 @@ export default function PlayTab() {
         <TableBuilder personas={personas} onSitDown={(lineup) => sitDown('custom', lineup)} />
       </section>
 
-      <section className="pk-box" aria-labelledby="pk-recent-title">
-        <h2 id="pk-recent-title" className="pk-h2">Recent sessions</h2>
-        <p className="pk-muted">Your sessions are saved. A list of recent sessions will appear here.</p>
-      </section>
+      <RecentSessions />
     </div>
   );
 }

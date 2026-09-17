@@ -23,6 +23,7 @@ const TrainerPage = lazy(() => import('./private/trainers/TrainerPage'));
 const GameDetail = lazy(() => import('./private/trainers/stats/GameDetail'));
 const PokerLobbyPage = lazy(() => import('./private/trainers/poker/ui/lobby/PokerLobbyPage'));
 const PokerTablePage = lazy(() => import('./private/trainers/poker/lib/persistence/PersistedTablePage'));
+const PokerSessionReviewPage = lazy(() => import('./private/trainers/poker/ui/review/SessionReviewPage'));
 
 const privateFallback = (
   <PrivateShell className="prv-center">
@@ -64,6 +65,10 @@ function AnimatedRoutes() {
       <Route
         path="/me/poker/table/:sessionId"
         element={<RequireAuth>{() => <Suspense fallback={privateFallback}><PokerTablePage /></Suspense>}</RequireAuth>}
+      />
+      <Route
+        path="/me/poker/session/:id"
+        element={<RequireAuth>{() => <Suspense fallback={privateFallback}><PokerSessionReviewPage /></Suspense>}</RequireAuth>}
       />
       <Route
         path="/me/:trainer"
