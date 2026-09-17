@@ -98,31 +98,44 @@ describe('createAnalysisClient', () => {
     await expect(client.analyze(WALK)).rejects.toThrow('no workers here');
   });
 
-  it('rejects only the request whose postMessage throws, without terminating the worker', async () => {
-    const handle = createAnalysisHandler({ gradeHand: () => ({ decisions: [], heroAllinEv: 7 }) });
-    const listeners = { message: [], error: [], messageerror: [] };
-    let calls = 0;
-    const worker = {
-      posted: [],
-      terminated: false,
-      addEventListener: (type, fn) => listeners[type].push(fn),
-      postMessage(message) {
-        calls += 1;
-        if (calls === 1) throw new Error('post failed');
-        worker.posted.push(message);
-        queueMicrotask(() => listeners.message.forEach((fn) => fn({ data: handle(clone(message)) })));
-      },
-      terminate() {
-        worker.terminated = true;
-      },
-    };
-    const client = createAnalysisClient({ createWorker: () => worker });
-    const [first, second] = await Promise.allSettled([client.analyze(WALK), client.analyze(WALK)]);
-    expect(first.status).toBe('rejected');
-    expect(first.reason.message).toBe('post failed');
-    expect(second.status).toBe('fulfilled');
-    expect(second.value.heroAllinEv).toBe(7);
-    expect(worker.terminated).toBe(false);
+  it('rejects only the request whose postMessage throws, without leaking its timer or terminating the worker', async () => {
+    // A sync throw from postMessage already auto-rejects request A's promise via the Promise
+    // constructor, with or without the fix, so that alone would not discriminate the bug. The real
+    // regression is a leaked `pending`/timer entry for A: if not cleaned up, A's own timeout later
+    // fires anyway, terminates the worker and rejects every other in-flight request (here, B) with
+    // it. Fake timers let this test advance exactly past A's timeout window (and stop short of B's,
+    // much longer one) to prove that leaked timer never fires.
+    vi.useFakeTimers();
+    try {
+      const handle = createAnalysisHandler({ gradeHand: () => ({ decisions: [], heroAllinEv: 7 }) });
+      const listeners = { message: [], error: [], messageerror: [] };
+      let calls = 0;
+      const worker = {
+        posted: [],
+        terminated: false,
+        addEventListener: (type, fn) => listeners[type].push(fn),
+        postMessage(message) {
+          calls += 1;
+          if (calls === 1) throw new Error('post failed');
+          worker.posted.push(message);
+        },
+        terminate() {
+          worker.terminated = true;
+        },
+        respond: (message) => listeners.message.forEach((fn) => fn({ data: handle(clone(message)) })),
+      };
+      const client = createAnalysisClient({ createWorker: () => worker, timeoutMs: 20 });
+      const first = client.analyze(WALK);
+      await expect(first).rejects.toThrow('post failed');
+      const second = client.analyze(WALK, { timeoutMs: 10_000 });
+      // Past A's 20ms timeout, nowhere near B's 10s one: a leaked timer for A would fire right here.
+      vi.advanceTimersByTime(20);
+      expect(worker.terminated).toBe(false);
+      worker.respond(worker.posted[0]);
+      await expect(second).resolves.toEqual({ decisions: [], heroAllinEv: 7 });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('ignores an error event from a worker that has already been replaced', async () => {

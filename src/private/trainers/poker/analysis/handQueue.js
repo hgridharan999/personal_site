@@ -78,8 +78,10 @@ export function createHandAnalysisQueue({
           const analysis = await Promise.race([analyzeWithTimeout(record), flushed]);
           handOver(item, analysis);
         })
-        // A single step must never leave `tail` permanently rejected — that would stall every hand
-        // pushed after it, since each step is chained off the previous one.
+        // Not dead code: analyzeWithTimeout/flushed never reject on their own, but a misbehaving
+        // injected `setTimer`/`clearTimer` (or any other unexpected throw during a step) must not
+        // leave `tail` permanently rejected — that would stall every hand pushed after it, since
+        // each step is chained off the previous one.
         .catch((err) => warn('poker analysis: hand queue step failed', err));
       return tail;
     },
