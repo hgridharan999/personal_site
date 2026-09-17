@@ -67,11 +67,11 @@ const flushMicrotasks = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe('pacing helpers', () => {
   it('draws bot think time from the speed range, longer for big decisions', () => {
-    expect(botDelayMs('fast', () => 0, false)).toBe(250);
-    expect(botDelayMs('fast', () => 0.5, false)).toBe(425);
-    expect(botDelayMs('normal', () => 0, false)).toBe(600);
-    expect(botDelayMs('normal', () => 0.999999, false)).toBe(1800);
-    expect(botDelayMs('normal', () => 0, true)).toBe(600 * BIG_DECISION_FACTOR);
+    expect(botDelayMs('fast', () => 0, false)).toBe(700);
+    expect(botDelayMs('fast', () => 0.5, false)).toBe(1050);
+    expect(botDelayMs('normal', () => 0, false)).toBe(1300);
+    expect(botDelayMs('normal', () => 0.999999, false)).toBe(2800);
+    expect(botDelayMs('normal', () => 0, true)).toBe(1300 * BIG_DECISION_FACTOR);
   });
 
   it('treats calls of 10 BB or more, and all-in calls, as big decisions', () => {

@@ -2,10 +2,9 @@
 /* Table page: pixel table, seats, bets, board, action bar, log. Scoped under .pk. */
 
 /* ---- table ---------------------------------------------- */
-/* Sized by whichever runs out first: the column width or the viewport height left after the
-   page chrome (top bar, save line, get-up row, action bar), so the whole table page fits without scrolling. */
-.pk { --pk-table-chrome: 262px; }
-.pk .pk-table { position: relative; width: min(100%, 1080px, max(520px, calc((100dvh - var(--pk-table-chrome)) * 1.6)));
+/* Sized by whichever runs out first: the region's width or its height (the region is a size container that
+   takes whatever height the page has left), so the table page never scrolls. */
+.pk .pk-table { position: relative; width: min(100cqw, 1080px, 160cqh);
   aspect-ratio: 16 / 10; margin: 0 auto; font-size: 11px;
   container-type: inline-size; --pk-seat-scale: 1; }
 /* Seats, bets and the board keep fixed pixel sizes, so they shrink with the table when it is height-limited. */
@@ -58,12 +57,14 @@
 
 /* ---- page layout ---------------------------------------- */
 /* Takes focus after the hero acts (the action buttons unmount); not interactive, so no outline. */
-.pk .pk-table-region { width: 100%; max-width: 1080px; }
+.pk .pk-table-region { width: 100%; max-width: 1080px; flex: 1 1 auto; min-height: 240px; container-type: size; }
 .pk .pk-table-region:focus { outline: none; }
-.pk .pk-main:has(.pk-tablepage) { padding-bottom: 12px; }
-.pk .pk-tablepage { display: grid; gap: 20px; padding-top: 4px; }
-@media (min-width: 1200px) { .pk .pk-tablepage { grid-template-columns: minmax(0, 1fr) 280px; align-items: start; } }
-.pk .pk-tablepage__main { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; }
+/* The table page is exactly one viewport tall: top bar, then main, which flexes to fill the rest and never scrolls. */
+.asc.pk:has(.pk-tablepage) { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+.pk .pk-main:has(.pk-tablepage) { flex: 1 1 auto; min-height: 0; padding-bottom: 12px; display: flex; flex-direction: column; overflow: hidden; }
+.pk .pk-tablepage { display: grid; gap: 20px; padding-top: 4px; flex: 1 1 auto; min-height: 0; }
+@media (min-width: 1200px) { .pk .pk-tablepage { grid-template-columns: minmax(0, 1fr) 280px; align-items: stretch; } }
+.pk .pk-tablepage__main { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; min-height: 0; overflow-y: auto; }
 .pk .pk-tablepage__meta { width: 100%; max-width: 1080px; display: flex; justify-content: flex-end; }
 .pk .pk-tablepage__meta .pk-btn { padding: 6px 12px; font-size: 11px; }
 .pk .pk-closed { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; padding-top: 32px; max-width: 60ch; }
@@ -85,11 +86,11 @@
   gap: 12px; padding: 10px 14px; border: 3px solid var(--pk-accent); font-size: 12px; }
 .pk .pk-banner p { margin: 0; }
 .pk .pk-banner__actions { display: flex; gap: 8px; }
-.pk .pk-log { background: var(--pk-rail); border: 3px solid var(--pk-rail-hi); font-size: 11px; }
+.pk .pk-log { background: var(--pk-rail); border: 3px solid var(--pk-rail-hi); font-size: 11px; align-self: start; max-height: 100%; display: flex; flex-direction: column; min-height: 0; }
 .pk .pk-log__toggle { width: 100%; text-align: left; font-family: var(--pk-font); font-size: 12px; text-transform: uppercase;
   color: var(--pk-muted); background: none; border: 0; padding: 10px 12px; cursor: pointer; }
 .pk .pk-log__toggle:focus-visible { outline: 2px solid var(--pk-text); outline-offset: -4px; }
-.pk .pk-log__list { list-style: none; margin: 0; padding: 0 12px 12px; max-height: 420px; overflow-y: auto; display: flex;
+.pk .pk-log__list { list-style: none; margin: 0; padding: 0 12px 12px; max-height: 420px; min-height: 0; overflow-y: auto; display: flex;
   flex-direction: column; gap: 6px; line-height: 1.4; }
 .pk .pk-log__hand { color: var(--pk-accent); }
 .pk .pk-end { width: 100%; max-width: 1080px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px;

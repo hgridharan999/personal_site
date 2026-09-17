@@ -22,7 +22,7 @@ const LOBBY_BACK = { to: '/me', label: 'Base Camp' };
 export default function PokerShell({ back = LOBBY_BACK, onBack, children }) {
   usePixelFont();
   return (
-    <PrivateShell className="pk">
+    <PrivateShell className="pk" customCursor={false}>
       <div className="asc-topbar">
         <Link to={back.to} onClick={onBack} data-hot className="asc-back asc-mono">
           <ArrowLeft size={14} /> <span className="b-name">{back.label}</span>

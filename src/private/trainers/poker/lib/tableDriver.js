@@ -8,8 +8,8 @@ import { legalActions } from '../engine/handState.js';
 
 /** Milliseconds. Bot think time is uniform in [botMin, botMax], x1.5 for big decisions. */
 export const PACING = {
-  fast: { botMin: 250, botMax: 600, board: 350, handPause: 1200 },
-  normal: { botMin: 600, botMax: 1800, board: 700, handPause: 2500 },
+  fast: { botMin: 700, botMax: 1400, board: 900, handPause: 2200 },
+  normal: { botMin: 1300, botMax: 2800, board: 1400, handPause: 3800 },
 };
 export const BIG_DECISION_FACTOR = 1.5;
 export const BIG_CALL_UNITS = 20; // 10 BB
