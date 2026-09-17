@@ -2,11 +2,19 @@
 /* Table page: pixel table, seats, bets, board, action bar, log. Scoped under .pk. */
 
 /* ---- table ---------------------------------------------- */
-.pk .pk-table { position: relative; width: 100%; max-width: 1080px; aspect-ratio: 16 / 10; margin: 0 auto; font-size: 11px; }
+/* Sized by whichever runs out first: the column width or the viewport height left after the
+   page chrome (top bar, save line, get-up row, action bar), so the whole table page fits without scrolling. */
+.pk { --pk-table-chrome: 262px; }
+.pk .pk-table { position: relative; width: min(100%, 1080px, max(520px, calc((100dvh - var(--pk-table-chrome)) * 1.6)));
+  aspect-ratio: 16 / 10; margin: 0 auto; font-size: 11px;
+  container-type: inline-size; --pk-seat-scale: 1; }
+/* Seats, bets and the board keep fixed pixel sizes, so they shrink with the table when it is height-limited. */
+@container (max-width: 900px) { .pk .pk-table-art ~ * { --pk-seat-scale: 0.86; } }
+@container (max-width: 760px) { .pk .pk-table-art ~ * { --pk-seat-scale: 0.74; } }
 .pk .pk-table .pk-table-art { position: absolute; left: 7%; top: 16%; width: 86%; height: 58%; }
 
 /* Seats: anchored at the top center of each seat block. Slot 0 is the hero; 1-5 run clockwise. */
-.pk .pk-seat { position: absolute; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center;
+.pk .pk-seat { position: absolute; transform: translateX(-50%) scale(var(--pk-seat-scale, 1)); transform-origin: top center; display: flex; flex-direction: column; align-items: center;
   gap: 3px; text-align: center; white-space: nowrap; }
 .pk .pk-seat--slot0 { left: 50%; top: 62%; }
 .pk .pk-seat--slot1 { left: 7%; top: 30%; }
@@ -29,7 +37,7 @@
 @keyframes pk-bounce { 50% { transform: translateY(-6px); } }
 
 /* Bets: centered on their point, between each seat and the board. */
-.pk .pk-bet { position: absolute; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 4px; font-size: 11px; }
+.pk .pk-bet { position: absolute; transform: translate(-50%, -50%) scale(var(--pk-seat-scale, 1)); display: flex; align-items: center; gap: 4px; font-size: 11px; }
 .pk .pk-chip { color: var(--pk-accent); }
 .pk .pk-bet--slot0 { left: 50%; top: 57%; }
 .pk .pk-bet--slot1 { left: 19%; top: 47%; }
@@ -41,7 +49,7 @@
 @keyframes pk-fly { to { left: 50%; top: 48%; opacity: 0; } }
 
 /* Board and pot */
-.pk .pk-board { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); display: flex; flex-direction: column;
+.pk .pk-board { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%) scale(var(--pk-seat-scale, 1)); display: flex; flex-direction: column;
   align-items: center; gap: 10px; }
 .pk .pk-board__cards { display: flex; gap: 6px; }
 .pk .pk-card-slot { width: 46px; height: 64px; outline: 2px dashed var(--pk-line); outline-offset: -2px; }
@@ -52,10 +60,12 @@
 /* Takes focus after the hero acts (the action buttons unmount); not interactive, so no outline. */
 .pk .pk-table-region { width: 100%; max-width: 1080px; }
 .pk .pk-table-region:focus { outline: none; }
-.pk .pk-tablepage { display: grid; gap: 20px; padding-top: 12px; }
+.pk .pk-main:has(.pk-tablepage) { padding-bottom: 12px; }
+.pk .pk-tablepage { display: grid; gap: 20px; padding-top: 4px; }
 @media (min-width: 1200px) { .pk .pk-tablepage { grid-template-columns: minmax(0, 1fr) 280px; align-items: start; } }
-.pk .pk-tablepage__main { display: flex; flex-direction: column; align-items: center; gap: 16px; min-width: 0; }
+.pk .pk-tablepage__main { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; }
 .pk .pk-tablepage__meta { width: 100%; max-width: 1080px; display: flex; justify-content: flex-end; }
+.pk .pk-tablepage__meta .pk-btn { padding: 6px 12px; font-size: 11px; }
 .pk .pk-closed { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; padding-top: 32px; max-width: 60ch; }
 
 /* ---- action bar ----------------------------------------- */

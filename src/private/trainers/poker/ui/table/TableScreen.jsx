@@ -80,16 +80,16 @@ export default function TableScreen({ id, config, profile, onSessionStart, onHan
             <SessionEnd session={session} />
           ) : (
             <>
-              <div ref={tableRegion} className="pk-table-region" tabIndex={-1} role="region" aria-label="Poker table">
-                <TableView session={session} />
-              </div>
-              <RebuyBanner session={session} onRebuy={rebuy} onGetUp={getUp} />
-              <ActionBar turn={turn} sizing={sizing} dispatch={dispatch} />
               <div className="pk-tablepage__meta">
                 <button type="button" className="pk-btn pk-btn--fold" data-hot disabled={session.getUpPending} onClick={getUp}>
                   {session.getUpPending ? 'Leaving after this hand' : getUpText}
                 </button>
               </div>
+              <div ref={tableRegion} className="pk-table-region" tabIndex={-1} role="region" aria-label="Poker table">
+                <TableView session={session} />
+              </div>
+              <RebuyBanner session={session} onRebuy={rebuy} onGetUp={getUp} />
+              <ActionBar turn={turn} sizing={sizing} dispatch={dispatch} />
             </>
           )}
         </div>
