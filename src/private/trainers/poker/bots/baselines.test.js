@@ -2,7 +2,8 @@
 import { describe, it, expect } from 'vitest';
 import { playHand } from '../engine/simulate.js';
 import { viewFor } from '../engine/view.js';
-import { randomLegal, callingStation } from './baselines.js';
+import { randomLegal, callingStation, tightPassive } from './baselines.js';
+import { contextAfter } from './testHands.js';
 
 function makeRng(seed) {
   let x = seed;
@@ -48,5 +49,24 @@ describe('baseline brains', () => {
     expect(seenActions.has('raise')).toBe(false);
     expect(seenActions.has('bet')).toBe(false);
     expect(seenActions.size).toBeGreaterThan(0);
+  });
+});
+
+describe('tightPassive edge cases', () => {
+  const ctxOf = (steps, options) => {
+    const cx = contextAfter(steps, options);
+    return { view: cx.view, seat: cx.seat, legal: cx.legal, events: cx.seatEvents, persona: null, profile: null, bb: 2 };
+  };
+
+  it('calls rather than raises a premium hand over limpers (not an unopened pot)', () => {
+    const holes = ['2c3d', '7h2s', '7c2d', 'KdQd', 'AhAs', '9s9h']; // AA moved to CO, behind two limpers
+    const limped = ctxOf(['c 2', 'c 3'], { holes });
+    expect(limped.seat).toBe(4);
+    expect(tightPassive.decide(limped)).toEqual({ action: 'call' });
+  });
+
+  it('does not bet when the board alone already has quads (four of a kind)', () => {
+    const quadBoard = ctxOf(['r 2 5', 'f 3', 'f 4', 'f 5', 'f 0', 'c 1', 'B 8c8d8h', 'k 1', 'k 2', 'B 8s']);
+    expect(tightPassive.decide(quadBoard)).toEqual({ action: 'check' });
   });
 });
