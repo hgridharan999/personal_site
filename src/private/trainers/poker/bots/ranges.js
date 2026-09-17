@@ -140,13 +140,48 @@ function comboRangeFrom(classWeights, dead) {
 // `eventsFor` returns a fresh copy of every event on each call, so caching on object identity
 // (`events[0] === entry.start`) never hits in production: every decision hands the tracker a new
 // array of new objects, even for the same hand. Key the cache on content instead: a hand is fully
-// identified by its start event (button + starting seats) and the hero seat we're tracking for, so
-// two `events` arrays with the same signature and a length no shorter than what we've already
-// processed are treated as the same, growing log, and only the new suffix is processed.
+// identified by its start event (button + starting seats/stacks), the seat we're tracking for, and
+// that seat's own hole cards — button and starting stacks repeat constantly across hands in the
+// duplicate-deal arena and across a long-lived brain cached per persona, so without the hole cards
+// a new hand with the same button/stacks/seat would be mistaken for a continuation of the last one.
 const startSignature = (events, seat) => {
   const start = events[0];
-  return `${start.button}|${JSON.stringify(start.seats)}|${seat}`;
+  const hole = events.find((e) => e.type === 'hole' && e.seat === seat);
+  const cards = hole && hole.cards ? hole.cards.join(',') : '';
+  return `${start.button}|${JSON.stringify(start.seats)}|${seat}|${cards}`;
 };
+
+// Even a matching identity above only says the two hands *started* the same way. Guard against a
+// log that diverges earlier than the "new" suffix (e.g. a stale entry left over from a hand that
+// happens to share button/stacks/seat/hole with a new one, or any other subtle mismatch) with a
+// cheap rolling hash of the processed prefix, compared against the incoming log's own prefix on
+// every call; any mismatch rebuilds instead of silently reusing the wrong ranges.
+function eventKey(e) {
+  if (e.type === 'act') return `a${e.seat}${e.action}${e.amount ?? ''}`;
+  if (e.type === 'board') return `b${e.cards.join(',')}`;
+  if (e.type === 'hole') return `h${e.seat}${e.cards ? e.cards.join(',') : ''}`;
+  return `s${e.button}|${JSON.stringify(e.seats)}`;
+}
+
+const HASH_SEED = 0x811c9dc5; // FNV-1a offset basis
+
+/** Folds one event's cheap key into a rolling FNV-1a-style hash. */
+function hashStep(h, e) {
+  const key = eventKey(e);
+  let out = h;
+  for (let i = 0; i < key.length; i += 1) {
+    out ^= key.charCodeAt(i);
+    out = Math.imul(out, 0x01000193);
+  }
+  return out >>> 0;
+}
+
+/** The rolling hash of `events[0..upto)`, recomputed each call — cheap since hands are short. */
+function hashPrefix(events, upto) {
+  let h = HASH_SEED;
+  for (let i = 0; i < upto; i += 1) h = hashStep(h, events[i]);
+  return h;
+}
 
 /**
  * Tracks opponents' ranges for one seat through a hand, processing only new events when the log grows.
@@ -154,14 +189,15 @@ const startSignature = (events, seat) => {
  *   { classWeights:Map<number, Float32Array>, comboRanges:Map<number, Float32Array>, rebuilt:boolean } }}
  *   classWeights: preflop range per live opponent; comboRanges: postflop combo weights per live opponent
  *   (empty preflop). Both maps hold copies the caller may freely mutate. `rebuilt` is true when this call
- *   started a fresh entry (first call, or a log whose signature didn't match what was cached) and false
- *   when it reused and incrementally extended the previous entry.
+ *   started a fresh entry (first call, a log whose signature didn't match what was cached, or one whose
+ *   processed prefix no longer hashes the same) and false when it reused and incrementally extended the
+ *   previous entry.
  */
 export function createRangeTracker() {
   const bySeat = new Map();
 
-  const fresh = (events, sig) => ({
-    sig, processed: 0, preflopActs: [], boards: [],
+  const fresh = (sig) => ({
+    sig, processed: 0, hash: HASH_SEED, preflopActs: [], boards: [],
     classWeights: new Map(), comboRanges: new Map(), folded: new Set(), facingBet: false,
   });
 
@@ -214,13 +250,17 @@ export function createRangeTracker() {
   function track(view, events, seat, typeOf) {
     const sig = startSignature(events, seat);
     let entry = bySeat.get(seat);
-    const valid = entry && entry.sig === sig && entry.processed <= events.length;
+    const valid = Boolean(entry) && entry.sig === sig && entry.processed <= events.length
+      && hashPrefix(events, entry.processed) === entry.hash;
     const rebuilt = !valid;
     if (!valid) {
-      entry = fresh(events, sig);
+      entry = fresh(sig);
       bySeat.set(seat, entry);
     }
-    for (let k = entry.processed; k < events.length; k += 1) step(entry, events[k], view, seat, typeOf);
+    for (let k = entry.processed; k < events.length; k += 1) {
+      step(entry, events[k], view, seat, typeOf);
+      entry.hash = hashStep(entry.hash, events[k]);
+    }
     entry.processed = events.length;
     const live = new Set(view.players.filter((p) => !p.folded && p.seat !== seat).map((p) => p.seat));
     // Copy every array out: callers must not be able to corrupt tracker state by mutating what they got back.

@@ -14,8 +14,11 @@ import { boardTexture, handFeatures } from './texture.js';
 /** Production defaults: at most 4,000 samples or 300 ms per postflop decision (spec §5.3), whichever comes first. */
 export const DEFAULT_BRAIN_OPTIONS = Object.freeze({ iterations: 4000, budgetMs: 300 });
 
-/** True when the profile belongs to a live opponent at this table. */
-function profiledOpponentLive(ctx) {
+/**
+ * True when adaptation should apply: `ctx.profile` describes a `heroSeat` that is set, is not this
+ * bot's own seat, and is still live at the table. Exported so tests can assert the gate directly.
+ */
+export function shouldAdapt(ctx) {
   if (!ctx.profile || !Number.isInteger(ctx.heroSeat) || ctx.heroSeat === ctx.seat) return false;
   const hero = ctx.view.players.find((p) => p.seat === ctx.heroSeat);
   return Boolean(hero && !hero.folded);
@@ -34,7 +37,7 @@ export function createHeuristicBrain(options = {}) {
     decide(ctx, rng) {
       const { view, seat, legal, events } = ctx;
       const base = resolveDials(ctx.persona?.dials);
-      const dials = profiledOpponentLive(ctx) ? adaptDials(base, ctx.profile) : base;
+      const dials = shouldAdapt(ctx) ? adaptDials(base, ctx.profile) : base;
       const typeOf = (s) => (s === ctx.heroSeat && ctx.profile ? typeFromProfile(ctx.profile) : DEFAULT_TYPE);
       const { classWeights, comboRanges } = tracker.track(view, events, seat, typeOf);
 

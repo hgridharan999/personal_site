@@ -143,6 +143,30 @@ describe('createRangeTracker', () => {
     expect(third.rebuilt).toBe(false);
   });
 
+  it('rebuilds instead of reusing a stale hand that shares button, stacks and seat but not hole cards', () => {
+    // Hand A and hand B both use the default 6-handed, all-200-stack table (so button and starting
+    // seats/stacks repeat, as they constantly do in the duplicate-deal arena and for a long-lived
+    // brain cached per persona), and it happens that the same seat is next to act in both. Only the
+    // dealt hole cards differ. Reusing hand A's cached ranges for hand B would leak a stale board
+    // and dead cards; the tracker must instead notice the identity doesn't match and rebuild.
+    const A = contextAfter(['r 2 5', 'c 3', 'c 4', 'c 5', 'c 0', 'c 1', 'B Kh8d4s', 'k 0']);
+    const holesB = ['QsJs', '3h3c', '5c6d', 'TdTs', '8c7c', 'AdKc'];
+    const B = contextAfter(
+      ['c 2', 'c 3', 'c 4', 'c 5', 'c 0', 'k 1', 'B 2d9dJh', 'k 0', 'k 1', 'k 2', 'k 3', 'k 4', 'k 5', 'B 4h', 'k 0'],
+      { holes: holesB },
+    );
+    expect(A.seat).toBe(B.seat);
+
+    const tracker = createRangeTracker();
+    tracker.track(A.view, A.seatEvents, A.seat, typeOf);
+    const reused = tracker.track(B.view, B.seatEvents, B.seat, typeOf);
+    expect(reused.rebuilt).toBe(true);
+
+    const fresh = createRangeTracker().track(B.view, B.seatEvents, B.seat, typeOf);
+    expect([...fresh.comboRanges.keys()].sort()).toEqual([...reused.comboRanges.keys()].sort());
+    for (const [seat, range] of fresh.comboRanges) expect(reused.comboRanges.get(seat)).toEqual(range);
+  });
+
   it('returns copies: mutating a returned array does not corrupt tracked state', () => {
     const steps = ['r 2 5', 'f 3', 'c 4', 'f 5', 'f 0', 'f 1', 'B Kh8d4s', 'b 2 8'];
     const cx = contextAfter(steps);

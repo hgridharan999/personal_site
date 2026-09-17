@@ -6,8 +6,9 @@ import { dealHand } from '../engine/dealer.js';
 import { randomPolicy } from '../engine/simulate.js';
 import { viewFor, eventsFor } from '../engine/view.js';
 import { emptyProfile } from './contract.js';
-import { ARCHETYPES } from './dials.js';
-import { createHeuristicBrain } from './brain.js';
+import { ARCHETYPES, resolveDials } from './dials.js';
+import { adaptDials } from './adapt.js';
+import { createHeuristicBrain, shouldAdapt } from './brain.js';
 import { createBrain, BRAIN_KEYS } from './index.js';
 import { contextAfter } from './testHands.js';
 
@@ -86,7 +87,68 @@ describe('heuristic brain', () => {
     const brain = createHeuristicBrain({ iterations: 1e9, budgetMs: 40 });
     const started = performance.now();
     brain.decide(ctx, mulberry32(1));
-    expect(performance.now() - started).toBeLessThan(400);
+    expect(performance.now() - started).toBeLessThan(120);
+  });
+
+  it('a brain reused across two hands gives the same choices as a fresh brain, over 50 seeds', () => {
+    // Same stale-hand shape as the ranges tracker's reviewer scenario: hand A and hand B share a
+    // button and starting stacks (the default 6-handed, all-200 table) and the same seat is next to
+    // act in both, but the dealt hole cards differ. A brain that is reused across hands (as index.js
+    // caches one per persona) must never leak hand A's stale ranges into its hand B decisions.
+    const A = contextAfter(['r 2 5', 'c 3', 'c 4', 'c 5', 'c 0', 'c 1', 'B Kh8d4s', 'k 0']);
+    const holesB = ['QsJs', '3h3c', '5c6d', 'TdTs', '8c7c', 'AdKc'];
+    const B = contextAfter(
+      ['c 2', 'c 3', 'c 4', 'c 5', 'c 0', 'k 1', 'B 2d9dJh', 'k 0', 'k 1', 'k 2', 'k 3', 'k 4', 'k 5', 'B 4h', 'k 0'],
+      { holes: holesB },
+    );
+    const ctxFor = (cx) => ({
+      view: cx.view, seat: cx.seat, legal: cx.legal, events: cx.seatEvents,
+      persona: personas[0], profile: null, heroSeat: null, bb: 2,
+    });
+
+    const reused = createHeuristicBrain({ iterations: 200, budgetMs: Infinity });
+    reused.decide(ctxFor(A), mulberry32(1));
+    for (let seed = 0; seed < 50; seed += 1) {
+      const fresh = createHeuristicBrain({ iterations: 200, budgetMs: Infinity });
+      expect(reused.decide(ctxFor(B), mulberry32(seed))).toEqual(fresh.decide(ctxFor(B), mulberry32(seed)));
+    }
+  });
+});
+
+describe('adaptation gate (shouldAdapt)', () => {
+  const cx = contextAfter(['r 2 5', 'c 3', 'c 4', 'c 5', 'c 0', 'c 1', 'B Kh8d4s', 'k 0']);
+  const baseCtx = { view: cx.view, seat: cx.seat, legal: cx.legal, events: cx.seatEvents, persona: personas[0], bb: 2 };
+  const liveHeroSeat = cx.view.players.find((p) => p.seat !== cx.seat && !p.folded).seat;
+
+  it('is false when heroSeat is missing, when the hero folded, and when heroSeat is the bot\'s own seat', () => {
+    const profile = emptyProfile();
+    expect(shouldAdapt({ ...baseCtx, profile, heroSeat: null })).toBe(false);
+    expect(shouldAdapt({ ...baseCtx, profile, heroSeat: undefined })).toBe(false);
+    const foldedSeat = cx.view.players.find((p) => p.folded)?.seat;
+    if (foldedSeat !== undefined) expect(shouldAdapt({ ...baseCtx, profile, heroSeat: foldedSeat })).toBe(false);
+    expect(shouldAdapt({ ...baseCtx, profile, heroSeat: cx.seat })).toBe(false);
+  });
+
+  it('is true for a profiled, live opponent other than the bot itself', () => {
+    const profile = emptyProfile();
+    expect(shouldAdapt({ ...baseCtx, profile, heroSeat: liveHeroSeat })).toBe(true);
+  });
+
+  it('leaves the dials unchanged when every stat has fewer than 30 observations, even though the gate is open', () => {
+    const profile = emptyProfile();
+    // Values chosen to trigger several EXPLOIT_RULES if n reached ADAPT_MIN_OBS (30); n stays below it.
+    for (const stat of Object.keys(profile.stats)) profile.stats[stat] = { value: 0.9, n: 29 };
+    expect(shouldAdapt({ ...baseCtx, profile, heroSeat: liveHeroSeat })).toBe(true); // the gate itself is open
+    const base = resolveDials(personas[0].dials);
+    expect(adaptDials(base, profile)).toEqual(base); // but no rule fires below ADAPT_MIN_OBS
+
+    // End to end: the same decision (same rng) with the gate open but under-observed must match the
+    // gate-closed (heroSeat: null) decision, since adaptDials would have made no difference either way.
+    const withUnderObservedHero = createHeuristicBrain({ iterations: 200, budgetMs: Infinity })
+      .decide({ ...baseCtx, profile, heroSeat: liveHeroSeat }, mulberry32(2));
+    const withoutHero = createHeuristicBrain({ iterations: 200, budgetMs: Infinity })
+      .decide({ ...baseCtx, profile, heroSeat: null }, mulberry32(2));
+    expect(withUnderObservedHero).toEqual(withoutHero);
   });
 });
 
@@ -96,5 +158,16 @@ describe('createBrain registry', () => {
     for (const key of BRAIN_KEYS) expect(typeof createBrain({ brain: key }).decide).toBe('function');
     expect(createBrain(personas[0])).toBe(createBrain(personas[0]));
     expect(createBrain(personas[0], { iterations: 10 })).not.toBe(createBrain(personas[0]));
+  });
+
+  it('bounds the per-persona options cache to at most 4 entries', () => {
+    const persona = personas[3];
+    const first = createBrain(persona, { iterations: 1 });
+    createBrain(persona, { iterations: 2 });
+    createBrain(persona, { iterations: 3 });
+    createBrain(persona, { iterations: 4 });
+    createBrain(persona, { iterations: 5 }); // a 5th distinct options value evicts the oldest (iterations: 1)
+    expect(createBrain(persona, { iterations: 1 })).not.toBe(first);
+    expect(createBrain(persona, { iterations: 5 })).toBe(createBrain(persona, { iterations: 5 }));
   });
 });
