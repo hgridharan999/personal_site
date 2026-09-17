@@ -3,14 +3,21 @@ import { getSql as defaultGetSql } from '../../_lib/db.js';
 import { authConfig } from '../../_lib/session.js';
 import { guard, sendError } from '../../_lib/http.js';
 import { idQuery } from '../../_lib/trainerSchemas.js';
-import { pokerSessionOpen, pokerSessionClose, openSessionsQuery } from '../../_lib/pokerSchemas.js';
+import {
+  pokerSessionOpen, pokerSessionClose, openSessionsQuery, pokerReviewQuery, recentSessionsQuery,
+} from '../../_lib/pokerSchemas.js';
 import { sendSessionNotFound } from '../../_lib/pokerHttp.js';
+import {
+  REVIEW_PAGE_HANDS, RECENT_SESSIONS_LIMIT, COSTLIEST_LIMIT, shapeReviewHand, shapeSummary, shapeOpponents,
+} from '../../_lib/pokerReview.js';
+import { ANALYSIS_VERSION } from '../../../src/private/trainers/poker/analysis/version.js';
 
-// POST  /api/trainers/poker/sessions              open a session (idempotent on id)
-// PATCH /api/trainers/poker/sessions?id=          close it: { endedAt } (null = stale close at the last hand)
-// GET   /api/trainers/poker/sessions?id=          one session with its hands and decisions (review)
-// GET   /api/trainers/poker/sessions?status=open  sessions never closed (stale-session cleanup)
-// Amounts are integer units (1 unit = 0.5 BB).
+// POST  /api/trainers/poker/sessions                  open a session (idempotent on id)
+// PATCH /api/trainers/poker/sessions?id=              close it: { endedAt } (null = stale close at the last hand)
+// GET   /api/trainers/poker/sessions?id=&afterHandNo= review page: summary, costliest, opponents, 300 hand summaries
+// GET   /api/trainers/poker/sessions?status=open      sessions never closed (stale-session cleanup)
+// GET   /api/trainers/poker/sessions?status=recent    latest sessions with hands (lobby)
+// Amounts are integer units (1 unit = 0.5 BB). Event logs are served one hand at a time by GET hands?id=.
 
 export const OPEN_SESSIONS_LIMIT = 20;
 
@@ -60,34 +67,75 @@ async function close(sql, req, res) {
 }
 
 async function read(sql, req, res) {
-  const parsed = idQuery.safeParse(req.query ?? {});
+  const parsed = pokerReviewQuery.safeParse(req.query ?? {});
   if (!parsed.success) return invalid(res, 'A valid session id is required', parsed.error);
-  const { id } = parsed.data;
+  const { id, afterHandNo } = parsed.data;
   const [session] = await sql`
     SELECT id, bot_version AS "botVersion", table_mode AS "tableMode", lineup, hero_seat AS "heroSeat",
            started_at AS "startedAt", ended_at AS "endedAt", hands, net,
            allin_adj_net::float8 AS "allinAdjNet", rebuys
     FROM poker_sessions WHERE id = ${id}`;
   if (!session) return sendError(res, 404, 'NOT_FOUND', 'Session not found');
-  const [hands, decisions] = await Promise.all([
+
+  const [handRows, summaryRows, costliest, opponentRows] = await Promise.all([
     sql`
-      SELECT id, hand_no AS "handNo", played_at AS "playedAt", button_seat AS "buttonSeat", hero_seat AS "heroSeat",
-             hero_start_stack AS "heroStartStack", lineup, hole_cards AS "holeCards", board, events, pot,
-             hero_net AS "heroNet", hero_allin_ev::float8 AS "heroAllinEv", showdown
-      FROM poker_hands WHERE session_id = ${id} ORDER BY hand_no`,
+      SELECT h.id, h.hand_no AS "handNo", h.played_at AS "playedAt", h.hero_seat AS "heroSeat", h.events->0 AS start,
+             h.hole_cards AS "holeCards", h.board, h.pot, h.hero_net AS "heroNet", h.hero_allin_ev::float8 AS "heroAllinEv",
+             h.showdown, h.hero_actions AS "heroActions",
+             d.decisions, d.ev_loss AS "evLoss", d.severity, d.confident, d.version
+      FROM poker_hands h
+      CROSS JOIN LATERAL (
+        SELECT count(*)::int AS decisions, COALESCE(sum(x.ev_loss), 0)::float8 AS ev_loss,
+               max(CASE x.grade WHEN 'blunder' THEN 3 WHEN 'mistake' THEN 2 WHEN 'inaccuracy' THEN 1 ELSE 0 END)::int AS severity,
+               bool_and(x.confident) AS confident, max(x.analysis_version)::int AS version
+        FROM poker_decisions x WHERE x.hand_id = h.id
+      ) d
+      WHERE h.session_id = ${id} AND h.hand_no > ${afterHandNo}
+      ORDER BY h.hand_no
+      LIMIT ${REVIEW_PAGE_HANDS + 1}`,
     sql`
-      SELECT d.hand_id AS "handId", d.idx, d.street, d.position, d.spot, d.action, d.size, d.pot,
-             d.to_call AS "toCall", d.equity, d.needed_equity AS "neededEquity", d.recommended,
-             d.ev_loss AS "evLoss", d.grade, d.confident, d.analysis_version AS "analysisVersion"
+      SELECT (SELECT count(*) FROM poker_hands u
+              WHERE u.session_id = ${id} AND u.hero_actions > 0
+                AND COALESCE((SELECT max(v.analysis_version) FROM poker_decisions v WHERE v.hand_id = u.id), 0) < ${ANALYSIS_VERSION}
+             )::int AS "ungradedHands",
+             count(d.hand_id)::int AS decisions,
+             COALESCE(sum(d.ev_loss), 0)::float8 AS "evLoss",
+             count(DISTINCT d.hand_id)::int AS "gradedHands",
+             count(*) FILTER (WHERE d.grade = 'good')::int AS good,
+             count(*) FILTER (WHERE d.grade = 'inaccuracy')::int AS inaccuracy,
+             count(*) FILTER (WHERE d.grade = 'mistake')::int AS mistake,
+             count(*) FILTER (WHERE d.grade = 'blunder')::int AS blunder,
+             count(*) FILTER (WHERE NOT d.confident)::int AS debatable
+      FROM poker_hands h JOIN poker_decisions d ON d.hand_id = h.id
+      WHERE h.session_id = ${id}`,
+    sql`
+      SELECT d.hand_id AS "handId", h.hand_no AS "handNo", d.idx, d.street, d.position, d.spot, d.action, d.size, d.pot,
+             d.to_call AS "toCall", d.recommended, d.ev_loss AS "evLoss", d.grade, d.confident
       FROM poker_decisions d JOIN poker_hands h ON h.id = d.hand_id
-      WHERE h.session_id = ${id} ORDER BY h.hand_no, d.idx`,
+      WHERE h.session_id = ${id} AND d.ev_loss > 0
+      ORDER BY d.ev_loss DESC, h.hand_no, d.idx
+      LIMIT ${COSTLIEST_LIMIT}`,
+    sql`
+      SELECT (e->>'seat')::int AS seat, e->>'personaId' AS "personaId", min(h.hand_no)::int AS "firstHand"
+      FROM poker_hands h CROSS JOIN LATERAL jsonb_array_elements(h.lineup) e
+      WHERE h.session_id = ${id}
+      GROUP BY 1, 2
+      ORDER BY 1, 3`,
   ]);
-  return res.status(200).json({ session, hands, decisions });
+  const page = handRows.slice(0, REVIEW_PAGE_HANDS).map(shapeReviewHand);
+  return res.status(200).json({
+    session,
+    summary: shapeSummary(session, summaryRows[0]),
+    costliest,
+    opponents: shapeOpponents(opponentRows, session.lineup),
+    hands: page,
+    nextAfterHandNo: handRows.length > REVIEW_PAGE_HANDS ? page[page.length - 1].handNo : null,
+  });
 }
 
 async function listOpen(sql, req, res) {
   const parsed = openSessionsQuery.safeParse(req.query ?? {});
-  if (!parsed.success) return invalid(res, 'status must be open', parsed.error);
+  if (!parsed.success) return invalid(res, 'status must be open or recent', parsed.error);
   const sessions = await sql`
     SELECT s.id, s.started_at AS "startedAt", s.hands,
            GREATEST(s.started_at, max(h.played_at)) AS "lastActivityAt"
@@ -99,6 +147,19 @@ async function listOpen(sql, req, res) {
   return res.status(200).json({ sessions });
 }
 
+async function listRecent(sql, req, res) {
+  const parsed = recentSessionsQuery.safeParse(req.query ?? {});
+  if (!parsed.success) return invalid(res, 'status must be open or recent', parsed.error);
+  const sessions = await sql`
+    SELECT id, started_at AS "startedAt", ended_at AS "endedAt", table_mode AS "tableMode", hands, net,
+           allin_adj_net::float8 AS "allinAdjNet"
+    FROM poker_sessions
+    WHERE hands > 0
+    ORDER BY started_at DESC, id DESC
+    LIMIT ${RECENT_SESSIONS_LIMIT}`;
+  return res.status(200).json({ sessions });
+}
+
 export function createPokerSessionsHandler({ getSql = defaultGetSql, auth = authConfig } = {}) {
   return async function handler(req, res) {
     const sql = guard(req, res, { methods: ['GET', 'POST', 'PATCH'], auth, getSql });
@@ -106,7 +167,10 @@ export function createPokerSessionsHandler({ getSql = defaultGetSql, auth = auth
     try {
       if (req.method === 'POST') return await open(sql, req, res);
       if (req.method === 'PATCH') return await close(sql, req, res);
-      return req.query?.status !== undefined ? await listOpen(sql, req, res) : await read(sql, req, res);
+      const status = req.query?.status;
+      if (status === 'recent') return await listRecent(sql, req, res);
+      if (status !== undefined) return await listOpen(sql, req, res);
+      return await read(sql, req, res);
     } catch (err) {
       console.error('trainers/poker/sessions failed:', err);
       return sendError(res, 500, 'INTERNAL', 'Internal server error');

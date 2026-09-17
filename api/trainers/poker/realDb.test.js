@@ -74,9 +74,12 @@ describe.skipIf(!RUN)('poker persistence against a real database', () => {
     res = await call(sessions, { query: { id: sessionId } });
     expect(res.statusCode).toBe(200);
     expect(res.body.hands.map((h) => h.handNo)).toEqual([1, 2]);
-    expect(res.body.hands[0].events).toEqual(first.events);
-    expect(res.body.decisions).toHaveLength(1);
+    expect(res.body.hands[0]).not.toHaveProperty('events');
+    expect(res.body.summary.decisions).toBe(1);
     expect(res.body.session.hands).toBe(2);
+    const one = await call(hands, { query: { id: first.id } });
+    expect(one.body.hand.events).toEqual(first.events);
+    expect(one.body.decisions).toHaveLength(1);
   });
 
   it('a partially new batch (1 existing hand, 1 new hand) inserts only the new one and session hands increases by exactly 1', async () => {

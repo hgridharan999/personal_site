@@ -205,3 +205,7 @@ export const handGradesBatch = z
       ids.add(grade.handId);
     });
   });
+
+// GET sessions?id=&afterHandNo= (review page) and GET sessions?status=recent (lobby).
+export const pokerReviewQuery = z.object({ id: uuid, afterHandNo: queryInt(0, MAX_HAND_NO).default(0) });
+export const recentSessionsQuery = z.object({ status: z.literal('recent') });
