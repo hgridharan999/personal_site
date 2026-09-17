@@ -2,7 +2,7 @@
 // Opt-in (POKER_SLOW=1): runs the real CLIs end to end on tiny budgets in a temp directory.
 import { describe, it, expect, afterEach } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -57,26 +57,51 @@ describe.skipIf(!process.env.POKER_SLOW)('poker CLIs', () => {
     expect(result.status, context).toBe(2);
   }, 30_000);
 
-  it('train --smoke writes a bots file with eight personas', () => {
+  it('train --smoke writes a bots file with eight personas and a training sidecar', () => {
     const dir = mkdtempSync(join(tmpdir(), 'poker-train-'));
     tempDirs.push(dir);
     const out = join(dir, 'bots-test.json');
     const started = Date.now();
-    const result = run([TRAIN_SCRIPT, '--smoke', '--threads', '2', '--version', 'bots-test', '--out', out]);
+    const result = run([TRAIN_SCRIPT, '--smoke', '--threads', '2', '--checkpoint-every', '1', '--version', 'bots-test', '--out', out]);
     const context = `stdout:\n${result.stdout}\nstderr:\n${result.stderr}`;
     expect(result.status, context).toBe(0);
     expect(Date.now() - started, context).toBeLessThan(60_000);
     expect(result.stdout.split('\n').filter((line) => line.startsWith('gen ')).length, context).toBe(2);
+    expect(result.stdout.split('\n').filter((line) => line.startsWith('checkpoint ')).length, context).toBe(2);
     const data = JSON.parse(readFileSync(out, 'utf8'));
     expect(data.version).toBe('bots-test');
     expect(data.personas.length).toBe(8);
     expect(data.training.generations).toBe(2);
     expect(data.training.threads).toBe(2);
+    expect(data.training.minutesBudget).toBe(0);
+    expect(typeof data.training.minutes).toBe('number');
     expect(data.benchmark).toBeNull();
+    // the shipped file carries only what the client needs
+    expect(data).not.toHaveProperty('candidates');
+    expect(data.training).not.toHaveProperty('bestByGeneration');
+    const sidecar = JSON.parse(readFileSync(join(dir, 'bots-test.training.json'), 'utf8'));
+    expect(sidecar.version).toBe('bots-test');
+    expect(sidecar.bestByGeneration.length).toBe(2);
+    expect(sidecar.eliteMeanByGeneration.length).toBe(2);
+    expect(Object.keys(sidecar.candidates).length).toBe(4);
+    expect(sidecar.selection.length).toBeGreaterThanOrEqual(8);
+    expect(existsSync(join(dir, 'bots-test.checkpoint.json'))).toBe(false); // superseded by the sidecar
   }, 600_000);
 
   it('train exits 2 on bad budget flags', () => {
-    const result = run([TRAIN_SCRIPT, '--population', 'many']);
-    expect(result.status, `stdout:\n${result.stdout}\nstderr:\n${result.stderr}`).toBe(2);
+    for (const args of [['--population', 'many'], ['--population', '12'], ['--population', '10', '--elite-count', '10']]) {
+      const result = run([TRAIN_SCRIPT, ...args]);
+      expect(result.status, `${args.join(' ')}\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`).toBe(2);
+    }
+  }, 30_000);
+
+  it('train exits 2 before training when the output path is not writable', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'poker-train-'));
+    tempDirs.push(dir);
+    const out = join(dir, 'missing-dir', 'bots-test.json');
+    const result = run([TRAIN_SCRIPT, '--smoke', '--threads', '1', '--out', out]);
+    const context = `stdout:\n${result.stdout}\nstderr:\n${result.stderr}`;
+    expect(result.status, context).toBe(2);
+    expect(result.stdout, context).not.toMatch(/^gen /m);
   }, 30_000);
 });

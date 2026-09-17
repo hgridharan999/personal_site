@@ -74,16 +74,18 @@ export function scheduleTables(populationSize, rng, perTable = 5) {
 
 /**
  * Keeps the best `perNiche` individuals per niche across all generations, each individual in its latest niche only.
+ * Entries are stored with and ranked by `fitness(ind)` (default {@link fitnessOf}).
+ * @param {{ perNiche?:number, minHands?:number, fitness?:(ind:Individual) => number }} [options]
  * @returns {Record<string, { dials:Record<string,number>, fitness:number, hands:number, style:{ vpip:number, pfr:number, aggFreq:number } }[]>}
  */
-export function updateArchive(archive, population, { perNiche = 5, minHands = 1 } = {}) {
+export function updateArchive(archive, population, { perNiche = 5, minHands = 1, fitness = fitnessOf } = {}) {
   const next = Object.fromEntries(NICHES.map((n) => [n, [...(archive[n] ?? [])]]));
   for (const ind of population) {
     if (ind.hands < minHands) continue;
     const entry = {
       id: ind.id,
       dials: ind.dials,
-      fitness: fitnessOf(ind),
+      fitness: fitness(ind),
       hands: ind.hands,
       style: { vpip: ind.profile.stats.vpip.value ?? 0, pfr: ind.profile.stats.pfr.value ?? 0, aggFreq: ind.profile.stats.aggFreq.value ?? 0 },
     };

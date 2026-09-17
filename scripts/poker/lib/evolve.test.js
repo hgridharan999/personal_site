@@ -78,6 +78,13 @@ describe('archive and generations', () => {
     expect(Object.keys(archive).sort()).toEqual([...NICHES].sort());
   });
 
+  it('ranks and stores archive entries by a custom fitness when given one', () => {
+    const a = { ...withResult(1, 90, styled(0.2, 0.5)), score: 1 };
+    const b = { ...withResult(2, 10, styled(0.2, 0.5)), score: 2 };
+    const archive = updateArchive({}, [a, b], { perNiche: 1, fitness: (ind) => ind.score });
+    expect(archive['tight-aggressive'].map((e) => [e.id, e.fitness])).toEqual([[2, 2]]);
+  });
+
   it('nextGeneration keeps niche champions and top performers and fills with new children', () => {
     const pop = Array.from({ length: 20 }, (_, i) => withResult(i, i, i === 0 ? styled(0.3, 0.1) : styled(0.2, 0.5)));
     const { population, nextId } = nextGeneration(pop, { rng: mulberry32(5), eliteCount: 4, nextId: 20 });
