@@ -5,6 +5,7 @@ import { mockRes, authedReq, TEST_AUTH } from '../../_lib/testing.js';
 import { pokerSessionBody, pokerHandRecord, findHandRecord, heroActed, heroDecision } from '../../_lib/pokerTesting.js';
 import { createPokerSessionsHandler } from './sessions.js';
 import { createPokerHandsHandler } from './hands.js';
+import { createPokerProfileHandler } from './profile.js';
 
 // Opt-in: POKER_DB_IT=1 with DATABASE_URL pointing at a migrated, disposable database
 // (a Neon branch, never production). It writes one session and deletes it afterwards.
@@ -142,5 +143,12 @@ describe.skipIf(!RUN)('poker persistence against a real database', () => {
     expect(res.body).toEqual({ saved: true, inserted: 1, duplicate: 0 });
     after = await call(sessions, { query: { id: openSessionId } });
     expect(after.body.session.endedAt).toBeNull();
+  });
+
+  it('computes the profile from stored hands', async () => {
+    const res = await call(createPokerProfileHandler({ auth }), {});
+    expect(res.statusCode).toBe(200);
+    expect(res.body.hands).toBeGreaterThanOrEqual(0);
+    expect(typeof res.body.profile.hands).toBe('number');
   });
 });
