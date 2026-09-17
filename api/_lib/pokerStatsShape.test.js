@@ -52,6 +52,14 @@ describe('shapeLeaks', () => {
     const rows = [leakRow({ spot: 'pf.open', evLoss: 0 }), leakRow({ spot: 'river.facing_bet.oop', evLoss: 60 })];
     expect(shapeLeaks(rows, 300).map((l) => l.spot)).toEqual(['river.facing_bet.oop']);
   });
+
+  it('keeps a spot at exactly LEAK_MIN_DECISIONS (15) and drops one decision short (14)', () => {
+    const rows = [
+      leakRow({ spot: 'at-min', decisions: LEAK_MIN_DECISIONS }),
+      leakRow({ spot: 'below-min', decisions: LEAK_MIN_DECISIONS - 1 }),
+    ];
+    expect(shapeLeaks(rows, 300).map((l) => l.spot)).toEqual(['at-min']);
+  });
 });
 
 describe('shapeTrend', () => {
