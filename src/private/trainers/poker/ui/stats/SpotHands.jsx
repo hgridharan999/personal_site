@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom';
 import { getPokerSpotHands } from '../../lib/persistence/api.js';
 import { usePokerResource } from '../shared/usePokerResource.js';
-import { spotHandsView } from './statsView';
+import { STATS_HREF, spotHandsView } from './statsView';
 import StatsPanel from './StatsPanel';
 
-const LOGIN_FROM = '/me/poker?tab=stats';
+const LOGIN_FROM = STATS_HREF;
 const loadSpotHands = (spot) => getPokerSpotHands(spot);
 
 /** The hand list filtered to one spot (the focus card's link), newest first. */

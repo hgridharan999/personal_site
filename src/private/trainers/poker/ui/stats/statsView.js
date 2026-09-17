@@ -46,7 +46,8 @@ export function formatRate(bb) {
   return bb > 0 ? `+${text}` : `${MINUS}${text}`;
 }
 
-export const spotHref = (spot) => `/me/poker?tab=stats&spot=${encodeURIComponent(spot)}`;
+export const STATS_HREF = '/me/poker?tab=stats';
+export const spotHref = (spot) => `${STATS_HREF}&spot=${encodeURIComponent(spot)}`;
 
 const exampleLinks = (ids) => ids.map((id, i) => ({ id, label: `Hand ${i + 1}`, href: handHref(id) }));
 

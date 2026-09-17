@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getPokerStats } from '../../lib/persistence/api.js';
 import { usePokerResource } from '../shared/usePokerResource.js';
-import { OVERALL, focusView, leaksView, tendenciesView, trendView } from './statsView';
+import { OVERALL, STATS_HREF, focusView, leaksView, tendenciesView, trendView } from './statsView';
 import StatsPanel from './StatsPanel';
 import FocusCard from './FocusCard';
 import TendenciesPanel from './TendenciesPanel';
@@ -12,7 +12,7 @@ import SpotHands from './SpotHands';
 import '../../../trainers.css';
 import './stats.css';
 
-const LOGIN_FROM = '/me/poker?tab=stats';
+const LOGIN_FROM = STATS_HREF;
 const loadStats = () => getPokerStats();
 
 /** The Stats tab: long-term leak tracker (spec §7.4). `?spot=` adds that spot's hand list on top. */
@@ -40,7 +40,7 @@ export default function PokerStats() {
       {spot && (
         <>
           <p className="pk-stats__wide">
-            <Link to="/me/poker?tab=stats" className="pk-btn" data-hot>All stats</Link>
+            <Link to={STATS_HREF} className="pk-btn" data-hot>All stats</Link>
           </p>
           <SpotHands spot={spot} />
         </>
