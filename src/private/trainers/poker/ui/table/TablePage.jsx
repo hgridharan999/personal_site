@@ -35,7 +35,7 @@ export default function TablePage({
         {children}
         <div className="pk-closed">
           <h1 className="pk-title">Table closed</h1>
-          <p className="pk-muted">This table is no longer running and a reloaded table cannot be resumed. The hands you finished were saved.</p>
+          <p className="pk-muted">This table is no longer running and a reloaded table cannot be resumed. Any hands you played were saved to your account as they synced.</p>
           <Link to="/me/poker" className="pk-btn pk-btn--raise" data-hot>Back to the lobby</Link>
         </div>
       </PokerShell>

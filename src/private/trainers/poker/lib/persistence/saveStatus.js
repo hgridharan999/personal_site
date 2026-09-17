@@ -9,9 +9,11 @@ export function pokerSaveStatus({ pendingIds, failed }) {
   return { status: 'saved', pending: 0, failed: 0, failedId: null, lastError: null };
 }
 
-export function saveStatusText({ status, pending, failed, lastError }) {
+export function saveStatusText({ status, pending, failed }) {
+  // Only the count: the per-entry lastError is left to the failed-entries list (PokerSaveStatus.jsx),
+  // so the alert does not repeat details the list already shows.
   if (status === 'failed') {
-    return `${failed} save${failed === 1 ? '' : 's'} rejected by the server: ${lastError ?? 'unknown error'}`;
+    return `${failed} save${failed === 1 ? '' : 's'} rejected by the server`;
   }
   if (status === 'saving') return `Saving… ${pending} waiting to sync (kept on this device and retried)`;
   return 'All hands saved';

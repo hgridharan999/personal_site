@@ -21,7 +21,7 @@ export default function SessionEnd({ session }) {
       <ul className="pk-end__bots">
         {bots.map((p) => <li key={p.id}>{p.tag} &middot; {p.name} &middot; {p.style}</li>)}
       </ul>
-      <p className="pk-muted">This session was saved.</p>
+      <p className="pk-muted">Hands save to your account as they sync.</p>
       <Link to="/me/poker" className="pk-btn pk-btn--raise" data-hot>Back to the lobby</Link>
     </section>
   );
