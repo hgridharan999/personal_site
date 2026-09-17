@@ -99,6 +99,7 @@
 .pk .pk-end__stats dt { color: var(--pk-muted-strong); font-size: 11px; }
 .pk .pk-end__stats dd { margin: 4px 0 0; font-size: 20px; color: var(--pk-accent); }
 .pk .pk-end__bots { margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.8; }
+.pk .pk-end__links { display: flex; flex-wrap: wrap; gap: 12px; }
 
 @media (prefers-reduced-motion: reduce) {
   .pk .pk-fly { display: none; }

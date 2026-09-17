@@ -415,3 +415,63 @@ describe('createTableDriver', () => {
     });
   });
 });
+
+describe('hand analysis (Phase 5)', () => {
+  const graded = (record) => ({ decisions: [], heroAllinEv: record.handNo });
+
+  it('delivers onHandComplete(record, analysis) in hand order', async () => {
+    const analyzeHand = vi.fn(async (record) => graded(record));
+    const { driver, onHandComplete } = setup({ analyzeHand });
+    driver.start();
+    await settle(driver);
+    await heroPlaysUntil(driver, 2);
+    await vi.waitFor(() => expect(onHandComplete).toHaveBeenCalledTimes(2));
+    expect(onHandComplete.mock.calls.map(([r, a]) => [r.handNo, a.heroAllinEv])).toEqual([[1, 1], [2, 2]]);
+  });
+
+  it('delivers the empty analysis when grading never answers', async () => {
+    const analyzeHand = vi.fn(() => new Promise(() => {}));
+    const { driver, onHandComplete } = setup({ analyzeHand, analysisTimeoutMs: 5 });
+    driver.start();
+    await settle(driver);
+    await heroPlaysUntil(driver, 1);
+    await vi.waitFor(() => expect(onHandComplete).toHaveBeenCalledTimes(1));
+    expect(onHandComplete.mock.calls[0][1]).toEqual({ decisions: [], heroAllinEv: null });
+  });
+
+  it('emits onSessionEnd only after the last hand is delivered', async () => {
+    let release = null;
+    const analyzeHand = vi.fn(() => new Promise((resolve) => { release = () => resolve({ decisions: [], heroAllinEv: 3 }); }));
+    const order = [];
+    const { driver } = setup({
+      analyzeHand, onHandComplete: vi.fn(() => order.push('hand')), onSessionEnd: vi.fn(() => order.push('end')),
+    });
+    driver.start();
+    await settle(driver);
+    driver.getUp();
+    driver.act({ action: 'fold' });
+    await vi.waitFor(() => expect(driver.getSession().phase).toBe('ended'));
+    await vi.waitFor(() => expect(analyzeHand).toHaveBeenCalledTimes(1));
+    expect(order).toEqual([]);
+    release();
+    await vi.waitFor(() => expect(order).toEqual(['hand', 'end']));
+  });
+
+  it('abandon and flushAnalyses deliver pending hands at once without grades', async () => {
+    const analyzeHand = vi.fn(() => new Promise(() => {}));
+    const order = [];
+    const { driver } = setup({
+      analyzeHand, onHandComplete: vi.fn((r, a) => order.push(['hand', r.handNo, a])), onSessionEnd: vi.fn(() => order.push(['end'])),
+    });
+    driver.start();
+    await settle(driver);
+    await heroPlaysUntil(driver, 1);
+    await vi.waitFor(() => expect(analyzeHand).toHaveBeenCalledTimes(1));
+    driver.flushAnalyses();
+    expect(order).toEqual([['hand', 1, { decisions: [], heroAllinEv: null }]]);
+    await heroPlaysUntil(driver, 2);
+    await vi.waitFor(() => expect(analyzeHand).toHaveBeenCalledTimes(2));
+    driver.abandon();
+    expect(order.slice(1)).toEqual([['hand', 2, { decisions: [], heroAllinEv: null }], ['end']]);
+  });
+});
