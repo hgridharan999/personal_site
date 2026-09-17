@@ -21,11 +21,11 @@
 .pk .pk-details summary { cursor: pointer; font-size: 11px; color: var(--pk-muted); text-transform: uppercase; }
 .pk .pk-details[open] summary { margin-bottom: 8px; }
 .pk .pk-table-wrap { overflow-x: auto; }
-.pk .pk-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-.pk .pk-table th, .pk .pk-table td { text-align: left; padding: 6px 8px; border-bottom: 2px solid var(--pk-rail-hi); white-space: nowrap; }
-.pk .pk-table thead th { color: var(--pk-muted); font-weight: 400; }
-.pk .pk-table tbody th { font-weight: 400; }
-.pk .pk-table a { color: var(--pk-text); }
+.pk .pk-datatable { width: 100%; border-collapse: collapse; font-size: 11px; }
+.pk .pk-datatable th, .pk .pk-datatable td { text-align: left; padding: 6px 8px; border-bottom: 2px solid var(--pk-rail-hi); white-space: nowrap; }
+.pk .pk-datatable thead th { color: var(--pk-muted); font-weight: 400; }
+.pk .pk-datatable tbody th { font-weight: 400; }
+.pk .pk-datatable a { color: var(--pk-text); }
 .pk .pk-row--low { color: var(--pk-muted); }
 
 /* tendencies */

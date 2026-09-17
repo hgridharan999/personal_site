@@ -10,7 +10,7 @@ export default function LeaksPanel({ view }) {
       <details className="pk-details">
         <summary>Table and example hands</summary>
         <div className="pk-table-wrap">
-          <table className="pk-table">
+          <table className="pk-datatable">
             <thead>
               <tr>
                 <th scope="col">Spot</th>

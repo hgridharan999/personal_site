@@ -37,7 +37,7 @@ export default function TrendPanel({ view }) {
       <details className="pk-details pk-stats__wide">
         <summary>Table</summary>
         <div className="pk-table-wrap">
-          <table className="pk-table">
+          <table className="pk-datatable">
             <thead>
               <tr>
                 <th scope="col">Session</th>

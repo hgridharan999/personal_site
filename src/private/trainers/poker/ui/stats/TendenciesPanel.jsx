@@ -23,7 +23,7 @@ export default function TendenciesPanel({ view, onPosition }) {
         {view.hands} hands · flags need {view.minSample} spots · ranges are approximate
       </p>
       <div className="pk-table-wrap">
-        <table className="pk-table">
+        <table className="pk-datatable">
           <caption className="pk-sr-only">Your tendencies against target ranges for winning 6-max play</caption>
           <thead>
             <tr>

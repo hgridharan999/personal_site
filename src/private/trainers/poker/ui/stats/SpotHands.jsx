@@ -17,7 +17,7 @@ export default function SpotHands({ spot }) {
     <StatsPanel id="pk-spot" title={title} wide status={status} error={error} onRetry={reload} view={view}>
       {(v) => (
         <div className="pk-table-wrap">
-          <table className="pk-table">
+          <table className="pk-datatable">
             <thead>
               <tr>
                 <th scope="col">Day</th>
