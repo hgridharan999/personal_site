@@ -3,7 +3,10 @@ import { buildLog } from '../bots/testHands.js';
 import { callingStation } from '../bots/baselines.js';
 import { GRADES } from './grade.js';
 import { createRolloutWorld } from './rollout.js';
-import { HAND_BUDGET_MS, EQUITY_ITERATIONS, MAX_GRADED_DECISIONS, gradeHand } from './gradeHand.js';
+import { MIN_ROLLOUTS } from './evOptions.js';
+import {
+  HAND_BUDGET_MS, EQUITY_ITERATIONS, MAX_GRADED_DECISIONS, OVERTIME_MIN_ROLLOUTS, gradeHand,
+} from './gradeHand.js';
 
 const FAST = { budgetMs: Infinity, minRollouts: 2, maxRollouts: 2, allinSamples: 200 };
 const stationWorld = (args) => createRolloutWorld({ ...args, createBrainImpl: () => callingStation });
@@ -70,5 +73,73 @@ describe('gradeHand golden spots', () => {
     expect(GRADES).toContain(d.grade);
     expect(typeof d.confident).toBe('boolean');
     expect(gradeHand(record, FAST)).toEqual(first);
+  });
+});
+
+describe('gradeHand budget floor', () => {
+  it('grades a decision that starts after the hand deadline with OVERTIME_MIN_ROLLOUTS rounds', () => {
+    // BB calls an open with 72o (off-chart, so it's graded by rollouts) then checks the flop.
+    const events = buildLog(['r 1 6', 'c 0', 'B 9c4d2s', 'k 0'], { holes: ['7c2d', 'AsKs'] });
+    const record = { id: 'overtime', heroSeat: 0, lineup: HU_LINEUP, events };
+    let pastDeadline = false;
+    const now = () => (pastDeadline ? 1e9 : 0);
+    const roundsByIdx = {};
+    const createWorld = (args) => ({ ...createRolloutWorld(args), _dec: args.point.idx });
+    const rollout = (world, option, seed) => {
+      pastDeadline = true; // the hand's deadline passes the instant the first rollout runs
+      (roundsByIdx[world._dec] ??= new Set()).add(seed);
+      return 0;
+    };
+    const { decisions } = gradeHand(record, { budgetMs: 1000, now, rollout, createWorld });
+    expect(decisions).toHaveLength(2);
+    const [preflop, flop] = decisions;
+    expect(roundsByIdx[preflop.idx].size).toBe(MIN_ROLLOUTS);
+    expect(roundsByIdx[flop.idx].size).toBe(OVERTIME_MIN_ROLLOUTS);
+  });
+
+  it('carries unused budget from a fast decision over to the next', () => {
+    // Preflop AA 3-bet is a chart hit (instant, no rollouts); the flop check then inherits nearly the
+    // whole hand budget instead of a naive equal split across the hand's two decisions.
+    const events = buildLog(['r 1 6', 'r 0 20', 'c 1', 'B 9c4d2s', 'k 0'], { holes: ['AhAs', 'KdQd'] });
+    const record = { id: 'carryover', heroSeat: 0, lineup: HU_LINEUP, events };
+    let clock = 0;
+    const now = () => clock;
+    const roundsByIdx = {};
+    const createWorld = (args) => ({ ...createRolloutWorld(args), _dec: args.point.idx });
+    const rollout = (world, option, seed) => {
+      clock += 1;
+      (roundsByIdx[world._dec] ??= new Set()).add(seed);
+      return 0;
+    };
+    const { decisions } = gradeHand(record, {
+      budgetMs: 200, now, minRollouts: 1, maxRollouts: 1000, rollout, createWorld,
+    });
+    expect(decisions).toHaveLength(2);
+    expect(decisions[0].recommended.evByOption).toEqual({});
+    const flopIdx = decisions[1].idx;
+    // A naive equal split (budgetMs / 2 decisions, i.e. a 100 ms deadline) caps the flop decision at 17
+    // rounds on this seed; carryover lets it use the full 200 ms since the preflop decision spent none of
+    // it, comfortably clearing a threshold a non-carryover implementation could never reach.
+    expect(roundsByIdx[flopIdx].size).toBeGreaterThan(25);
+  });
+
+  it('returns no decisions when a hand has more than MAX_GRADED_DECISIONS hero decisions', () => {
+    // Heads-up min-raise war: both seats keep reopening action by the minimum increment, so the hero
+    // alone racks up 41 raises without either stack running out.
+    const steps = [];
+    let amount = 2;
+    for (let i = 0; i < 82; i += 1) {
+      amount += 2;
+      steps.push(`r ${i % 2 === 0 ? 1 : 0} ${amount}`);
+    }
+    const events = buildLog(steps, { holes: ['7c2d', 'AsKs'], stack: 5000 });
+    const record = { id: 'raise-war', heroSeat: 0, lineup: HU_LINEUP, events };
+    const { decisions, heroAllinEv } = gradeHand(record, FAST);
+    expect(decisions).toEqual([]);
+    expect(heroAllinEv).toBeNull();
+  });
+
+  it('throws on a malformed record', () => {
+    expect(() => gradeHand({ id: 'bad', heroSeat: 0, lineup: [] })).toThrow();
   });
 });

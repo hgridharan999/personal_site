@@ -16,6 +16,10 @@ import { isVagueRange, dominantOpponent, isConfident } from './confidence.js';
 export const HAND_BUDGET_MS = 2000;
 export const EQUITY_ITERATIONS = 2000;
 export const MAX_GRADED_DECISIONS = 40; // the POST hands limit per hand
+// When the hand's deadline has already passed before a decision starts (this decision's share of the
+// remaining budget is 0), grade it with this floor instead of evOptions' default MIN_ROLLOUTS, so one
+// slow multiway hand can't blow through the analysis worker's ANALYSIS_TIMEOUT_MS.
+export const OVERTIME_MIN_ROLLOUTS = 2;
 const defaultNow = () => performance.now();
 
 /**
@@ -74,18 +78,19 @@ export function gradeDecision(point, {
   const ranked = rankOptions(evs);
   const best = ranked[0];
   const chosen = evs.find((o) => o.key === optionKey(event.action, size));
-  const evLoss = roundEv(Math.max(0, best.mean - chosen.mean));
+  const evByOption = Object.fromEntries(evs.map((o) => [o.key, roundEv(o.mean)]));
+  const evLoss = roundEv(Math.max(0, evByOption[best.key] - evByOption[chosen.key]));
   let vagueRange = false;
   if (point.street !== 'preflop') {
     const seat = dominantOpponent(point.before, point.seatEvents, record.heroSeat);
-    vagueRange = seat !== null && world.ranges.has(seat) && isVagueRange(world.ranges.get(seat), world.dead);
+    vagueRange = seat !== null && worldFor().ranges.has(seat) && isVagueRange(worldFor().ranges.get(seat), worldFor().dead);
   }
   return {
     ...decision,
     recommended: {
       action: best.action,
       size: best.size,
-      evByOption: Object.fromEntries(evs.map((o) => [o.key, roundEv(o.mean)])),
+      evByOption,
     },
     evLoss,
     grade: gradeFor(evLoss, point.pot),
@@ -95,7 +100,8 @@ export function gradeDecision(point, {
 
 /**
  * @param {{ id:string, heroSeat:number, lineup:{seat:number, personaId:string}[], events:object[] }} record
- * @returns {{ decisions:object[], heroAllinEv:number|null }}
+ * @returns {{ decisions:object[], heroAllinEv:number|null }} heroAllinEv is still computed even when the hand
+ *   has more than MAX_GRADED_DECISIONS hero decisions and decisions is returned empty.
  */
 export function gradeHand(record, {
   budgetMs = HAND_BUDGET_MS, now = defaultNow, minRollouts, maxRollouts, allinSamples = ALLIN_SAMPLES, rollout, createWorld,
@@ -107,8 +113,11 @@ export function gradeHand(record, {
   const started = timed ? now() : 0;
   const decisions = points.map((point, i) => {
     const share = timed ? Math.max(0, budgetMs - (now() - started)) / (points.length - i) : Infinity;
+    const overtime = timed && share <= 0;
     return gradeDecision(point, {
-      record, seed: seedFor(record.id, point.idx), budgetMs: share, now, minRollouts, maxRollouts, rollout, createWorld,
+      record, seed: seedFor(record.id, point.idx), budgetMs: share, now,
+      minRollouts: minRollouts ?? (overtime ? OVERTIME_MIN_ROLLOUTS : undefined),
+      maxRollouts, rollout, createWorld,
     });
   });
   return { decisions, heroAllinEv: heroAllin };
