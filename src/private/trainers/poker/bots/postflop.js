@@ -66,9 +66,8 @@ function betTo(c, frac) {
 /**
  * @param {{ street:'flop'|'turn'|'river', equity:number, nOpp:number, pot:number, toCall:number, currentBet:number,
  *   maxRaiseTo:number, canRaise:boolean, ip:boolean, aggressor:boolean, betsThisStreet:number, spr:number,
- *   wetness:number, draw:boolean, dials:Record<string,number>, rng:() => number, rangePct?:number|null }} c
- *   equity: share of the pot vs the live opponents' ranges; draw: flush draw or open-ended straight draw;
- *   rangePct: the hand's equity percentile within its own tracked range (0 = weakest), estimated from equity when absent.
+ *   wetness:number, draw:boolean, dials:Record<string,number>, rng:() => number }} c
+ *   equity: share of the pot vs the live opponents' ranges; draw: flush draw or open-ended straight draw.
  * @returns {{ action:string, amount?:number }} an intended choice (pass through legalize)
  */
 export function postflopDecision(c) {
@@ -109,7 +108,7 @@ export function postflopDecision(c) {
   const callT = need * d.callThresh;
   if (eq >= callT) return { action: 'call' };
   // Minimum-defence floor: the strongest defendShare of the range calls even without the pot odds.
-  const pct = typeof c.rangePct === 'number' ? c.rangePct : rangePercentile(huEquity(eq, c.nOpp), c.street);
+  const pct = rangePercentile(huEquity(eq, c.nOpp), c.street);
   if (pct >= 1 - defendShare(d.mdfDefend, c.pot, c.toCall, c.nOpp)) return { action: 'call' };
   if (c.street === 'flop' && c.ip && c.nOpp === 1 && c.betsThisStreet === 1 && eq >= 0.6 * callT && c.rng() < d.floatFreq) {
     return { action: 'call' };

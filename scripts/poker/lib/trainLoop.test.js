@@ -6,7 +6,7 @@ import { ADAPT_JOB_DEALS } from './tableJob.js';
 import { PROBES, OPPONENTS } from './gate.js';
 import { ANCHORS, NICHES } from './evolve.js';
 import {
-  train, selectPersonas, validateOptions, quickGateSeed, reevalSeed, PERSONA_SLOTS, TRAIN_DEFAULTS, SMOKE_OPTIONS, REEVAL_ROUNDS,
+  train, selectPersonas, validateOptions, validatePersonaSelection, quickGateSeed, reevalSeed, PERSONA_SLOTS, TRAIN_DEFAULTS, SMOKE_OPTIONS, REEVAL_ROUNDS,
 } from './trainLoop.js';
 
 const inline = () => createPool({ size: 0 }).runAll;
@@ -45,6 +45,14 @@ describe('training options', () => {
     expect(SMOKE_OPTIONS.generations).toBeLessThanOrEqual(TRAIN_DEFAULTS.generations);
     expect(validateOptions(TRAIN_DEFAULTS)).toBeNull();
     expect(validateOptions({ ...TRAIN_DEFAULTS, ...SMOKE_OPTIONS })).toBeNull();
+  });
+
+  it('accepts only a selection of exactly 8 personas with unique ids', () => {
+    const eight = Object.values(PERSONA_SLOTS).flat().map((slot) => ({ ...slot }));
+    expect(validatePersonaSelection(eight)).toBeNull();
+    expect(validatePersonaSelection(eight.slice(0, 7))).toMatch(/exactly 8 personas/);
+    expect(validatePersonaSelection([...eight, { ...eight[0] }])).toMatch(/exactly 8 personas/);
+    expect(validatePersonaSelection([...eight.slice(0, 7), { ...eight[7], id: eight[0].id }])).toMatch(/unique ids/);
   });
 
   it('rejects a population that is not a multiple of 5 and an elite count that is not below the population', () => {

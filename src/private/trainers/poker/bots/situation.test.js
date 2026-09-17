@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { applyEvent } from '../engine/handState.js';
 import { hasChart } from './charts.js';
-import { positionsOf, actsByStreet, preflopSpot, chartKeyFor, postflopContext } from './situation.js';
+import { positionsOf, actsByStreet, preflopSpot, chartKeyFor, postflopContext, potOf } from './situation.js';
 import { contextAfter } from './testHands.js';
 
 const spotFor = (steps) => {
@@ -72,6 +72,13 @@ describe('preflopSpot and chartKeyFor', () => {
     const limpRaised = spotFor(['c 2', 'r 3 8', 'f 4', 'f 5', 'f 0', 'f 1']);
     expect(limpRaised).toMatchObject({ kind: 'vsOpen', position: 'UTG', raiserPosition: 'HJ' });
     expect(chartKeyFor(limpRaised, hasChart)).toBe('squeeze.CO');
+  });
+});
+
+describe('potOf', () => {
+  it('sums the chips every player committed this hand, folded players included', () => {
+    const c = contextAfter(['r 2 5', 'c 3', 'f 4']);
+    expect(potOf(c.view)).toBe(1 + 2 + 5 + 5);
   });
 });
 

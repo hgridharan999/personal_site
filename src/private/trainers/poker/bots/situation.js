@@ -4,6 +4,9 @@ import { seatsFromButton } from '../engine/handState.js';
 
 const MIDDLE = ['UTG', 'HJ', 'CO'];
 
+/** Chips every player (folded ones included) has put in this hand. */
+export const potOf = (view) => view.players.reduce((sum, p) => sum + p.total, 0);
+
 /** @returns {Record<number, 'UTG'|'HJ'|'CO'|'BTN'|'SB'|'BB'>} position label per seat */
 export function positionsOf(view) {
   const order = seatsFromButton(view); // left of the button first, button last
@@ -126,7 +129,7 @@ export function postflopContext(view, events, seat, legal) {
     return agg.length ? agg[agg.length - 1].seat : null;
   };
   const previous = { flop: 'preflop', turn: 'flop', river: 'turn' }[view.street];
-  const pot = view.players.reduce((sum, p) => sum + p.total, 0);
+  const pot = potOf(view);
   return {
     street: view.street,
     pot,

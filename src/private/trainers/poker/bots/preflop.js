@@ -3,7 +3,7 @@
 import { CLASS_COUNT, classOf, combosIn } from './handClass.js';
 import { hasChart, scaledFreqs, topShareWeights } from './charts.js';
 import { equityVsClassWeights } from './preflopEquity.js';
-import { actsByStreet, preflopSpot, chartKeyFor } from './situation.js';
+import { actsByStreet, preflopSpot, chartKeyFor, potOf } from './situation.js';
 
 // Range share assumed for a raiser when no tracked range is available (ranked by the raiser order).
 const RAISER_SHARE = { open: 0.3, vsLimp: 0.3, vsOpen: 0.2, squeeze: 0.2, vs3bet: 0.07, coldVs3bet: 0.07, vs4bet: 0.035 };
@@ -85,7 +85,7 @@ export function preflopDecision({ view, events, seat, legal, dials, rng, bb, rai
   const allIn = { action: 'raise', amount: legal.maxRaiseTo ?? 0 };
 
   if (legal.toCall > 0 && legal.toCall >= BIG_CALL * me.stack) {
-    const pot = view.players.reduce((sum, p) => sum + p.total, 0);
+    const pot = potOf(view);
     const villain = raiserWeights ?? topShareWeights(RAISER_SHARE[spot.kind]);
     const equity = equityVsClassWeights(cls, villain);
     const need = legal.toCall / (pot + legal.toCall);
@@ -103,7 +103,7 @@ export function preflopDecision({ view, events, seat, legal, dials, rng, bb, rai
   if (u < f.raise + f.call) return { action: 'call' };
   // An opener facing a single normal-size 3-bet never folds a hand that beats the pot odds (chart raises stay raises).
   if (spot.kind === 'vs3bet' && legal.toCall > 0) {
-    const pot = view.players.reduce((sum, p) => sum + p.total, 0);
+    const pot = potOf(view);
     if (defendsThreeBet(cls, { pot, toCall: legal.toCall, ip: spot.ip, raiserWeights })) return { action: 'call' };
   }
   return { action: 'fold' };

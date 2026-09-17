@@ -223,9 +223,6 @@ describe('postflopDecision', () => {
     expect(postflopDecision({ ...facing, equity: 0.3, dials: full }).action).toBe('call'); // percentile ~0.56
     expect(postflopDecision({ ...facing, equity: 0.3, dials: { ...full, mdfDefend: 0 } }).action).toBe('fold');
     expect(postflopDecision({ ...facing, equity: 0.2, dials: full }).action).toBe('fold'); // percentile ~0.40
-    // A tracked range percentile, when given, replaces the estimate.
-    expect(postflopDecision({ ...facing, equity: 0.1, rangePct: 0.6, dials: full }).action).toBe('call');
-    expect(postflopDecision({ ...facing, equity: 0.3, rangePct: 0.4, dials: full }).action).toBe('fold');
   });
 
   it('jams instead of a bet or raise that leaves less than half the resulting pot behind', () => {
