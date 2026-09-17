@@ -4,8 +4,14 @@ import { DIALS, ARCHETYPES, clampDial, resolveDials } from '../../../src/private
 import { emptyProfile } from '../../../src/private/trainers/poker/bots/contract.js';
 
 export const NICHES = Object.freeze(['tight-aggressive', 'loose-aggressive', 'tight-passive', 'loose-passive']);
-/** Measured in mixed training tables: VPIP at or above 0.23 is loose, postflop aggression frequency at or above 0.35 is aggressive. */
-export const STYLE_THRESHOLDS = Object.freeze({ vpip: 0.23, aggFreq: 0.35 });
+/**
+ * VPIP at or above 0.25 is loose; HUD aggression frequency (bets+raises over postflop bets, raises, calls and folds,
+ * checks excluded) at or above 0.56 is aggressive. Calibrated in training-format mixed tables at 150 equity iterations:
+ * tight archetypes measure VPIP 0.19-0.22 and loose ones 0.28-0.31; passive archetypes measure AFq 0.40-0.51 and
+ * aggressive ones 0.62-0.75. Each threshold sits at the midpoint of the closest pair, so every archetype lands in its
+ * own niche (evolve.slow.test.js) and the initial population spreads across all four.
+ */
+export const STYLE_THRESHOLDS = Object.freeze({ vpip: 0.25, aggFreq: 0.56 });
 export const ANCHORS = Object.freeze(['rawEquity', 'tightPassive', 'callingStation', 'always3Bet', 'alwaysCbet', 'alwaysOverbetRiver']);
 
 /**

@@ -5,7 +5,7 @@ import { DIALS, ARCHETYPES, resolveDials } from '../../../src/private/trainers/p
 import { emptyProfile } from '../../../src/private/trainers/poker/bots/contract.js';
 import {
   NICHES, nicheOf, fitnessOf, mutate, crossover, initialPopulation, scheduleTables, updateArchive, nextGeneration,
-  hasStalled, mergeProfiles, newIndividual,
+  hasStalled, mergeProfiles, newIndividual, STYLE_THRESHOLDS,
 } from './evolve.js';
 
 const styled = (vpip, aggFreq) => {
@@ -17,11 +17,19 @@ const styled = (vpip, aggFreq) => {
 const withResult = (id, bbWon, profile) => ({ ...newIndividual(id, ARCHETYPES['tight-aggressive']), bbWon, hands: 1000, profile });
 
 describe('niches and fitness', () => {
-  it('classifies by VPIP 0.23 and aggression 0.35', () => {
-    expect(nicheOf(styled(0.2, 0.5))).toBe('tight-aggressive');
-    expect(nicheOf(styled(0.3, 0.5))).toBe('loose-aggressive');
-    expect(nicheOf(styled(0.2, 0.2))).toBe('tight-passive');
-    expect(nicheOf(styled(0.23, 0.35))).toBe('loose-aggressive');
+  it('classifies by VPIP 0.25 and HUD aggression frequency 0.56', () => {
+    // Derived by measurement (niche-calibration report): the archetypes and 46 mutated initial-population individuals
+    // in training-format mixed tables, 150 equity iterations, 3,600-10,800 hands each over four seeds. Tight
+    // archetypes measured VPIP 0.19-0.22 and loose ones 0.28-0.31, so 0.25 is the midpoint. HUD AFq (checks excluded)
+    // measured 0.40-0.51 for the passive archetypes and 0.62-0.75 for the aggressive ones; 0.56 is the midpoint of the
+    // closest pair (tight-passive vs tight-aggressive). The old 0.35 predates HUD AFq and classed everyone aggressive.
+    expect(STYLE_THRESHOLDS).toEqual({ vpip: 0.25, aggFreq: 0.56 });
+    expect(nicheOf(styled(0.2, 0.7))).toBe('tight-aggressive');
+    expect(nicheOf(styled(0.3, 0.7))).toBe('loose-aggressive');
+    expect(nicheOf(styled(0.2, 0.45))).toBe('tight-passive');
+    expect(nicheOf(styled(0.3, 0.45))).toBe('loose-passive');
+    expect(nicheOf(styled(0.25, 0.56))).toBe('loose-aggressive');
+    expect(nicheOf(styled(0.249, 0.559))).toBe('tight-passive');
     expect(nicheOf(emptyProfile())).toBe('tight-passive');
     expect(fitnessOf(withResult(1, 25, emptyProfile()))).toBe(2.5);
     expect(fitnessOf(newIndividual(2, {}))).toBe(0);
@@ -69,24 +77,24 @@ describe('scheduleTables', () => {
 
 describe('archive and generations', () => {
   it('keeps the best per niche, one niche per individual', () => {
-    let archive = updateArchive({}, [withResult(1, 10, styled(0.2, 0.5)), withResult(2, 30, styled(0.2, 0.5)), withResult(3, 5, styled(0.3, 0.2))], { perNiche: 1 });
+    let archive = updateArchive({}, [withResult(1, 10, styled(0.2, 0.7)), withResult(2, 30, styled(0.2, 0.7)), withResult(3, 5, styled(0.3, 0.2))], { perNiche: 1 });
     expect(archive['tight-aggressive'].map((e) => e.id)).toEqual([2]);
     expect(archive['loose-passive'].map((e) => e.id)).toEqual([3]);
-    archive = updateArchive(archive, [withResult(3, 50, styled(0.2, 0.5))], { perNiche: 1 });
+    archive = updateArchive(archive, [withResult(3, 50, styled(0.2, 0.7))], { perNiche: 1 });
     expect(archive['tight-aggressive'].map((e) => e.id)).toEqual([3]);
     expect(archive['loose-passive']).toEqual([]);
     expect(Object.keys(archive).sort()).toEqual([...NICHES].sort());
   });
 
   it('ranks and stores archive entries by a custom fitness when given one', () => {
-    const a = { ...withResult(1, 90, styled(0.2, 0.5)), score: 1 };
-    const b = { ...withResult(2, 10, styled(0.2, 0.5)), score: 2 };
+    const a = { ...withResult(1, 90, styled(0.2, 0.7)), score: 1 };
+    const b = { ...withResult(2, 10, styled(0.2, 0.7)), score: 2 };
     const archive = updateArchive({}, [a, b], { perNiche: 1, fitness: (ind) => ind.score });
     expect(archive['tight-aggressive'].map((e) => [e.id, e.fitness])).toEqual([[2, 2]]);
   });
 
   it('nextGeneration keeps niche champions and top performers and fills with new children', () => {
-    const pop = Array.from({ length: 20 }, (_, i) => withResult(i, i, i === 0 ? styled(0.3, 0.1) : styled(0.2, 0.5)));
+    const pop = Array.from({ length: 20 }, (_, i) => withResult(i, i, i === 0 ? styled(0.3, 0.1) : styled(0.2, 0.7)));
     const { population, nextId } = nextGeneration(pop, { rng: mulberry32(5), eliteCount: 4, nextId: 20 });
     expect(population.length).toBe(20);
     expect(population.slice(0, 4).map((p) => p.id)).toEqual([19, 0, 18, 17]);
