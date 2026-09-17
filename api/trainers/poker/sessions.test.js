@@ -3,7 +3,7 @@ import { createPokerSessionsHandler, OPEN_SESSIONS_LIMIT } from './sessions.js';
 import { mockRes, authedReq, mockSql, TEST_AUTH } from '../../_lib/testing.js';
 import { POKER_SESSION_ID as ID, POKER_STARTED_AT, pokerSessionBody, pokerHandRecord } from '../../_lib/pokerTesting.js';
 import {
-  REVIEW_PAGE_HANDS, RECENT_SESSIONS_LIMIT, COSTLIEST_LIMIT, shapeReviewHand, shapeSummary, shapeOpponents,
+  REVIEW_PAGE_HANDS, RECENT_SESSIONS_LIMIT, COSTLIEST_LIMIT, SEVERITY_GRADES, shapeReviewHand, shapeSummary, shapeOpponents,
 } from '../../_lib/pokerReview.js';
 import { ANALYSIS_VERSION } from '../../../src/private/trainers/poker/analysis/version.js';
 
@@ -168,6 +168,16 @@ describe('api/trainers/poker/sessions', () => {
       expect(summaryQuery.values).toEqual([ID, ANALYSIS_VERSION, ANALYSIS_VERSION, ID]);
       const costliestQuery = sql.queries.find((q) => q.text.includes('ORDER BY d.ev_loss DESC'));
       expect(costliestQuery.values).toEqual([ID, COSTLIEST_LIMIT]);
+    });
+
+    it("ties the severity CASE's grade order to SEVERITY_GRADES", async () => {
+      const { sql } = reviewDb({ hands: [] });
+      await call(sql, { query: { id: ID } });
+      const handQuery = sql.queries.find((q) => q.text.includes('CROSS JOIN LATERAL ('));
+      SEVERITY_GRADES.forEach((grade, severity) => {
+        if (severity === 0) return; // the lowest grade ('good') is the CASE's ELSE 0 branch
+        expect(handQuery.text).toContain(`WHEN '${grade}' THEN ${severity}`);
+      });
     });
 
     it('400 for a bad afterHandNo', async () => {
