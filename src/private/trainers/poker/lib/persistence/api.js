@@ -35,3 +35,9 @@ export function listUngradedPokerHands({ sessionId, belowVersion, afterHandNo = 
 }
 
 export const savePokerHandGrades = (body, opts) => request(`${BASE}/hands`, { method: 'PATCH', body, ...opts });
+
+// Phase 6: the leak tracker's stats endpoint.
+export const getPokerStats = (opts) => request(`${BASE}/stats`, opts);
+
+export const getPokerSpotHands = (spot, opts) =>
+  request(`${BASE}/stats?spot=${encodeURIComponent(spot)}`, opts);
