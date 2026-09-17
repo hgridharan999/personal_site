@@ -87,6 +87,13 @@ function AnimatedRoutes() {
   );
 }
 
+// The chat assistant is for public visitors; it stays off the password-locked private area.
+function PublicChat() {
+  const { pathname } = useLocation();
+  if (pathname === '/login' || pathname === '/me' || pathname.startsWith('/me/')) return null;
+  return <AscentChat />;
+}
+
 // Backgrounds: the storm hiker on the home page; the two still-original pages
 // keep their warm panorama backdrop; every Ascent page owns its dark background.
 function GlobalChrome() {
@@ -100,7 +107,7 @@ function App() {
     <Router>
       <GlobalChrome />
       <AnimatedRoutes />
-      <AscentChat />
+      <PublicChat />
       <CookieConsentBanner />
     </Router>
   );

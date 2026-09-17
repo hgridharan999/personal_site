@@ -4,7 +4,7 @@ import '../ascent/ascent.css';
 import './private.css';
 
 /** Dark Ascent frame for the private pages; also keeps them out of search indexes. */
-export default function PrivateShell({ children, className = '' }) {
+export default function PrivateShell({ children, className = '', customCursor = true }) {
   useEffect(() => {
     const prevBg = document.body.style.background;
     document.body.style.background = '#0B0A0A';
@@ -23,7 +23,7 @@ export default function PrivateShell({ children, className = '' }) {
 
   return (
     <div className={`asc prv ${className}`}>
-      <Cursor />
+      {customCursor && <Cursor />}
       {children}
     </div>
   );
