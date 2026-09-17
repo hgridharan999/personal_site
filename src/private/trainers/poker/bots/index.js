@@ -3,7 +3,7 @@ import { randomLegal, callingStation, rawEquity, tightPassive } from './baseline
 import { always3Bet, alwaysCbet, alwaysOverbetRiver } from './probes.js';
 import { createHeuristicBrain } from './brain.js';
 
-export const BOT_VERSION = 'placeholder';
+export const BOT_VERSION = 'bots-v1';
 
 const FIXED = { randomLegal, callingStation, rawEquity, tightPassive, always3Bet, alwaysCbet, alwaysOverbetRiver };
 export const BRAIN_KEYS = Object.freeze([...Object.keys(FIXED), 'heuristic']);
