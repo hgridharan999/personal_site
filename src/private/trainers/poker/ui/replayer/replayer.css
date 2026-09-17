@@ -1,0 +1,22 @@
+/* src/private/trainers/poker/ui/replayer/replayer.css */
+/* Hand replayer. Scoped under .pk; the table itself uses ui/table/table.css. */
+.pk .pk-replay { display: grid; gap: 20px; padding-top: 16px; }
+@media (min-width: 1200px) { .pk .pk-replay { grid-template-columns: minmax(0, 1fr) 340px; align-items: start; } }
+.pk .pk-replay__main { display: flex; flex-direction: column; align-items: center; gap: 14px; min-width: 0; }
+.pk .pk-replay__side { display: grid; gap: 16px; }
+/* `.pk-table` (table.css) sizes itself with `160cqh`, which needs a query container that has resolved
+   both axes (`container-type: size`) *and* a real height. The live table page gets that height from its
+   100dvh flex layout; this page scrolls normally instead, so it derives the region's height from its own
+   width via the same 16:10 aspect ratio as `.pk-table`, rather than reusing `.pk-table-region` (which relies
+   on flex-grow inside that fixed-height layout and would otherwise collapse toward its 240px floor here). */
+.pk .pk-replay__table-region { width: 100%; max-width: 1080px; aspect-ratio: 16 / 10; container-type: size; }
+.pk .pk-replay__controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.pk .pk-replay__marks { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.pk .pk-replay__marks .pk-btn[aria-current="step"] { border-color: var(--pk-accent); }
+.pk .pk-replay__nav { display: flex; flex-wrap: wrap; gap: 16px; padding-top: 12px; font-size: 12px; }
+.pk .pk-replay__decision p { margin: 0; font-size: 12px; line-height: 1.6; }
+.pk .pk-replay__ev { width: 100%; border-collapse: collapse; font-size: 12px; }
+.pk .pk-replay__ev th, .pk .pk-replay__ev td { text-align: left; padding: 4px 8px; border-bottom: 2px solid var(--pk-rail-hi); }
+.pk .pk-replay__ev th { color: var(--pk-muted); font-weight: 400; }
+.pk .pk-replay__chosen td { color: var(--pk-accent); }
+.pk .pk-replay__explain { color: var(--pk-text); }
