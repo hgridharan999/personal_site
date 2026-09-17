@@ -13,7 +13,8 @@
     "test": "vitest run",
     "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.js",
     "poker:bench-eval": "node scripts/poker/bench-evaluator.js",
-    "poker:gen-preflop": "node scripts/poker/gen-preflop.js"
+    "poker:gen-preflop": "node scripts/poker/gen-preflop.js",
+    "poker:benchmark": "node scripts/poker/benchmark.js"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
