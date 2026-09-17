@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import PokerShell from '../PokerShell';
 import { usePokerResource } from '../shared/usePokerResource.js';
 import { getPokerSessionPage } from '../../lib/persistence/api.js';
 import { formatDay } from '../../../core/format.js';
 import { useSessionRegrade } from './useSessionRegrade.js';
+import { useReviewFreshness } from './useReviewFreshness.js';
 import { mergePages } from './reviewView.js';
 import ReviewSummary from './ReviewSummary';
 import CostliestDecisions from './CostliestDecisions';
@@ -18,14 +19,27 @@ const loadReview = (id) => getPokerSessionPage(id);
 /** Later pages of hands, appended locally; reset whenever the first page reloads. */
 function useMorePages(id, data) {
   const [more, setMore] = useState({ pages: [], loading: false, error: null });
-  useEffect(() => setMore({ pages: [], loading: false, error: null }), [data]);
+  // Bumped whenever the base page resets, so a "Load more" reply that lands after the base data has
+  // already moved on (e.g. the freshness reload above) is ignored instead of appending onto stale pages.
+  const generationRef = useRef(0);
+  useEffect(() => {
+    generationRef.current += 1;
+    setMore({ pages: [], loading: false, error: null });
+  }, [data]);
   const merged = useMemo(() => (data ? more.pages.reduce(mergePages, data) : null), [data, more.pages]);
   const loadMore = useCallback(() => {
     if (!merged || merged.nextAfterHandNo === null) return;
+    const generation = generationRef.current;
     setMore((m) => ({ ...m, loading: true, error: null }));
     getPokerSessionPage(id, merged.nextAfterHandNo)
-      .then((page) => setMore((m) => ({ pages: [...m.pages, page], loading: false, error: null })))
-      .catch((err) => setMore((m) => ({ ...m, loading: false, error: err instanceof Error ? err.message : 'Request failed' })));
+      .then((page) => {
+        if (generationRef.current !== generation) return;
+        setMore((m) => ({ pages: [...m.pages, page], loading: false, error: null }));
+      })
+      .catch((err) => {
+        if (generationRef.current !== generation) return;
+        setMore((m) => ({ ...m, loading: false, error: err instanceof Error ? err.message : 'Request failed' }));
+      });
   }, [id, merged]);
   return { merged, loadMore, loadingMore: more.loading, moreError: more.error };
 }
@@ -75,6 +89,7 @@ function ReviewBody({ review, data, grading, more }) {
 export default function SessionReviewPage() {
   const { id } = useParams();
   const review = usePokerResource(loadReview, id, `/me/poker/session/${id}`);
+  useReviewFreshness(id, review.reload);
   const more = useMorePages(id, review.data);
   const grading = useSessionRegrade(id, review.data?.summary.ungradedHands ?? 0, review.reload);
   const session = more.merged?.session;

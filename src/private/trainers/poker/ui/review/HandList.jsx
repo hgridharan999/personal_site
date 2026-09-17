@@ -59,7 +59,13 @@ export default function HandList({ hands, hasMore, onLoadMore, loadingMore, more
       )}
       {moreError && <p className="pk-error" role="alert">Couldn&apos;t load more hands: {moreError}</p>}
       {hasMore && (
-        <button type="button" className="pk-btn" data-hot disabled={loadingMore} onClick={onLoadMore}>
+        <button
+          type="button"
+          className="pk-btn"
+          data-hot
+          aria-disabled={loadingMore ? 'true' : undefined}
+          onClick={() => { if (!loadingMore) onLoadMore(); }}
+        >
           {loadingMore ? 'Loading…' : 'Load more hands'}
         </button>
       )}
