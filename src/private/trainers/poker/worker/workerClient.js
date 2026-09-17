@@ -12,14 +12,18 @@ const defaultCreateWorker = () => new Worker(new URL('./pokerWorker.js', import.
 /**
  * @param {{ createWorker?:() => { postMessage:(m:object) => void, addEventListener:(type:string, fn:(e:object) => void) => void, terminate:() => void },
  *   timeoutMs?:number, onTimeout?:(ctx:object) => void }} [options]
- * @returns {{ decide:(ctx:import('../bots/contract.js').BotContext) => Promise<import('../bots/contract.js').BotChoice>, dispose:() => void }}
+ * @returns {{ decide:(ctx:import('../bots/contract.js').BotContext) => Promise<import('../bots/contract.js').BotChoice>, dispose:() => void,
+ *   readonly broken:boolean }}
  *   decide rejects on a worker error or after dispose, and resolves with safeChoice(ctx.legal) on timeout.
+ *   An `error` or `messageerror` event marks the runner broken: pending decisions reject, and every later decide
+ *   rejects with `worker broken`, so the caller can fall back to a local runner.
  */
 export function createWorkerRunner({ createWorker = defaultCreateWorker, timeoutMs = DEFAULT_TIMEOUT_MS, onTimeout = () => {} } = {}) {
   const worker = createWorker();
   const pending = new Map();
   let nextId = 1;
   let disposed = false;
+  let broken = false;
 
   const settle = (id) => {
     const entry = pending.get(id);
@@ -37,13 +41,17 @@ export function createWorkerRunner({ createWorker = defaultCreateWorker, timeout
     else entry.reject(new Error(message.error?.message ?? 'worker error'));
   });
 
-  worker.addEventListener('error', (event) => {
-    for (const id of [...pending.keys()]) settle(id).reject(new Error(event.message ?? 'worker crashed'));
-  });
+  const breakWith = (message) => {
+    broken = true;
+    for (const id of [...pending.keys()]) settle(id).reject(new Error(message));
+  };
+  worker.addEventListener('error', (event) => breakWith(event?.message ?? 'worker crashed'));
+  worker.addEventListener('messageerror', () => breakWith('worker message could not be read'));
 
   return {
     decide(ctx) {
       if (disposed) return Promise.reject(new Error('runner disposed'));
+      if (broken) return Promise.reject(new Error('worker broken'));
       return new Promise((resolve, reject) => {
         const id = nextId;
         nextId += 1;
@@ -53,8 +61,16 @@ export function createWorkerRunner({ createWorker = defaultCreateWorker, timeout
           resolve(safeChoice(ctx.legal));
         }, timeoutMs);
         pending.set(id, { resolve, reject, timer });
-        worker.postMessage({ type: REQUEST.DECIDE, id, ctx });
+        try {
+          worker.postMessage({ type: REQUEST.DECIDE, id, ctx });
+        } catch (err) {
+          settle(id);
+          reject(err instanceof Error ? err : new Error(String(err)));
+        }
       });
+    },
+    get broken() {
+      return broken;
     },
     dispose() {
       if (disposed) return;
