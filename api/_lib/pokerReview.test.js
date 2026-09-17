@@ -17,6 +17,28 @@ describe('review shaping', () => {
     expect(heroPosition({ type: 'start' }, 0)).toBeNull();
   });
 
+  it('computes positions for a 5-handed table', () => {
+    const start = pokerHandRecord({ button: 0, seatIds: [0, 1, 2, 3, 4] }).events[0];
+    expect(heroPosition(start, 0)).toBe('BTN');
+    expect(heroPosition(start, 1)).toBe('SB');
+    expect(heroPosition(start, 2)).toBe('BB');
+    expect(heroPosition(start, 3)).toBe('HJ');
+    expect(heroPosition(start, 4)).toBe('CO');
+  });
+
+  it('computes positions for a 3-handed table (no middle positions)', () => {
+    const start = pokerHandRecord({ button: 0, seatIds: [0, 1, 2] }).events[0];
+    expect(heroPosition(start, 0)).toBe('BTN');
+    expect(heroPosition(start, 1)).toBe('SB');
+    expect(heroPosition(start, 2)).toBe('BB');
+  });
+
+  it('computes positions heads-up (the button is the small blind)', () => {
+    const start = pokerHandRecord({ button: 0, seatIds: [0, 1] }).events[0];
+    expect(heroPosition(start, 0)).toBe('SB');
+    expect(heroPosition(start, 1)).toBe('BB');
+  });
+
   it('shapes a hand row with hero cards only, the worst grade and whether it needs grading', () => {
     const start = pokerHandRecord({ button: 3 }).events[0];
     const row = {

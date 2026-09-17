@@ -85,7 +85,7 @@ async function read(sql, req, res) {
              d.decisions, d.ev_loss AS "evLoss", d.severity, d.confident, d.version
       FROM poker_hands h
       CROSS JOIN LATERAL (
-        SELECT count(*)::int AS decisions, COALESCE(sum(x.ev_loss), 0)::float8 AS ev_loss,
+        SELECT count(*)::int AS decisions, round(COALESCE(sum(x.ev_loss), 0)::numeric, 2)::float8 AS ev_loss,
                max(CASE x.grade WHEN 'blunder' THEN 3 WHEN 'mistake' THEN 2 WHEN 'inaccuracy' THEN 1 ELSE 0 END)::int AS severity,
                bool_and(x.confident) AS confident, max(x.analysis_version)::int AS version
         FROM poker_decisions x WHERE x.hand_id = h.id
@@ -99,8 +99,8 @@ async function read(sql, req, res) {
                 AND COALESCE((SELECT max(v.analysis_version) FROM poker_decisions v WHERE v.hand_id = u.id), 0) < ${ANALYSIS_VERSION}
              )::int AS "ungradedHands",
              count(d.hand_id)::int AS decisions,
-             COALESCE(sum(d.ev_loss), 0)::float8 AS "evLoss",
-             count(DISTINCT d.hand_id)::int AS "gradedHands",
+             round(COALESCE(sum(d.ev_loss), 0)::numeric, 2)::float8 AS "evLoss",
+             count(DISTINCT d.hand_id) FILTER (WHERE d.analysis_version = ${ANALYSIS_VERSION})::int AS "gradedHands",
              count(*) FILTER (WHERE d.grade = 'good')::int AS good,
              count(*) FILTER (WHERE d.grade = 'inaccuracy')::int AS inaccuracy,
              count(*) FILTER (WHERE d.grade = 'mistake')::int AS mistake,

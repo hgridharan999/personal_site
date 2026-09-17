@@ -271,4 +271,41 @@ describe.skipIf(!RUN)('poker persistence against a real database', () => {
     const expectedDelta = (0 - roundA.heroNet) + (0 - roundB.heroNet);
     expect(after.body.session.allinAdjNet).toBeCloseTo(startAdj + expectedDelta, 2);
   });
+
+  it('rounds the review evLoss sums to 2 decimals and never double-counts a stale-graded hand', async () => {
+    const reviewSessionId = randomUUID();
+    let res = await call(sessions, { method: 'POST', body: pokerSessionBody({ id: reviewSessionId }) });
+    expect(res.body.saved).toBe(true);
+
+    const handA = findHandRecord(heroActed, { id: randomUUID(), sessionId: reviewSessionId, handNo: 1 });
+    const handB = findHandRecord(heroActed, { id: randomUUID(), sessionId: reviewSessionId, handNo: 2, seed: 50, button: 1 });
+    const saved = await call(hands, {
+      method: 'POST',
+      body: {
+        hands: [
+          { hand: handA, decisions: [heroDecision(handA, { evLoss: 1.1 })] },
+          { hand: handB, decisions: [heroDecision(handB, { evLoss: 2.2 })] },
+        ],
+      },
+    });
+    expect(saved.body).toEqual({ saved: true, inserted: 2, duplicate: 0 });
+
+    try {
+      // Simulates a hand graded under an older analysis version (ev_loss noise aside, gradedHands
+      // must count only hands at the current ANALYSIS_VERSION, so it never overlaps ungradedHands
+      // for the same hand). Real batches always write the current version, so this downgrade goes
+      // straight to the column rather than through the API.
+      await getSql()`UPDATE poker_decisions SET analysis_version = 0 WHERE hand_id = ${handB.id}`;
+
+      res = await call(sessions, { query: { id: reviewSessionId } });
+      expect(res.statusCode).toBe(200);
+      // 1.1 + 2.2 as float8 real-column noise would land around 3.3000000000000003; the SQL
+      // rounds to 2 decimals so this is exactly 3.3.
+      expect(res.body.summary.evLoss).toBe(3.3);
+      expect(res.body.summary.gradedHands).toBe(1);
+      expect(res.body.summary.ungradedHands).toBe(1);
+    } finally {
+      await getSql()`DELETE FROM poker_sessions WHERE id = ${reviewSessionId}`;
+    }
+  });
 });

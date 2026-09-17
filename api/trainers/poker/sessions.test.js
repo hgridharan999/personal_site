@@ -160,11 +160,22 @@ describe('api/trainers/poker/sessions', () => {
       const handQuery = sql.queries.find((q) => q.text.includes('CROSS JOIN LATERAL ('));
       expect(handQuery.text).toContain('h.events->0 AS start');
       expect(handQuery.text).not.toMatch(/h\.events,/);
+      expect(handQuery.text).toContain('round(COALESCE(sum(x.ev_loss), 0)::numeric, 2)');
       expect(handQuery.values).toEqual([ID, 0, REVIEW_PAGE_HANDS + 1]);
       const summaryQuery = sql.queries.find((q) => q.text.includes('AS "ungradedHands"'));
-      expect(summaryQuery.values).toEqual([ID, ANALYSIS_VERSION, ID]);
+      expect(summaryQuery.text).toContain('round(COALESCE(sum(d.ev_loss), 0)::numeric, 2)');
+      expect(summaryQuery.text).toContain('FILTER (WHERE d.analysis_version = ');
+      expect(summaryQuery.values).toEqual([ID, ANALYSIS_VERSION, ANALYSIS_VERSION, ID]);
       const costliestQuery = sql.queries.find((q) => q.text.includes('ORDER BY d.ev_loss DESC'));
       expect(costliestQuery.values).toEqual([ID, COSTLIEST_LIMIT]);
+    });
+
+    it('400 for a bad afterHandNo', async () => {
+      for (const bad of ['-1', 'abc']) {
+        const res = await call(mockSql(), { query: { id: ID, afterHandNo: bad } });
+        expect(res.statusCode).toBe(400);
+        expect(res.body.code).toBe('VALIDATION_ERROR');
+      }
     });
 
     it('pages hands after a cursor', async () => {
