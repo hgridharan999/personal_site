@@ -8,7 +8,10 @@ import { actsByStreet, preflopSpot } from './situation.js';
 
 const potOf = (view) => view.players.reduce((sum, p) => sum + p.total, 0);
 
-/** Re-raises to 3x whenever it faces a single raise preflop (with or without callers). */
+/**
+ * Re-raises to 3x whenever it faces a single raise preflop (with or without callers). Sizing is always
+ * 3x the current bet, regardless of any callers between the raiser and this seat (no extra sizing for a squeeze).
+ */
 export const always3Bet = {
   decide(ctx, rng) {
     const { view, legal, seat, events } = ctx;

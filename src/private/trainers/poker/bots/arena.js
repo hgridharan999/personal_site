@@ -52,20 +52,27 @@ export function playArenaHand({ seats, button, dealRng, decisionRng, playerAt, p
  * @param {{ players:ArenaPlayer[], dealSeed:number, decisionRng:() => number, button?:number, stack?:number,
  *   subject?:number|null, profile?:object|null, adapt?:boolean,
  *   onHand?:(events:object[], seatOf:(player:number) => number) => void }} input
- *   subject: index of the profiled player (an exploit probe or opponent). Its profile goes to every brain with heroSeat
- *   set to the subject's seat in that rotation, and is updated with accumulateProfile after each hand.
- *   profile: the subject's profile so far. adapt: when true and no profile is given, start one from emptyProfile().
- *   Brains adapt whenever the subject has a profile (given, or started by adapt); with neither, profile and heroSeat
- *   are null. adapt requires a subject.
+ *   subject: index of the profiled player (an exploit probe or opponent). adapt requires a subject.
+ *   adapt defaults to undefined; whether this call adapts is `adapting = adapt ?? (profile != null)`, so an
+ *   explicit `profile` still turns adaptation on when `adapt` is omitted (backward compatible), but an explicit
+ *   `adapt: false` always wins and turns adaptation off even when a `profile` is passed alongside it.
+ *   When adapting, every brain gets the subject's profile with heroSeat set to the subject's seat in that
+ *   rotation, starting from `profile` (or emptyProfile() when none was given); the returned `profile` is that
+ *   profile updated by accumulateProfile once for every rotation's hand, after all rotations of this deal have
+ *   played, so every rotation sees the identical profile snapshot (preserving duplicate symmetry within the deal).
+ *   When not adapting, every brain gets `profile: null` (heroSeat is still reported), and the returned `profile`
+ *   is exactly the `profile` argument, unchanged and never accumulated.
  * @returns {{ nets:number[], hands:number, profile:object|null }} nets: units won per player over all rotations
  */
 export function playDuplicateDeal({
-  players, dealSeed, decisionRng, button = 0, stack = 200, subject = null, profile = null, adapt = false, onHand,
+  players, dealSeed, decisionRng, button = 0, stack = 200, subject = null, profile = null, adapt, onHand,
 }) {
   if (adapt && subject === null) throw new Error('adapt requires a subject');
+  const adapting = adapt ?? (profile != null);
   const n = players.length;
   const nets = new Array(n).fill(0);
-  let current = profile ?? (adapt ? emptyProfile() : null);
+  const snapshot = adapting ? (profile ?? emptyProfile()) : null;
+  const rotations = [];
   for (let r = 0; r < n; r += 1) {
     const seatOf = (player) => (player - r + n) % n;
     const heroSeat = subject === null ? null : seatOf(subject);
@@ -75,12 +82,14 @@ export function playDuplicateDeal({
       dealRng: mulberry32(dealSeed),
       decisionRng,
       playerAt: (seat) => players[(seat + r) % n],
-      profile: current,
+      profile: snapshot,
       heroSeat,
     });
     for (let p = 0; p < n; p += 1) nets[p] += state.result.net[seatOf(p)];
-    if (subject !== null && current) current = accumulateProfile(current, heroSeat, events);
+    if (subject !== null && adapting) rotations.push([heroSeat, events]);
     if (onHand) onHand(events, seatOf);
   }
-  return { nets, hands: n, profile: current };
+  let current = snapshot;
+  for (const [heroSeat, events] of rotations) current = accumulateProfile(current, heroSeat, events);
+  return { nets, hands: n, profile: adapting ? current : profile };
 }

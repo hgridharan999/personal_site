@@ -80,6 +80,61 @@ describe('playDuplicateDeal', () => {
     expect(() => playDuplicateDeal({ players, dealSeed: 9, decisionRng: mulberry32(1), adapt: true })).toThrow('adapt requires a subject');
   });
 
+  it('honours adapt: false even when a profile is passed: brains see no profile, and it is returned unchanged', () => {
+    const seen = [];
+    const spy = {
+      decide(ctx) {
+        seen.push(ctx.profile);
+        return callingStation.decide(ctx);
+      },
+    };
+    const players = Array.from({ length: 3 }, () => ({ brain: spy, persona: null }));
+    const initial = emptyProfile();
+    const { profile } = playDuplicateDeal({
+      players, dealSeed: 11, decisionRng: mulberry32(1), subject: 0, profile: initial, adapt: false,
+    });
+    expect(seen.length).toBeGreaterThan(0);
+    for (const p of seen) expect(p).toBeNull();
+    expect(profile).toBe(initial); // unchanged: never accumulated
+  });
+
+  it('adapts with adapt: true even without a profile', () => {
+    const seen = [];
+    const spy = {
+      decide(ctx) {
+        seen.push(ctx.profile);
+        return callingStation.decide(ctx);
+      },
+    };
+    const players = Array.from({ length: 3 }, () => ({ brain: spy, persona: null }));
+    const { profile } = playDuplicateDeal({ players, dealSeed: 12, decisionRng: mulberry32(1), subject: 0, adapt: true });
+    expect(seen.length).toBeGreaterThan(0);
+    for (const p of seen) expect(p).not.toBeNull();
+    expect(profile.hands).toBe(3);
+  });
+
+  it('still adapts when a profile is passed without adapt (backward compatible)', () => {
+    const players = Array.from({ length: 3 }, () => ({ brain: callingStation, persona: null }));
+    const { profile } = playDuplicateDeal({
+      players, dealSeed: 13, decisionRng: mulberry32(1), subject: 0, profile: emptyProfile(),
+    });
+    expect(profile.hands).toBe(3);
+  });
+
+  it('gives every rotation of a deal the same profile snapshot (duplicate symmetry)', () => {
+    const seen = [];
+    const spy = {
+      decide(ctx) {
+        seen.push(ctx.profile);
+        return callingStation.decide(ctx);
+      },
+    };
+    const players = [{ brain: spy, persona: null }, ...Array.from({ length: 5 }, () => ({ brain: callingStation, persona: null }))];
+    playDuplicateDeal({ players, dealSeed: 14, decisionRng: mulberry32(1), subject: 0, profile: emptyProfile() });
+    expect(seen.length).toBeGreaterThan(0);
+    for (const p of seen) expect(p).toBe(seen[0]);
+  });
+
   it('with adapt, bots profile an always-3-bet probe and fold less to its 3-bets', () => {
     // Chart play that adapts its dials to the profiled seat preflop; checks or calls postflop.
     const adapting = {

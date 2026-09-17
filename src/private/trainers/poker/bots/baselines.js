@@ -1,13 +1,14 @@
 // src/private/trainers/poker/bots/baselines.js
 // Fixed reference bots for tests, training anchors and the benchmark gate.
 import { randomPolicy } from '../engine/simulate.js';
-import { evaluate } from '../engine/evaluator.js';
+import { evaluate, CATEGORY } from '../engine/evaluator.js';
 import { classOf, COMBO_COUNT } from './handClass.js';
 import { RANK_PCT } from './charts.js';
 import { equityVsRanges } from './equity.js';
 import { legalize } from './legalize.js';
 import { EQUITY_VS_ANY } from './preflopEquity.js';
 import { huEquity } from './postflop.js';
+import { actsByStreet, preflopSpot } from './situation.js';
 
 const ANY_RANGE = new Float32Array(COMBO_COUNT).fill(1);
 const potOf = (view) => view.players.reduce((sum, p) => sum + p.total, 0);
@@ -44,31 +45,34 @@ export function createRawEquityBrain({ iterations = 200 } = {}) {
   };
 }
 
-// Category of the board alone (pairs and trips on a 3-4 card board; full evaluation on the river).
+// Category of the board alone (pairs, trips and quads on a 3-4 card board; full evaluation on the river).
 function boardCategory(board) {
   if (board.length >= 5) return evaluate(board) >> 20;
   const counts = {};
   for (const c of board) counts[c >> 2] = (counts[c >> 2] ?? 0) + 1;
   const n = Object.values(counts).sort((a, b) => b - a);
-  if (n[0] >= 3) return 3;
-  if (n[0] === 2 && n[1] === 2) return 2;
-  return n[0] === 2 ? 1 : 0;
+  if (n[0] >= 4) return CATEGORY.QUADS; // a 4-card board that is itself four of a kind
+  if (n[0] >= 3) return CATEGORY.TRIPS;
+  if (n[0] === 2 && n[1] === 2) return CATEGORY.TWO_PAIR;
+  return n[0] === 2 ? CATEGORY.PAIR : CATEGORY.HIGH_CARD;
 }
 
 /**
- * Tight-passive: plays the top 12% preflop by calling (raises only the top 3% when unopened), continues postflop
- * only with a hand that improves on the board, and bets half pot with two pair or better when checked to.
+ * Tight-passive: plays the top 12% preflop by calling (raises only the top 3% when the pot is unopened: no
+ * raises and no limpers ahead, so an option in the big blind after limps is not treated as unopened), continues
+ * postflop only with a hand that improves on the board, and bets half pot with two pair or better when checked to.
  * @type {import('./contract.js').Brain}
  */
 export const tightPassive = {
   decide(ctx) {
-    const { view, legal, bb } = ctx;
+    const { view, legal, bb, seat, events } = ctx;
     const me = meOf(ctx);
     const check = () => (legal.canCheck ? { action: 'check' } : { action: 'fold' });
     if (view.street === 'preflop') {
       const pct = RANK_PCT[classOf(me.hole[0], me.hole[1])];
       if (pct > 0.12) return check();
-      if (pct <= 0.03 && view.currentBet === bb) return legalize({ action: 'raise', amount: 3 * bb }, legal);
+      const unopened = preflopSpot(view, actsByStreet(events).preflop, seat).kind === 'open';
+      if (pct <= 0.03 && unopened) return legalize({ action: 'raise', amount: 3 * bb }, legal);
       return legal.canCheck ? { action: 'check' } : { action: 'call' };
     }
     const category = evaluate([...me.hole, ...view.board]) >> 20;
