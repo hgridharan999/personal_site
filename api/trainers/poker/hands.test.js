@@ -26,10 +26,10 @@ function db({ sessions = [{ id: POKER_SESSION_ID, heroSeat: 0 }], inserted = 1, 
 }
 
 describe('api/trainers/poker/hands', () => {
-  it('405 for GET', async () => {
-    const res = await call(db(), { method: 'GET' });
+  it('405 for PUT', async () => {
+    const res = await call(db(), { method: 'PUT' });
     expect(res.statusCode).toBe(405);
-    expect(res.headers.Allow).toBe('POST');
+    expect(res.headers.Allow).toBe('GET, POST, PATCH');
   });
 
   it('401 without a session cookie, never cached', async () => {
@@ -217,5 +217,126 @@ describe('api/trainers/poker/hands', () => {
     } finally {
       console.error = original;
     }
+  });
+});
+
+describe('GET /api/trainers/poker/hands?id=', () => {
+  const ID = pokerHandId(7);
+
+  it('400 for a bad id and 404 when the hand is missing', async () => {
+    let res = await call(mockSql(), { method: 'GET', query: { id: 'nope' } });
+    expect(res.statusCode).toBe(400);
+    res = await call(mockSql([[], []]), { method: 'GET', query: { id: ID } });
+    expect(res.statusCode).toBe(404);
+    expect(res.body).toEqual({ error: 'Hand not found', code: 'NOT_FOUND' });
+  });
+
+  it('returns one hand with its events, neighbours and decisions', async () => {
+    const hand = { id: ID, handNo: 7, events: [{ type: 'start' }], prevHandId: null, nextHandId: pokerHandId(8) };
+    const decisions = [{ idx: 9, grade: 'good' }];
+    const sql = mockSql((text) => (text.includes('AS "prevHandId"') ? [hand] : decisions));
+    const res = await call(sql, { method: 'GET', query: { id: ID } });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ hand, decisions });
+    const [handQuery, decisionQuery] = sql.queries;
+    for (const fragment of ['FROM poker_hands h WHERE h.id =', 'h.events', 'ORDER BY p.hand_no DESC LIMIT 1', 'ORDER BY n.hand_no LIMIT 1']) {
+      expect(handQuery.text).toContain(fragment);
+    }
+    expect(handQuery.values).toEqual([ID]);
+    expect(decisionQuery.text).toContain('FROM poker_decisions WHERE hand_id =');
+    expect(decisionQuery.text).toContain('ORDER BY idx');
+  });
+});
+
+describe('GET /api/trainers/poker/hands?ungraded=1', () => {
+  const query = (extra = {}) => ({ ungraded: '1', sessionId: POKER_SESSION_ID, belowVersion: '1', ...extra });
+
+  it('400 for a bad query before touching the database', async () => {
+    const sql = mockSql();
+    for (const bad of [{ sessionId: 'x' }, { belowVersion: '0' }, { limit: '21' }, { ungraded: 'yes' }]) {
+      const res = await call(sql, { method: 'GET', query: query(bad) });
+      expect(res.statusCode, JSON.stringify(bad)).toBe(400);
+    }
+    expect(sql.queries).toHaveLength(0);
+  });
+
+  it('pages hands without current grades after a cursor', async () => {
+    const rows = [5, 6, 9].map((handNo) => ({ id: pokerHandId(handNo), handNo, heroSeat: 0, lineup: [], events: [] }));
+    const sql = mockSql([rows]);
+    const res = await call(sql, { method: 'GET', query: query({ afterHandNo: '4', limit: '2' }) });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ hands: rows.slice(0, 2), nextAfterHandNo: 6 });
+    const [q] = sql.queries;
+    for (const fragment of ['h.hero_actions > 0', 'max(d.analysis_version)', 'ORDER BY h.hand_no']) expect(q.text).toContain(fragment);
+    expect(q.values).toEqual([POKER_SESSION_ID, 4, 1, 3]);
+    const last = await call(mockSql([rows.slice(0, 1)]), { method: 'GET', query: query() });
+    expect(last.body).toEqual({ hands: rows.slice(0, 1), nextAfterHandNo: null });
+  });
+});
+
+describe('PATCH /api/trainers/poker/hands (re-grade)', () => {
+  const first = findHandRecord(heroActed, { handNo: 1 });
+  const second = findHandRecord(heroActed, { handNo: 2 });
+  const grade = (hand, version = 2, overrides = {}) => ({
+    handId: hand.id, analysisVersion: version, decisions: [heroDecision(hand, { analysisVersion: version })], heroAllinEv: null, ...overrides,
+  });
+  const stored = (...list) => list.map((h) => ({ id: h.id, heroSeat: h.heroSeat, events: h.events }));
+  const patch = (sql, body) => call(sql, { method: 'PATCH', body });
+
+  it('400 for an invalid batch before touching the database', async () => {
+    const sql = mockSql();
+    const mismatched = { ...grade(first), decisions: [heroDecision(first, { analysisVersion: 3 })] };
+    for (const body of [{ grades: [] }, { grades: [grade(first), grade(first)] }, { grades: [mismatched] }]) {
+      const res = await patch(sql, body);
+      expect(res.statusCode).toBe(400);
+      expect(res.body.code).toBe('VALIDATION_ERROR');
+    }
+    expect(sql.queries).toHaveLength(0);
+  });
+
+  it('400 when a decision does not point at a stored hero action', async () => {
+    const sql = mockSql([stored(first)]);
+    const bad = grade(first, 2, { decisions: [heroDecision(first, { analysisVersion: 2, idx: 0 })] });
+    const res = await patch(sql, { grades: [bad] });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.details.problems).toEqual([
+      { path: ['grades', 0, 'decisions', 0, 'idx'], message: 'decision idx must point at a hero action with the same action' },
+    ]);
+    expect(sql.transactions).toHaveLength(0);
+  });
+
+  it('reports hands that are not stored without a transaction', async () => {
+    const sql = mockSql([[]]);
+    const res = await patch(sql, { grades: [grade(first)] });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ updated: [], skipped: [], missing: [first.id] });
+    expect(sql.transactions).toHaveLength(0);
+  });
+
+  it('locks the hands, then upserts newer grades and moves allin_adj_net in one statement', async () => {
+    const sql = mockSql([stored(first, second)]);
+    sql.transactionResult = [[{ id: first.id }, { id: second.id }], [{ id: first.id }]];
+    const res = await patch(sql, { grades: [grade(first, 2, { heroAllinEv: 12.5 }), grade(second)] });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ updated: [first.id], skipped: [second.id], missing: [] });
+    expect(sql.queries[0].text).toContain('SELECT id, hero_seat AS "heroSeat", events FROM poker_hands');
+    expect(sql.transactions).toHaveLength(1);
+    const [lock, upsert] = sql.transactions[0];
+    expect(lock.text).toContain('ORDER BY id FOR UPDATE');
+    for (const fragment of [
+      'hero_allin_ev numeric(10,2)',
+      'COALESCE((SELECT max(d.analysis_version) FROM poker_decisions d WHERE d.hand_id = h.id), 0) < i.analysis_version',
+      'DELETE FROM poker_decisions d USING target t',
+      'ON CONFLICT (hand_id, idx) DO UPDATE SET',
+      'UPDATE poker_hands h SET hero_allin_ev = t.new_ev',
+      'sum(COALESCE(new_ev, hero_net) - COALESCE(old_ev, hero_net))',
+      'ORDER BY session_id',
+      'UPDATE poker_sessions s',
+    ]) {
+      expect(upsert.text).toContain(fragment);
+    }
+    const rows = JSON.parse(upsert.values[0]);
+    expect(rows.map((r) => [r.hand_id, r.analysis_version, r.hero_allin_ev])).toEqual([[first.id, 2, 12.5], [second.id, 2, null]]);
+    expect(rows[0].decisions[0]).toMatchObject({ idx: heroDecision(first).idx, to_call: 2, ev_loss: 1.5, analysis_version: 2 });
   });
 });

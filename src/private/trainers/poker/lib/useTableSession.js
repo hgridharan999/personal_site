@@ -5,6 +5,7 @@ import { BOT_VERSION } from '../bots/version.js';
 import { listPersonas } from '../bots/personas.js';
 import { createWorkerRunner } from '../worker/workerClient.js';
 import { createFallbackRunner } from './fallbackRunner.js';
+import { sharedAnalysisClient } from '../analysis/worker/analysisClient.js';
 import { createSession } from './tableCore.js';
 import { createTableDriver, realScheduler } from './tableDriver.js';
 import { foldHandIntoProfile } from './profile.js';
@@ -47,6 +48,7 @@ export function useTableSession({ id, config, profile, onSessionStart, onHandCom
       onChange: (next) => setSession(tableSnapshot(next)),
       // Every argument is forwarded, so Phase 5's onHandComplete(record, analysis) reaches the page.
       onSessionStart: (...args) => callbacks.current.onSessionStart(...args),
+      analyzeHand: (record) => sharedAnalysisClient().analyze(record),
       onHandComplete: (...args) => callbacks.current.onHandComplete(...args),
       onSessionEnd: (...args) => callbacks.current.onSessionEnd(...args),
     });
@@ -55,7 +57,11 @@ export function useTableSession({ id, config, profile, onSessionStart, onHandCom
     // Deferred so React StrictMode's development mount, unmount and remount starts only one session:
     // the first driver is abandoned before it starts, which emits nothing.
     const timer = setTimeout(() => driver.start(), 0);
+    // Closing the tab skips React cleanup: hand any hand still being graded to the outbox now.
+    const onPageHide = () => driver.flushAnalyses();
+    window.addEventListener('pagehide', onPageHide);
     return () => {
+      window.removeEventListener('pagehide', onPageHide);
       clearTimeout(timer);
       driver.abandon();
       runner.dispose();

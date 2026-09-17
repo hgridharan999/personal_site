@@ -5,6 +5,7 @@ import {
   requestRebuy, requestGetUp, abandonSession,
 } from './tableCore.js';
 import { legalActions } from '../engine/handState.js';
+import { createHandAnalysisQueue, QUEUE_TIMEOUT_MS } from '../analysis/handQueue.js';
 
 /** Milliseconds. Bot think time is uniform in [botMin, botMax], x1.5 for big decisions. */
 export const PACING = {
@@ -73,7 +74,11 @@ function set(d, next) {
 function endOnce(d) {
   if (d.ended || d.disposed) return;
   d.ended = true;
-  safeCall(d, 'onSessionEnd', d.opts.onSessionEnd, sessionSummary(d.current, d.opts.now()));
+  const summary = sessionSummary(d.current, d.opts.now());
+  const emit = () => safeCall(d, 'onSessionEnd', d.opts.onSessionEnd, summary);
+  // Hands still being graded are delivered first, so the session close always follows its hands.
+  if (d.analysis && d.analysis.pending() > 0) d.analysis.drain().then(emit);
+  else emit();
 }
 
 const DECIDE_TIMED_OUT = Symbol('decide-timed-out');
@@ -107,8 +112,9 @@ function settleHand(d) {
   } catch (err) {
     logger.warn('could not update the hero profile', err);
   }
-  // The optional second argument (analysis) arrives with Phase 5.
-  safeCall(d, 'onHandComplete', onHandComplete, record);
+  // With an analyzer the hand is graded first and delivered as onHandComplete(record, analysis).
+  if (d.analysis) d.analysis.push(record);
+  else safeCall(d, 'onHandComplete', onHandComplete, record);
 }
 
 const deal = (d) => set(d, startHand(d.current, { rng: d.opts.rng, now: d.opts.now(), personas: d.opts.personas }));
@@ -171,7 +177,8 @@ function run(d) {
  *   createId?: () => string, now?: () => string, logger?: Pick<Console, 'warn'|'error'>,
  *   profile?: object|null, accumulateProfile?: (profile:object|null, heroSeat:number, events:object[]) => object|null,
  *   decideTimeoutMs?: number, onChange?: (session:object) => void, onSessionStart?: (info:object) => void,
- *   onHandComplete?: (record:object) => void, onSessionEnd?: (summary:object) => void,
+ *   onHandComplete?: (record:object, analysis?:{ decisions:object[], heroAllinEv:number|null }) => void,
+ *   analyzeHand?: ((record:object) => Promise<object>)|null, analysisTimeoutMs?: number, onSessionEnd?: (summary:object) => void,
  * }} options
  *   onChange and getSession() both expose the live TableSession, which carries every seat's hole
  *   cards (including bots') and the undealt board. UI code must never render it directly — filter
@@ -182,10 +189,19 @@ export function createTableDriver({ session, profile = null, ...options }) {
     speed: 'normal', createId: () => crypto.randomUUID(), now: () => new Date().toISOString(), logger: console,
     accumulateProfile: (p) => p, decideTimeoutMs: DEFAULT_DECIDE_TIMEOUT_MS,
     onChange: noop, onSessionStart: noop, onHandComplete: noop, onSessionEnd: noop,
+    analyzeHand: null, analysisTimeoutMs: QUEUE_TIMEOUT_MS,
     // An option passed as undefined keeps its default.
     ...Object.fromEntries(Object.entries(options).filter(([, value]) => value !== undefined)),
   };
   const d = { opts, current: session, profile, started: false, ended: false, disposed: false, running: false, again: false, pumping: null };
+  d.analysis = opts.analyzeHand
+    ? createHandAnalysisQueue({
+      analyze: opts.analyzeHand,
+      deliver: (record, analysis) => safeCall(d, 'onHandComplete', opts.onHandComplete, record, analysis),
+      timeoutMs: opts.analysisTimeoutMs,
+      logger: opts.logger,
+    })
+    : null;
 
   return {
     /** The live TableSession — see the caveat above `createTableDriver` about hole cards and the board. */
@@ -223,11 +239,16 @@ export function createTableDriver({ session, profile = null, ...options }) {
     },
     /** Leaves at once (page closed or navigated away). Emits onSessionEnd if it has not been emitted. */
     abandon() {
+      d.analysis?.flushNow();
       if (d.started && !d.ended) {
         d.current = abandonSession(d.current);
         endOnce(d);
       }
       d.disposed = true;
+    },
+    /** Delivers every hand still being graded now, without grades (page hide); they are re-graded later. */
+    flushAnalyses() {
+      d.analysis?.flushNow();
     },
     dispose() {
       d.disposed = true;

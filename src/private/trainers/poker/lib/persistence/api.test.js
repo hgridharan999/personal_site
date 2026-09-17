@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   openPokerSession, closePokerSession, savePokerHands, getPokerSession, listOpenPokerSessions, getPokerProfile,
+  getPokerSessionPage, listRecentPokerSessions, getPokerHand, listUngradedPokerHands, savePokerHandGrades,
 } from './api.js';
 
 describe('poker persistence api', () => {
@@ -19,6 +20,24 @@ describe('poker persistence api', () => {
       ['/api/trainers/poker/sessions?id=s1', 'GET', undefined],
       ['/api/trainers/poker/sessions?status=open', 'GET', undefined],
       ['/api/trainers/poker/profile', 'GET', undefined],
+    ]);
+  });
+
+  it('calls the review, hand and re-grade endpoints', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({}) }));
+    await getPokerSessionPage('s 1', 0, { fetchImpl });
+    await getPokerSessionPage('s1', 300, { fetchImpl });
+    await listRecentPokerSessions({ fetchImpl });
+    await getPokerHand('h 1', { fetchImpl });
+    await listUngradedPokerHands({ sessionId: 's1', belowVersion: 1, afterHandNo: 9 }, { fetchImpl });
+    await savePokerHandGrades({ grades: [] }, { fetchImpl });
+    expect(fetchImpl.mock.calls.map(([url, init]) => [url, init.method, init.body])).toEqual([
+      ['/api/trainers/poker/sessions?id=s%201', 'GET', undefined],
+      ['/api/trainers/poker/sessions?id=s1&afterHandNo=300', 'GET', undefined],
+      ['/api/trainers/poker/sessions?status=recent', 'GET', undefined],
+      ['/api/trainers/poker/hands?id=h%201', 'GET', undefined],
+      ['/api/trainers/poker/hands?ungraded=1&sessionId=s1&belowVersion=1&afterHandNo=9&limit=10', 'GET', undefined],
+      ['/api/trainers/poker/hands', 'PATCH', '{"grades":[]}'],
     ]);
   });
 });

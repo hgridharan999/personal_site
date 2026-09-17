@@ -21,8 +21,11 @@ export default function SessionEnd({ session }) {
       <ul className="pk-end__bots">
         {bots.map((p) => <li key={p.id}>{p.tag} &middot; {p.name} &middot; {p.style}</li>)}
       </ul>
-      <p className="pk-muted">Hands save to your account as they sync.</p>
-      <Link to="/me/poker" className="pk-btn pk-btn--raise" data-hot>Back to the lobby</Link>
+      <p className="pk-muted">Each hand is graded when it ends. The review fills in as hands finish saving.</p>
+      <div className="pk-end__links">
+        <Link to={`/me/poker/session/${encodeURIComponent(session.id)}`} className="pk-btn pk-btn--raise" data-hot>Review this session</Link>
+        <Link to="/me/poker" className="pk-btn" data-hot>Back to the lobby</Link>
+      </div>
     </section>
   );
 }

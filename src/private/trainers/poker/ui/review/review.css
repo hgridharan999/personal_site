@@ -1,0 +1,23 @@
+/* Session review and lobby recent sessions. Scoped under .pk. */
+.pk .pk-review { display: grid; gap: 20px; padding-top: 20px; }
+.pk .pk-review__msg { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding-top: 24px; }
+.pk .pk-review__grading { border: 3px solid var(--pk-rail-hi); padding: 10px 14px; }
+.pk .pk-review__tiles { display: flex; flex-wrap: wrap; gap: 16px 32px; margin: 0; }
+.pk .pk-review__tiles dt { color: var(--pk-muted); font-size: 11px; }
+.pk .pk-review__tiles dd { margin: 4px 0 0; font-size: 20px; color: var(--pk-accent); }
+.pk .pk-review__grades, .pk .pk-review__opponents, .pk .pk-recent { list-style: none; margin: 0; padding: 0; display: flex;
+  flex-wrap: wrap; gap: 8px 20px; font-size: 12px; line-height: 1.6; }
+.pk .pk-review__opponents, .pk .pk-recent { flex-direction: column; }
+.pk .pk-grade--good { color: var(--pk-text); }
+.pk .pk-grade--inaccuracy { color: var(--pk-accent-2); }
+.pk .pk-grade--mistake { color: var(--pk-accent); }
+.pk .pk-grade--blunder { color: var(--pk-red); }
+.pk .pk-review__costliest { margin: 0; padding-left: 20px; display: grid; gap: 10px; font-size: 12px; }
+.pk .pk-review__costliest li { display: flex; flex-direction: column; gap: 2px; }
+.pk .pk-review__link { color: var(--pk-accent-2); }
+.pk .pk-review__link:focus-visible { outline: 2px solid var(--pk-text); outline-offset: 2px; }
+.pk .pk-review__filters { border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 12px 20px; font-size: 12px; }
+.pk .pk-review__scroll { width: 100%; overflow-x: auto; }
+.pk .pk-review__table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.pk .pk-review__table th, .pk .pk-review__table td { text-align: left; padding: 6px 10px; border-bottom: 2px solid var(--pk-rail-hi); white-space: nowrap; }
+.pk .pk-review__table th { color: var(--pk-muted); font-weight: 400; }

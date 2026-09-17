@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { createPokerSessionsHandler, OPEN_SESSIONS_LIMIT } from './sessions.js';
 import { mockRes, authedReq, mockSql, TEST_AUTH } from '../../_lib/testing.js';
-import { POKER_SESSION_ID as ID, POKER_STARTED_AT, pokerSessionBody } from '../../_lib/pokerTesting.js';
+import { POKER_SESSION_ID as ID, POKER_STARTED_AT, pokerSessionBody, pokerHandRecord } from '../../_lib/pokerTesting.js';
+import {
+  REVIEW_PAGE_HANDS, RECENT_SESSIONS_LIMIT, COSTLIEST_LIMIT, shapeReviewHand, shapeSummary, shapeOpponents,
+} from '../../_lib/pokerReview.js';
+import { ANALYSIS_VERSION } from '../../../src/private/trainers/poker/analysis/version.js';
 
 const make = (sql) => createPokerSessionsHandler({ getSql: () => sql, auth: () => TEST_AUTH });
 
@@ -111,28 +115,76 @@ describe('api/trainers/poker/sessions', () => {
   });
 
   describe('GET', () => {
-    it('400 without a valid id, 404 when missing, 200 with hands and decisions', async () => {
+    it('400 without a valid id and 404 when missing', async () => {
       let res = await call(mockSql(), { query: { id: 'x' } });
       expect(res.statusCode).toBe(400);
-
       res = await call(mockSql([[]]), { query: { id: ID } });
       expect(res.statusCode).toBe(404);
       expect(res.body.code).toBe('NOT_FOUND');
+    });
 
-      const session = { id: ID, hands: 2 };
-      const hands = [{ id: 'h1', handNo: 1 }, { id: 'h2', handNo: 2 }];
-      const decisions = [{ handId: 'h1', idx: 4 }];
+    const start = pokerHandRecord({ button: 2 }).events[0];
+    const handRow = (handNo) => ({
+      id: `h${handNo}`, handNo, playedAt: POKER_STARTED_AT, heroSeat: 0, start, holeCards: [{ seat: 0, cards: 'AhKs' }],
+      board: '', pot: 3, heroNet: -1, heroAllinEv: null, showdown: false, heroActions: 1, decisions: 1, evLoss: 0,
+      severity: 0, confident: true, version: ANALYSIS_VERSION,
+    });
+    const reviewDb = ({ hands, session = { id: ID, hands: 2, net: 5, allinAdjNet: 3.5, lineup: [{ seat: 1, personaId: 'moss' }] } }) => {
+      const summary = { decisions: 4, evLoss: 9, gradedHands: 2, ungradedHands: 1, good: 2, inaccuracy: 1, mistake: 1, blunder: 0, debatable: 1 };
+      const costliest = [{ handId: 'h2', handNo: 2, idx: 12, evLoss: 6, grade: 'mistake', confident: true }];
+      const opponents = [{ seat: 1, personaId: 'moss' }];
       const sql = mockSql((text) => {
-        if (text.includes('FROM poker_decisions d')) return decisions;
-        if (text.includes('FROM poker_hands WHERE session_id')) return hands;
         if (text.includes('FROM poker_sessions WHERE id')) return [session];
+        if (text.includes('CROSS JOIN LATERAL (')) return hands;
+        if (text.includes('AS "ungradedHands"')) return [summary];
+        if (text.includes('ORDER BY d.ev_loss DESC')) return costliest;
+        if (text.includes('jsonb_array_elements(h.lineup)')) return opponents;
         return [];
       });
-      res = await call(sql, { query: { id: ID } });
+      return { sql, session, summary, costliest, opponents };
+    };
+
+    it('returns the review page without event logs', async () => {
+      const hands = [handRow(1), handRow(2)];
+      const { sql, session, summary, costliest, opponents } = reviewDb({ hands });
+      const res = await call(sql, { query: { id: ID } });
       expect(res.statusCode).toBe(200);
-      expect(res.body).toEqual({ session, hands, decisions });
-      expect(sql.queries.find((q) => q.text.includes('FROM poker_hands WHERE session_id')).text).toContain('ORDER BY hand_no');
-      expect(sql.queries.find((q) => q.text.includes('FROM poker_decisions d')).text).toContain('ORDER BY h.hand_no, d.idx');
+      expect(res.body).toEqual({
+        session,
+        summary: shapeSummary(session, summary),
+        costliest,
+        opponents: shapeOpponents(opponents, session.lineup),
+        hands: hands.map(shapeReviewHand),
+        nextAfterHandNo: null,
+      });
+      const handQuery = sql.queries.find((q) => q.text.includes('CROSS JOIN LATERAL ('));
+      expect(handQuery.text).toContain('h.events->0 AS start');
+      expect(handQuery.text).not.toMatch(/h\.events,/);
+      expect(handQuery.text).toContain('round(COALESCE(sum(x.ev_loss), 0)::numeric, 2)');
+      expect(handQuery.values).toEqual([ID, 0, REVIEW_PAGE_HANDS + 1]);
+      const summaryQuery = sql.queries.find((q) => q.text.includes('AS "ungradedHands"'));
+      expect(summaryQuery.text).toContain('round(COALESCE(sum(d.ev_loss), 0)::numeric, 2)');
+      expect(summaryQuery.text).toContain('FILTER (WHERE d.analysis_version = ');
+      expect(summaryQuery.values).toEqual([ID, ANALYSIS_VERSION, ANALYSIS_VERSION, ID]);
+      const costliestQuery = sql.queries.find((q) => q.text.includes('ORDER BY d.ev_loss DESC'));
+      expect(costliestQuery.values).toEqual([ID, COSTLIEST_LIMIT]);
+    });
+
+    it('400 for a bad afterHandNo', async () => {
+      for (const bad of ['-1', 'abc']) {
+        const res = await call(mockSql(), { query: { id: ID, afterHandNo: bad } });
+        expect(res.statusCode).toBe(400);
+        expect(res.body.code).toBe('VALIDATION_ERROR');
+      }
+    });
+
+    it('pages hands after a cursor', async () => {
+      const hands = Array.from({ length: REVIEW_PAGE_HANDS + 1 }, (_, i) => handRow(301 + i));
+      const { sql } = reviewDb({ hands });
+      const res = await call(sql, { query: { id: ID, afterHandNo: '300' } });
+      expect(res.body.hands).toHaveLength(REVIEW_PAGE_HANDS);
+      expect(res.body.nextAfterHandNo).toBe(600);
+      expect(sql.queries.find((q) => q.text.includes('CROSS JOIN LATERAL (')).values).toEqual([ID, 300, REVIEW_PAGE_HANDS + 1]);
     });
 
     it('lists open sessions with their last activity', async () => {
@@ -145,6 +197,17 @@ describe('api/trainers/poker/sessions', () => {
       expect(sql.queries[0].text).toContain('GREATEST(s.started_at, max(h.played_at))');
       expect(sql.queries[0].values).toEqual([OPEN_SESSIONS_LIMIT]);
       expect(OPEN_SESSIONS_LIMIT).toBe(20);
+    });
+
+    it('lists recent sessions with hands', async () => {
+      const sessions = [{ id: ID, startedAt: POKER_STARTED_AT, endedAt: null, tableMode: 'random', hands: 3, net: 4, allinAdjNet: 4 }];
+      const sql = mockSql([sessions]);
+      const res = await call(sql, { query: { status: 'recent' } });
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toEqual({ sessions });
+      expect(sql.queries[0].text).toContain('WHERE hands > 0');
+      expect(sql.queries[0].text).toContain('ORDER BY started_at DESC, id DESC');
+      expect(sql.queries[0].values).toEqual([RECENT_SESSIONS_LIMIT]);
     });
 
     it('400 for an unknown status', async () => {
