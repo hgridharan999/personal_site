@@ -25,16 +25,23 @@ export const SPOT_HANDS_LIMIT = 50;
 
 const EMPTY_SUMMARY = Object.freeze({ hands: 0, sessions: 0, gradedHands: 0, decisions: 0, confidentDecisions: 0 });
 
-// Graded hands: hands in the window from the earliest hand with any decision onward.
+// Graded hands: hands in the window from the earliest hand with any decision onward that
+// are themselves graded, i.e. have at least one decision or needed none (hero_actions = 0).
+// A hand with hero actions but no decision yet (grading timed out, not yet re-graded) does
+// not count, so it neither unlocks leaks early nor dilutes BB/100.
 const summaryQuery = (sql) => sql`
   WITH recent AS (
-    SELECT id, played_at FROM poker_hands ORDER BY played_at DESC, id DESC LIMIT ${LEAK_WINDOW_HANDS}
+    SELECT id, played_at, hero_actions FROM poker_hands ORDER BY played_at DESC, id DESC LIMIT ${LEAK_WINDOW_HANDS}
   ), decided AS (
-    SELECT d.confident, r.played_at FROM poker_decisions d JOIN recent r ON r.id = d.hand_id
+    SELECT d.confident, d.hand_id, r.played_at FROM poker_decisions d JOIN recent r ON r.id = d.hand_id
+  ), graded AS (
+    SELECT r.id FROM recent r
+    WHERE r.played_at >= (SELECT min(played_at) FROM decided)
+      AND (r.hero_actions = 0 OR EXISTS (SELECT 1 FROM decided d WHERE d.hand_id = r.id))
   )
   SELECT (SELECT count(*) FROM poker_hands)::int AS hands,
          (SELECT count(*) FROM poker_sessions WHERE hands > 0)::int AS sessions,
-         (SELECT count(*) FROM recent WHERE played_at >= (SELECT min(played_at) FROM decided))::int AS "gradedHands",
+         (SELECT count(*) FROM graded)::int AS "gradedHands",
          (SELECT count(*) FROM decided)::int AS decisions,
          (SELECT count(*) FROM decided WHERE confident)::int AS "confidentDecisions"`;
 

@@ -57,7 +57,10 @@ describe('api/trainers/poker/stats', () => {
     await call(make(sql));
     const [summary, leaks, trend, hands] = sql.queries;
     expect(sql.queries).toHaveLength(4);
-    for (const fragment of ['FROM poker_hands ORDER BY played_at DESC, id DESC LIMIT', 'min(played_at) FROM decided', 'WHERE hands > 0']) {
+    for (const fragment of [
+      'FROM poker_hands ORDER BY played_at DESC, id DESC LIMIT', 'min(played_at) FROM decided',
+      'r.hero_actions = 0 OR EXISTS', 'FROM graded', 'WHERE hands > 0',
+    ]) {
       expect(summary.text).toContain(fragment);
     }
     expect(summary.values).toEqual([LEAK_WINDOW_HANDS]);
@@ -80,6 +83,20 @@ describe('api/trainers/poker/stats', () => {
     expect(trend.values).toEqual([TREND_SESSIONS]);
     expect(hands.text).toContain('ORDER BY played_at DESC, id DESC');
     expect(hands.values).toEqual([TENDENCY_MAX_HANDS]);
+  });
+
+  it('gradedHands only counts hands with a decision or no hero actions, from the first decided hand on', async () => {
+    // Documents the "graded" CTE contract in stats.js: a hand only counts toward gradedHands
+    // once it is at/after the earliest decided hand, AND either it needed no decision
+    // (hero_actions = 0) or it has one. A hand with hero actions but no decision yet (grading
+    // timed out, not yet re-graded) is excluded, so it can't unlock leaks early or dilute BB/100.
+    const sql = mockSql([[summaryRow()], [], [], []]);
+    await call(make(sql));
+    const [summary] = sql.queries;
+    expect(summary.text).toMatch(/WITH recent AS[\s\S]*hero_actions/);
+    expect(summary.text).toContain('WHERE r.played_at >= (SELECT min(played_at) FROM decided)');
+    expect(summary.text).toContain('r.hero_actions = 0 OR EXISTS (SELECT 1 FROM decided d WHERE d.hand_id = r.id)');
+    expect(summary.text).toContain('(SELECT count(*) FROM graded)::int AS "gradedHands"');
   });
 
   it('excludes a spot with zero confident EV lost from leaks and focus', async () => {
