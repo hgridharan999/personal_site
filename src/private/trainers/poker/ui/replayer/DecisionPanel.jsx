@@ -3,11 +3,17 @@ import { optionKey } from '../../analysis/options.js';
 import { chartForDecision } from './replayModel.js';
 import { gradeText, bbText } from '../review/reviewView.js';
 
-function EvTable({ decision }) {
+function EvTable({ decision, chartGraded }) {
   const chosen = optionKey(decision.action, decision.size);
   const best = optionKey(decision.recommended.action, decision.recommended.size);
   const rows = Object.entries(decision.recommended.evByOption).sort(([, a], [, b]) => b - a);
-  if (rows.length === 0) return <p className="pk-muted">Graded by the preflop chart, so there are no simulated EVs.</p>;
+  if (rows.length === 0) {
+    return (
+      <p className="pk-muted">
+        {chartGraded ? 'Graded by the preflop chart, so there are no simulated EVs.' : 'Only one option was available.'}
+      </p>
+    );
+  }
   return (
     <table className="pk-replay__ev">
       <caption className="pk-sr-only">EV by option</caption>
@@ -36,6 +42,9 @@ export default function DecisionPanel({ hand, decision }) {
     );
   }
   const chart = chartForDecision(hand, decision);
+  // Only a preflop decision the chart itself judged good (evLoss 0 via chart.ok) was actually chart-graded;
+  // a single-option postflop decision also has an empty evByOption, but never went through the chart.
+  const chartGraded = Boolean(chart?.ok);
   return (
     <section className="pk-box pk-replay__decision" aria-labelledby="pk-replay-decision">
       <h2 id="pk-replay-decision" className="pk-h2">Your decision</h2>
@@ -44,7 +53,7 @@ export default function DecisionPanel({ hand, decision }) {
         You: {optionLabel(optionKey(decision.action, decision.size))} · Best: {optionLabel(optionKey(decision.recommended.action, decision.recommended.size))}
         {decision.evLoss > 0 && ` · Lost ${bbText(decision.evLoss)}`}
       </p>
-      <EvTable decision={decision} />
+      <EvTable decision={decision} chartGraded={chartGraded} />
       <p className="pk-replay__explain">{explainDecision(decision, { chart })}</p>
     </section>
   );
