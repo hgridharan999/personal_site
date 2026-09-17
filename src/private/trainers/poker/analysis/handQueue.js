@@ -21,6 +21,15 @@ export function createHandAnalysisQueue({
   const waiting = [];
   let tail = Promise.resolve();
 
+  // A broken logger (its `warn` throws) must never stall the queue: every warn is best-effort.
+  const warn = (...args) => {
+    try {
+      logger.warn(...args);
+    } catch {
+      // ignored — delivery must proceed regardless of logging failures
+    }
+  };
+
   const handOver = (item, analysis) => {
     if (item.delivered) return;
     item.delivered = true;
@@ -28,21 +37,25 @@ export function createHandAnalysisQueue({
     try {
       deliver(item.record, analysis);
     } catch (err) {
-      logger.warn('poker analysis: delivering a hand failed', err);
+      warn('poker analysis: delivering a hand failed', err);
     }
   };
 
   const analyzeWithTimeout = (record) => new Promise((resolve) => {
     const timer = setTimer(() => {
-      logger.warn('poker analysis timed out');
+      warn('poker analysis timed out');
       resolve(emptyAnalysis());
     }, timeoutMs);
     Promise.resolve()
       .then(() => analyze(record))
       .then(
-        (analysis) => (isAnalysis(analysis) ? analysis : emptyAnalysis()),
+        (analysis) => {
+          if (isAnalysis(analysis)) return analysis;
+          warn('poker analysis: invalid result');
+          return emptyAnalysis();
+        },
         (err) => {
-          logger.warn('poker analysis failed', err);
+          warn('poker analysis failed', err);
           return emptyAnalysis();
         },
       )
@@ -59,11 +72,15 @@ export function createHandAnalysisQueue({
       // does not hold back the hands pushed after the flush.
       const flushed = new Promise((resolve) => { item.release = resolve; });
       waiting.push(item);
-      tail = tail.then(async () => {
-        if (item.delivered) return;
-        const analysis = await Promise.race([analyzeWithTimeout(record), flushed]);
-        handOver(item, analysis);
-      });
+      tail = tail
+        .then(async () => {
+          if (item.delivered) return;
+          const analysis = await Promise.race([analyzeWithTimeout(record), flushed]);
+          handOver(item, analysis);
+        })
+        // A single step must never leave `tail` permanently rejected — that would stall every hand
+        // pushed after it, since each step is chained off the previous one.
+        .catch((err) => warn('poker analysis: hand queue step failed', err));
       return tail;
     },
     pending: () => waiting.length,

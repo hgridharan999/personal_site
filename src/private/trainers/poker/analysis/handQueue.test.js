@@ -45,11 +45,59 @@ describe('createHandAnalysisQueue', () => {
     const results = [() => Promise.reject(new Error('boom')), () => ({ nope: true }), () => new Promise(() => {})];
     const analyze = vi.fn(() => results.shift()());
     const deliver = vi.fn();
-    const queue = createHandAnalysisQueue({ analyze, deliver, timeoutMs: 5, logger });
+    // Injected fake timer: the queue's own timeout logic is exercised without a real clock, since only the
+    // third hand ever needs its timer fired (the first two settle on their own via `analyze`).
+    let nextTimerId = 0;
+    const timers = new Map();
+    const setTimer = (fn) => {
+      const id = (nextTimerId += 1);
+      timers.set(id, fn);
+      return id;
+    };
+    const clearTimer = (id) => timers.delete(id);
+    const queue = createHandAnalysisQueue({ analyze, deliver, timeoutMs: 5, logger, setTimer, clearTimer });
     [1, 2, 3].forEach((n) => queue.push(record(n)));
+    await vi.waitFor(() => expect(analyze).toHaveBeenCalledTimes(3));
+    [...timers.values()].forEach((fn) => fn());
     await queue.drain();
     expect(deliver.mock.calls.map(([r, a]) => [r.handNo, a])).toEqual([[1, emptyAnalysis()], [2, emptyAnalysis()], [3, emptyAnalysis()]]);
     expect(logger.warn).toHaveBeenCalled();
+  });
+
+  it('warns once when an analysis result is invalid before delivering the empty analysis', async () => {
+    const logger = quiet();
+    const analyze = vi.fn(() => ({ nope: true }));
+    const deliver = vi.fn();
+    const queue = createHandAnalysisQueue({ analyze, deliver, logger });
+    queue.push(record(1));
+    await queue.drain();
+    expect(deliver.mock.calls).toEqual([[record(1), emptyAnalysis()]]);
+    expect(logger.warn).toHaveBeenCalledTimes(1);
+    expect(logger.warn.mock.calls[0][0]).toMatch(/invalid/i);
+  });
+
+  it('keeps delivering hands even when logger.warn throws', async () => {
+    const logger = { warn: vi.fn(() => { throw new Error('logger exploded'); }) };
+    const responses = [() => new Promise(() => {}), () => analysis(2)];
+    const analyze = vi.fn(() => responses.shift()());
+    const deliver = vi.fn();
+    const queue = createHandAnalysisQueue({ analyze, deliver, timeoutMs: 5, logger });
+    queue.push(record(1));
+    queue.push(record(2));
+    await queue.drain();
+    expect(deliver.mock.calls).toEqual([[record(1), emptyAnalysis()], [record(2), analysis(2)]]);
+    expect(logger.warn).toHaveBeenCalled();
+  });
+
+  it('still grades and delivers a hand pushed after flushNow()', async () => {
+    const analyze = vi.fn(async (r) => analysis(r.handNo));
+    const deliver = vi.fn();
+    const queue = createHandAnalysisQueue({ analyze, deliver, logger: quiet() });
+    queue.push(record(1));
+    queue.flushNow();
+    queue.push(record(2));
+    await queue.drain();
+    expect(deliver.mock.calls).toEqual([[record(1), emptyAnalysis()], [record(2), analysis(2)]]);
   });
 
   it('flushNow delivers every pending hand at once without grades and ignores late results', async () => {

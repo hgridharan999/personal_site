@@ -42,10 +42,15 @@ export function createAnalysisClient({ createWorker = defaultCreateWorker, timeo
       if (message.type === ANALYSIS_RESPONSE.GRADED) entry.resolve(message.analysis);
       else entry.reject(new Error(message.error?.message ?? 'analysis failed'));
     });
-    created.addEventListener('error', (event) => {
-      if (worker === created) stop();
+    // A worker that has already been replaced (its 'error'/'messageerror' fired after a timeout or an
+    // earlier crash already swapped it out) must not reject requests belonging to the new worker.
+    const onWorkerFailure = (event) => {
+      if (worker !== created) return;
+      stop();
       rejectAll(new Error(event.message ?? 'analysis worker crashed'));
-    });
+    };
+    created.addEventListener('error', onWorkerFailure);
+    created.addEventListener('messageerror', onWorkerFailure);
     worker = created;
     return created;
   };
@@ -70,7 +75,15 @@ export function createAnalysisClient({ createWorker = defaultCreateWorker, timeo
           rejectAll(new Error('analysis timed out'));
         }, callTimeoutMs);
         pending.set(id, { resolve, reject, timer });
-        target.postMessage({ type: ANALYSIS_REQUEST.GRADE, id, record, budgetMs });
+        try {
+          target.postMessage({ type: ANALYSIS_REQUEST.GRADE, id, record, budgetMs });
+        } catch (err) {
+          // Only this request failed to reach the worker; other in-flight requests are unaffected and the
+          // worker itself may still be perfectly usable, so it is not terminated.
+          pending.delete(id);
+          clearTimeout(timer);
+          reject(err instanceof Error ? err : new Error(String(err)));
+        }
       });
     },
     dispose() {
@@ -86,6 +99,15 @@ let shared = null;
 
 /** The page's analysis client (the table and the review pages share one worker). */
 export function sharedAnalysisClient() {
-  shared ??= createAnalysisClient();
+  if (!shared) {
+    const client = createAnalysisClient();
+    const dispose = client.dispose;
+    // Once disposed, the next caller must get a fresh client rather than the dead one.
+    client.dispose = () => {
+      dispose();
+      shared = null;
+    };
+    shared = client;
+  }
   return shared;
 }
