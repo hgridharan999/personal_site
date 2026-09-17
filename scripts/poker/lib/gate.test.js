@@ -138,6 +138,8 @@ describe('runMatchups (inline, tiny budget)', () => {
     expect(jobs.map((j) => j.adapt)).toEqual([false, true, false]);
     expect(matchups[1].passed).toBe(true);
     expect(matchups[2].passed).toBe(false);
+    const gatingOnly = await runMatchups({ personas: [{ id: 'a', dials: ARCHETYPES['tight-aggressive'] }], opponents: ['rawEquity', 'alwaysCbet'], hands: 180, seed: 2, equityIterations: 20, runAll, informational: false });
+    expect(gatingOnly.map((m) => `${m.opponent}:${m.adapt}:${m.gating}`)).toEqual(['rawEquity:false:true', 'alwaysCbet:true:true']);
   });
 
   it('reports progress per matchup as it completes, while keeping the returned array in plan order', async () => {

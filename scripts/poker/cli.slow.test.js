@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { ARCHETYPES } from '../../src/private/trainers/poker/bots/dials.js';
 
 const BENCHMARK_SCRIPT = fileURLToPath(new URL('./benchmark.js', import.meta.url));
+const TRAIN_SCRIPT = fileURLToPath(new URL('./train.js', import.meta.url));
 const SPAWN_TIMEOUT_MS = 550_000; // leaves headroom under the test's own 600_000ms timeout for cleanup/assertions
 const run = (args) => spawnSync(process.execPath, args, { encoding: 'utf8', timeout: SPAWN_TIMEOUT_MS });
 
@@ -54,5 +55,28 @@ describe.skipIf(!process.env.POKER_SLOW)('poker CLIs', () => {
     const result = run([BENCHMARK_SCRIPT, '--smoke', '--threads', '1', '--data', missing]);
     const context = `stdout:\n${result.stdout}\nstderr:\n${result.stderr}`;
     expect(result.status, context).toBe(2);
+  }, 30_000);
+
+  it('train --smoke writes a bots file with eight personas', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'poker-train-'));
+    tempDirs.push(dir);
+    const out = join(dir, 'bots-test.json');
+    const started = Date.now();
+    const result = run([TRAIN_SCRIPT, '--smoke', '--threads', '2', '--version', 'bots-test', '--out', out]);
+    const context = `stdout:\n${result.stdout}\nstderr:\n${result.stderr}`;
+    expect(result.status, context).toBe(0);
+    expect(Date.now() - started, context).toBeLessThan(60_000);
+    expect(result.stdout.split('\n').filter((line) => line.startsWith('gen ')).length, context).toBe(2);
+    const data = JSON.parse(readFileSync(out, 'utf8'));
+    expect(data.version).toBe('bots-test');
+    expect(data.personas.length).toBe(8);
+    expect(data.training.generations).toBe(2);
+    expect(data.training.threads).toBe(2);
+    expect(data.benchmark).toBeNull();
+  }, 600_000);
+
+  it('train exits 2 on bad budget flags', () => {
+    const result = run([TRAIN_SCRIPT, '--population', 'many']);
+    expect(result.status, `stdout:\n${result.stdout}\nstderr:\n${result.stderr}`).toBe(2);
   }, 30_000);
 });

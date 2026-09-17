@@ -78,14 +78,17 @@ const modesFor = (opponent) => (PROBES.includes(opponent)
  * jobs happen to finish first.
  * @param {{ personas:{ id:string, dials:Record<string,number> }[], opponents?:readonly string[], hands:number, seed:number,
  *   equityIterations:number, runAll:(jobs:object[]) => Promise<object[]>, chunkDeals?:number,
- *   onMatchup?:(matchup:Matchup) => void }} input
+ *   onMatchup?:(matchup:Matchup) => void, informational?:boolean }} input
+ *   informational: false skips the non-gating modes (a quick gate that only needs the gating matchups).
  * @returns {Promise<Matchup[]>}
  */
-export async function runMatchups({ personas, opponents = OPPONENTS, hands, seed, equityIterations, runAll, chunkDeals, onMatchup }) {
+export async function runMatchups({
+  personas, opponents = OPPONENTS, hands, seed, equityIterations, runAll, chunkDeals, onMatchup, informational = true,
+}) {
   const plan = [];
   for (const persona of personas) {
     for (const opponent of opponents) {
-      for (const { adapt, gating } of modesFor(opponent)) {
+      for (const { adapt, gating } of modesFor(opponent).filter((mode) => informational || mode.gating)) {
         const jobs = matchupJobs({ dials: persona.dials, opponent, hands, seed, equityIterations, chunkDeals, adapt });
         plan.push({ personaId: persona.id, opponent, adapt, gating, jobs });
       }

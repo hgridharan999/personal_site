@@ -14,7 +14,8 @@
     "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.js",
     "poker:bench-eval": "node scripts/poker/bench-evaluator.js",
     "poker:gen-preflop": "node scripts/poker/gen-preflop.js",
-    "poker:benchmark": "node scripts/poker/benchmark.js"
+    "poker:benchmark": "node scripts/poker/benchmark.js",
+    "poker:train": "node scripts/poker/train.js"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
