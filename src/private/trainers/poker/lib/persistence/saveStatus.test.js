@@ -21,7 +21,8 @@ describe('pokerSaveStatus', () => {
       discardedIds: [],
     });
     expect(status).toEqual({ status: 'failed', pending: 1, failed: 2, failedId: 'hand:h1', lastError: 'Invalid hands payload' });
-    expect(saveStatusText(status)).toBe('2 saves rejected by the server: Invalid hands payload');
-    expect(saveStatusText({ ...status, failed: 1, lastError: null })).toBe('1 save rejected by the server: unknown error');
+    // The alert states the count only; per-entry lastError is left to the failed-entries list (PokerSaveStatus.jsx).
+    expect(saveStatusText(status)).toBe('2 saves rejected by the server');
+    expect(saveStatusText({ ...status, failed: 1 })).toBe('1 save rejected by the server');
   });
 });

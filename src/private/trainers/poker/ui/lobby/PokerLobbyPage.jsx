@@ -2,6 +2,7 @@ import { useSearchParams } from 'react-router-dom';
 import PokerShell from '../PokerShell';
 import PlayTab from './PlayTab';
 import StatsTab from './StatsTab';
+import { useCloseStaleSessions } from '../../lib/persistence/useCloseStaleSessions.js';
 
 const TABS = [
   { key: 'play', label: 'Play' },
@@ -10,6 +11,7 @@ const TABS = [
 
 /** Route: /me/poker (Play) and /me/poker?tab=stats (Stats). */
 export default function PokerLobbyPage() {
+  useCloseStaleSessions();
   const [params, setParams] = useSearchParams();
   const tab = params.get('tab') === 'stats' ? 'stats' : 'play';
   const select = (key) => setParams(key === 'play' ? {} : { tab: key }, { replace: true });
