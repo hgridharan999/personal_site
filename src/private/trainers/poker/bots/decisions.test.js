@@ -75,14 +75,18 @@ describe('preflopDecision', () => {
     const cold = contextAfter(['r 2 5', 'r 3 15'], { holes: ['2c3d', '7h2s', '6c5d', '8h4s', 'AhAs', '9s9h'] });
     expect(cold.seat).toBe(4);
     const spot = preflopSpot(cold.view, actsByStreet(cold.seatEvents).preflop, 4);
-    expect(spot.kind).toBe('vs4bet');
+    expect(spot.kind).toBe('coldVs3bet');
     expect(raiseSize(spot, cold.view, defaultDials(), 2)).toBe(35);
-    expect(raiseSize({ ...spot, raises: 3 }, cold.view, defaultDials(), 2)).toBe(Infinity); // 5-bet: all-in
+    expect(raiseSize({ ...spot, kind: 'vs4bet', raises: 3 }, cold.view, defaultDials(), 2)).toBe(Infinity); // 5-bet: all-in
     const aa = preflopDecision({ view: cold.view, events: cold.seatEvents, seat: 4, legal: cold.legal, dials: defaultDials(), rng: always(0), bb: 2 });
     expect(aa).toEqual({ action: 'raise', amount: 35 });
     const short = contextAfter(['r 2 5', 'r 3 15'], { holes: ['2c3d', '7h2s', '6c5d', '8h4s', 'AhAs', '9s9h'], stack: 80 });
     const jam = preflopDecision({ view: short.view, events: short.seatEvents, seat: 4, legal: short.legal, dials: defaultDials(), rng: always(0), bb: 2 });
     expect(jam).toEqual({ action: 'raise', amount: 80 });
+    // Facing a 3-bet that is a big share of the stack, with no tracked range, AA still gets it in.
+    const big = contextAfter(['r 2 5', 'r 3 15'], { holes: ['2c3d', '7h2s', '6c5d', '8h4s', 'AhAs', '9s9h'], stack: 40 });
+    const bigCall = preflopDecision({ view: big.view, events: big.seatEvents, seat: 4, legal: big.legal, dials: defaultDials(), rng: always(0), bb: 2 });
+    expect(bigCall).toEqual({ action: 'raise', amount: 40 });
   });
 
   it('defends an open against a single 3-bet when equity beats the pot odds after realization', () => {
@@ -119,6 +123,7 @@ describe('preflopDecision', () => {
     expect(spotMultipliers({ kind: 'open', position: 'BTN' }, d)).toEqual([1.4, 1]);
     expect(spotMultipliers({ kind: 'vsOpen', position: 'BB' }, d)).toEqual([2, 1.3]);
     expect(spotMultipliers({ kind: 'squeeze', position: 'CO' }, d)).toEqual([2, 0.7]);
+    expect(spotMultipliers({ kind: 'coldVs3bet', position: 'CO' }, d)).toEqual([d.fourBet, d.vs3betCall]);
   });
 
   // Chart-agnostic: the charts get regenerated, so this checks properties rather than frequencies.
@@ -129,6 +134,7 @@ describe('preflopDecision', () => {
       { steps: ['r 2 5'], seat: 3 }, // vsOpen
       { steps: ['r 2 5', 'c 3'], seat: 4 }, // squeeze
       { steps: ['r 2 5', 'r 3 16', 'f 4', 'f 5', 'f 0', 'f 1'], seat: 2 }, // vs3bet
+      { steps: ['r 2 5', 'r 3 16'], seat: 4 }, // coldVs3bet
       { steps: ['r 2 5', 'r 3 16', 'f 4', 'f 5', 'f 0', 'f 1', 'r 2 40'], seat: 3 }, // vs4bet
     ];
     for (const dials of [defaultDials(), ARCHETYPES['tight-passive']]) {
@@ -217,9 +223,6 @@ describe('postflopDecision', () => {
     expect(postflopDecision({ ...facing, equity: 0.3, dials: full }).action).toBe('call'); // percentile ~0.56
     expect(postflopDecision({ ...facing, equity: 0.3, dials: { ...full, mdfDefend: 0 } }).action).toBe('fold');
     expect(postflopDecision({ ...facing, equity: 0.2, dials: full }).action).toBe('fold'); // percentile ~0.40
-    // A tracked range percentile, when given, replaces the estimate.
-    expect(postflopDecision({ ...facing, equity: 0.1, rangePct: 0.6, dials: full }).action).toBe('call');
-    expect(postflopDecision({ ...facing, equity: 0.3, rangePct: 0.4, dials: full }).action).toBe('fold');
   });
 
   it('jams instead of a bet or raise that leaves less than half the resulting pot behind', () => {

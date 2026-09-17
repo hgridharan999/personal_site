@@ -55,6 +55,8 @@ describe('Phase 2 HandRecords round-trip through handItem', () => {
 // the lineup after bot refills, rebuy stacks and the open/close payloads are the ones the page sends.
 const scheduler = { wait: (ms) => (ms === DEFAULT_DECIDE_TIMEOUT_MS ? new Promise(() => {}) : Promise.resolve()) };
 const quietLogger = { warn: () => {}, error: () => {} };
+// Fixed small equity budgets keep real-persona sessions fast and deterministic.
+const FAST_BRAINS = { iterations: 150, budgetMs: Infinity };
 const nextMacrotask = () => new Promise((resolve) => setImmediate(resolve));
 
 function heroChoice(state, rng) {
@@ -76,7 +78,7 @@ async function playTableSession(seed) {
   const now = () => new Date((clock += 1000)).toISOString();
   const driver = createTableDriver({
     session: createSession({ id: randomUUID(), tableMode: 'random', lineup: randomLineup(personas, rng), startedAt: now() }),
-    runner: createLocalRunner({ rng: mulberry32(seed) }),
+    runner: createLocalRunner({ rng: mulberry32(seed), brainOptions: FAST_BRAINS }),
     scheduler, rng, personas, botVersion: BOT_VERSION, speed: 'fast', logger: quietLogger, now,
     onSessionStart: (info) => { out.start = viaStorage(info); },
     onHandComplete: (record) => out.records.push(viaStorage(record)),

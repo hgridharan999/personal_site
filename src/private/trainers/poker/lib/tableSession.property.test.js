@@ -17,6 +17,8 @@ const SESSIONS = 30;
 const personas = listPersonas();
 const sum = (list, pick) => list.reduce((total, x) => total + pick(x), 0);
 const quietLogger = { warn: () => {}, error: () => {} };
+// Fixed small equity budgets keep real-persona sessions fast and deterministic.
+const FAST_BRAINS = { iterations: 150, budgetMs: Infinity };
 // Every wait resolves at once except the decide timeout, so bot decisions are always applied.
 const scheduler = { wait: (ms) => (ms === DEFAULT_DECIDE_TIMEOUT_MS ? new Promise(() => {}) : Promise.resolve()) };
 const nextMacrotask = () => new Promise((resolve) => setImmediate(resolve));
@@ -84,7 +86,7 @@ async function playSession(seed) {
   let clock = Date.UTC(2026, 8, 16, 12);
   const driver = createTableDriver({
     session: createSession({ id: `s${seed}`, tableMode: 'random', lineup: randomLineup(personas, rng), startedAt: 'start' }),
-    runner: createLocalRunner({ rng: mulberry32(seed) }),
+    runner: createLocalRunner({ rng: mulberry32(seed), brainOptions: FAST_BRAINS }),
     scheduler, rng, personas, botVersion: 'test', speed: 'fast', logger: quietLogger,
     createId: () => `h${records.length + 1}`,
     now: () => new Date((clock += 1000)).toISOString(),

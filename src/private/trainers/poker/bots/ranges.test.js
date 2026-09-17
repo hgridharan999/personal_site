@@ -4,7 +4,7 @@ import { reduceHand } from '../engine/handState.js';
 import { viewFor, eventsFor } from '../engine/view.js';
 import { COMBO_COUNT, CLASS_COMBOS, parseClass, comboOf } from './handClass.js';
 import { emptyProfile } from './contract.js';
-import { preflopSpot } from './situation.js';
+import { actsByStreet, preflopSpot } from './situation.js';
 import {
   DEFAULT_TYPE, typeFromProfile, preflopLikelihoods, actionLikelihood, reweightPostflop, createRangeTracker,
 } from './ranges.js';
@@ -34,6 +34,15 @@ describe('preflopLikelihoods', () => {
     expect(like[c('72o')]).toBeCloseTo(0.03, 5);
     const loose = preflopLikelihoods(spot, 'raise', { looseness: 2, aggression: 0.35 });
     expect(loose[c('K9s')]).toBeGreaterThan(like[c('K9s')]);
+  });
+
+  it('reads a cold 4-bet over a 3-bet from the vs4bet chart', () => {
+    const cx = contextAfter(['r 2 5', 'r 3 15']);
+    const spot = preflopSpot(cx.view, actsByStreet(cx.seatEvents).preflop, 4);
+    expect(spot.kind).toBe('coldVs3bet');
+    const like = preflopLikelihoods(spot, 'raise', DEFAULT_TYPE);
+    expect(like[c('AA')]).toBe(1);
+    expect(like[c('72o')]).toBeCloseTo(0.03, 5);
   });
 
   it('gives premiums a lower open-limp likelihood than middling suited hands', () => {

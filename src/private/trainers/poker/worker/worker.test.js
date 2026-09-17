@@ -47,14 +47,15 @@ describe('createMessageHandler', () => {
 });
 
 /** In-memory worker: replies asynchronously through the real handler, unless `silent`. */
-function fakeWorker({ silent = false } = {}) {
-  const listeners = { message: [], error: [] };
+function fakeWorker({ silent = false, postThrows = false } = {}) {
+  const listeners = { message: [], error: [], messageerror: [] };
   const handle = createMessageHandler({ createBrain, rng: mulberry32(2) });
   const worker = {
     posted: [],
     terminated: false,
     addEventListener: (type, fn) => listeners[type].push(fn),
     postMessage(message) {
+      if (postThrows) throw new DOMException('could not be cloned', 'DataCloneError');
       worker.posted.push(message);
       if (!silent) queueMicrotask(() => listeners.message.forEach((fn) => fn({ data: handle(clone(message)) })));
     },
@@ -62,6 +63,7 @@ function fakeWorker({ silent = false } = {}) {
       worker.terminated = true;
     },
     crash: (message) => listeners.error.forEach((fn) => fn({ message })),
+    garble: () => listeners.messageerror.forEach((fn) => fn({ data: null })),
   };
   return worker;
 }
@@ -86,20 +88,73 @@ describe('createWorkerRunner', () => {
     const facing = ctxFor(['r 2 5']);
     const promise = runner.decide(facing);
     vi.advanceTimersByTime(100);
-    await expect(promise).resolves.toEqual({ action: 'fold' });
+    await expect(promise).resolves.toEqual({ action: 'fold', timedOut: true });
     expect(onTimeout).toHaveBeenCalledTimes(1);
     expect(safeChoice({ canCheck: true })).toEqual({ action: 'check' });
   });
 
-  it('rejects pending decisions on a worker error and after dispose', async () => {
+  it('ignores a reply that arrives after the request already timed out', async () => {
+    vi.useFakeTimers();
+    const listeners = { message: [] };
+    const worker = {
+      posted: [],
+      addEventListener: (type, fn) => { (listeners[type] ??= []).push(fn); },
+      postMessage: (m) => worker.posted.push(m),
+      terminate: () => {},
+    };
+    const runner = createWorkerRunner({ createWorker: () => worker, timeoutMs: 100 });
+    const promise = runner.decide(ctxFor(['r 2 5']));
+    vi.advanceTimersByTime(100);
+    await expect(promise).resolves.toEqual({ action: 'fold', timedOut: true });
+    // The worker finally answers the same request id after it already timed out: a no-op.
+    const [posted] = worker.posted;
+    expect(() => {
+      listeners.message.forEach((fn) => fn({ data: { type: 'decision', id: posted.id, choice: { action: 'call' } } }));
+    }).not.toThrow();
+    // A second decide still behaves normally, proving the late reply left the runner intact.
+    const next = runner.decide(ctxFor([]));
+    vi.advanceTimersByTime(100);
+    await expect(next).resolves.toEqual({ action: 'fold', timedOut: true });
+  });
+
+  it('rejects pending decisions on a worker error, then marks the runner broken', async () => {
     const worker = fakeWorker({ silent: true });
     const runner = createWorkerRunner({ createWorker: () => worker, timeoutMs: 10_000 });
+    expect(runner.broken).toBe(false);
     const pending = runner.decide(ctxFor([]));
     worker.crash('boom');
     await expect(pending).rejects.toThrow('boom');
-    const second = runner.decide(ctxFor([]));
+    expect(runner.broken).toBe(true);
+    await expect(runner.decide(ctxFor([]))).rejects.toThrow('worker broken');
+    expect(worker.posted).toHaveLength(1); // a broken runner posts nothing more
+  });
+
+  it('treats a messageerror like a crash', async () => {
+    const worker = fakeWorker({ silent: true });
+    const runner = createWorkerRunner({ createWorker: () => worker, timeoutMs: 10_000 });
+    const pending = runner.decide(ctxFor([]));
+    worker.garble();
+    await expect(pending).rejects.toThrow();
+    expect(runner.broken).toBe(true);
+    await expect(runner.decide(ctxFor([]))).rejects.toThrow('worker broken');
+  });
+
+  it('rejects and clears the timer when postMessage throws', async () => {
+    vi.useFakeTimers();
+    const onTimeout = vi.fn();
+    const runner = createWorkerRunner({ createWorker: () => fakeWorker({ postThrows: true }), timeoutMs: 100, onTimeout });
+    await expect(runner.decide(ctxFor([]))).rejects.toThrow('could not be cloned');
+    expect(vi.getTimerCount()).toBe(0);
+    vi.advanceTimersByTime(1000);
+    expect(onTimeout).not.toHaveBeenCalled();
+  });
+
+  it('rejects pending decisions after dispose and terminates the worker', async () => {
+    const worker = fakeWorker({ silent: true });
+    const runner = createWorkerRunner({ createWorker: () => worker, timeoutMs: 10_000 });
+    const pending = runner.decide(ctxFor([]));
     runner.dispose();
-    await expect(second).rejects.toThrow('runner disposed');
+    await expect(pending).rejects.toThrow('runner disposed');
     await expect(runner.decide(ctxFor([]))).rejects.toThrow('runner disposed');
     expect(worker.terminated).toBe(true);
   });

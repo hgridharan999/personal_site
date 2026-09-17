@@ -4,7 +4,8 @@
 // per-generation signals and the persona re-evaluation, for analysis only). While training, a checkpoint of the
 // archive and history is written to bots-vN.checkpoint.json every --checkpoint-every generations; it is removed
 // once both final files are written.
-// Exits 0 when the files are written, 2 on bad arguments, an unwritable output path or any runtime crash.
+// Exits 0 when the files are written, 2 on bad arguments, an unwritable output path, a persona selection that is not
+// exactly 8 personas with unique ids (nothing is written) or any runtime crash.
 // Usage: npm run poker:train -- [--smoke] [--population 50] [--generations 150] [--patience 20] [--min-delta 0.1]
 //   [--rounds 6] [--deals 600] [--probe-hands 1800] [--probe-weight 0.3] [--elite-count 10]
 //   [--archive-min-self-hands 40000] [--checkpoint-every 10] [--reeval-hands 20000] [--reeval-top-k 4]
@@ -21,7 +22,7 @@
 import { accessSync, constants, existsSync, rmSync, writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { createPool, defaultThreads } from './lib/pool.js';
-import { train, selectPersonas, validateOptions, TRAIN_DEFAULTS, SMOKE_OPTIONS } from './lib/trainLoop.js';
+import { train, selectPersonas, validateOptions, validatePersonaSelection, TRAIN_DEFAULTS, SMOKE_OPTIONS } from './lib/trainLoop.js';
 
 const { values } = parseArgs({
   options: {
@@ -117,6 +118,12 @@ async function main() {
       equityIterations: options.equityIterations, probeWeight: options.probeWeight, reevalHands: options.reevalHands,
       topK: options.reevalTopK, log: console.log, onEvaluated: (rows) => { selection = rows; },
     });
+    const badSelection = validatePersonaSelection(personas);
+    if (badSelection) {
+      console.error(`Not writing ${out}: ${badSelection}.`);
+      process.exitCode = 2;
+      return;
+    }
     const training = {
       ...options, threads, generations: result.generations, hands: result.hands, stoppedBecause: result.stoppedBecause,
       minutesBudget: options.minutes, minutes: Number(((Date.now() - started) / 60_000).toFixed(1)),
@@ -138,7 +145,7 @@ async function main() {
 }
 
 main().then(
-  () => process.exit(0),
+  () => process.exit(process.exitCode ?? 0),
   (err) => {
     console.error(err && err.stack ? err.stack : String(err));
     process.exit(2);

@@ -4,9 +4,7 @@ import { classOf } from './handClass.js';
 import { RANK_PCT } from './charts.js';
 import { rawEquity } from './baselines.js';
 import { legalize } from './legalize.js';
-import { actsByStreet, preflopSpot } from './situation.js';
-
-const potOf = (view) => view.players.reduce((sum, p) => sum + p.total, 0);
+import { actsByStreet, potOf, preflopSpot } from './situation.js';
 
 /**
  * Re-raises to 3x whenever it faces a single raise preflop (with or without callers). Sizing is always

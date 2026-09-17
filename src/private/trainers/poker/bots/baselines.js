@@ -8,10 +8,9 @@ import { equityVsRanges } from './equity.js';
 import { legalize } from './legalize.js';
 import { EQUITY_VS_ANY } from './preflopEquity.js';
 import { huEquity } from './postflop.js';
-import { actsByStreet, preflopSpot } from './situation.js';
+import { actsByStreet, preflopSpot, potOf } from './situation.js';
 
 const ANY_RANGE = new Float32Array(COMBO_COUNT).fill(1);
-const potOf = (view) => view.players.reduce((sum, p) => sum + p.total, 0);
 const meOf = (ctx) => ctx.view.players.find((p) => p.seat === ctx.seat);
 const liveOpponents = (ctx) => ctx.view.players.filter((p) => !p.folded && p.seat !== ctx.seat).length;
 
@@ -26,7 +25,7 @@ export const callingStation = { decide: (ctx) => (ctx.legal.canCheck ? { action:
  * otherwise check, or call when equity covers the pot odds.
  * @returns {import('./contract.js').Brain}
  */
-export function createRawEquityBrain({ iterations = 200 } = {}) {
+function createRawEquityBrain({ iterations = 200 } = {}) {
   return {
     decide(ctx, rng) {
       const { view, legal } = ctx;

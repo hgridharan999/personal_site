@@ -3,10 +3,10 @@
 import { CLASS_COUNT, classOf, combosIn } from './handClass.js';
 import { hasChart, scaledFreqs, topShareWeights } from './charts.js';
 import { equityVsClassWeights } from './preflopEquity.js';
-import { actsByStreet, preflopSpot, chartKeyFor } from './situation.js';
+import { actsByStreet, preflopSpot, chartKeyFor, potOf } from './situation.js';
 
 // Range share assumed for a raiser when no tracked range is available (ranked by the raiser order).
-const RAISER_SHARE = { open: 0.3, vsLimp: 0.3, vsOpen: 0.2, squeeze: 0.2, vs3bet: 0.07, vs4bet: 0.035 };
+const RAISER_SHARE = { open: 0.3, vsLimp: 0.3, vsOpen: 0.2, squeeze: 0.2, vs3bet: 0.07, coldVs3bet: 0.07, vs4bet: 0.035 };
 const BIG_CALL = 0.35; // a call costing at least this share of the remaining stack is an equity decision
 const JAM_SHARE = 0.4; // raises committing at least this share of the stack go all-in
 // Share of equity an opener realizes after calling a 3-bet, in and out of position.
@@ -42,10 +42,11 @@ export function raiseSize(spot, view, dials, bb) {
     case 'squeeze':
       return Math.round(bet * (spot.ip ? 3 : 3.8) + bet * spot.callers);
     case 'vs3bet':
+    case 'coldVs3bet':
+      // A 4-bet, by the opener or cold, is 2.3x the 3-bet.
       return Math.round(bet * 2.3);
     default:
-      // A cold 4-bet over a 3-bet is sized like any 4-bet; a 5-bet is all-in.
-      return spot.raises === 2 ? Math.round(bet * 2.3) : Infinity;
+      return Infinity; // a 5-bet is all-in
   }
 }
 
@@ -84,7 +85,7 @@ export function preflopDecision({ view, events, seat, legal, dials, rng, bb, rai
   const allIn = { action: 'raise', amount: legal.maxRaiseTo ?? 0 };
 
   if (legal.toCall > 0 && legal.toCall >= BIG_CALL * me.stack) {
-    const pot = view.players.reduce((sum, p) => sum + p.total, 0);
+    const pot = potOf(view);
     const villain = raiserWeights ?? topShareWeights(RAISER_SHARE[spot.kind]);
     const equity = equityVsClassWeights(cls, villain);
     const need = legal.toCall / (pot + legal.toCall);
@@ -102,7 +103,7 @@ export function preflopDecision({ view, events, seat, legal, dials, rng, bb, rai
   if (u < f.raise + f.call) return { action: 'call' };
   // An opener facing a single normal-size 3-bet never folds a hand that beats the pot odds (chart raises stay raises).
   if (spot.kind === 'vs3bet' && legal.toCall > 0) {
-    const pot = view.players.reduce((sum, p) => sum + p.total, 0);
+    const pot = potOf(view);
     if (defendsThreeBet(cls, { pot, toCall: legal.toCall, ip: spot.ip, raiserWeights })) return { action: 'call' };
   }
   return { action: 'fold' };

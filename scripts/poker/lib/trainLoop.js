@@ -86,6 +86,16 @@ export function validateOptions(o) {
   return null;
 }
 
+/** @returns {string|null} why a persona selection cannot ship (it must be exactly 8 personas with unique ids), or null */
+export function validatePersonaSelection(personas) {
+  const slots = Object.values(PERSONA_SLOTS).flat().length;
+  if (!Array.isArray(personas) || personas.length !== slots) {
+    return `selection must hold exactly ${slots} personas (got ${Array.isArray(personas) ? personas.length : 'none'})`;
+  }
+  if (new Set(personas.map((p) => p.id)).size !== slots) return 'selected personas must have unique ids';
+  return null;
+}
+
 /** Per-individual results behind its fitness; children from nextGeneration start without one. */
 const ledgerOf = (ind) => {
   ind.ledger ??= { generations: 0, selfBbWon: 0, selfHands: 0, probeHands: 0, probeAccs: Object.fromEntries(PROBES.map((p) => [p, emptyAcc()])) };
