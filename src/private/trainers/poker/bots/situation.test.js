@@ -46,8 +46,20 @@ describe('preflopSpot and chartKeyFor', () => {
     expect(chartKeyFor(ip, hasChart)).toBe('vs3bet.CO.ip');
   });
 
-  it('a cold 3-bet or any 4-bet is vs4bet', () => {
-    expect(spotFor(['r 2 5', 'r 3 15'])).toMatchObject({ kind: 'vs4bet', position: 'CO' });
+  it('a player facing a 3-bet they made no raise in is coldVs3bet, on the vs4bet chart', () => {
+    const cold = spotFor(['r 2 5', 'r 3 15']);
+    expect(cold).toMatchObject({ kind: 'coldVs3bet', position: 'CO', raises: 2, raiserPosition: 'HJ', ip: true });
+    expect(chartKeyFor(cold, hasChart)).toBe('vs4bet.ip');
+    const blind = spotFor(['r 2 5', 'r 3 15', 'f 4', 'f 5', 'f 0']);
+    expect(blind).toMatchObject({ kind: 'coldVs3bet', position: 'BB', ip: false });
+    expect(chartKeyFor(blind, hasChart)).toBe('vs4bet.oop');
+    // The caller of the open, squeezed by a later 3-bet, never raised either.
+    const squeezed = spotFor(['r 2 5', 'c 3', 'r 4 20', 'f 5', 'f 0', 'f 1', 'f 2']);
+    expect(squeezed).toMatchObject({ kind: 'coldVs3bet', position: 'HJ', ip: false });
+    expect(chartKeyFor(squeezed, hasChart)).toBe('vs4bet.oop');
+  });
+
+  it('any 4-bet is vs4bet', () => {
     const fourBet = spotFor(['r 2 5', 'f 3', 'f 4', 'r 5 15', 'f 0', 'f 1', 'r 2 40']);
     expect(fourBet.kind).toBe('vs4bet');
     expect(chartKeyFor(fourBet, hasChart)).toBe('vs4bet.ip');

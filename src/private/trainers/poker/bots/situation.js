@@ -44,8 +44,8 @@ function postflopOrder(view) {
 /**
  * Preflop spot for `seat` given the preflop acts so far.
  * kind: 'open' (no voluntary action yet), 'vsLimp' (limpers, no raise), 'vsOpen' (one raise, no callers after it),
- * 'squeeze' (one raise with callers), 'vs3bet' (two raises, seat made the first), 'vs4bet' (three or more raises,
- * or two raises that seat was not part of).
+ * 'squeeze' (one raise with callers), 'vs3bet' (two raises, seat made the first), 'coldVs3bet' (two raises, seat
+ * made neither: cold after an open and a 3-bet, or the open's caller facing a squeeze), 'vs4bet' (three or more raises).
  * @returns {{ kind:string, position:string, raiser:number|null, raiserPosition:string|null, raises:number,
  *   limpers:number, callers:number, ip:boolean }} ip: seat acts after the last raiser postflop
  */
@@ -69,7 +69,7 @@ export function preflopSpot(view, preflopActs, seat) {
   let kind;
   if (raisers.length === 0) kind = limpers > 0 ? 'vsLimp' : 'open';
   else if (raisers.length === 1) kind = callers > 0 ? 'squeeze' : 'vsOpen';
-  else if (raisers.length === 2 && raisers[0] === seat) kind = 'vs3bet';
+  else if (raisers.length === 2) kind = raisers.includes(seat) ? 'vs3bet' : 'coldVs3bet';
   else kind = 'vs4bet';
   return {
     kind,
@@ -99,7 +99,10 @@ export function chartKeyFor(spot, hasChart) {
   }
   if (kind === 'squeeze') candidates.push(`squeeze.${position}`, 'squeeze.CO');
   if (kind === 'vs3bet') candidates.push(`vs3bet.${position}.${ip ? 'ip' : 'oop'}`, `vs3bet.CO.${ip ? 'ip' : 'oop'}`);
-  if (kind === 'vs4bet') candidates.push(`vs4bet.${ip ? 'ip' : 'oop'}`);
+  // A cold player facing an open and a 3-bet continues far tighter than the opener defending (vs3bet charts
+  // continue 7-11% plus bluffs) or a squeeze over one raise (up to 19%): the vs4bet charts' ~3% continue range,
+  // ranked by the raiser order, is the closest existing chart, and it is what bots-v1 trained and gated with.
+  if (kind === 'vs4bet' || kind === 'coldVs3bet') candidates.push(`vs4bet.${ip ? 'ip' : 'oop'}`);
   const key = candidates.find(hasChart);
   if (!key) throw new Error(`No chart for ${kind} ${position}`);
   return key;
