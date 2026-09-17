@@ -2,8 +2,8 @@
 import { EventEmitter } from 'node:events';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { defaultDials } from '../../../src/private/trainers/poker/bots/dials.js';
-import { emptyAcc, addSample, mergeAcc, summarize } from './ciStats.js';
-import { runTableJob, dealSeed } from './tableJob.js';
+import { emptyAcc, addSample, mergeAcc, summarize, bbPer100Scale } from './ciStats.js';
+import { runTableJob, dealSeed, ADAPT_JOB_DEALS } from './tableJob.js';
 import { createPool } from './pool.js';
 
 // Transparent wrapper around createBrain that records the profile every decision sees (inline runs only).
@@ -25,19 +25,41 @@ const job = (overrides = {}) => ({
 });
 
 describe('ciStats', () => {
-  it('computes mean, sample sd and a 95% interval, and merges accumulators', () => {
+  it('computes mean and sample sd, and merges accumulators, but never a usable interval below n=30', () => {
     let a = emptyAcc();
     for (const x of [1, 2, 3, 4]) a = addSample(a, x);
     const s = summarize(a);
     expect(s.mean).toBe(2.5);
     expect(s.sd).toBeCloseTo(Math.sqrt(5 / 3), 10);
-    expect(s.lower).toBeCloseTo(2.5 - (1.96 * Math.sqrt(5 / 3)) / 2, 10);
+    // n = 4 < 30: the interval can never be used to clear a "bound is above 0" gate.
+    expect(s.lower).toBe(-Infinity);
+    expect(s.upper).toBe(Infinity);
     const b = mergeAcc(addSample(addSample(emptyAcc(), 1), 2), addSample(addSample(emptyAcc(), 3), 4));
     expect(b).toEqual(a);
     const flipped = summarize(a, -10);
     expect(flipped.mean).toBe(-25);
-    expect(flipped.lower).toBeLessThan(flipped.upper);
+    expect(flipped.lower).toBe(-Infinity);
+    expect(flipped.upper).toBe(Infinity);
     expect(summarize(emptyAcc()).lower).toBe(-Infinity);
+  });
+
+  it('returns a real 95% interval once n reaches 30, honouring the scale sign', () => {
+    let big = emptyAcc();
+    for (let x = 1; x <= 30; x += 1) big = addSample(big, x);
+    const s = summarize(big);
+    const mean = big.sum / big.n;
+    const variance = (big.sumSq - big.n * mean * mean) / (big.n - 1);
+    const half = (1.96 * Math.sqrt(variance)) / Math.sqrt(big.n);
+    expect(s.lower).toBeCloseTo(mean - half, 10);
+    expect(s.upper).toBeCloseTo(mean + half, 10);
+    const flipped = summarize(big, -10);
+    expect(flipped.mean).toBeCloseTo(mean * -10, 10);
+    expect(flipped.lower).toBeLessThan(flipped.upper);
+  });
+
+  it('exports bbPer100Scale to convert per-deal units (1 unit = 0.5 BB) to BB/100 hands', () => {
+    expect(bbPer100Scale(6)).toBeCloseTo(100 / 12, 10);
+    expect(bbPer100Scale(1)).toBe(50);
   });
 });
 
@@ -62,6 +84,30 @@ describe('runTableJob', () => {
     expect(first.styles).toBeNull();
     expect(dealSeed(3, 0)).not.toBe(dealSeed(3, 1));
     expect(dealSeed(3, 0)).toBe(dealSeed(3, 0));
+  });
+
+  it('gives deal d the same play regardless of how deals are chunked into jobs (adapt: false)', () => {
+    const opts = { deals: 6, subject: null, trackStyles: false };
+    const whole = runTableJob(job(opts));
+    const firstHalf = runTableJob(job({ ...opts, deals: 3 }));
+    const secondHalf = runTableJob(job({ ...opts, firstDeal: 3, deals: 3 }));
+    const mergedAccs = firstHalf.dealAccs.map((acc, p) => mergeAcc(acc, secondHalf.dealAccs[p]));
+    expect(mergedAccs).toEqual(whole.dealAccs);
+    const threeJobs = [
+      runTableJob(job({ ...opts, deals: 2 })),
+      runTableJob(job({ ...opts, firstDeal: 2, deals: 2 })),
+      runTableJob(job({ ...opts, firstDeal: 4, deals: 2 })),
+    ];
+    const mergedFromThree = threeJobs.reduce(
+      (acc, r) => acc.map((a, p) => mergeAcc(a, r.dealAccs[p])),
+      whole.dealAccs.map(() => emptyAcc()),
+    );
+    expect(mergedFromThree).toEqual(whole.dealAccs);
+  });
+
+  it('exports ADAPT_JOB_DEALS as the fixed job size adaptive callers must use', () => {
+    expect(Number.isInteger(ADAPT_JOB_DEALS)).toBe(true);
+    expect(ADAPT_JOB_DEALS).toBeGreaterThan(0);
   });
 
   it('with adapt: false never gives brains a profile, even with a subject', () => {

@@ -20,6 +20,16 @@ import { emptyAcc, addSample } from './ciStats.js';
  *   nets: units won per player; dealAccs: per-player accumulators of units won per deal (all rotations).
  */
 
+/**
+ * Fixed job size (in deals) that adaptive (`adapt: true`) callers must use. With `adapt: false` deal `d`'s play
+ * depends only on `(seed, d)`, so results never depend on how deals are chunked into jobs. With `adapt: true` the
+ * subject profile necessarily starts from empty at the top of every job and warms up over that job's deals, so a
+ * job's results (and therefore the overall matchup's results) depend on job size. There is no way around this
+ * without carrying the profile across worker boundaries, so callers must fix every adaptive job to this many
+ * deals, regardless of thread count, so a run's results don't change when the number of worker threads changes.
+ */
+export const ADAPT_JOB_DEALS = 500;
+
 /** Deterministic 32-bit seed for deal `index` of a run. */
 export const dealSeed = (seed, index) => (Math.imul(seed >>> 0, 0x9e3779b1) ^ Math.imul(index + 1, 0x85ebca6b)) >>> 0;
 
@@ -37,21 +47,25 @@ export function runTableJob(job) {
   const { players: specs, seed, firstDeal, deals, equityIterations, subject = null, adapt = false, trackStyles = false } = job;
   if (adapt && subject === null) throw new Error('adapt requires a subject');
   const players = specs.map((spec, i) => playerFrom(spec, i, equityIterations));
-  const decisionRng = mulberry32(dealSeed(seed ^ 0x5bd1e995, firstDeal));
   const nets = new Array(players.length).fill(0);
   let dealAccs = players.map(() => emptyAcc());
   const styles = trackStyles ? players.map(() => emptyProfile()) : null;
   let profile = adapt ? emptyProfile() : null;
+  let hands = 0;
   const onHand = trackStyles
     ? (events, seatOf) => players.forEach((_, p) => { styles[p] = accumulateProfile(styles[p], seatOf(p), events); })
     : undefined;
   for (let d = firstDeal; d < firstDeal + deals; d += 1) {
+    // A fresh decision RNG per deal, seeded only from (seed, d), so deal d plays identically no matter which
+    // job (or how much of the job) it lands in — results don't depend on how deals are split across threads.
+    const decisionRng = mulberry32(dealSeed(seed ^ 0x5bd1e995, d));
     const result = playDuplicateDeal({
       players, dealSeed: dealSeed(seed, d), decisionRng, button: d % players.length, subject, profile, adapt, onHand,
     });
     profile = result.profile;
     result.nets.forEach((x, p) => { nets[p] += x; });
     dealAccs = dealAccs.map((acc, p) => addSample(acc, result.nets[p]));
+    hands += result.hands;
   }
-  return { nets, hands: deals * players.length, dealAccs, styles };
+  return { nets, hands, dealAccs, styles };
 }
