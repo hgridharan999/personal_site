@@ -1,9 +1,10 @@
 // src/private/trainers/poker/lib/fallbackRunner.test.js
 import { describe, it, expect, vi } from 'vitest';
 import { createFallbackRunner } from './fallbackRunner.js';
+import { createWorkerRunner } from '../worker/workerClient.js';
 
 const ctx = { legal: { canCheck: true } };
-const quiet = () => ({ warn: vi.fn() });
+const quiet = () => ({ warn: vi.fn(), error: vi.fn() });
 
 /** A primary runner whose decide is scripted and which can be marked broken. */
 function scriptedPrimary(decide) {
@@ -68,5 +69,74 @@ describe('createFallbackRunner', () => {
     expect(primary.dispose).toHaveBeenCalledTimes(1);
     expect(local.dispose).toHaveBeenCalledTimes(1);
     await expect(runner.decide(ctx)).rejects.toThrow('runner disposed');
+  });
+
+  it('treats the worker as broken after two consecutive timeouts, warning once and disposing it', async () => {
+    const logger = quiet();
+    const timedOut = { action: 'fold', timedOut: true };
+    let calls = 0;
+    const primary = scriptedPrimary(async () => {
+      calls += 1;
+      return timedOut;
+    });
+    const local = localRunner('check');
+    const runner = createFallbackRunner({ createPrimary: () => primary, loadFallback: async () => local, logger });
+    await expect(runner.decide(ctx)).resolves.toEqual(timedOut); // 1st consecutive timeout: still on the worker
+    await expect(runner.decide(ctx)).resolves.toEqual(timedOut); // 2nd: worker now treated as broken
+    await expect(runner.decide(ctx)).resolves.toEqual({ action: 'check' }); // 3rd: routed to the fallback
+    expect(calls).toBe(2);
+    expect(primary.dispose).toHaveBeenCalledTimes(1);
+    expect(local.decide).toHaveBeenCalledTimes(1);
+    expect(logger.warn).toHaveBeenCalledTimes(1);
+  });
+
+  it('resets the timeout streak after a successful decision, and stays on the worker', async () => {
+    const logger = quiet();
+    const timedOut = { action: 'fold', timedOut: true };
+    const results = [timedOut, { action: 'call' }, timedOut];
+    let i = 0;
+    const primary = scriptedPrimary(async () => results[i++]);
+    const loadFallback = vi.fn();
+    const runner = createFallbackRunner({ createPrimary: () => primary, loadFallback, logger });
+    await expect(runner.decide(ctx)).resolves.toEqual(timedOut);
+    await expect(runner.decide(ctx)).resolves.toEqual({ action: 'call' });
+    await expect(runner.decide(ctx)).resolves.toEqual(timedOut);
+    expect(primary.decide).toHaveBeenCalledTimes(3);
+    expect(primary.dispose).not.toHaveBeenCalled();
+    expect(loadFallback).not.toHaveBeenCalled();
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  it('logs once when the fallback fails to load, even across repeated decides', async () => {
+    const logger = quiet();
+    const loadFallback = vi.fn(async () => { throw new Error('chunk load failed'); });
+    const runner = createFallbackRunner({ createPrimary: () => { throw new Error('no workers'); }, loadFallback, logger });
+    await expect(runner.decide(ctx)).rejects.toThrow('chunk load failed');
+    await expect(runner.decide(ctx)).rejects.toThrow('chunk load failed');
+    await expect(runner.decide(ctx)).rejects.toThrow('chunk load failed');
+    expect(loadFallback).toHaveBeenCalledTimes(1);
+    expect(logger.error).toHaveBeenCalledTimes(1);
+    expect(logger.warn).toHaveBeenCalledTimes(1);
+  });
+
+  it('goes straight to the fallback after a worker error with nothing pending, without posting to the worker', async () => {
+    const logger = quiet();
+    const listeners = { message: [], error: [], messageerror: [] };
+    const worker = {
+      posted: [],
+      addEventListener: (type, fn) => listeners[type].push(fn),
+      postMessage: (m) => worker.posted.push(m),
+      terminate: vi.fn(),
+    };
+    const local = localRunner('check');
+    const runner = createFallbackRunner({
+      createPrimary: () => createWorkerRunner({ createWorker: () => worker }),
+      loadFallback: async () => local,
+      logger,
+    });
+    listeners.error.forEach((fn) => fn({ message: 'boom' })); // fires with no decide() in flight
+    await expect(runner.decide(ctx)).resolves.toEqual({ action: 'check' });
+    expect(worker.posted).toHaveLength(0);
+    expect(local.decide).toHaveBeenCalledTimes(1);
   });
 });

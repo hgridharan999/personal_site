@@ -88,9 +88,33 @@ describe('createWorkerRunner', () => {
     const facing = ctxFor(['r 2 5']);
     const promise = runner.decide(facing);
     vi.advanceTimersByTime(100);
-    await expect(promise).resolves.toEqual({ action: 'fold' });
+    await expect(promise).resolves.toEqual({ action: 'fold', timedOut: true });
     expect(onTimeout).toHaveBeenCalledTimes(1);
     expect(safeChoice({ canCheck: true })).toEqual({ action: 'check' });
+  });
+
+  it('ignores a reply that arrives after the request already timed out', async () => {
+    vi.useFakeTimers();
+    const listeners = { message: [] };
+    const worker = {
+      posted: [],
+      addEventListener: (type, fn) => { (listeners[type] ??= []).push(fn); },
+      postMessage: (m) => worker.posted.push(m),
+      terminate: () => {},
+    };
+    const runner = createWorkerRunner({ createWorker: () => worker, timeoutMs: 100 });
+    const promise = runner.decide(ctxFor(['r 2 5']));
+    vi.advanceTimersByTime(100);
+    await expect(promise).resolves.toEqual({ action: 'fold', timedOut: true });
+    // The worker finally answers the same request id after it already timed out: a no-op.
+    const [posted] = worker.posted;
+    expect(() => {
+      listeners.message.forEach((fn) => fn({ data: { type: 'decision', id: posted.id, choice: { action: 'call' } } }));
+    }).not.toThrow();
+    // A second decide still behaves normally, proving the late reply left the runner intact.
+    const next = runner.decide(ctxFor([]));
+    vi.advanceTimersByTime(100);
+    await expect(next).resolves.toEqual({ action: 'fold', timedOut: true });
   });
 
   it('rejects pending decisions on a worker error, then marks the runner broken', async () => {

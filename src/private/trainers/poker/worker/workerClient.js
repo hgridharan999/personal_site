@@ -14,7 +14,7 @@ const defaultCreateWorker = () => new Worker(new URL('./pokerWorker.js', import.
  *   timeoutMs?:number, onTimeout?:(ctx:object) => void }} [options]
  * @returns {{ decide:(ctx:import('../bots/contract.js').BotContext) => Promise<import('../bots/contract.js').BotChoice>, dispose:() => void,
  *   readonly broken:boolean }}
- *   decide rejects on a worker error or after dispose, and resolves with safeChoice(ctx.legal) on timeout.
+ *   decide rejects on a worker error or after dispose, and resolves with { ...safeChoice(ctx.legal), timedOut:true } on timeout.
  *   An `error` or `messageerror` event marks the runner broken: pending decisions reject, and every later decide
  *   rejects with `worker broken`, so the caller can fall back to a local runner.
  */
@@ -58,7 +58,10 @@ export function createWorkerRunner({ createWorker = defaultCreateWorker, timeout
         const timer = setTimeout(() => {
           settle(id);
           onTimeout(ctx);
-          resolve(safeChoice(ctx.legal));
+          // `timedOut` lets a wrapper (e.g. lib/fallbackRunner.js) notice the worker missed its
+          // deadline without changing the BotRunner interface; applyAction (tableCore.js) only
+          // reads `action`/`amount`, so the extra field is harmless downstream.
+          resolve({ ...safeChoice(ctx.legal), timedOut: true });
         }, timeoutMs);
         pending.set(id, { resolve, reject, timer });
         try {

@@ -19,6 +19,9 @@ const MAX_OPTIONS_PER_PERSONA = 4;
 /**
  * @param {import('./contract.js').Persona} persona
  * @param {{ iterations?:number, budgetMs?:number, now?:() => number }} [options] heuristic brain equity budget
+ *   Cached below via `JSON.stringify(options)`, which drops function-valued entries (e.g. `now`)
+ *   from the key: two calls that differ only in which `now` function they pass share a cached
+ *   brain. Only vary `iterations`/`budgetMs` if callers need distinct cache entries.
  * @returns {import('./contract.js').Brain}
  */
 export function createBrain(persona, options) {
