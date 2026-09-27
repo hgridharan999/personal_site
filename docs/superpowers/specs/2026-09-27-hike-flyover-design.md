@@ -77,17 +77,22 @@ Attribution ("Elevation: USGS 3DEP · Imagery: USDA NAIP") shows in the viewer's
 
 ## 5. Pipeline (`pipeline/`)
 
-**Tooling:** Python 3.12, uv, ruff, black, pytest, type hints throughout, Pydantic v2. CLI via Typer: `uv run flyover build <slug>`, `uv run flyover upload <slug>`, `uv run flyover build-all`. rasterio's Windows wheels bundle GDAL, so `uv sync` needs no separate geospatial install.
+**Tooling:** Python 3.12+ (3.13 on this machine), uv, ruff, black, pytest, type hints throughout, Pydantic v2. CLI via Typer: `uv run flyover build <slug>`, `uv run flyover upload <slug>`, `uv run flyover build-all`. rasterio's Windows wheels bundle GDAL, so `uv sync` needs no separate geospatial install.
+
+**Windows environment (found in prototyping):**
+- **PROJ and GDAL data:** the PostGIS installer sets `PROJ_LIB` and `GDAL_DATA` system-wide, pointing at an older projection database, and that breaks every EPSG lookup in rasterio. The package clears both variables (and `PROJ_DATA`) on import, so the libraries use their own bundled data.
+- **Time-zone data:** Windows has no system time-zone database, so `tzdata` is a dependency.
 
 **Inputs**
 - `pipeline/hikes/<slug>.toml` (committed): display name, `data.js` hike name to link, optional time-zone override, optional `trim_start_m` / `trim_end_m` for privacy, optional NAIP year override, optional per-photo captions, optional shot tuning (§7.3).
 - `pipeline/input/<slug>/track.gpx` and `pipeline/input/<slug>/photos/*` (gitignored). Raw tracks and full-size originals stay out of git, and the published manifest holds only the cleaned track.
 - `pipeline/.env` (gitignored): `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`. Read from the environment and never logged or printed. `pipeline/.env.example` lists the names with placeholders.
 
-**Stages** (each a module with one job; each stage's output is cached in `pipeline/.cache/<slug>/`, gitignored, so re-runs are cheap)
+**Stages** (each a module with one job). Re-runs are cheap: 3DEP responses and NAIP searches are cached in `pipeline/.cache/` (gitignored), and tiles already in `pipeline/out/` are skipped. Track and photo stages recompute in about a second.
 
 1. **`track`**: parse GPX 1.1 (gpxpy).
-   - **Clean:** drop points with duplicate timestamps, and drop GPS jumps (any point implying more than 4 m/s from its neighbor, sustained for fewer than 3 points). Apply the privacy trims.
+   - **Clean:** drop points with duplicate timestamps, and drop GPS spikes: a run of at most 2 points entered and left faster than 4 m/s, while the points on either side are within 4 m/s of each other. A fast run that isn't left just as fast is real movement and stays. Apply the privacy trims.
+   - **Decimate:** keep a point only once it's at least 4 m from the last kept one, so standing-still GPS jitter doesn't add fake distance and a stop becomes a single time gap.
    - **Smooth:** smooth the horizontal path with a Savitzky–Golay filter (window about 15 points, polynomial order 2), then resample to one point every 5 m of distance, interpolating time.
    - **Elevations:** replace them by sampling the 1 m 3DEP DEM (bilinear), because GPS altitude is too noisy to use.
    - **Stops:** any stretch slower than 0.3 m/s for at least 60 s.
@@ -101,17 +106,25 @@ Attribution ("Elevation: USGS 3DEP · Imagery: USDA NAIP") shows in the viewer's
    | Zoom | Ground resolution at 39°N | Covered area |
    |---|---|---|
    | 8–12 | 470–29 m/px | Circle of radius 40 km around the track's bounding-box center (the horizon ring) |
-   | 13–16 | 15–1.8 m/px | Within 8 km of the track |
-   | 17 (elevation and imagery) | 0.92 m/px | Within 1 km of the track |
-   | 18 (imagery only) | 0.46 m/px | Within 500 m of the track |
+   | 13 | 15 m/px | Within 16 km of the track |
+   | 14 | 7.3 m/px | Within 8 km |
+   | 15 | 3.7 m/px | Within 4 km |
+   | 16 | 1.8 m/px | Within 2 km |
+   | 17 (elevation and imagery) | 0.92 m/px | Within 1 km |
+   | 18 (imagery only) | 0.46 m/px | Within 500 m |
+
+   Halving the radius at each zoom keeps texel size roughly proportional to distance from a camera near the trail, so each zoom exists only where the viewer would pick it. (The first draft gave zooms 13–16 a flat 8 km, which measured tile sizes showed would blow the size budget.) Every covered tile's parents are added too, so the viewer's quadtree is always connected.
 
    The result goes in the manifest as run-length rows per zoom, `[y, xStart, xEnd]`, so the viewer never requests a tile that doesn't exist.
-4. **`dem`**: fetch 3DEP in EPSG:3857 chunks at zoom-17 resolution for the corridor and at ring resolution for the ring. Build lower zooms by downsampling (averaging) higher ones wherever they exist.
+4. **`dem`**: fetch 3DEP in EPSG:3857 for each zoom directly at that zoom's resolution, in chunks of up to 16×16 tiles (the service resamples server-side).
+   - **Rejected requests:** 3DEP answers HTTP 500 when one request would mosaic too many source rasters. This happened for the 40 km ring at zoom 12. The pipeline then fetches the two halves, recursively, split on pixel boundaries so the result is identical.
+   - **Texel positions:** texel (r, c) of a 258×258 tile at zoom z is centered at `(minx + (c − 0.5)·px, maxy − (r − 0.5)·px)`, where `px` = tile width / 256. Texels 1–256 are the tile's own pixels, and texels 0 and 257 duplicate the neighbors' edge pixels.
    - **Encoding:** heights use terrain-RGB (`h = -10000 + (R·65536 + G·256 + B) · 0.1`) saved as lossless WebP.
    - **Size:** each tile is 258×258: 256 px plus a 1 px border copied from its neighbors, so lighting normals are seamless across tile edges.
    - **Sharing:** tiles are written under `tiles/v1/dem/`. They're keyed by location, so hikes that share an area share tiles, and existing tiles are skipped.
-5. **`imagery`**: query the Planetary Computer STAC for NAIP items covering the corridor and pick the newest year that covers the whole corridor, unless the config overrides it. Then mosaic that year's scenes, reproject to EPSG:3857, and cut 256 px tiles.
-   - **Ring:** the ring reads the scenes' built-in overviews.
+5. **`imagery`**: query the Planetary Computer STAC for NAIP scenes covering all the hike's tiles (all years). Pick the newest year whose scenes cover every zoom-17 tile center, unless the config overrides it. Colorado's 2023 NAIP is 0.3 m, sharper than zoom 18 needs.
+   - **Mosaic:** for each chunk (up to 8×8 tiles), paint scenes in priority order (the chosen year first, then newer years first) into the still-empty pixels. A pixel counts as covered only when the alpha band GDAL adds while reprojecting is fully opaque, never judged from pixel values. `rasterio.merge` was rejected because it treats any 0 in a band as empty, which lets a lower-priority scene bleed through deep shadows. Partial alpha is rejected too: zoomed out, a scene's edge pixel is a blend of the scene and the black outside it, and accepting it drew dark seam lines in the live test.
+   - **Ring:** reads are reduced-size, so GDAL serves them from the scenes' built-in overviews. Measured: an 80 km square at about 117 m/px took about 50 s across 910 candidate scenes.
    - **Encoding:** WebP, quality 80.
    - **Location:** `tiles/v1/img/<year>/`.
    - **Seams:** a single year per hike avoids color jumps between scenes. Remaining brightness differences between scenes are left as they are in v1.
@@ -143,7 +156,7 @@ Attribution ("Elevation: USGS 3DEP · Imagery: USDA NAIP") shows in the viewer's
     "naipYear": 2023,
     "demZooms": [8, 17],
     "imgZooms": [8, 18],
-    "coverage": { "8": [[97, 52, 53]], "17": [[49903, 26890, 26915], ...] }  // per zoom: [y, xStart, xEnd]
+    "coverage": { "8": [[97, 52, 53]], "17": [[49906, 26890, 26915], ...] }  // per zoom: [y, xStart, xEnd]
   },
   "track": {          // columnar, one entry per 5 m
     "t":    [0, 3.1, ...],        // seconds since startTime
@@ -155,7 +168,8 @@ Attribution ("Elevation: USGS 3DEP · Imagery: USDA NAIP") shows in the viewer's
   "stops":  [{ "startIdx": 412, "endIdx": 418, "seconds": 540 }],
   "summit": { "idx": 1105, "lat": 39.3972, "lon": -106.1065, "ele": 4348.0 },
   "stats":  { "distanceM": 10783, "gainM": 1030, "movingS": 12900, "totalS": 16150, "ascentRateMPerH": 482 },
-  "photos": [{ "src": "photos/3f9a1c.webp", "t": 6021, "idx": 640, "w": 1600, "h": 1200, "caption": null }],
+  "photos": [{ "src": "photos/3f9a1c2b4d5e.webp", "t": 6021, "idx": 640, "w": 1600, "h": 1200, "caption": null }],
+  "playback": { "durationS": 150, "summitS": 10, "photoS": 2.5, "stopS": 1 },  // story-clock timing, from the hike's TOML
   "attribution": "Elevation: USGS 3DEP · Imagery: USDA NAIP"
 }
 ```
@@ -173,6 +187,7 @@ Plain three.js on WebGL2, without react-three-fiber, because tile management and
 - **Tile selection.** A quadtree over the covered tiles. Each frame, starting at zoom 8, a tile splits into its children if they exist in the coverage list and its screen-space error is above a threshold. Screen-space error is the tile's ground resolution projected to screen pixels at its nearest point; the threshold is 1.5 px on desktop and 2.5 px on phones. Tiles outside the view are skipped. A parent stays visible until all four children are loaded, so there are never holes. The on-screen cap is 150 tiles; past it, the threshold is raised for that frame.
 - **Geometry.** One shared 65×65 grid, plus a skirt hanging 50 m down on each edge to hide cracks where tiles of different zoom meet. The vertex shader raises each vertex by the decoded height texture.
   - **Zoom 18:** imagery tiles have no zoom-18 elevation, so they sample their zoom-17 parent's height tile with a UV scale and offset.
+  - **Height texels:** height texels follow the pipeline's convention (§5 stage 4). A vertex at tile-local fraction (u, v) samples the height texture at `(1 + 256·u) / 258` and `(1 + 256·v) / 258`. Neighbors then sample identical texels along a shared edge, so the geometry has no seams.
   - **Normals:** computed per pixel in the fragment shader from neighboring height texels, so ridges stay crisp between vertices.
 - **Loading.** A fetch queue with at most 8 requests in flight, ordered by screen-space error (most-needed first).
   - **Decoding:** images decode with `createImageBitmap`. A web worker also decodes height tiles into `Float32Array`s kept for CPU height lookups (used by terrain avoidance, §7.3).
