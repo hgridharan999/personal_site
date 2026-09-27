@@ -1,0 +1,50 @@
+[project]
+name = "flyover-pipeline"
+version = "0.1.0"
+description = "Turns hike GPX tracks into streamable USGS 3DEP + NAIP terrain tiles for the site's flyover viewer."
+requires-python = ">=3.12"
+dependencies = [
+  "boto3>=1.35",
+  "gpxpy>=1.6",
+  "httpx>=0.27",
+  "numpy>=2.0",
+  "pillow>=11.0",
+  "planetary-computer>=1.0",
+  "pydantic>=2.9",
+  "pystac-client>=0.8",
+  "python-dotenv>=1.0",
+  "rasterio>=1.4",
+  "scipy>=1.14",
+  "timezonefinder>=6.5",
+  "typer>=0.12",
+  "tzdata>=2024.1",
+]
+
+[project.scripts]
+flyover = "flyover.cli:app"
+
+[dependency-groups]
+dev = ["black>=24.10", "pytest>=8.3", "ruff>=0.8"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/flyover"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "SIM"]
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
