@@ -1,3 +1,5 @@
+import logging
+
 from dem_fakes import PlaneDem
 from helpers import synth_track, write_gpx
 from imagery_fakes import SolidReader, naip
@@ -72,3 +74,11 @@ def test_cli_reports_a_missing_config_cleanly(monkeypatch, tmp_path):
     result = CliRunner().invoke(app, ["build", "nope"])
     assert result.exit_code == 1
     assert "No config for 'nope'" in result.output
+
+
+def test_verbose_never_logs_r2_request_headers(monkeypatch, tmp_path, caplog):
+    monkeypatch.setattr(Paths, "default", classmethod(lambda cls: make_paths(tmp_path)))
+    with caplog.at_level(logging.DEBUG):
+        CliRunner().invoke(app, ["-v", "build", "nope"])
+        logging.getLogger("botocore.endpoint").debug("Credential=AKIA-TEST/...")
+    assert "AKIA-TEST" not in caplog.text

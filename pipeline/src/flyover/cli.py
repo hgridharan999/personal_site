@@ -189,6 +189,10 @@ def _setup(verbose: bool = typer.Option(False, "--verbose", "-v")) -> None:
         level=logging.DEBUG if verbose else logging.INFO, format="%(levelname)s %(message)s"
     )
     logging.getLogger("httpx").setLevel(logging.DEBUG if verbose else logging.WARNING)
+    # botocore's DEBUG logs request headers, including Authorization (the R2 access key ID);
+    # urllib3's logs the account-specific R2 host. Keep both quiet even with -v.
+    for name in ("botocore", "boto3", "s3transfer", "urllib3"):
+        logging.getLogger(name).setLevel(logging.WARNING)
 
 
 @app.command()
