@@ -40,15 +40,18 @@ def test_place_photos_on_the_track(tmp_path, caplog):
     no_time = write_jpeg(tmp_path / "IMG_3.jpg", None)
     heic = tmp_path / "IMG_4.HEIC"
     heic.write_bytes(b"not really")
+    junk = tmp_path / "junk.jpg"
+    junk.write_bytes(b"not a jpeg")
     with caplog.at_level(logging.WARNING):
         placed = place_photos(
-            [early, heic, inside, no_time], START, T, {"IMG_2.jpg": "Treeline"}, DENVER
+            [early, heic, inside, no_time, junk], START, T, {"IMG_2.jpg": "Treeline"}, DENVER
         )
     assert [(p.source.name, p.t, p.idx, p.caption) for p in placed] == [
         ("IMG_2.jpg", 1200.0, 240, "Treeline")
     ]
     text = caplog.text
     assert "IMG_1.jpg" in text and "IMG_3.jpg" in text and "IMG_4.HEIC" in text
+    assert "junk.jpg" in text
 
 
 def test_export_photo_resizes_strips_exif_and_hashes(tmp_path):

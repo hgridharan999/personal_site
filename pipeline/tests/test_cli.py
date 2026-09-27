@@ -82,3 +82,19 @@ def test_verbose_never_logs_r2_request_headers(monkeypatch, tmp_path, caplog):
         CliRunner().invoke(app, ["-v", "build", "nope"])
         logging.getLogger("botocore.endpoint").debug("Credential=AKIA-TEST/...")
     assert "AKIA-TEST" not in caplog.text
+
+
+def test_build_skips_a_truncated_photo_with_a_warning(tmp_path, caplog):
+    paths = make_paths(tmp_path)
+    truncated = write_jpeg(
+        paths.inputs / "demo" / "photos" / "IMG_2.jpg",
+        "2026:07:12 05:10:00",
+        "-06:00",
+        size=(800, 600),
+    )
+    data = truncated.read_bytes()
+    truncated.write_bytes(data[: len(data) // 2])
+    with caplog.at_level(logging.WARNING):
+        result = build_hike("demo", paths, fake_sources(), SMALL)
+    assert [p.caption for p in result.manifest.photos] == ["Top"]
+    assert "IMG_2.jpg" in caplog.text

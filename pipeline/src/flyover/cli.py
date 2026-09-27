@@ -136,7 +136,11 @@ def build_hike(
     )
     exported: list[ExportedPhoto] = []
     for p in placed:
-        name, data, w, h = export_photo(p.source)
+        try:
+            name, data, w, h = export_photo(p.source)
+        except OSError as e:
+            log.warning("%s: unreadable image (%s), skipped", p.source.name, e)
+            continue
         key = hike_key(slug, f"photos/{name}")
         store.put(key, data)
         keys.append(key)

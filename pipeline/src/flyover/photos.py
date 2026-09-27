@@ -80,7 +80,11 @@ def place_photos(
         if path.suffix.lower() not in PHOTO_SUFFIXES:
             log.warning("%s: unsupported format (convert HEIC to JPEG first), skipped", path.name)
             continue
-        taken = capture_time(path, fallback_tz, offset_s)
+        try:
+            taken = capture_time(path, fallback_tz, offset_s)
+        except OSError as e:
+            log.warning("%s: unreadable image (%s), skipped", path.name, e)
+            continue
         if taken is None:
             log.warning("%s: no EXIF capture time, skipped", path.name)
             continue
