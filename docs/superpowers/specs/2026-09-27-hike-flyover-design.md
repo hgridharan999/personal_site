@@ -1,7 +1,7 @@
 # Hike Flyover: Drone-Style 3D Replays of Past Hikes — Design
 
 **Date:** 2026-09-27
-**Status:** Approved in brainstorming, pending spec review
+**Status:** Approved (brainstorming and spec review)
 **Scope:** An offline pipeline that turns a hike's GPX track into streamable satellite-textured terrain, and a full-screen viewer on the personal site that replays the hike as if a drone had followed it. This is the first slice of the broader Alpine Start idea (its "Relive" goals, G1 and R5–R11). The pace model, planner, 14er collection, and STL export are out of scope here and get their own specs later.
 
 ## 1. Goals and non-goals
@@ -311,7 +311,7 @@ viewer.dispose();
 ## 11. Conventions for this feature
 
 - **Pipeline:** Python per the user's global defaults (Pydantic v2, type hints, pytest, ruff, black).
-- **Viewer:** plain JS/JSX with JSDoc types, matching the existing codebase (`src/types/*.js` style), rather than introducing TypeScript for one feature. Flagged for the user to confirm in spec review.
+- **Viewer:** plain JS/JSX with JSDoc types, matching the existing codebase (`src/types/*.js` style), rather than introducing TypeScript for one feature. Confirmed by the user in spec review.
 - **Styling:** overlays use the existing Ascent tokens and classes from `src/ascent/ascent.css`. New CSS goes in `src/flyover/flyover.css`, scoped under `.asc`.
 - **Tests:** co-located (`foo.test.js` next to `foo.js`).
 
