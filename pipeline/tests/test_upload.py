@@ -6,8 +6,10 @@ from flyover.tilestore import LocalStore
 from flyover.upload import (
     IMMUTABLE,
     MANIFEST_CACHE,
+    R2Settings,
     UploadError,
     load_settings,
+    make_client,
     manifest_keys,
     upload_hike,
 )
@@ -57,6 +59,26 @@ def test_missing_settings_names_them_without_values(tmp_path):
         load_settings(env, environ={})
     assert "R2_ACCESS_KEY_ID" in str(e.value) and "R2_BUCKET" in str(e.value)
     assert "shh-test-only" not in str(e.value)
+
+
+def test_settings_from_a_bom_env_file(tmp_path):
+    env = tmp_path / ".env"
+    text = "".join(f"{k}={v}\n" for k, v in SETTINGS.items())
+    env.write_bytes(text.encode("utf-8-sig"))
+    s = load_settings(env, environ={})
+    assert s.account_id == "acct"
+
+
+def test_make_client_uses_r2_endpoint_and_lenient_checksums():
+    s = R2Settings(
+        account_id="acct",
+        access_key_id="AKIA-TEST",
+        secret_access_key="shh-test-only",
+        bucket="flyover",
+    )
+    client = make_client(s)
+    assert client.meta.endpoint_url == "https://acct.r2.cloudflarestorage.com"
+    assert client.meta.config.request_checksum_calculation == "when_required"
 
 
 def test_manifest_keys_cover_dem_img_photos():

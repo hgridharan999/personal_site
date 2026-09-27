@@ -45,6 +45,12 @@ hike, lower `CORRIDOR_RADII_M` in `src/flyover/coverage.py`. Downloads are cache
 `pipeline/.cache/` and existing tiles are skipped, so re-runs are quick. Delete a tile
 folder to force it to rebuild.
 
+- **Rebuilt tiles don't re-upload:** upload skips keys already on R2, which are cached as
+  immutable. To replace published tiles, bump `TILESET_VERSION` in `src/flyover/tilestore.py`
+  (spec §5 stage 7) instead.
+- **Cache size:** `pipeline/.cache/` can grow to about 1 GB.
+- **New NAIP years:** delete `pipeline/.cache/naip/` to pick up a newly published NAIP year.
+
 ## Check a build
 
 ```bash

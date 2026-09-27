@@ -67,7 +67,11 @@ def hillshade(store: LocalStore, m: Manifest, z: int = 13) -> Path:
 
 def main(slug: str) -> int:
     store = LocalStore(OUT)
-    m = Manifest.model_validate_json(store.path(hike_key(slug, "manifest.json")).read_bytes())
+    manifest_path = store.path(hike_key(slug, "manifest.json"))
+    if not manifest_path.is_file():
+        print(f"No build for '{slug}': run `uv run flyover build {slug}` first", file=sys.stderr)
+        return 2
+    m = Manifest.model_validate_json(manifest_path.read_bytes())
     tile_ele = summit_check(store, m)
     diff = abs(tile_ele - m.summit.ele)
     print(f"summit: manifest {m.summit.ele:.1f} m, z17 tile {tile_ele:.1f} m, diff {diff:.2f} m")

@@ -207,6 +207,8 @@ def build_dem_tiles(
     for z in sorted(cov):
         keys.extend(dem_key(z, x, y) for x, y in sorted(cov[z]))
         missing = [t for t in cov[z] if not store.exists(dem_key(z, *t))]
+        cached = len(cov[z]) - len(missing)
+        log.info("dem z%d: %d tiles to build, %d cached", z, len(missing), cached)
         jobs.extend((z, group) for group in chunk_tiles(missing, chunk))
     with ThreadPoolExecutor(workers) as pool:
         list(pool.map(lambda job: _build_chunk(job[0], job[1], source, store), jobs))

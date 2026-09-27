@@ -39,6 +39,7 @@ COG_ENV = {
     "GDAL_HTTP_MERGE_CONSECUTIVE_RANGES": "YES",
     "GDAL_HTTP_MAX_RETRY": "3",
     "GDAL_HTTP_RETRY_DELAY": "1",
+    "GDAL_HTTP_TIMEOUT": "60",
     "VSI_CACHE": "TRUE",
 }
 
@@ -84,7 +85,7 @@ def search_naip(
             bbox=tuple(float(v) for v in it.bbox),
             href=it.assets["image"].href,
         )
-        for it in client.search(collections=["naip"], bbox=list(bbox)).items()
+        for it in client.search(collections=["naip"], bbox=list(bbox), limit=1000).items()
     ]
     write_atomic(cached, json.dumps([asdict(i) for i in items]).encode())
     return items
@@ -237,6 +238,8 @@ def build_img_tiles(
     for z in sorted(cov):
         keys.extend(img_key(year, z, x, y) for x, y in sorted(cov[z]))
         missing = [t for t in cov[z] if not store.exists(img_key(year, z, *t))]
+        cached = len(cov[z]) - len(missing)
+        log.info("img z%d: %d tiles to build, %d cached", z, len(missing), cached)
         jobs.extend((z, group) for group in chunk_tiles(missing, chunk))
 
     def run(job: tuple[int, list[Tile]]) -> None:

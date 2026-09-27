@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import boto3
+import botocore.config
 from dotenv import dotenv_values
 
 from flyover.coverage import from_rows
@@ -36,7 +37,11 @@ class R2Settings:
 
 def load_settings(env_file: Path, environ: Mapping[str, str] = os.environ) -> R2Settings:
     """Settings from `env_file`, overridden by real environment variables. Never logs values."""
-    values = {k: v for k, v in dotenv_values(env_file).items() if v} if env_file.is_file() else {}
+    values = (
+        {k: v for k, v in dotenv_values(env_file, encoding="utf-8-sig").items() if v}
+        if env_file.is_file()
+        else {}
+    )
     values.update({k: v for k, v in environ.items() if k in REQUIRED and v})
     missing = [k for k in REQUIRED if k not in values]
     if missing:
@@ -56,6 +61,11 @@ def make_client(s: R2Settings) -> Any:
         aws_access_key_id=s.access_key_id,
         aws_secret_access_key=s.secret_access_key,
         region_name="auto",
+        # boto3 1.36+ adds CRC checksums by default; some S3-compatible stores reject them.
+        config=botocore.config.Config(
+            request_checksum_calculation="when_required",
+            response_checksum_validation="when_required",
+        ),
     )
 
 

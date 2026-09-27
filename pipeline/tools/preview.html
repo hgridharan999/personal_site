@@ -47,7 +47,7 @@
         map.showTileBoundaries = new URLSearchParams(location.search).has("borders");
         const miles = (m.stats.distanceM / 1609.344).toFixed(1);
         const feet = Math.round(m.summit.ele * 3.28084).toLocaleString();
-        info.textContent = `${m.name} · NAIP ${m.tiles.naipYear} · ${miles} mi · summit ${feet} ft · add ?borders to see tiles`;
+        info.textContent = `${m.name} · NAIP ${m.tiles.naipYear} · ${miles} mi · summit ${feet} ft · add &borders to see tiles`;
       })
       .catch((e) => { info.textContent = `error: ${e.message}`; });
   </script>
