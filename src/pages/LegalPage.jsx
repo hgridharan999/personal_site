@@ -4,8 +4,7 @@ const sections = [
   {
     title: 'Privacy policy',
     body: [
-      'This website is operated by Hari Gridharan. We collect only the information needed to operate the site and respond to direct contact or chat submissions.',
-      'When you use the chat feature, your message text is sent to a server-side endpoint so it can be processed and returned to you. We do not sell or rent your personal data.',
+      'This website is operated by Hari Gridharan. We collect only the information needed to operate the site and respond to direct contact. We do not sell or rent your personal data.',
       'We may store limited operational data such as request logs, error information, and basic usage metadata to maintain security and reliability. This information is kept only as long as necessary for those purposes.',
       'If you contact us through the site, the information you provide may be used to respond to your message. You may request that we delete your correspondence at any time.',
     ],
@@ -20,7 +19,7 @@ const sections = [
   {
     title: 'Terms of use',
     body: [
-      'By using this website, you agree to use it lawfully and respectfully. You may not attempt to interfere with the site, scrape it in a harmful way, or use the chat feature to transmit illegal or abusive content.',
+      'By using this website, you agree to use it lawfully and respectfully. You may not attempt to interfere with the site or scrape it in a harmful way.',
       'All content on this website is provided for informational and personal portfolio purposes. If you reuse any content, please attribute it appropriately.',
     ],
   },
@@ -42,7 +41,7 @@ export default function LegalPage() {
           </Link>
           <h1 className="text-3xl font-semibold">Legal & privacy information</h1>
           <p className="max-w-2xl text-sm leading-7 text-ink-accent">
-            This notice is intended to be clear, practical, and aligned with common privacy expectations for a personal website and AI chat feature.
+            This notice is intended to be clear, practical, and aligned with common privacy expectations for a personal website.
           </p>
         </div>
 
