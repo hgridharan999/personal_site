@@ -123,7 +123,11 @@ Attribution ("Elevation: USGS 3DEP · Imagery: USDA NAIP") shows in the viewer's
    - **Size:** each tile is 258×258: 256 px plus a 1 px border copied from its neighbors, so lighting normals are seamless across tile edges.
    - **Sharing:** tiles are written under `tiles/v1/dem/`. They're keyed by location, so hikes that share an area share tiles, and existing tiles are skipped.
 5. **`imagery`**: query the Planetary Computer STAC for NAIP scenes covering all the hike's tiles (all years). Pick the newest year whose scenes cover every zoom-17 tile center, unless the config overrides it. Colorado's 2023 NAIP is 0.3 m, sharper than zoom 18 needs.
-   - **Mosaic:** for each chunk (up to 8×8 tiles), paint scenes in priority order (the chosen year first, then newer years first) into the still-empty pixels. A pixel counts as covered only when the alpha band GDAL adds while reprojecting is fully opaque, never judged from pixel values. `rasterio.merge` was rejected because it treats any 0 in a band as empty, which lets a lower-priority scene bleed through deep shadows. Partial alpha is rejected too: zoomed out, a scene's edge pixel is a blend of the scene and the black outside it, and accepting it drew dark seam lines in the live test.
+   - **Mosaic:** for each chunk (up to 8×8 tiles), layer scenes in priority order (the chosen year first, then newer years first) with "over" compositing, weighted by the coverage in an alpha band GDAL adds while reprojecting, then divide by total coverage.
+     - **Seams:** a pixel on the seam between two scenes becomes an exact mix of both, and a pixel on the outer edge of all imagery keeps its true color.
+     - **Why not `rasterio.merge`:** it treats any 0 in a band as empty, so a lower-priority scene bleeds through deep shadows.
+     - **Why not a simpler per-pixel rule:** zoomed out, a pixel can be wider than the overlap between neighboring scenes, so "first scene with any coverage wins" drew dark seam lines (seen in the live test), and "first scene with full coverage wins" leaves seam pixels black (reproduced in a unit test).
+     - **Mislabeled scenes:** scenes whose near-infrared band is labeled alpha (Colorado 2017) are skipped.
    - **Ring:** reads are reduced-size, so GDAL serves them from the scenes' built-in overviews. Measured: an 80 km square at about 117 m/px took about 50 s across 910 candidate scenes.
    - **Encoding:** WebP, quality 80.
    - **Location:** `tiles/v1/img/<year>/`.

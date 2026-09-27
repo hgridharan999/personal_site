@@ -19,7 +19,7 @@
 - **Checks:** pytest, ruff, black.
 
 **Provenance:** every file in this plan was prototyped and verified before the plan was written:
-- **Offline tests:** the full test suite (85 tests) passes, and ruff and black are clean.
+- **Offline tests:** the full test suite (86 tests) passes, and ruff and black are clean.
 - **Live services:** a live build against 3DEP and NAIP succeeded for a synthetic Quandary track.
 
 The code blocks are those verified files, verbatim.
@@ -46,7 +46,7 @@ Every task's requirements include these.
 
 **Tile formats**
 - **Elevation tiles:** 258×258 px (256 plus a 1 px border on each side), terrain-RGB `h = -10000 + (R·65536 + G·256 + B)·0.1`, lossless WebP, zooms 8–17. Texel (r, c) is centered at `(minx + (c − 0.5)·px, maxy − (r − 0.5)·px)`, with `px = tile width / 256`.
-- **Imagery tiles:** 256×256 px, WebP quality 80, zooms 8–18. Scenes are painted in priority order (the chosen year first, then newer years first). A pixel counts as covered only when the added alpha band is fully opaque (255), never judged from pixel values.
+- **Imagery tiles:** 256×256 px, WebP quality 80, zooms 8–18. Scenes are layered in priority order (the chosen year first, then newer years first), weighted by the coverage in an alpha band GDAL adds while reprojecting ("over" compositing, then divided by total coverage). Coverage never comes from pixel values. Scenes whose infrared band is labeled alpha are skipped.
 
 **Coverage** (ground radius around the track)
 
@@ -111,6 +111,7 @@ pipeline/
     upload.py               R2 settings, key listing, upload in order
     cli.py                  build_hike orchestration and the Typer commands
   tests/
+    conftest.py             imports flyover first, so the PROJ/GDAL fix runs before rasterio loads
     helpers.py              START, TRAILHEAD, synth_track, write_gpx
     dem_fakes.py            PlaneDem, geotiff_bytes
     imagery_fakes.py        naip, SolidReader, write_utm_rgb
@@ -129,7 +130,7 @@ pipeline/
 
 **Files:**
 - Create: `pipeline/pyproject.toml`, `pipeline/.gitignore`, `pipeline/src/flyover/__init__.py`, `pipeline/src/flyover/geo.py`
-- Test: `pipeline/tests/test_geo.py`
+- Test: `pipeline/tests/conftest.py`, `pipeline/tests/test_geo.py`
 
 **Interfaces:**
 - Consumes: nothing.
@@ -218,6 +219,14 @@ Run: `uv sync`
 Expected: creates `pipeline/.venv` and installs the dependencies with no errors. rasterio's Windows wheel bundles GDAL, so nothing else is needed.
 
 - [ ] **Step 3: Write the failing tests**
+
+`pipeline/tests/conftest.py`. PROJ locks onto whatever database it sees when rasterio first loads, so `flyover` must be imported before any test module imports rasterio. Without this, running a single test file such as `test_imagery.py` fails with `CRSError`.
+
+```python
+# Import flyover before any test module imports rasterio: its __init__ clears PROJ_LIB and
+# GDAL_DATA, and PROJ locks onto whatever database it sees when rasterio first loads.
+import flyover  # noqa: F401
+```
 
 `pipeline/tests/test_geo.py`:
 
@@ -448,7 +457,7 @@ Expected: `10 passed`.
 
 ```bash
 uv run ruff check . && uv run black --check .
-git add pyproject.toml uv.lock .gitignore src/flyover/__init__.py src/flyover/geo.py tests/test_geo.py
+git add pyproject.toml uv.lock .gitignore src/flyover/__init__.py src/flyover/geo.py tests/conftest.py tests/test_geo.py
 git commit -m "Scaffold the flyover pipeline with Web Mercator tile math" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
@@ -2239,20 +2248,26 @@ git commit -m "Fetch 3DEP elevation and cut terrain-RGB tiles" -m "Co-Authored-B
   - **`CogReader(sign=planetary_computer.sign)`**
   - **`to_webp(rgb, quality=80) -> bytes`**
   - **`build_img_tiles(cov, items, year, reader, store, chunk=8, workers=4) -> list[str]`**
-- Produces (`tests/imagery_fakes.py`): `naip(id, year, bbox) -> NaipItem`, `SolidReader()` (records `.calls`), and `write_utm_rgb(path, color, west, south, size_m) -> Path`.
+- Produces (`tests/imagery_fakes.py`): `naip(id, year, bbox) -> NaipItem`, `SolidReader()` (records `.calls`), and `write_utm_rgb(path, color, west, south, size_m, alpha=False) -> Path`.
 
 The NAIP facts this module relies on were verified live on 2026-09-27:
 - **Items:** Planetary Computer `naip` items expose `properties["naip:year"]` and an `image` asset.
-- **Bands:** 4 bands, R, G, B, and NIR, labeled `red, green, blue, undefined`, with no nodata and no alpha band.
+- **Bands:** 4 bands, R, G, B, and NIR, labeled `red, green, blue, undefined`, with no nodata and no alpha band. The exception is Colorado 2017, which labels NIR as `alpha`.
 - **Colorado:** 2023 imagery is 0.3 m with overviews at 2× to 64×.
 - **Search filter:** `query={"naip:year": ...}` is silently ignored, which is why filtering happens in Python.
-- **Why not `rasterio.merge`:** it treats any 0 in a band as empty, which turned an overlap magenta in testing. That's why `_paint` uses the alpha band from `WarpedVRT(add_alpha=True)`.
-- **Why only fully opaque pixels count:** zoomed out, a pixel on a scene's edge is a bilinear blend of the scene and the black outside it, with partial alpha. Accepting `alpha > 0` drew dark 1 px seam lines through 38 horizon tiles in the live smoke build. `alpha == 255` fixed them, because the neighboring scene overlaps there and fills the pixel.
-- **Performance:** a 1 km square at zoom 18 reads in about 10 s, and an 80 km square at about 117 m/px in about 50 s.
+- **Why not `rasterio.merge`:** it treats any 0 in a band as empty, which turned an overlap magenta in testing. Coverage comes only from the alpha band that `WarpedVRT(add_alpha=True)` adds.
+- **Why compositing, not "first scene wins":** zoomed out, pixels (150–600 m at zooms 8–10) are wider than the overlap between neighboring scenes, so a seam pixel is only partly inside each. Reduced-size reads return such a pixel with color and alpha both scaled by its coverage (premultiplied, verified: blue 198 with alpha 198). Two simpler rules each failed:
+  - accepting `alpha > 0` drew dark seam lines through 38 horizon tiles in the live smoke build;
+  - accepting only `alpha == 255` leaves seam pixels black, as reproduced by `test_cog_reader_blends_scene_edges_without_darkening`.
+  
+  "Over" compositing followed by dividing by coverage gives an exact mix of the two scenes.
+- **Why each scene is warped with a margin (`_warped`):** a window can only read inside the warped grid, so without padding, a pixel straddling a scene's edge was read by neither neighbor.
+- **Why some scenes are skipped:** NAIP's 4th band is near-infrared, but Colorado's 2017 scenes label it alpha. Honoring that would let vegetation brightness decide coverage, and `add_alpha=True` would raise on those scenes.
+- **Performance:** a 1 km square at zoom 18 reads in about 10 s, a 20 km square at zoom 12 in about 5 s, and an 80 km square at about 117 m/px in about 50 s. The margin didn't change this, because reads still come from the overviews.
 
 - [ ] **Step 1: Write the fakes**
 
-`pipeline/tests/imagery_fakes.py`. `photometric="RGB"` matters: without it, GDAL labels a 4th band as alpha, and `add_alpha=True` then raises.
+`pipeline/tests/imagery_fakes.py`. `photometric="RGB"` matters: without it, GDAL labels a 4th band as alpha. `write_utm_rgb(..., alpha=True)` uses that on purpose, to mimic Colorado 2017.
 
 ```python
 """Stand-ins for NAIP scenes and the Planetary Computer."""
@@ -2286,17 +2301,25 @@ class SolidReader:
 
 
 def write_utm_rgb(
-    path: Path, color: tuple[int, int, int], west: float, south: float, size_m: float
+    path: Path,
+    color: tuple[int, int, int],
+    west: float,
+    south: float,
+    size_m: float,
+    alpha: bool = False,
 ) -> Path:
     """A NAIP-like UTM 13N GeoTIFF of one solid color, 1 m pixels.
 
-    Like real NAIP: bands red, green, blue, near-infrared (undefined), no nodata, no alpha.
+    Like most NAIP: bands red, green, blue, near-infrared (undefined), no nodata, no alpha.
+    With `alpha=True`, like some NAIP scenes: the 4th band is an opaque alpha band instead.
     """
     n = int(size_m)
     arr = np.zeros((4, n, n), dtype=np.uint8)
     for band, value in enumerate(color):
         arr[band] = value
-    arr[3] = 128
+    arr[3] = 255 if alpha else 128
+    # without photometric="RGB", GDAL labels a 4th band as alpha
+    extra = {} if alpha else {"photometric": "RGB"}
     with rasterio.open(
         path,
         "w",
@@ -2307,7 +2330,7 @@ def write_utm_rgb(
         dtype="uint8",
         crs="EPSG:26913",
         transform=from_bounds(west, south, west + size_m, south + size_m, n, n),
-        photometric="RGB",  # without it GDAL calls a 4th band alpha; NAIP's is near-infrared
+        **extra,
     ) as ds:
         ds.write(arr)
     return path
@@ -2383,24 +2406,35 @@ def test_search_naip_maps_items_and_caches(tmp_path):
     assert len(opened) == 1
 
 
-def test_cog_reader_mosaics_with_priority_and_leaves_gaps_black(tmp_path):
-    red = write_utm_rgb(tmp_path / "red.tif", (255, 0, 0), 400_000, 4_360_000, 1000)
+# Two NAIP-like scenes, red west of blue, overlapping 500 m, read in a row from 200 m west
+# of red to 200 m east of blue.
+ROW = Bounds(*transform_bounds("EPSG:26913", "EPSG:3857", 399_800, 4_360_300, 401_700, 4_360_700))
+
+
+def two_scenes(tmp_path, red_alpha=False):
+    red = write_utm_rgb(tmp_path / "red.tif", (255, 0, 0), 400_000, 4_360_000, 1000, red_alpha)
     blue = write_utm_rgb(tmp_path / "blue.tif", (0, 0, 255), 400_500, 4_360_000, 1000)
-    items = [
-        NaipItem("blue", 2023, (0, 0, 0, 0), str(blue)),
-        NaipItem("red", 2021, (0, 0, 0, 0), str(red)),
-    ]
-    reader = CogReader(sign=lambda href: href)  # local files need no signing
-    b = Bounds(*transform_bounds("EPSG:26913", "EPSG:3857", 399_800, 4_360_300, 401_700, 4_360_700))
-    w, h = 400, 100
-    rgb = reader.read(items, b, w, h)
+    return NaipItem("red", 2021, (0, 0, 0, 0), str(red)), NaipItem(
+        "blue", 2023, (0, 0, 0, 0), str(blue)
+    )
+
+
+def read_row(items, width, height):
+    """Read ROW at width x height and return a UTM-easting -> [r, g, b] lookup for its middle."""
+    rgb = CogReader(sign=lambda href: href).read(items, ROW, width, height)  # local: no signing
 
     def pixel(utm_x):
         (mx,), (my,) = transform("EPSG:26913", "EPSG:3857", [utm_x], [4_360_500])
-        return rgb[
-            int((b.maxy - my) / (b.maxy - b.miny) * h), int((mx - b.minx) / (b.maxx - b.minx) * w)
-        ].tolist()
+        r = int((ROW.maxy - my) / (ROW.maxy - ROW.miny) * height)
+        c = int((mx - ROW.minx) / (ROW.maxx - ROW.minx) * width)
+        return rgb[r, c].tolist()
 
+    return rgb, pixel
+
+
+def test_cog_reader_mosaics_with_priority_and_leaves_gaps_black(tmp_path):
+    red, blue = two_scenes(tmp_path)
+    _, pixel = read_row([blue, red], 400, 100)
     assert pixel(399_900) == [0, 0, 0]  # no scene
     assert pixel(400_250) == [255, 0, 0]  # red only
     assert pixel(400_750) == [0, 0, 255]  # overlap: blue listed first wins
@@ -2408,19 +2442,32 @@ def test_cog_reader_mosaics_with_priority_and_leaves_gaps_black(tmp_path):
     assert pixel(401_600) == [0, 0, 0]
 
 
-def test_cog_reader_leaves_no_blended_fringe_at_scene_edges(tmp_path):
-    # Zoomed out, a pixel on a scene's edge half-covers the scene: bilinear blends it with the
-    # black outside and gives it partial alpha. Such pixels must be left for the next scene.
+def test_cog_reader_blends_scene_edges_without_darkening(tmp_path):
+    # Zoomed out, pixels (~26 m here) are wider than the overlap between neighboring scenes
+    # (10 m here), so the pixel on the seam is only partly inside each. It must become a mix of
+    # the two scenes: never black, and never mixed with the black outside them.
     red = write_utm_rgb(tmp_path / "red.tif", (255, 0, 0), 400_000, 4_360_000, 1000)
-    blue = write_utm_rgb(tmp_path / "blue.tif", (0, 0, 255), 400_500, 4_360_000, 1000)
+    blue = write_utm_rgb(tmp_path / "blue.tif", (0, 0, 255), 400_990, 4_360_000, 1000)
     items = [
         NaipItem("blue", 2023, (0, 0, 0, 0), str(blue)),
         NaipItem("red", 2021, (0, 0, 0, 0), str(red)),
     ]
-    b = Bounds(*transform_bounds("EPSG:26913", "EPSG:3857", 399_800, 4_360_300, 401_700, 4_360_700))
-    rgb = CogReader(sign=lambda href: href).read(items, b, 97, 20)  # ~26 m pixels
-    colors = {tuple(int(v) for v in px) for px in rgb[10]}
-    assert colors <= {(0, 0, 0), (255, 0, 0), (0, 0, 255)}, colors
+    inside = Bounds(
+        *transform_bounds("EPSG:26913", "EPSG:3857", 400_100, 4_360_300, 401_890, 4_360_700)
+    )
+    rgb = CogReader(sign=lambda href: href).read(items, inside, 69, 15)
+    for r, g, b in rgb[7].tolist():
+        assert g == 0 and 250 <= r + b <= 256, (r, g, b)
+
+
+def test_cog_reader_skips_scenes_whose_infrared_band_is_labeled_alpha(tmp_path):
+    # NAIP's 4th band is near-infrared; Colorado 2017 labels it alpha. Using it as
+    # transparency would make vegetation brightness decide coverage, so skip the scene.
+    red, blue = two_scenes(tmp_path, red_alpha=True)
+    _, pixel = read_row([red, blue], 400, 100)
+    assert pixel(400_250) == [0, 0, 0]  # red skipped, nothing else here
+    assert pixel(400_750) == [0, 0, 255]  # blue fills the overlap
+    assert pixel(401_250) == [0, 0, 255]
 
 
 def test_build_img_tiles_writes_256px_webp_and_skips_existing(tmp_path):
@@ -2452,6 +2499,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import logging
 import math
 from collections.abc import Callable, Iterable
 from concurrent.futures import ThreadPoolExecutor
@@ -2465,13 +2513,17 @@ import planetary_computer
 import pystac_client
 import rasterio
 from PIL import Image
-from rasterio.enums import Resampling
+from rasterio.enums import ColorInterp, Resampling
+from rasterio.transform import Affine
 from rasterio.vrt import WarpedVRT
+from rasterio.warp import calculate_default_transform
 from rasterio.windows import from_bounds
 
 from flyover.coverage import Coverage, Tile, chunk_tiles
 from flyover.geo import TILE_PX, Bounds, FloatArray, block_bounds, merc_to_lonlat
 from flyover.tilestore import LocalStore, img_key
+
+log = logging.getLogger(__name__)
 
 STAC_URL = "https://planetarycomputer.microsoft.com/api/stac/v1"
 # Read cloud-optimized GeoTIFFs with a few large range requests instead of many small ones
@@ -2483,6 +2535,8 @@ COG_ENV = {
     "GDAL_HTTP_RETRY_DELAY": "1",
     "VSI_CACHE": "TRUE",
 }
+
+FULL_COVER = 0.999  # stop opening scenes once every pixel is this covered
 
 Rgb = npt.NDArray[np.uint8]
 LonLatBox = tuple[float, float, float, float]  # west, south, east, north
@@ -2558,47 +2612,74 @@ class ImageryReader(Protocol):
 
 
 class CogReader:
+    """Reads NAIP scenes from cloud-optimized GeoTIFFs and composites them by coverage.
+
+    Each scene is reprojected with an added alpha band that measures how much of each output
+    pixel the scene covers. Reduced-size reads resample every band alike, so a scene-edge
+    pixel comes back with color and alpha both scaled by its coverage (premultiplied). Scenes
+    are layered front to back with the "over" operator, and the result is divided by total
+    coverage. So a pixel on the seam between two scenes is an exact mix of both, a pixel on
+    the outer edge of all imagery keeps its true color, and only uncovered pixels stay black.
+    """
+
     def __init__(self, sign: Callable[[str], str] = planetary_computer.sign) -> None:
         self.sign = sign
 
     def read(self, items: list[NaipItem], bounds: Bounds, width: int, height: int) -> Rgb:
-        out = np.zeros((height, width, 3), dtype=np.uint8)
-        filled = np.zeros((height, width), dtype=bool)
+        color = np.zeros((height, width, 3), dtype=np.float32)  # premultiplied by coverage
+        cover = np.zeros((height, width), dtype=np.float32)  # 0..1
         with rasterio.Env(**COG_ENV):
             for item in items:
-                if filled.all():
+                if (cover >= FULL_COVER).all():
                     break
-                with (
-                    rasterio.open(self.sign(item.href)) as src,
-                    # the added alpha band marks pixels outside this scene
-                    WarpedVRT(
-                        src, crs="EPSG:3857", resampling=Resampling.bilinear, add_alpha=True
-                    ) as vrt,
-                ):
-                    _paint(vrt, bounds, width, height, out, filled)
+                with rasterio.open(self.sign(item.href)) as src:
+                    if ColorInterp.alpha in src.colorinterp:
+                        # NAIP's 4th band is near-infrared; some years (Colorado 2017) label it
+                        # alpha, which would make vegetation brightness decide coverage
+                        log.debug("%s: infrared band labeled alpha; skipped", item.id)
+                        continue
+                    pad_m = max(bounds.maxx - bounds.minx, bounds.maxy - bounds.miny)
+                    with _warped(src, pad_m=pad_m / min(width, height)) as vrt:
+                        _composite(vrt, bounds, width, height, color, cover)
+        out = np.zeros((height, width, 3), dtype=np.uint8)
+        seen = cover >= 0.5  # mostly uncovered pixels stay black rather than show noise
+        out[seen] = np.clip(np.round(color[seen] / cover[seen, None]), 0, 255).astype(np.uint8)
         return out
 
 
-def _paint(
+def _warped(src: rasterio.io.DatasetReader, pad_m: float) -> WarpedVRT:
+    """`src` in EPSG:3857 at its native resolution, with an added alpha band and a transparent
+    margin of `pad_m`. The margin lets output pixels that straddle the scene's edge be read
+    whole, so the seam between neighboring scenes blends instead of dropping to black.
+    """
+    transform, w, h = calculate_default_transform(
+        src.crs, "EPSG:3857", src.width, src.height, *src.bounds
+    )
+    pad = math.ceil(pad_m / transform.a) + 1  # margin in native pixels
+    return WarpedVRT(
+        src,
+        crs="EPSG:3857",
+        transform=transform @ Affine.translation(-pad, -pad),
+        width=w + 2 * pad,
+        height=h + 2 * pad,
+        resampling=Resampling.bilinear,
+        add_alpha=True,
+    )
+
+
+def _composite(
     vrt: WarpedVRT,
     bounds: Bounds,
     width: int,
     height: int,
-    out: Rgb,
-    filled: npt.NDArray[np.bool_],
+    color: npt.NDArray[np.float32],
+    cover: npt.NDArray[np.float32],
 ) -> None:
-    """Copy this scene into the still-empty pixels of `out` where the scene fully covers them.
-
-    Coverage comes only from the alpha band, never from pixel values: a real 0 in one band
-    (deep shadow) must not let a lower-priority scene bleed through. Only fully opaque
-    pixels count: on a scene's edge, bilinear resampling blends the scene with the black
-    outside it and yields partial alpha, and those darkened pixels would draw seam lines.
-    Leaving them empty lets the neighboring scene, which overlaps there, fill them.
-    """
+    """Layer this scene behind what's already in `color` and `cover` ("over" compositing)."""
     resx = (bounds.maxx - bounds.minx) / width
     resy = (bounds.maxy - bounds.miny) / height
     vb = vrt.bounds
-    # the output pixels lying fully inside the scene's footprint
+    # output pixels lying fully inside the padded grid, which includes every pixel the scene touches
     c0 = max(0, math.ceil((vb.left - bounds.minx) / resx))
     c1 = min(width, math.floor((vb.right - bounds.minx) / resx))
     r0 = max(0, math.ceil((bounds.maxy - vb.top) / resy))
@@ -2614,14 +2695,14 @@ def _paint(
     )
     # a reduced-size read, so GDAL serves it from the COG's overviews when zoomed out
     rgba = vrt.read(
-        indexes=[1, 2, 3, vrt.count],
+        indexes=[1, 2, 3, vrt.colorinterp.index(ColorInterp.alpha) + 1],
         window=window,
         out_shape=(4, r1 - r0, c1 - c0),
         resampling=Resampling.bilinear,
-    )
-    new = (rgba[3] == 255) & ~filled[r0:r1, c0:c1]
-    out[r0:r1, c0:c1][new] = np.moveaxis(rgba[:3], 0, -1)[new]
-    filled[r0:r1, c0:c1] |= new
+    ).astype(np.float32)
+    room = 1.0 - cover[r0:r1, c0:c1]  # how much of each pixel is still uncovered
+    color[r0:r1, c0:c1] += room[..., None] * np.moveaxis(rgba[:3], 0, -1)
+    cover[r0:r1, c0:c1] += room * (rgba[3] / 255.0)
 
 
 def to_webp(rgb: Rgb, quality: int = 80) -> bytes:
@@ -2668,7 +2749,7 @@ def build_img_tiles(
 - [ ] **Step 5: Run the tests and confirm they pass**
 
 Run: `uv run pytest tests/test_imagery.py`
-Expected: `6 passed`.
+Expected: `7 passed`.
 
 - [ ] **Step 6: Lint, format, commit**
 
@@ -3934,7 +4015,7 @@ def build_all() -> None:
 - [ ] **Step 4: Run the whole suite**
 
 Run: `uv run pytest`
-Expected: `85 passed`.
+Expected: `86 passed`.
 
 Run: `uv run flyover --help`
 Expected: usage text listing `build`, `upload`, and `build-all`.
