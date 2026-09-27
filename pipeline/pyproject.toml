@@ -37,6 +37,13 @@ packages = ["src/flyover"]
 testpaths = ["tests"]
 pythonpath = ["tests"]
 addopts = "-q"
+# Third-party deprecations we can't fix here, each scoped to the module that emits it so
+# warnings from our own code still show: rasterio.transform.from_bounds multiplies Affine
+# transforms with `*`, and planetary-computer's SAS models use Pydantic v1-style config.
+filterwarnings = [
+  "ignore:Use `@` matmul:PendingDeprecationWarning:rasterio.transform",
+  "ignore:Support for class-based `config`:pydantic.warnings.PydanticDeprecatedSince20:planetary_computer.sas",
+]
 
 [tool.ruff]
 line-length = 100
