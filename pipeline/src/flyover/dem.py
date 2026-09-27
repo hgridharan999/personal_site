@@ -15,13 +15,14 @@ from typing import Protocol
 import httpx
 import numpy as np
 import numpy.typing as npt
+import rasterio.errors
 from rasterio.io import MemoryFile
 from scipy.ndimage import map_coordinates
 
 from flyover.coverage import Coverage, Tile, chunk_tiles
 from flyover.geo import TILE_PX, Bounds, FloatArray, block_bounds, lonlat_to_merc, tile_size_m
 from flyover.terrain_rgb import to_webp
-from flyover.tilestore import LocalStore, dem_key
+from flyover.tilestore import LocalStore, dem_key, write_atomic
 
 log = logging.getLogger(__name__)
 
@@ -77,11 +78,14 @@ class UsgsDemSource:
         digest = hashlib.sha1(json.dumps(params, sort_keys=True).encode()).hexdigest()
         cached = self.cache_dir / f"{digest}.tif"
         if cached.is_file():
-            return _decode(cached.read_bytes(), width, height)
+            try:
+                return _decode(cached.read_bytes(), width, height)
+            except DemError as e:
+                log.warning("%s: unreadable cached tile (%s), refetching", cached.name, e)
+                cached.unlink(missing_ok=True)
         data = self._get(params)
         heights = _decode(data, width, height)  # validate first: a bad response must not stick
-        cached.parent.mkdir(parents=True, exist_ok=True)
-        cached.write_bytes(data)
+        write_atomic(cached, data)
         return heights
 
     def _get(self, params: dict[str, str]) -> bytes:
@@ -102,8 +106,11 @@ class UsgsDemSource:
 
 
 def _decode(data: bytes, width: int, height: int) -> Heights:
-    with MemoryFile(data) as mf, mf.open() as ds:
-        a = ds.read(1).astype(np.float32)
+    try:
+        with MemoryFile(data) as mf, mf.open() as ds:
+            a = ds.read(1).astype(np.float32)
+    except rasterio.errors.RasterioError as e:
+        raise DemError(f"unreadable 3DEP TIFF: {e}") from e
     if a.shape != (height, width):
         raise DemError(f"3DEP returned {a.shape[1]}x{a.shape[0]}, asked for {width}x{height}")
     # 3DEP answers 0 over the ocean; anything below -1000 m is a fill value

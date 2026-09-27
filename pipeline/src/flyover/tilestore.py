@@ -7,6 +7,14 @@ from pathlib import Path
 TILESET_VERSION = "v1"
 
 
+def write_atomic(dest: Path, data: bytes) -> None:
+    """Write `data` to `dest` so an interrupted write never leaves a truncated file."""
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    tmp = dest.with_name(dest.name + ".tmp")
+    tmp.write_bytes(data)
+    tmp.replace(dest)
+
+
 def dem_key(z: int, x: int, y: int) -> str:
     return f"tiles/{TILESET_VERSION}/dem/{z}/{x}/{y}.webp"
 
@@ -30,11 +38,7 @@ class LocalStore:
         return self.path(key).is_file()
 
     def put(self, key: str, data: bytes) -> None:
-        dest = self.path(key)
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        tmp = dest.with_name(dest.name + ".tmp")
-        tmp.write_bytes(data)
-        tmp.replace(dest)  # never leave a half-written tile that a re-run would skip
+        write_atomic(self.path(key), data)  # never leave a half-written tile a re-run would skip
 
     def size(self, key: str) -> int:
         return self.path(key).stat().st_size

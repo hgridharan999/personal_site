@@ -27,7 +27,7 @@ from rasterio.windows import from_bounds
 
 from flyover.coverage import Coverage, Tile, chunk_tiles
 from flyover.geo import TILE_PX, Bounds, FloatArray, block_bounds, merc_to_lonlat
-from flyover.tilestore import LocalStore, img_key
+from flyover.tilestore import LocalStore, img_key, write_atomic
 
 log = logging.getLogger(__name__)
 
@@ -69,7 +69,13 @@ def search_naip(
     digest = hashlib.sha1(json.dumps([round(v, 5) for v in bbox]).encode()).hexdigest()
     cached = cache_dir / "naip" / f"{digest}.json"
     if cached.is_file():
-        return [NaipItem(**{**d, "bbox": tuple(d["bbox"])}) for d in json.loads(cached.read_text())]
+        try:
+            return [
+                NaipItem(**{**d, "bbox": tuple(d["bbox"])}) for d in json.loads(cached.read_text())
+            ]
+        except (json.JSONDecodeError, KeyError, TypeError) as e:
+            log.warning("%s: unreadable NAIP search cache (%s), refetching", cached.name, e)
+            cached.unlink(missing_ok=True)
     client = open_client(STAC_URL)
     items = [
         NaipItem(
@@ -80,8 +86,7 @@ def search_naip(
         )
         for it in client.search(collections=["naip"], bbox=list(bbox)).items()
     ]
-    cached.parent.mkdir(parents=True, exist_ok=True)
-    cached.write_text(json.dumps([asdict(i) for i in items]))
+    write_atomic(cached, json.dumps([asdict(i) for i in items]).encode())
     return items
 
 

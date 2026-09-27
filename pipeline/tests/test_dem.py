@@ -1,6 +1,7 @@
 import httpx
 import numpy as np
 import pytest
+import rasterio
 from dem_fakes import PlaneDem, geotiff_bytes
 from helpers import TRAILHEAD
 
@@ -189,3 +190,40 @@ def test_usgs_source_does_not_cache_a_bad_response(tmp_path):
     with pytest.raises(DemError):
         src.fetch(Bounds(0, 0, 10, 10), 4, 4)
     assert len(calls) == 2  # nothing was cached, so the retry went back to 3DEP
+
+
+@pytest.mark.filterwarnings("ignore::rasterio.errors.NotGeoreferencedWarning")
+def test_truncated_cache_file_is_refetched(tmp_path):
+    # GDAL parses just enough of the truncated TIFF's directory to open it (with an
+    # identity transform, hence the warning) before the pixel read below fails.
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        heights = np.full((4, 4), 4348.0, dtype=np.float32)
+        return httpx.Response(
+            200,
+            headers={"content-type": "image/tiff"},
+            content=geotiff_bytes(Bounds(0, 0, 10, 10), heights),
+        )
+
+    src = _source(tmp_path, handler)
+    b = Bounds(0, 0, 10, 10)
+    first = src.fetch(b, 4, 4)
+    [cached] = (tmp_path / "dem").glob("*.tif")
+    cached.write_bytes(cached.read_bytes()[:200])
+    second = src.fetch(b, 4, 4)
+    assert np.array_equal(first, second)
+    assert len(calls) == 2  # the truncated cache forced a refetch
+    with rasterio.open(cached) as ds:  # the cache file now decodes cleanly
+        assert ds.read(1).shape == (4, 4)
+
+
+def test_unreadable_tiff_is_a_dem_error(tmp_path):
+    def handler(request):
+        return httpx.Response(200, headers={"content-type": "image/tiff"}, content=b"not a tiff")
+
+    src = _source(tmp_path, handler)
+    with pytest.raises(DemError):
+        src.fetch(Bounds(0, 0, 10, 10), 4, 4)
+    assert not list((tmp_path / "dem").glob("*.tif"))

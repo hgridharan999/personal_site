@@ -127,6 +127,28 @@ def test_cog_reader_skips_scenes_whose_infrared_band_is_labeled_alpha(tmp_path):
     assert pixel(401_250) == [0, 0, 255]
 
 
+def test_search_naip_recovers_from_a_truncated_cache(tmp_path):
+    opened = []
+
+    def fake_open(url):
+        opened.append(url)
+        item = SimpleNamespace(
+            id="co_x",
+            properties={"naip:year": "2023"},
+            bbox=[-106.2, 39.3, -106.1, 39.4],
+            assets={"image": SimpleNamespace(href="https://example.blob/co_x.tif")},
+        )
+        return SimpleNamespace(search=lambda **kw: SimpleNamespace(items=lambda: iter([item])))
+
+    bbox = (-106.3, 39.2, -106.0, 39.5)
+    first = search_naip(bbox, tmp_path, open_client=fake_open)
+    [cached] = (tmp_path / "naip").glob("*.json")
+    cached.write_text(cached.read_text()[:5])  # truncated JSON
+    second = search_naip(bbox, tmp_path, open_client=fake_open)
+    assert first == second
+    assert len(opened) == 2
+
+
 def test_build_img_tiles_writes_256px_webp_and_skips_existing(tmp_path):
     reader, store = SolidReader(), LocalStore(tmp_path)
     x, y = 26903, 49906
