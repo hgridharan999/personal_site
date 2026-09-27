@@ -69,7 +69,7 @@ The manifest is the contract between units 1 and 2/3. It's defined as a Pydantic
 |---|---|---|---|
 | Elevation | USGS 3DEP | National Map elevation service (`3DEPElevation/ImageServer/exportImage`) | Returns best available data for any box: 1 m lidar where flown, otherwise 1/3 arc-second (~10 m). Public domain. Requested in chunks, since the service caps image size per request. |
 | Imagery | NAIP (USDA) | Microsoft Planetary Computer STAC, `naip` collection, cloud-optimized GeoTIFFs signed with the `planetary-computer` package | ~0.6 m in recent cycles. Public domain. Built-in overviews let the pipeline read the horizon ring at low resolution without downloading full-resolution scenes. |
-| Imagery fallback | USGS NAIP ImageServer (`USGSNAIPImagery/ImageServer/exportImage`) | Plain HTTP | Latest year only, no year control. Used only if Planetary Computer is unavailable. |
+| Imagery fallback (deferred) | USGS NAIP ImageServer (`USGSNAIPImagery/ImageServer/exportImage`) | Plain HTTP | Latest year only, no year control. **Not built in M1** (Hari, 2026-09-27): M1 relies on Planetary Computer alone. Build this only if Planetary Computer fails us. See §13, item 4. |
 | Time zone | `timezonefinder` (offline) | Python package | Fallback when a photo lacks an EXIF time-zone offset. |
 | Sun position | `suncalc` | npm, in the browser | Computed live from the manifest's timestamps and coordinates. |
 
@@ -354,6 +354,6 @@ Each milestone ends with something visible.
    Decide before milestone 1's upload step.
 2. **Realism ceiling.** NAIP is shot straight down in summer, so vertical faces stretch and seasonal snow won't match the hike. Accepted for v1, and milestone 2 checks whether it's good enough.
 3. **Download size.** A full desktop playback may stream a large share of the corridor tiles, tens of MB. Measured in milestone 2; the corridor radii and the zoom-18 radius are the knobs.
-4. **Planetary Computer availability.** Planetary Computer's services have changed before. The USGS NAIP ImageServer fallback keeps the pipeline working, but without year control.
+4. **Planetary Computer availability.** Planetary Computer's services have changed before. The USGS NAIP ImageServer fallback (§4) would keep the pipeline working without year control, but it is **deferred** (Hari, 2026-09-27). Planetary Computer worked in every live test, and tiles already published to R2 don't depend on it. If it becomes unavailable, add a second `ImageryReader` backed by the ImageServer before the next build.
 5. **`@takram/three-atmosphere` fit.** It may assume a different coordinate frame or cost more than the budget allows. The fallback is defined in §7.2.
 6. **Photo timestamps.** Camera clocks can be wrong, and the pipeline can't detect that. The TOML accepts a per-hike photo time offset (`photo_time_offset_s`) to fix a skewed clock by hand.
