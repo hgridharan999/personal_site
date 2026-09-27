@@ -170,3 +170,22 @@ def test_usgs_source_gives_up_on_error_json(tmp_path):
 
     with pytest.raises(DemError, match="3 attempts"):
         _source(tmp_path, handler).fetch(Bounds(0, 0, 10, 10), 4, 4)
+
+
+def test_usgs_source_does_not_cache_a_bad_response(tmp_path):
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        # right content type, wrong size: 3x3 instead of the requested 4x4
+        heights = np.zeros((3, 3))
+        body = geotiff_bytes(Bounds(0, 0, 10, 10), heights)
+        return httpx.Response(200, headers={"content-type": "image/tiff"}, content=body)
+
+    src = _source(tmp_path, handler)
+    with pytest.raises(DemError, match="asked for 4x4"):
+        src.fetch(Bounds(0, 0, 10, 10), 4, 4)
+    assert not list((tmp_path / "dem").glob("*.tif"))
+    with pytest.raises(DemError):
+        src.fetch(Bounds(0, 0, 10, 10), 4, 4)
+    assert len(calls) == 2  # nothing was cached, so the retry went back to 3DEP

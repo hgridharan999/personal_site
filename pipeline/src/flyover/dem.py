@@ -77,12 +77,12 @@ class UsgsDemSource:
         digest = hashlib.sha1(json.dumps(params, sort_keys=True).encode()).hexdigest()
         cached = self.cache_dir / f"{digest}.tif"
         if cached.is_file():
-            data = cached.read_bytes()
-        else:
-            data = self._get(params)
-            cached.parent.mkdir(parents=True, exist_ok=True)
-            cached.write_bytes(data)
-        return _decode(data, width, height)
+            return _decode(cached.read_bytes(), width, height)
+        data = self._get(params)
+        heights = _decode(data, width, height)  # validate first: a bad response must not stick
+        cached.parent.mkdir(parents=True, exist_ok=True)
+        cached.write_bytes(data)
+        return heights
 
     def _get(self, params: dict[str, str]) -> bytes:
         last: Exception | None = None
