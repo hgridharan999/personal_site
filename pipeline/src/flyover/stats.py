@@ -28,9 +28,18 @@ class TrackStats:
 
 
 def detect_stops(
-    t: FloatArray, dist: FloatArray, min_speed: float = 0.3, min_duration_s: float = 60.0
+    t: FloatArray,
+    dist: FloatArray,
+    ele: FloatArray | None = None,
+    min_speed: float = 0.3,
+    min_duration_s: float = 60.0,
+    max_climb_m_per_h: float = 100.0,
 ) -> tuple[list[Stop], npt.NDArray[np.int8]]:
     """Runs of segments slower than `min_speed` m/s lasting at least `min_duration_s`.
+
+    Steep climbing or descending at a crawl is movement, not a stop: when `ele` is given, a
+    segment only counts as slow if it is also climbing or descending slower than
+    `max_climb_m_per_h`.
 
     Returns the stops and a per-point `moving` flag: moving[i] is 0 when the segment
     ending at point i is part of a stop.
@@ -40,6 +49,11 @@ def detect_stops(
     with np.errstate(divide="ignore", invalid="ignore"):
         speed = np.where(dt > 0, dd / dt, np.inf)
     slow = speed < min_speed
+    if ele is not None:
+        de = np.diff(ele)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            climb_rate = np.where(dt > 0, np.abs(de) / dt * 3600, np.inf)
+        slow &= climb_rate < max_climb_m_per_h
     stops: list[Stop] = []
     moving = np.ones(len(t), dtype=np.int8)
     i = 0

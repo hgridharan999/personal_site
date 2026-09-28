@@ -37,6 +37,28 @@ def test_stop_found_end_to_end_from_jittery_gps():
     assert len(stops) == 1 and stops[0].seconds == pytest.approx(540, abs=20)
 
 
+def test_steep_slow_climbing_is_not_a_stop():
+    # 10 segments of 5 m horizontal over 60 s each (0.083 m/s, below min_speed) while
+    # climbing 3 m per segment (180 m/h, above max_climb_m_per_h): steep ground, not a stop.
+    t = np.arange(11, dtype=float) * 60.0
+    dist = np.arange(11, dtype=float) * 5.0
+    ele = np.arange(11, dtype=float) * 3.0
+    stops, moving = detect_stops(t, dist, ele)
+    assert stops == [] and moving.tolist() == [1] * 11
+    # Without `ele`, today's behavior is unchanged: one long slow run is a stop.
+    stops, moving = detect_stops(t, dist)
+    assert [(s.start_idx, s.end_idx, s.seconds) for s in stops] == [(0, 10, 600.0)]
+
+
+def test_a_real_rest_on_a_slope_is_still_a_stop():
+    # Same timing, but only 0.5 m of climb per segment (30 m/h): a genuine rest.
+    t = np.arange(11, dtype=float) * 60.0
+    dist = np.arange(11, dtype=float) * 5.0
+    ele = np.arange(11, dtype=float) * 0.5
+    stops, moving = detect_stops(t, dist, ele)
+    assert [(s.start_idx, s.end_idx, s.seconds) for s in stops] == [(0, 10, 600.0)]
+
+
 def test_elevation_gain_ignores_noise_below_threshold():
     noisy = np.array([100, 101, 100, 102, 100, 101, 100], dtype=float)
     assert elevation_gain(noisy) == 0.0

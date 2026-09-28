@@ -101,7 +101,7 @@ def build_hike(
     track = smooth_and_resample(raw)
     log.info("track: %d points over %.1f km", len(track.t), track.dist[-1] / 1000)
     ele = sample_elevations(sources.dem, track.lat, track.lon)
-    stops, moving = detect_stops(track.t, track.dist)
+    stops, moving = detect_stops(track.t, track.dist, ele)
     stats = compute_stats(track.t, track.dist, ele, moving)
 
     store = LocalStore(paths.out)
