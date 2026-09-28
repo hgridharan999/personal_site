@@ -95,7 +95,7 @@ Attribution ("Elevation: USGS 3DEP · Imagery: USDA NAIP") shows in the viewer's
    - **Decimate:** keep a point only once it's at least 4 m from the last kept one, so standing-still GPS jitter doesn't add fake distance and a stop becomes a single time gap.
    - **Smooth:** smooth the horizontal path with a Savitzky–Golay filter (window about 15 points, polynomial order 2), then resample to one point every 5 m of distance, interpolating time.
    - **Elevations:** replace them by sampling the 1 m 3DEP DEM (bilinear), because GPS altitude is too noisy to use.
-   - **Stops:** any stretch slower than 0.3 m/s for at least 60 s.
+   - **Stops:** any stretch at least 60 s long where the hiker moves slower than 0.3 m/s horizontally **and** climbs or descends slower than 100 m/h. The vertical condition was added after the first real build: on Quandary's steep ridge, slow climbing at 100–350 m/h looked stopped by horizontal speed alone (36 stops became 22; moving time went from 3.40 h to 4.05 h).
    - **Stats:** total distance; elevation gain (summing rises over 3 m, to ignore noise); moving time; total time; summit (highest point); average ascent rate. Stats are stored in meters and seconds, and the viewer converts to feet and miles to match `data.js`.
 2. **`photos`**: for each original photo, read `DateTimeOriginal` and `OffsetTimeOriginal` (Pillow EXIF). If there's no offset, use the hike's time zone from `timezonefinder` at the trailhead.
    - **Place:** convert the time to UTC and interpolate a track position.
@@ -351,7 +351,10 @@ Each milestone ends with something visible.
    - use a separate domain or subdomain whose DNS is on Cloudflare, or
    - use the `r2.dev` URL, which is rate-limited and meant for development only.
 
-   Decide before milestone 1's upload step.
+   **Decided in milestone 1 (2026-09-27):** the site's DNS is with Vercel, so R2 serves from its development URL for now. The URL is `https://pub-94c28df8c4664c0c876bdeaf3d4680e1.r2.dev` (bucket `flyover`); set it as `VITE_FLYOVER_BASE_URL` in milestone 2.
+   - **CORS:** allows the production origin and `http://localhost:5173`.
+   - **Before sharing the flyover publicly:** move the domain's DNS to Cloudflare (hosting stays on Vercel) and connect a custom domain such as `tiles.<domain>`. Nothing needs rebuilding; only the base URL changes.
+   - **Measured on the first real hike (Quandary, 11.1 km):** 2,281 files, 49.97 MB, a 9 m 43 s build and a 64 s upload.
 2. **Realism ceiling.** NAIP is shot straight down in summer, so vertical faces stretch and seasonal snow won't match the hike. Accepted for v1, and milestone 2 checks whether it's good enough.
 3. **Download size.** A full desktop playback may stream a large share of the corridor tiles, tens of MB. Measured in milestone 2; the corridor radii and the zoom-18 radius are the knobs.
 4. **Planetary Computer availability.** Planetary Computer's services have changed before. The USGS NAIP ImageServer fallback (§4) would keep the pipeline working without year control, but it is **deferred** (Hari, 2026-09-27). Planetary Computer worked in every live test, and tiles already published to R2 don't depend on it. If it becomes unavailable, add a second `ImageryReader` backed by the ImageServer before the next build.
