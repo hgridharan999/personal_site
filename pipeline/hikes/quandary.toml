@@ -1,0 +1,18 @@
+name = "Quandary Peak"
+data_js_name = "Quandary Peak"  # must match the hike's `name` in src/ascent/data.js
+
+# Optional settings, shown with their defaults:
+# timezone = "America/Denver"   # default: looked up from the trailhead
+# trim_start_m = 0              # drop the first N meters of the track (privacy)
+# trim_end_m = 0
+# naip_year = 2023              # default: newest NAIP year covering the trail corridor
+# photo_time_offset_s = 0       # added to every photo's capture time, to fix a wrong camera clock
+
+[captions]
+# "IMG_1234.jpeg" = "Caption shown on the photo card"
+
+[playback]
+duration_s = 150  # the whole flyover at 1x
+summit_s = 10
+photo_s = 2.5
+stop_s = 1

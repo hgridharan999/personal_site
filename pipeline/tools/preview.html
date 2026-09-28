@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flyover tile preview</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5/dist/maplibre-gl.css">
+  <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5/dist/maplibre-gl.js"></script>
+  <style>
+    html, body, #map { margin: 0; height: 100%; background: #0b0a0a; }
+    #info { position: absolute; top: 8px; left: 8px; z-index: 1; padding: 6px 8px;
+            background: #0b0a0acc; color: #ede7da; font: 12px/1.4 monospace; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="info">loading…</div>
+  <script>
+    // From pipeline/: `uv run python -m http.server 8000`, then open
+    // http://localhost:8000/tools/preview.html?slug=quandary
+    const slug = new URLSearchParams(location.search).get("slug") || "quandary";
+    const info = document.getElementById("info");
+    fetch(`/out/hikes/${slug}/manifest.json`)
+      .then((r) => {
+        if (!r.ok) throw new Error(`manifest: HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((m) => {
+        const tiles = `${location.origin}/out/tiles/${m.tiles.version}/img/${m.tiles.naipYear}/{z}/{x}/{y}.webp`;
+        const line = m.track.lon.map((lon, i) => [lon, m.track.lat[i]]);
+        const map = new maplibregl.Map({
+          container: "map",
+          center: [m.summit.lon, m.summit.lat],
+          zoom: 14,
+          style: {
+            version: 8,
+            sources: {
+              naip: { type: "raster", tiles: [tiles], tileSize: 256, minzoom: m.tiles.imgZooms[0], maxzoom: m.tiles.imgZooms[1] },
+              track: { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: line } } },
+            },
+            layers: [
+              { id: "naip", type: "raster", source: "naip" },
+              { id: "track", type: "line", source: "track", paint: { "line-color": "#e8c089", "line-width": 2 } },
+            ],
+          },
+        });
+        map.showTileBoundaries = new URLSearchParams(location.search).has("borders");
+        const miles = (m.stats.distanceM / 1609.344).toFixed(1);
+        const feet = Math.round(m.summit.ele * 3.28084).toLocaleString();
+        info.textContent = `${m.name} · NAIP ${m.tiles.naipYear} · ${miles} mi · summit ${feet} ft · add &borders to see tiles`;
+      })
+      .catch((e) => { info.textContent = `error: ${e.message}`; });
+  </script>
+</body>
+</html>
