@@ -176,6 +176,14 @@ def _warped(src: rasterio.io.DatasetReader, pad_m: float) -> WarpedVRT:
         height=h + 2 * pad,
         resampling=Resampling.bilinear,
         add_alpha=True,
+        # WarpedVRT's default init_dest_nodata=True asks GDAL for INIT_DEST=NO_DATA whenever
+        # the source reports a nodata value, but add_alpha=True clears the *destination's*
+        # nodata right after, leaving GDAL nothing to initialize with -- it warns on every
+        # such read (604 times in the first real build). Coverage already comes from the
+        # alpha band we add, so it's safe to initialize the destination to 0 explicitly,
+        # regardless of whether the source happens to have a nodata value.
+        init_dest_nodata=False,
+        INIT_DEST="0",
     )
 
 

@@ -68,9 +68,13 @@ def test_search_naip_maps_items_and_caches(tmp_path):
 ROW = Bounds(*transform_bounds("EPSG:26913", "EPSG:3857", 399_800, 4_360_300, 401_700, 4_360_700))
 
 
-def two_scenes(tmp_path, red_alpha=False):
-    red = write_utm_rgb(tmp_path / "red.tif", (255, 0, 0), 400_000, 4_360_000, 1000, red_alpha)
-    blue = write_utm_rgb(tmp_path / "blue.tif", (0, 0, 255), 400_500, 4_360_000, 1000)
+def two_scenes(tmp_path, red_alpha=False, nodata=None):
+    red = write_utm_rgb(
+        tmp_path / "red.tif", (255, 0, 0), 400_000, 4_360_000, 1000, red_alpha, nodata=nodata
+    )
+    blue = write_utm_rgb(
+        tmp_path / "blue.tif", (0, 0, 255), 400_500, 4_360_000, 1000, nodata=nodata
+    )
     return NaipItem("red", 2021, (0, 0, 0, 0), str(red)), NaipItem(
         "blue", 2023, (0, 0, 0, 0), str(blue)
     )
@@ -115,6 +119,18 @@ def test_cog_reader_blends_scene_edges_without_darkening(tmp_path):
     rgb = CogReader(sign=lambda href: href).read(items, inside, 69, 15)
     for r, g, b in rgb[7].tolist():
         assert g == 0 and 250 <= r + b <= 256, (r, g, b)
+
+
+def test_cog_reader_does_not_log_gdal_init_dest_warnings(tmp_path, caplog):
+    # Reproduces the 604-warnings-per-build bug: a source with a nodata value (some NAIP
+    # scenes have one, even though they're fully opaque and coverage comes from the alpha
+    # band add_alpha=True adds) makes WarpedVRT's default init_dest_nodata=True ask GDAL for
+    # INIT_DEST=NO_DATA, but add_alpha clears the destination's nodata right after, so GDAL
+    # warns that it has nothing to initialize with.
+    red, blue = two_scenes(tmp_path, nodata=0)
+    with caplog.at_level("WARNING"):
+        read_row([blue, red], 400, 100)
+    assert "INIT_DEST" not in caplog.text
 
 
 def test_cog_reader_skips_scenes_whose_infrared_band_is_labeled_alpha(tmp_path):

@@ -35,11 +35,14 @@ def write_utm_rgb(
     south: float,
     size_m: float,
     alpha: bool = False,
+    nodata: float | None = None,
 ) -> Path:
     """A NAIP-like UTM 13N GeoTIFF of one solid color, 1 m pixels.
 
-    Like most NAIP: bands red, green, blue, near-infrared (undefined), no nodata, no alpha.
-    With `alpha=True`, like some NAIP scenes: the 4th band is an opaque alpha band instead.
+    Like most NAIP: bands red, green, blue, near-infrared (undefined), no alpha. With
+    `alpha=True`, like some NAIP scenes: the 4th band is an opaque alpha band instead. With
+    `nodata` set, like some NAIP COGs: a NoData tag is present even though the scene is fully
+    opaque and coverage is tracked by the alpha band GDAL adds.
     """
     n = int(size_m)
     arr = np.zeros((4, n, n), dtype=np.uint8)
@@ -48,6 +51,8 @@ def write_utm_rgb(
     arr[3] = 255 if alpha else 128
     # without photometric="RGB", GDAL labels a 4th band as alpha
     extra = {} if alpha else {"photometric": "RGB"}
+    if nodata is not None:
+        extra["nodata"] = nodata
     with rasterio.open(
         path,
         "w",
