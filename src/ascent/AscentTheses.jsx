@@ -31,7 +31,7 @@ export default function AscentTheses() {
       <div className="asc-theses">
 
         {/* left — me in 10 bullet points */}
-        <div className="asc-col" style={{ overflow: 'hidden' }}>
+        <div className="asc-col asc-principles">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
             <span className="asc-mono asc-amber">Me in 10 bullet points</span>
             {thesisLink}

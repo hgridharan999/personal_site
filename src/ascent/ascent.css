@@ -254,6 +254,7 @@
 .asc-theses { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: clamp(24px, 4vw, 72px); border-top: 1px solid var(--line); padding-top: clamp(14px, 2.2vh, 24px); }
 .asc-col { min-height: 0; overflow-y: auto; scrollbar-width: none; }
 .asc-col::-webkit-scrollbar { display: none; }
+.asc-principles { overflow: hidden; }
 
 .asc-feed-item { display: grid; grid-template-columns: max-content 1fr max-content; gap: clamp(12px, 2vw, 28px); align-items: baseline; border-bottom: 1px solid var(--line-2); padding: clamp(11px, 1.7vh, 18px) 0; text-decoration: none; color: var(--bone); transition: padding-left 0.35s var(--ease); }
 .asc-feed-item:hover { padding-left: 8px; }
@@ -268,6 +269,10 @@
 @media (max-width: 820px) {
   .asc-md, .asc-theses { grid-template-columns: 1fr; overflow-y: auto; }
   .asc-md-list { overflow: visible; }
+  /* stacked columns grow to their content; .asc-theses scrolls instead of clipping them */
+  .asc-theses { scrollbar-width: none; }
+  .asc-theses::-webkit-scrollbar { display: none; }
+  .asc-theses .asc-col { min-height: auto; overflow: visible; }
 }
 
 /* ============================================================
