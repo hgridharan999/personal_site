@@ -17,6 +17,7 @@
   --display: 'Archivo', system-ui, sans-serif;
   --mono:    'Space Mono', ui-monospace, monospace;
   --serif:   'Instrument Serif', Georgia, serif;
+  --writing: 'Newsreader', Georgia, serif;
 
   --ease:    cubic-bezier(0.16, 1, 0.3, 1);
   --ease-io: cubic-bezier(0.76, 0, 0.24, 1);
@@ -257,7 +258,8 @@
 .asc-feed-item { display: grid; grid-template-columns: max-content 1fr max-content; gap: clamp(12px, 2vw, 28px); align-items: baseline; border-bottom: 1px solid var(--line-2); padding: clamp(11px, 1.7vh, 18px) 0; text-decoration: none; color: var(--bone); transition: padding-left 0.35s var(--ease); }
 .asc-feed-item:hover { padding-left: 8px; }
 .asc-feed-item:hover .asc-feed-title { color: var(--amber); }
-.asc-feed-title { font-family: var(--display); font-weight: 700; letter-spacing: -0.015em; font-size: clamp(16px, 1.7vw, 22px); line-height: 1.15; transition: color 0.35s var(--ease); }
+.asc-feed-head { font-family: var(--writing); font-weight: 500; font-size: clamp(16px, 1.4vw, 20px); color: var(--amber); }
+.asc-feed-title { font-family: var(--writing); font-weight: 400; font-size: clamp(18px, 1.8vw, 24px); line-height: 1.2; transition: color 0.35s var(--ease); }
 .asc-feed-ex { color: var(--muted); font-size: 13px; line-height: 1.5; margin-top: 5px; max-width: 56ch;
   display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
 
