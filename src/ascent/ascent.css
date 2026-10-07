@@ -193,11 +193,11 @@
 .asc-fade { animation: ascFade 0.7s var(--ease); }
 
 /* long-form blog prose */
-.asc-prose { font-family: var(--serif); color: rgba(237,231,218,0.86); font-size: clamp(17px, 1.35vw, 21px); line-height: 1.7; }
+.asc-prose { font-family: var(--writing); color: rgba(237,231,218,0.9); font-size: clamp(18px, 1.3vw, 20px); line-height: 1.65; }
 .asc-prose > * + * { margin-top: 1.1em; }
-.asc-prose h1, .asc-prose h2, .asc-prose h3, .asc-prose h4 { font-family: var(--display); color: var(--bone); letter-spacing: -0.02em; line-height: 1.1; }
-.asc-prose h2 { font-weight: 800; font-size: clamp(24px, 2.6vw, 38px); margin-top: 1.9em; }
-.asc-prose h3 { font-weight: 700; font-size: clamp(20px, 2vw, 27px); margin-top: 1.5em; }
+.asc-prose h1, .asc-prose h2, .asc-prose h3, .asc-prose h4 { font-family: var(--writing); color: var(--bone); font-weight: 600; line-height: 1.25; }
+.asc-prose h2 { font-size: 1.45em; margin-top: 1.8em; }
+.asc-prose h3 { font-size: 1.2em; margin-top: 1.5em; }
 .asc-prose a { color: var(--amber); text-decoration: underline; text-underline-offset: 3px; transition: opacity 0.3s var(--ease); }
 .asc-prose a:hover { opacity: 0.75; }
 .asc-prose strong { color: var(--bone); font-weight: 600; }
