@@ -155,6 +155,10 @@ export const THESIS = {
   ],
 };
 
+// Investment and research theses published on Medium, listed on the Theses page.
+// Add new ones at the top: { title, date: 'YYYY-MM-DD', kind: 'Investment' | 'Research', url }
+export const PUBLISHED_THESES = [];
+
 // Verbatim from the original "me in 10 bullet points" (git d7f8a64), lowercase.
 export const PRINCIPLES = [
   "time being so limited means that you shouldn't waste time doing stuff you don't like.",
