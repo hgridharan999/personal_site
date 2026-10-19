@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Animation lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400&family=Hanken+Grotesk:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #FFFFFF; --ink: #111111; --muted: #5C5C5C; --rule: rgba(0, 0, 0, 0.12); --blue: #0F7DAA; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.6 'Hanken Grotesk', sans-serif; }
+  a { color: inherit; text-underline-offset: 3px; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 48px 16px 96px; }
+  .mono { font: 400 12px/1.6 'DM Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  h1 { margin: 6px 0 4px; font-weight: 800; font-size: 34px; letter-spacing: -0.03em; }
+  .lede { color: var(--muted); max-width: 64ch; margin: 0; }
+  .group { margin-top: 48px; }
+  .group > .mono { color: var(--blue); }
+  .sketch { border-top: 1px solid var(--rule); margin-top: 24px; padding-top: 16px; }
+  .head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 16px; }
+  .head h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+  .head .acts { display: flex; gap: 16px; font-size: 14px; }
+  .head button { font: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; color: var(--ink); }
+  .what { margin: 4px 0 12px; color: var(--muted); max-width: 72ch; }
+  iframe { display: block; width: 100%; height: 470px; border: 1px solid var(--rule); border-radius: 8px; background: var(--bg); }
+  .missing { color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <p class="mono">feat/site-v2 · animation lab · Oct 2026</p>
+  <h1>Bottom-of-page sketches</h1>
+  <p class="lede">Each sketch is shown the way it would sit at the very bottom of the glacier page, above the footer line. Move your cursor over them, drag, and click. “Open ↗” shows one full-size.</p>
+  <div id="list"></div>
+</main>
+<script>
+  const GROUPS = [
+    { name: 'Your picks', items: [
+      { slug: 'dither', name: '1-bit dither dissolve', what: 'Your hiker as Atkinson-dithered ink dots that settle into place as the band scrolls in; your cursor blows them around like wind.' },
+      { slug: 'star-trails', name: 'Star trails over the peak', what: 'The page ends at dusk: a long exposure of star circles wheeling around Polaris over the real Quandary ridgeline. Drag to scrub time.' },
+      { slug: 'topo-sculpt', name: 'Sculptable topo field', what: 'A living contour map; your cursor raises a peak and the lines flow around it. Click to plant a summit.' },
+      { slug: 'snow', name: 'Snow on the footer', what: 'Snow falls and drifts up on your name; sweep across to brush it off.' },
+    ]},
+    { name: 'New styles', items: [
+      { slug: 'under-the-iceberg', name: 'Under the iceberg', what: 'The page ends underwater, in the accent blue: the submerged mass of an iceberg with live light caustics. Touch the water to ripple it.' },
+      { slug: 'prayer-flags', name: 'Prayer flags', what: 'A strand of high-camp prayer flags on a real cloth simulation. Your cursor is the wind.' },
+      { slug: 'iron-filings', name: 'Iron filings', what: 'Thousands of ink strokes trace Quandary’s slopes like a hachure map, then swing around your cursor like filings around a magnet.' },
+      { slug: 'snowflake', name: 'Snowflake growth', what: 'A six-fold ice crystal grows from a seed in iceberg blue. Click to grow another.' },
+    ]},
+  ];
+  const list = document.getElementById('list');
+  GROUPS.forEach((g) => {
+    const sec = document.createElement('section');
+    sec.className = 'group';
+    sec.innerHTML = `<p class="mono">${g.name}</p>` + g.items.map((s) => `
+      <article class="sketch" id="${s.slug}">
+        <div class="head">
+          <h2>${s.name}</h2>
+          <div class="acts"><button type="button" data-reload>Replay</button><a href="${s.slug}.html" target="_blank" rel="noopener">Open ↗</a></div>
+        </div>
+        <p class="what">${s.what}</p>
+        <iframe src="${s.slug}.html" title="${s.name}" loading="lazy"></iframe>
+      </article>`).join('');
+    list.appendChild(sec);
+  });
+  list.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-reload]');
+    if (!b) return;
+    const f = b.closest('.sketch').querySelector('iframe');
+    f.src = f.getAttribute('src');
+  });
+</script>
+</body>
+</html>

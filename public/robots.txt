@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /me
+Disallow: /login
 
-Sitemap: https://example.com/sitemap.xml
+Sitemap: https://www.harigridharan.com/sitemap.xml

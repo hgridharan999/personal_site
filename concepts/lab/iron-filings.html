@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Lab: Iron filings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Hanken+Grotesk:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ink: #111111;
+    --muted: #5C5C5C;
+    --blue: #0F7DAA;
+    --rule: rgba(0, 0, 0, 0.10);
+    --sans: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --gutter: 16px;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; background: #FFFFFF; color: var(--ink); }
+  body {
+    min-height: 100vh; min-height: 100svh;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    font-family: var(--sans); overflow-x: hidden; font-variant-ligatures: none;
+  }
+  .wrap { width: 100%; max-width: calc(1100px + var(--gutter) * 2); margin-inline: auto; padding-inline: var(--gutter); }
+  .cap { margin: 0 0 8px; font: 400 12px/1.4 var(--mono); color: var(--muted); letter-spacing: 0.02em; }
+  .band { position: relative; width: 100%; height: 240px; }
+  .band canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
+  .foot {
+    margin: 0; padding: 14px 0 24px; border-top: 1px solid var(--rule);
+    font: 400 12px/1.7 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+    text-wrap: balance;
+  }
+  @media (min-width: 768px) { .band { height: 300px; } }
+  @media (min-width: 1100px) { .band { height: 340px; } }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <p class="cap">Lab / Iron filings: the pointer is a magnet</p>
+  <div class="band" id="band"><canvas id="c" aria-hidden="true"></canvas></div>
+  <p class="foot">Contour interval 1 year · Last updated Oct 2026</p>
+</main>
+
+<script>
+/* Iron filings.
+   A few thousand short strokes sit on a jittered grid. Each has an orientation (a line has no
+   head or tail, so angles live modulo PI) and an eased angular spring toward a target
+   orientation. At rest the target is the downhill direction of Quandary Peak's real terrain
+   (USGS heights, stretched over the band), which makes a hachure map: steeper slopes get
+   longer, darker strokes, and slopes that face away from a NW light are a touch darker.
+   The pointer is a 2D dipole magnet whose field lines are circles through the cursor. Near it
+   the dipole's orientation overrides the terrain (blended in doubled-angle space), the springs
+   stiffen, strokes lengthen and tint toward iceberg blue; when it leaves they ease home.
+   One canvas, strokes batched into one path per colour, and only the dirty region is redrawn.
+   Debug: #debug exposes window.__if.stats(). */
+(() => {
+  'use strict';
+
+  const band = document.getElementById('band');
+  const cv = document.getElementById('c');
+  const ctx = cv.getContext('2d');
+  const reduceMQ = matchMedia('(prefers-reduced-motion: reduce)');
+  const PI = Math.PI;
+
+  /* ---------------- palette: one ink, one blue ---------------- */
+  const INK = [17, 17, 17], BLUE = [15, 125, 170];
+  const TL = 6;                                    /* tint levels: 0 = ink .. 5 = full blue */
+  const CLS_ALPHA = [0.14, 0.3, 0.52, 0.78];      /* weight classes, light -> heavy */
+  const CLS_WIDTH = [0.8, 0.95, 1.1, 1.25];
+  const NC = CLS_ALPHA.length;
+  const KEYS = TL * NC;
+  const keyStyle = [], keyWidth = [];
+  for (let l = 0; l < TL; l++) for (let c = 0; c < NC; c++) {
+    const q = l / (TL - 1);
+    const col = INK.map((v, i) => Math.round(v + (BLUE[i] - v) * q));
+    const a = CLS_ALPHA[c] + (0.92 - CLS_ALPHA[c]) * q * 0.7;
+    keyStyle.push('rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + a.toFixed(3) + ')');
+    keyWidth.push(CLS_WIDTH[c] * (1 + 0.1 * q));
+  }
+
+  /* ---------------- helpers ---------------- */
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const smooth = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  function rng(seed) {
+    return () => {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  const wrapPi = (d) => d - PI * Math.round(d / PI);   /* shortest signed difference between orientations */
+
+  /* ---------------- terrain ---------------- */
+  let G = 0, gxA = null, gyA = null, magA = null, elA = null, gMag95 = 1;
+  function buildTerrain(d) {
+    G = d.grid;
+    let h = new Float32Array(G * G);
+    for (let r = 0; r < G; r++) for (let c = 0; c < G; c++) h[r * G + c] = d.heights[r][c];
+    for (let pass = 0; pass < 2; pass++) {            /* two [1 2 1] blurs: quiet the DEM noise */
+      const t = new Float32Array(G * G), u = new Float32Array(G * G);
+      for (let r = 0; r < G; r++) for (let c = 0; c < G; c++) {
+        const a = h[r * G + Math.max(0, c - 1)], b = h[r * G + c], e = h[r * G + Math.min(G - 1, c + 1)];
+        t[r * G + c] = (a + 2 * b + e) / 4;
+      }
+      for (let r = 0; r < G; r++) for (let c = 0; c < G; c++) {
+        const a = t[Math.max(0, r - 1) * G + c], b = t[r * G + c], e = t[Math.min(G - 1, r + 1) * G + c];
+        u[r * G + c] = (a + 2 * b + e) / 4;
+      }
+      h = u;
+    }
+    let lo = Infinity, hi = -Infinity;
+    for (let i = 0; i < h.length; i++) { if (h[i] < lo) lo = h[i]; if (h[i] > hi) hi = h[i]; }
+    elA = new Float32Array(G * G);
+    for (let i = 0; i < h.length; i++) elA[i] = (h[i] - lo) / (hi - lo);
+    gxA = new Float32Array(G * G); gyA = new Float32Array(G * G); magA = new Float32Array(G * G);
+    const ms = [];
+    for (let r = 0; r < G; r++) for (let c = 0; c < G; c++) {
+      const gx = (h[r * G + Math.min(G - 1, c + 1)] - h[r * G + Math.max(0, c - 1)]) / 2;
+      const gy = (h[Math.min(G - 1, r + 1) * G + c] - h[Math.max(0, r - 1) * G + c]) / 2;
+      gxA[r * G + c] = gx; gyA[r * G + c] = gy;
+      magA[r * G + c] = Math.hypot(gx, gy); ms.push(magA[r * G + c]);
+    }
+    ms.sort((a, b) => a - b);
+    gMag95 = ms[Math.floor(ms.length * 0.95)] || 1;
+  }
+  function bil(arr, u, v) {
+    u = clamp(u, 0, G - 1.001); v = clamp(v, 0, G - 1.001);
+    const i = u | 0, j = v | 0, fu = u - i, fv = v - j;
+    const a = arr[j * G + i], b = arr[j * G + i + 1], c = arr[(j + 1) * G + i], e = arr[(j + 1) * G + i + 1];
+    return (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + e * fu) * fv;
+  }
+
+  /* ---------------- state ---------------- */
+  let W = 0, H = 0, dpr = 1, reduced = reduceMQ.matches;
+  let n = 0, cols = 0, rows = 0, cw = 0, ch = 0, sp = 8, R = 120, maxHalf = 8;
+  let cx, cy, ang, om, th0, c2, s2, hl, ks, tint, wcls, alive, act, pAng, pTint, ex, ey, lvl;
+  let buckets, bcount;
+
+  /* the magnet */
+  const mg = { x: 0, y: 0, tx: 0, ty: 0, str: 0, on: false, axis: 0, vx: 0, vy: 0, set: false, ghost: false };
+  let userTouched = false;
+
+  /* ---------------- build the filings ---------------- */
+  function init() {
+    if (!G || !W) return;
+    const area = W * H;
+    n = 0;
+    const target = Math.min(4800, Math.round(area / 50));
+    sp = Math.sqrt(area / target);
+    cols = Math.ceil(W / sp); rows = Math.ceil(H / sp);
+    cw = W / cols; ch = H / rows;
+    n = cols * rows;
+    R = clamp(H * 0.38, 84, 140);
+    cx = new Float32Array(n); cy = new Float32Array(n); ang = new Float32Array(n); om = new Float32Array(n);
+    th0 = new Float32Array(n); c2 = new Float32Array(n); s2 = new Float32Array(n); hl = new Float32Array(n);
+    ks = new Float32Array(n); tint = new Float32Array(n); wcls = new Uint8Array(n); alive = new Uint8Array(n);
+    act = new Uint8Array(n); pAng = new Float32Array(n); pTint = new Float32Array(n);
+    ex = new Float32Array(n); ey = new Float32Array(n); lvl = new Uint8Array(n);
+    buckets = []; bcount = new Int32Array(KEYS);
+    for (let k = 0; k < KEYS; k++) buckets.push(new Int32Array(n));
+    const r = rng(2026);
+    const sx = W / (G - 1), sy = H / (G - 1);          /* screen px per terrain cell: the stretch */
+    const aniso = Math.pow(sy / sx, 0.8);              /* keep most of the stretch, soften the rest */
+    const L = [-0.62, -0.78];                          /* toward the light: up and left */
+    maxHalf = 0;
+    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+      const k = j * cols + i;
+      const x = (i + 0.5 + (r() - 0.5) * 0.6) * cw, y = (j + 0.5 + (r() - 0.5) * 0.6) * ch;
+      cx[k] = x; cy[k] = y;
+      const u = (x / W) * (G - 1), v = (y / H) * (G - 1);
+      const gx = bil(gxA, u, v), gy = bil(gyA, u, v), m = bil(magA, u, v), el = bil(elA, u, v);
+      const a0 = Math.atan2(gy / aniso, gx) + (r() - 0.5) * 0.1;
+      th0[k] = a0; ang[k] = a0; c2[k] = Math.cos(2 * a0); s2[k] = Math.sin(2 * a0);
+      // weight: slope steepness x light x edge fade
+      const steep = clamp(m / gMag95, 0, 1.2);
+      const gl = Math.hypot(gx, gy) || 1;
+      const facing = -(gx / gl) * L[0] - (gy / gl) * L[1];       /* downhill dir . toward-light dir */
+      const shade = 0.5 - 0.5 * facing;                          /* faces away from the light: darker */
+      const ef = smooth(0, 0.07, x / W) * smooth(0, 0.07, 1 - x / W) * smooth(0, 0.16, y / H) * smooth(0, 0.1, 1 - y / H);
+      let s = (0.72 * Math.pow(steep, 0.75) * (0.4 + 0.6 * shade) + 0.4 * Math.pow(el, 1.6)) * (0.3 + 0.7 * ef);
+      s = clamp(s, 0, 1);
+      wcls[k] = s < 0.13 ? 0 : s < 0.3 ? 1 : s < 0.55 ? 2 : 3;
+      hl[k] = 0.5 * sp * (0.3 + 1.15 * s) * (0.55 + 0.45 * ef);
+      alive[k] = ef > 0.06 && s > 0.03 ? 1 : 0;
+      ks[k] = 0.75 + r() * 0.55;
+      if (hl[k] > maxHalf) maxHalf = hl[k];
+      const hh = hl[k];
+      ex[k] = Math.cos(a0) * hh; ey[k] = Math.sin(a0) * hh;
+      pAng[k] = a0;
+    }
+    maxHalf *= 1.35;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    renderRegion(0, 0, W, H);
+  }
+
+  /* ---------------- rendering: one path per colour, dirty rect only ---------------- */
+  function renderRegion(rx0, ry0, rx1, ry1) {
+    const X0 = Math.max(0, Math.floor(rx0 * dpr) / dpr), Y0 = Math.max(0, Math.floor(ry0 * dpr) / dpr);
+    const X1 = Math.min(W, Math.ceil(rx1 * dpr) / dpr), Y1 = Math.min(H, Math.ceil(ry1 * dpr) / dpr);
+    if (X1 <= X0 || Y1 <= Y0) return;
+    const i0 = Math.max(0, Math.floor((X0 - maxHalf) / cw) - 1), i1 = Math.min(cols - 1, Math.ceil((X1 + maxHalf) / cw) + 1);
+    const j0 = Math.max(0, Math.floor((Y0 - maxHalf) / ch) - 1), j1 = Math.min(rows - 1, Math.ceil((Y1 + maxHalf) / ch) + 1);
+    bcount.fill(0);
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const k = j * cols + i;
+      if (!alive[k]) continue;
+      const key = lvl[k] * NC + wcls[k];
+      buckets[key][bcount[key]++] = k;
+    }
+    ctx.save();
+    ctx.beginPath(); ctx.rect(X0, Y0, X1 - X0, Y1 - Y0); ctx.clip();
+    ctx.clearRect(X0, Y0, X1 - X0, Y1 - Y0);
+    ctx.lineCap = 'round';
+    for (let key = 0; key < KEYS; key++) {
+      const cnt = bcount[key];
+      if (!cnt) continue;
+      const b = buckets[key];
+      ctx.beginPath();
+      for (let q = 0; q < cnt; q++) {
+        const k = b[q], x = cx[k], y = cy[k];
+        ctx.moveTo(x - ex[k], y - ey[k]); ctx.lineTo(x + ex[k], y + ey[k]);
+      }
+      ctx.strokeStyle = keyStyle[key]; ctx.lineWidth = keyWidth[key];
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  /* ---------------- dynamics ---------------- */
+  const KE = 130, KR = 26;                              /* spring stiffness engaged / relaxing (1/s^2) */
+  let dirty = false, dx0 = 0, dy0 = 0, dx1 = 0, dy1 = 0, activeCount = 0;
+
+  function markDirty(x, y, pad) {
+    if (!dirty) { dirty = true; dx0 = x - pad; dx1 = x + pad; dy0 = y - pad; dy1 = y + pad; return; }
+    if (x - pad < dx0) dx0 = x - pad;
+    if (x + pad > dx1) dx1 = x + pad;
+    if (y - pad < dy0) dy0 = y - pad;
+    if (y + pad > dy1) dy1 = y + pad;
+  }
+
+  function stepMagnet(dt, now) {
+    if (mg.ghost) ghostStep(now);
+    const kPos = 1 - Math.exp(-dt / 0.05);
+    const px = mg.x, py = mg.y;
+    mg.x += (mg.tx - mg.x) * kPos; mg.y += (mg.ty - mg.y) * kPos;
+    const vx = (mg.x - px) / dt, vy = (mg.y - py) / dt, v = Math.hypot(vx, vy);
+    mg.vx += (vx - mg.vx) * 0.25; mg.vy += (vy - mg.vy) * 0.25;
+    const speed = Math.hypot(mg.vx, mg.vy);
+    // the dipole axis follows the direction of travel, then drifts back toward horizontal
+    const want = speed > 140 ? Math.atan2(mg.vy, mg.vx) : 0;
+    const rate = speed > 140 ? 3.5 : 0.7;
+    mg.axis += wrapPi(want - mg.axis) * (1 - Math.exp(-dt * rate));
+    const tgt = mg.on ? 1 : 0;
+    mg.str += (tgt - mg.str) * (1 - Math.exp(-dt / (tgt > mg.str ? 0.14 : 0.4)));
+    if (mg.str < 0.003 && !mg.on) mg.str = 0;
+    return v;
+  }
+
+  function step(dt, now) {
+    stepMagnet(dt, now);
+    const live = mg.str > 0;
+    const ma = mg.axis, mxA = Math.cos(ma), myA = Math.sin(ma);
+    const cull2 = (1.9 * R) * (1.9 * R);
+    const fUp = 1 - Math.exp(-dt / 0.18), fDn = 1 - Math.exp(-dt / 0.5);
+    dirty = false; activeCount = 0;
+    for (let k = 0; k < n; k++) {
+      if (!alive[k]) continue;
+      const dx = cx[k] - mg.x, dy = cy[k] - mg.y, d2 = dx * dx + dy * dy;
+      const near = live && d2 < cull2;
+      if (!near && act[k] === 0) continue;
+      let wB = 0, tgt = th0[k];
+      if (near) {
+        const d = Math.sqrt(d2) + 1e-3, rx = dx / d, ry = dy / d;
+        const mr = mxA * rx + myA * ry;
+        const Bx = 2 * mr * rx - mxA, By = 2 * mr * ry - myA;       /* 2D dipole: |B| = 1, lines are circles */
+        let w = Math.pow(R / (d < 14 ? 14 : d), 2.5);
+        if (d > 1.35 * R) { const u = (d - 1.35 * R) / (0.55 * R); w *= 1 - u * u * (3 - 2 * u); }
+        wB = w * mg.str;
+        tgt = 0.5 * Math.atan2(s2[k] + wB * 2 * Bx * By, c2[k] + wB * (Bx * Bx - By * By));
+      }
+      // eased angular spring (underdamped a hair: filings overshoot a little, then settle)
+      const diff = wrapPi(tgt - ang[k]);
+      const kk = ks[k] * (KR + (KE - KR) * (wB > 1 ? 1 : wB));
+      om[k] += (kk * diff - 2 * 0.82 * Math.sqrt(kk) * om[k]) * dt;
+      let a = ang[k] + om[k] * dt;
+      a -= PI * Math.round(a / PI);
+      ang[k] = a;
+      // tint toward blue
+      const tt = wB > 0.35 ? Math.min(1, (wB - 0.35) / 2.4) : 0;
+      tint[k] += (tt - tint[k]) * (tt > tint[k] ? fUp : fDn);
+      let settled = false;
+      if (!near && Math.abs(diff) < 0.003 && Math.abs(om[k]) < 0.03 && tint[k] < 0.02) {
+        ang[k] = th0[k]; om[k] = 0; tint[k] = 0; act[k] = 0; settled = true;
+      } else { act[k] = 1; activeCount++; }
+      const a2 = ang[k], tn = tint[k];
+      if (settled || Math.abs(wrapPi(a2 - pAng[k])) > 0.002 || Math.abs(tn - pTint[k]) > 0.006) {
+        const half = hl[k] * (1 + 0.32 * tn);
+        ex[k] = Math.cos(a2) * half; ey[k] = Math.sin(a2) * half;
+        lvl[k] = Math.round(tn * (TL - 1));
+        pAng[k] = a2; pTint[k] = tn;
+        markDirty(cx[k], cy[k], half + 1.5);
+      }
+    }
+    if (dirty) { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); renderRegion(dx0, dy0, dx1, dy1); }
+  }
+
+  /* ---------------- loop: runs only while something is moving ---------------- */
+  let visible = false, running = false, raf = 0, last = 0;
+  const perf = { n: 0, sum: 0, max: 0 };
+  function tick(now) {
+    const dt = Math.min(1 / 30, Math.max(1 / 240, (now - last) / 1000));
+    last = now;
+    const t0 = performance.now();
+    step(dt, now);
+    const ms = performance.now() - t0; perf.n++; perf.sum += ms; if (ms > perf.max) perf.max = ms;
+    if (mg.on || mg.str > 0 || activeCount > 0 || mg.ghost) raf = requestAnimationFrame(tick);
+    else running = false;
+  }
+  function kick() {
+    if (running || reduced || !visible || document.hidden || !n) return;
+    running = true; last = performance.now(); raf = requestAnimationFrame(tick);
+  }
+  function halt() { if (running) { running = false; cancelAnimationFrame(raf); } }
+  new IntersectionObserver((es) => {
+    visible = es[0].isIntersecting;
+    if (visible) { kick(); maybeGhost(); } else halt();
+  }, { threshold: 0.35 }).observe(band);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) halt(); else kick(); });
+
+  /* ---------------- pointer / touch: the magnet ---------------- */
+  function place(e, snap) {
+    const r = cv.getBoundingClientRect();
+    mg.tx = e.clientX - r.left; mg.ty = e.clientY - r.top;
+    if (!mg.set || snap) { mg.x = mg.tx; mg.y = mg.ty; mg.set = true; mg.vx = mg.vy = 0; }
+  }
+  function engage(e) {
+    if (reduced) return;
+    userTouched = true; mg.ghost = false;
+    if (!mg.on) place(e, mg.str < 0.05); else place(e, false);
+    mg.on = true; kick();
+  }
+  cv.addEventListener('pointerenter', engage);
+  cv.addEventListener('pointermove', engage);
+  cv.addEventListener('pointerdown', (e) => { engage(e); });
+  const release = () => { mg.on = false; kick(); };
+  cv.addEventListener('pointerleave', release);
+  cv.addEventListener('pointerup', (e) => { if (e.pointerType !== 'mouse') release(); });
+  cv.addEventListener('pointercancel', release);
+
+  /* ---------------- one gentle demonstration when the band first scrolls into view ---------------- */
+  let ghostDone = false, ghostT0 = 0, ghostWait = 0;
+  function maybeGhost() {
+    if (ghostDone || userTouched || reduced || !n) return;
+    ghostDone = true;
+    ghostWait = setTimeout(() => {
+      if (userTouched || !visible) return;
+      ghostT0 = performance.now(); mg.ghost = true; mg.on = true; mg.set = false; ghostStep(ghostT0); mg.x = mg.tx; mg.y = mg.ty; mg.set = true; kick();
+    }, 700);
+  }
+  function ghostStep(now) {
+    const T = 3400, u = (now - ghostT0) / T;
+    if (u >= 1) { mg.ghost = false; mg.on = false; return; }
+    const e = u * u * (3 - 2 * u);                       /* smoothstep along the path */
+    const x0 = -0.04 * W, x1 = 1.04 * W;
+    mg.tx = x0 + (x1 - x0) * (0.12 * u + 0.88 * e);
+    mg.ty = H * (0.58 - 0.2 * Math.sin(u * PI * 1.15) + 0.07 * Math.sin(u * PI * 3));
+    mg.on = u > 0.04 && u < 0.97;
+  }
+
+  /* ---------------- sizing + reduced motion ---------------- */
+  function resize() {
+    const rect = band.getBoundingClientRect();
+    const w = Math.max(1, Math.round(rect.width)), h = Math.max(1, Math.round(rect.height));
+    const d = Math.min(2, window.devicePixelRatio || 1);
+    if (w === W && h === H && d === dpr) return;
+    W = w; H = h; dpr = d;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    mg.on = false; mg.str = 0;
+    init();
+  }
+  new ResizeObserver(resize).observe(band);
+  reduceMQ.addEventListener('change', () => { reduced = reduceMQ.matches; if (reduced) { halt(); mg.on = false; mg.str = 0; init(); } });
+
+  fetch('../_shared/quandary-terrain.json')
+    .then((r) => r.json())
+    .then((d) => { buildTerrain(d); resize(); init(); if (visible) maybeGhost(); })
+    .catch(() => { /* decorative: without the terrain data the band simply stays empty */ });
+
+  if (/debug/.test(location.hash)) {
+    window.__if = { perfReset: () => { perf.n = 0; perf.sum = 0; perf.max = 0; }, perf: () => ({ frames: perf.n, avgMs: +(perf.sum / Math.max(1, perf.n)).toFixed(2), maxMs: +perf.max.toFixed(2) }), stats: () => ({ visible, n, sp: +sp.toFixed(2), R, running, str: +mg.str.toFixed(2), active: activeCount, alive: alive ? alive.reduce((a, b) => a + b, 0) : 0 }) };
+  }
+})();
+</script>
+</body>
+</html>

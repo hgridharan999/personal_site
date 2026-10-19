@@ -1,27 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://example.com/</loc>
-    <lastmod>2026-07-31</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>1.0</priority>
+    <loc>https://www.harigridharan.com/</loc>
+    <lastmod>2026-10-19</lastmod>
   </url>
   <url>
-    <loc>https://example.com/work</loc>
-    <lastmod>2026-07-31</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://www.harigridharan.com/work</loc>
+    <lastmod>2026-10-19</lastmod>
   </url>
   <url>
-    <loc>https://example.com/projects</loc>
-    <lastmod>2026-07-31</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://www.harigridharan.com/projects</loc>
+    <lastmod>2026-10-19</lastmod>
   </url>
   <url>
-    <loc>https://example.com/privacy</loc>
-    <lastmod>2026-07-31</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.5</priority>
+    <loc>https://www.harigridharan.com/theses</loc>
+    <lastmod>2026-10-19</lastmod>
+  </url>
+  <url>
+    <loc>https://www.harigridharan.com/hiking</loc>
+    <lastmod>2026-10-19</lastmod>
+  </url>
+  <url>
+    <loc>https://www.harigridharan.com/climate-search</loc>
+    <lastmod>2026-10-19</lastmod>
+  </url>
+  <url>
+    <loc>https://www.harigridharan.com/blog/tat-tvam-asi</loc>
+    <lastmod>2026-10-19</lastmod>
+  </url>
+  <url>
+    <loc>https://www.harigridharan.com/blog/doing-it-all</loc>
+    <lastmod>2026-10-19</lastmod>
+  </url>
+  <url>
+    <loc>https://www.harigridharan.com/blog/solipsism-take-every-risk</loc>
+    <lastmod>2026-10-19</lastmod>
+  </url>
+  <url>
+    <loc>https://www.harigridharan.com/blog/neuroplasticity-and-change</loc>
+    <lastmod>2026-10-19</lastmod>
   </url>
 </urlset>

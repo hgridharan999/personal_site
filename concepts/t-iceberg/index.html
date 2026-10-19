@@ -1,0 +1,1149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#FFFFFF">
+<title>Hari Gridharan — Cornell Dyson ’29</title>
+<meta name="description" content="Dyson Scholar and Loadstone Labs co-founder. Seeking Summer 2027 internships in strategy, investing, business analysis and product.">
+<!-- Site icon: the iceberg mark (tip, waterline, faceted mass, hiker), drawn to hold at 16px. -->
+<link rel="icon" href="../_shared/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="../_shared/favicon-32.png">
+<link rel="apple-touch-icon" href="../_shared/apple-touch-icon.png">
+<meta property="og:title" content="Hari Gridharan — Cornell Dyson ’29">
+<meta property="og:description" content="Dyson Scholar and Loadstone Labs co-founder. Seeking Summer 2027 internships in strategy, investing, business analysis and product.">
+<meta property="og:image" content="../_shared/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" as="image" href="../_shared/mountain-plate.webp" type="image/webp" fetchpriority="high">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300,100,1;1,9..144,300,100,1&family=Hanken+Grotesk:wght@400;500;600;800&family=Instrument+Serif:ital@1&display=swap">
+<style>
+  /* ============================================================================================
+     EDITORIAL DEPTH. One white page that is the tip of an iceberg, one ink line that is its
+     outline, one waterline, and below it the other nine tenths, in deepening blue.
+     Type: Fraunces, pinned to weight 300, SOFT 100, WONK 1 with only the optical-size axis free: ~74 KB for roman + italic (display: lockup, numerals, headlines) · Hanken Grotesk (body, labels as
+     scaled capitals) · DM Mono (data only: dates, places, readings).
+     ============================================================================================ */
+
+  /* ---- the hiker (shared component, copied verbatim) ----------------------------------------- */
+  .hiker { display: block; height: var(--hiker-h, 132px); width: auto; aspect-ratio: 294 / 480; overflow: visible; }
+  .hiker .ink, #mk .ink { fill: none; stroke: #fff; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    .hiker .ink, #mk .ink { animation: hiker-ink 0.45s cubic-bezier(0.65, 0, 0.35, 1) both; }
+    .hiker .ink-1, #mk .ink-1 { animation-duration: 0.3s; }
+    .hiker .ink-2, #mk .ink-2 { animation-delay: 0.3s; }
+    .hiker .ink-3, #mk .ink-3 { animation-delay: 0.75s; }
+  }
+  @keyframes hiker-ink { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+
+  :root {
+    /* above the water */
+    --bg: #FFFFFF;
+    --ink: #111111;
+    --soft: #3D3D3D;                       /* 10.9:1 */
+    --muted: #5C5C5C;                      /* 6.7:1 */
+    --acc: #0F7DAA;                        /* the blue at the bottom of icebergs, 4.6:1 on white */
+    --acc-d: #0B6A93;
+    --rule: rgba(0, 0, 0, 0.10);
+    --rule-head: rgba(0, 0, 0, 0.22);
+    --rule-hover: rgba(0, 0, 0, 0.28);
+    --ul: rgba(0, 0, 0, 0.40);
+    --ul-acc: rgba(15, 125, 170, 0.55);
+    --outline: rgba(0, 0, 0, 0.55);
+    --sans: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --hari-serif: "Instrument Serif", "Times New Roman", serif;
+    --serif: "Fraunces", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --gutter: 16px;
+    --datew: 6.75rem;
+    --tri-off: 14px;
+  }
+  /* below the water: everything flips. Contrast on the shallowest text depth (#0D6A92): white 6.0, ice 5.3, mist 5.0 */
+  .below, .seabed {
+    --bg: #0D6A92;
+    --ink: #FFFFFF;
+    --soft: #E4F3F9;
+    --muted: #D9EEF7;
+    --acc: #FFFFFF;
+    --acc-d: #FFFFFF;
+    --rule: rgba(255, 255, 255, 0.20);
+    --rule-head: rgba(255, 255, 255, 0.34);
+    --rule-hover: rgba(255, 255, 255, 0.50);
+    --ul: rgba(255, 255, 255, 0.55);
+    --ul-acc: rgba(255, 255, 255, 0.70);
+    --outline: rgba(255, 255, 255, 0.70);
+    color: var(--ink);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--bg); color-scheme: light; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body {
+    position: relative; margin: 0; background: var(--bg); color: var(--ink);
+    font: 400 16px/1.6 var(--sans); font-kerning: normal;
+    -webkit-font-smoothing: antialiased; overflow-wrap: break-word; overflow-x: clip;
+  }
+  h1, h2, h3, p, ul, ol, figure { margin: 0; padding: 0; }
+  ul { list-style: none; }
+  ::selection { background: var(--acc); color: var(--bg); }
+  .below ::selection, .seabed ::selection { background: #FFFFFF; color: #0A1822; }
+  a { color: inherit; text-decoration: underline; text-decoration-color: var(--ul); text-decoration-thickness: 1px; text-underline-offset: 0.22em; }
+  a:focus-visible, summary:focus-visible, .btn:focus-visible { outline: 2px solid var(--acc); outline-offset: 3px; border-radius: 2px; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+    overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+  }
+  .nw { white-space: nowrap; }
+  .wrap { width: 100%; max-width: calc(640px + var(--gutter) * 2); margin-inline: auto; padding-inline: var(--gutter); }
+
+  /* the serif's voice: soft terminals, a little lean in the italics */
+  .serif { font-family: var(--serif); font-variation-settings: "SOFT" 100, "WONK" 1; font-optical-sizing: auto; }
+
+  /* ---------- Header plate: the live site's mountain, drawn in like a sketch (this is the tip) ---------- */
+  .plate { position: relative; margin: 0 calc(var(--gutter) * -1); }
+  .scene { display: block; width: 100%; height: auto; overflow: hidden; opacity: 0.5; }
+  .scene image, .hiker image { filter: brightness(0); }
+  #mk image { filter: var(--mk-hiker); }
+  .scene--mtn { aspect-ratio: 1280 / 250; }
+  .plate::after { content: ""; position: absolute; inset: -1px 0; background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 50%, var(--bg) 97%); pointer-events: none; }
+  .scene .ink { fill: none; stroke: #fff; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
+  @keyframes scene-ink { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+
+  /* ---------- Header: the mark beside the lockup ---------- */
+  .top {
+    --mark-h: 104px; --hiker-h: 112px;
+    position: relative; z-index: 1;
+    display: grid; grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: "mark name" "aff aff" "seek seek" "act act";
+    column-gap: 16px; align-items: center; margin-top: -22px;
+  }
+  /* the mark: one symbol, two inks. Above water it is ink on white; below it is ice on blue (the hiker's cream lines, untouched). */
+  .mark { --mk-ink: #111111; --mk-tip: #FFFFFF; --mk-shade: #CFE6F0; --mk-facet: #FFFFFF; --mk-hull: url(#mk-ice); --mk-hiker: brightness(0);
+    grid-area: mark; display: block; height: var(--mark-h); width: auto; aspect-ratio: 160 / 176; overflow: visible; }
+  .mark--light { --mk-ink: #E4F3F9; --mk-tip: #E4F3F9; --mk-shade: #7DB9D2; --mk-facet: #E4F3F9; --mk-hull: url(#mk-ice-d); --mk-hiker: none; }
+  #mk .m-ink { fill: none; stroke: var(--mk-ink); stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }
+  #mk .m-hull { fill: var(--mk-hull); }
+  #mk .m-tip { fill: var(--mk-tip); }
+  #mk .m-shade { fill: var(--mk-shade); }
+  #mk .m-facet { fill: none; stroke: var(--mk-facet); stroke-width: 1.3; stroke-opacity: 0.75; stroke-linejoin: round; }
+  .foot-mark { --mark-h: 52px; grid-area: auto; }
+  .top .hiker { grid-area: mark; transform: scaleX(-1); } /* face the peak: he climbs the strip behind the name */
+  .name {
+    grid-area: name;
+    display: flex; flex-direction: column; align-items: flex-start;
+    font: 800 clamp(34px, 9.4vw, 48px)/1 var(--sans); letter-spacing: -0.03em;
+  }
+  .hari { font: italic 400 1.2em/0.95 var(--hari-serif); letter-spacing: 0; color: var(--acc); }
+  .sur { text-transform: uppercase; white-space: nowrap; }
+  .aff { grid-area: aff; margin-top: 16px; color: var(--soft); }
+  .aff-a { display: block; }
+  .aff-sep { display: none; }
+  .seek { grid-area: seek; margin-top: 8px; color: var(--acc); font-weight: 500; text-wrap: balance; }
+  .act { grid-area: act; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 12px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 44px; padding: 0 18px; border: 1px solid transparent; border-radius: 4px;
+    font: 600 15px/1 var(--sans); text-decoration: none;
+  }
+  .btn-fill { background: var(--acc); border-color: var(--acc); color: var(--bg); }
+  .btn-line { border-color: var(--outline); color: var(--ink); }
+  .soc { display: inline-flex; align-items: center; margin-left: -8px; }
+  .soc a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; font-size: 15px; color: var(--soft); }
+  .soc .dot { color: var(--muted); }
+
+  /* ---------- Sections and labels ---------- */
+  main > .tip > section { padding-top: 40px; }
+  main > .tip > section:first-child { padding-top: 28px; }
+  /* ---------- Section labels: waypoints ---------- */
+  .head {
+    padding-bottom: 7px; border-bottom: 1px solid var(--rule-head);
+    font: 500 12px/1.7 var(--mono); letter-spacing: 0.14em; text-transform: uppercase;
+    scroll-margin-top: 16px;
+  }
+  .head .idx { color: var(--muted); margin-right: 0.7em; }
+  .head .t { flex: 1; min-width: 0; }
+
+  /* ---------- Ledger rows ---------- */
+  .row { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) var(--datew); grid-template-areas: "ttl when" "line line"; column-gap: 16px; align-items: baseline; padding: 12px 0 13px; }
+  .row + .row { border-top: 1px solid var(--rule); }
+  .ttl { grid-area: ttl; font: 600 16px/1.4 var(--sans); text-wrap: balance; }
+  .ttl .role { font-weight: 500; }
+  .loc { display: block; margin-top: 2px; font: 400 12px/1.4 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .when {
+    grid-area: when; text-align: right; white-space: nowrap; color: var(--muted);
+    font: 400 12.5px/1.4 var(--mono); font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1;
+  }
+  .line { grid-area: line; margin-top: 1px; color: var(--soft); text-wrap: pretty; }
+  .lead { color: var(--acc); font-weight: 500; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+  .below .lead { color: var(--ink); font-weight: 600; }
+  a.lead { text-decoration-color: var(--ul-acc); }
+  .row--solo { grid-template-areas: "line line"; }
+  .row--solo .line { margin-top: 0; }
+
+  /* expandable rows */
+  .row.xp { display: block; padding: 0; }
+  .xp summary {
+    display: grid; grid-template-columns: minmax(0, 1fr) var(--datew); grid-template-areas: "ttl when" "line line";
+    column-gap: 16px; align-items: baseline; padding: 12px 0 13px; list-style: none; cursor: pointer; border-radius: 2px;
+  }
+  .xp summary::-webkit-details-marker { display: none; }
+  .xp .ttl { display: block; }
+  .xp .when, .xp .line { display: block; }
+  .xp summary .co::after {
+    content: ""; display: inline-block; width: 9px; height: 9px; margin-left: 9px; vertical-align: 0.06em;
+    background: linear-gradient(var(--acc), var(--acc)) center / 100% 1.5px no-repeat, linear-gradient(var(--acc), var(--acc)) center / 1.5px 100% no-repeat;
+    opacity: 0.6;
+  }
+  .xp details[open] summary .co::after { opacity: 1; transform: rotate(45deg); }
+  .xp .body { margin: -2px 0 16px; padding: 2px 0 2px 16px; border-left: 1px solid rgba(15, 125, 170, 0.45); color: var(--soft); }
+  .below .xp .body { border-left-color: rgba(255, 255, 255, 0.5); }
+  .xp .body p + p { margin-top: 8px; }
+  .xp .meta { font: 400 12.5px/1.7 var(--mono); color: var(--muted); }
+  .xp .meta a { color: var(--ink); }
+
+  .kicker { margin-top: 12px; font: 600 11px/1.6 var(--sans); letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+  .beliefs { margin: 4px 0 0; padding: 0; list-style: none; }
+  .beliefs li { display: grid; grid-template-columns: 2.4rem minmax(0, 1fr); align-items: baseline; padding: 11px 0 12px; }
+  .beliefs li + li { border-top: 1px solid var(--rule); }
+  .beliefs .n { font: italic 300 17px/1 var(--serif); font-variation-settings: "SOFT" 100, "WONK" 1; font-variant-numeric: oldstyle-nums; color: var(--muted); }
+  .beliefs p { color: var(--soft); text-wrap: pretty; }
+  .xp .body .beliefs li { padding: 7px 0 8px; }
+  .xp .body .beliefs li:first-child { padding-top: 2px; }
+
+  .tk { display: inline-block; padding: 1px 8px; border: 1px dashed var(--acc); border-radius: 3px; font: 400 12.5px/1.6 var(--mono); color: var(--acc); }
+
+  /* essays and contact rows */
+  .row--link { display: block; padding: 0; }
+  .rl { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 44px; padding: 8px 0 9px; text-decoration: none; }
+  .rl .lab { font-weight: 500; }
+  .rl .val {
+    text-align: right; overflow-wrap: anywhere; color: var(--muted); font: 400 12.5px/1.5 var(--mono);
+    text-decoration: underline; text-decoration-color: var(--ul); text-decoration-thickness: 1px; text-underline-offset: 0.25em;
+  }
+  .rl.rl--essay { align-items: flex-start; padding: 11px 0 12px; }
+  .rl.rl--essay .et { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .rl.rl--essay .lab { font-weight: 600; }
+  .rl.rl--essay .ed { color: var(--muted); font-size: 15px; line-height: 1.5; text-wrap: pretty; }
+  .rl.rl--essay .val { text-decoration: none; white-space: nowrap; line-height: 22px; }
+
+  .row .go-note { color: var(--muted); }
+
+  /* ---------- THE WATERLINE ---------- */
+  .surface { position: relative; z-index: 2; margin-top: 56px; }
+  .wl-cap { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-bottom: 6px; }
+  .wl-sent { font: 600 11.5px/1.5 var(--sans); letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink); text-wrap: balance; }
+  .wl-svg { display: block; width: 100%; height: 24px; margin-top: -6px; margin-bottom: -12px; overflow: visible; }
+  .wl-svg path { fill: none; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+  #wl-air { fill: var(--bg); stroke: none; }
+  #wl-l1 { stroke: #111; stroke-width: 1.25; }
+  #wl-l2 { stroke: #0F7DAA; stroke-width: 1; stroke-opacity: 0.5; }
+  .no-js-line { height: 0; border-bottom: 1.25px solid #111; }
+  html:not(.js) .spec, html:not(.js) .light-band, html:not(.js) .plate-fig { display: none; }
+  .js .no-js-line { display: none; }
+
+  /* ---------- BELOW: the flood ---------- */
+  .below {
+    position: relative; margin-top: -8px; padding-top: 8px; isolation: auto;
+    background: linear-gradient(to bottom, #E3F3F9 0, #E3F3F9 8px, #A5D6E8 44px, #4A9BBE 106px, #1878A0 166px, #0D6A92 218px, #0B5F85 20%, #08435F 52%, #0A2A3B 86%, #0A2433 100%);
+  }
+  .below > .wrap { position: relative; padding-top: 236px; padding-bottom: 56px; } /* no z-index here: the pack's screen blend needs the water behind it in the same stacking context */
+  .light-band { position: absolute; left: 0; top: 0; width: 100%; height: 300px; z-index: 0; pointer-events: none; -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 30%, transparent 100%); mask-image: linear-gradient(to bottom, #000 0, #000 30%, transparent 100%); }
+  .light-band canvas { display: block; width: 100%; height: 100%; }
+  .below > .wrap > section { padding-top: 0; }
+  .below > .wrap > section + section { padding-top: 64px; }
+
+  /* ---------- Specimens: set in the margin on wide screens, above the row on narrow ones ---------- */
+  .dive { position: relative; }
+  .spec { position: relative; display: block; width: 100%; margin: 14px 0 6px; }
+  .spec canvas { display: block; width: 100%; height: 118px; }
+  .spec figcaption { margin-top: 6px; font: 400 10.5px/1.4 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .display { font: 300 clamp(25px, 6.6vw, 30px)/1.12 var(--serif); font-variation-settings: "SOFT" 100, "WONK" 1; letter-spacing: -0.012em; color: var(--ink); text-wrap: balance; }
+  .dive .row--solo { padding: 6px 0 2px; }
+  .dive .row--solo .display { padding: 4px 0; }
+  .dive.xp .ttl .co, .dive .xp .ttl .co { font: 300 clamp(25px, 6.6vw, 30px)/1.12 var(--serif); font-variation-settings: "SOFT" 100, "WONK" 1; letter-spacing: -0.012em; }
+  .dive.xp summary, .dive .xp summary { padding: 10px 0 11px; }
+  .dive.xp summary .co::after, .dive .xp summary .co::after { width: 11px; height: 11px; vertical-align: 0.1em; opacity: 0.8; }
+  .dive + .dive { margin-top: 28px; }
+  .dive.row--solo { grid-template-columns: minmax(0, 1fr); grid-template-areas: "spec" "line"; }
+  .dive.row--solo .spec { grid-area: spec; }
+
+  /* the pack: Hari's exploded Ten Essentials, read as a luminous plate on the water (the light build, inverted and screened) */
+  .row.xp.has-fig { display: flex; flex-direction: column; }
+  .margin-fig { display: none; order: -1; }
+  .margin-fig iframe { display: block; width: 100%; height: 100%; border: 0; background: #fff; filter: invert(1) hue-rotate(180deg); mix-blend-mode: screen; }
+  .has-fig:has(details[open]) .margin-fig { display: block; height: min(110vw, 440px); margin: 0 0 12px; }
+
+  /* the seabed */
+  .seabed { position: relative; padding: 4px 0 40px; background: linear-gradient(to bottom, #0A2433 0, #0A1822 120px, #0A1822 100%); }
+  .seabed .head { margin-top: 0; }
+  .seabed .plate-fig { position: relative; margin: 28px 0 0; }
+  .seabed .plate-fig canvas { display: block; width: 100%; height: 270px; }
+  @media (min-width: 700px) { .seabed .plate-fig canvas { height: 340px; } }
+  .seabed .plate-fig figcaption { margin-top: 4px; font: 400 10.5px/1.4 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; gap: 16px; }
+  .foot-line { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--rule); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; font: 500 11px/1.7 var(--sans); letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+  .foot-line .part { display: block; }
+
+
+  /* ---------- Wider viewports ---------- */
+  @media (min-width: 600px) {
+    :root { --datew: 11.25rem; }
+    .plate { margin-inline: 0; padding-top: 24px; }
+    .top { --mark-h: 132px; --hiker-h: 140px; grid-template-areas: "mark name" "mark aff" "seek seek" "act act"; column-gap: 24px; margin-top: -40px; }
+    .name { flex-direction: row; align-items: baseline; column-gap: 0.2em; align-self: end; }
+    .aff { margin-top: 8px; align-self: start; text-wrap: balance; }
+    .aff-a { display: inline; }
+    .aff-sep { display: inline; }
+    .seek { margin-top: 22px; }
+    .act { margin-top: 14px; }
+    .loc { display: inline-block; margin: 0 0 0 0.7em; }
+    .foot-line .part { display: inline; }
+  }
+  @media (min-width: 768px) { :root { --gutter: 32px; --tri-off: 26px; } }
+
+  @media (max-width: 599px) {
+    .xp summary { grid-template-columns: minmax(0, 1fr); grid-template-areas: "ttl" "when" "line"; }
+    .xp .when { text-align: left; margin-top: 1px; }
+    .xp summary .co::after { width: 12px; height: 12px; opacity: 0.85; }
+    .wl-sent { letter-spacing: 0.14em; }
+  }
+
+  /* specimens move into the left margin once there is one */
+  @media (min-width: 1180px) {
+    .dive, .row.xp.dive { min-height: 214px; display: flex; flex-direction: column; justify-content: center; }
+    .dive > ul { width: 100%; }
+    .dive .spec { position: absolute; top: 4px; right: calc(100% + 28px); width: clamp(210px, calc(50vw - 372px), 330px); margin: 0; }
+    .dive .spec canvas { height: 176px; }
+    .row.xp.dive.dive--pack { min-height: 404px; }
+    .margin-fig, .has-fig:has(details[open]) .margin-fig {
+      display: block; position: absolute; top: -6px; right: calc(100% + 28px);
+      width: clamp(226px, calc(50vw - 372px), 340px); height: 392px; margin: 0;
+    }
+    .spec--solo { top: 2px; }
+  }
+  @media (min-width: 600px) and (max-width: 1179px) { .spec canvas { height: 128px; } }
+
+  /* ---------- Desktop pointers only ---------- */
+  @media (hover: hover) and (pointer: fine) {
+    .row:hover::before, .row:focus-within::before {
+      content: ""; position: absolute; left: calc(var(--tri-off) * -1); top: 18px; width: 10px; height: 9px; pointer-events: none;
+      background: radial-gradient(circle at 50% 68%, var(--bg) 0 1.1px, transparent 1.3px), var(--acc);
+      clip-path: polygon(50% 0, 0 100%, 100% 100%);
+    }
+    .row--solo:hover::before, .row--solo:focus-within::before { top: 24px; }
+    .row--link:hover::before, .row--link:focus-within::before { top: 17px; }
+    .dive .xp:hover::before, .dive .xp:focus-within::before { top: 22px; }
+    .row:hover, .row:focus-within { border-top-color: var(--rule-hover); }
+    .row:hover + .row, .row:focus-within + .row { border-top-color: var(--rule-hover); }
+    .row:hover .co, .row:focus-within .co { color: var(--acc); }
+    .below .row:hover .co, .below .row:focus-within .co, .below a:hover { color: #FFFFFF; }
+    .xp summary:hover .co::after { opacity: 1; }
+    a:hover { color: var(--acc); text-decoration-color: var(--acc); }
+    .rl:hover { color: inherit; }
+    .rl:hover .val { color: var(--acc); text-decoration-color: var(--acc); }
+    .below .rl:hover .val, .seabed .rl:hover .val { color: #FFFFFF; text-decoration-color: #FFFFFF; }
+    .below .rl:hover .lab, .seabed .rl:hover .lab { text-decoration: underline; text-underline-offset: 0.22em; text-decoration-thickness: 1px; }
+    .btn-fill:hover { background: var(--acc-d); border-color: var(--acc-d); color: var(--bg); }
+    .btn-line:hover { border-color: var(--acc); color: var(--acc); }
+  }
+
+  /* ---------- Motion ---------- */
+  @media (prefers-reduced-motion: no-preference) {
+    .scene .ink { animation: scene-ink 0.5s cubic-bezier(0.65, 0, 0.35, 1) both; }
+    .scene .i1 { animation-duration: 0.6s; }
+    .scene .i2 { animation-delay: 0.2s; }
+    .scene .i3 { animation-delay: 0.4s; }
+    #mk .ink-1 { animation-delay: 0.45s; }
+    #mk .ink-2 { animation-delay: 0.75s; }
+    #mk .ink-3 { animation-delay: 1.2s; }
+    #mk .m-draw { stroke-dasharray: 1; animation: hiker-ink 0.7s cubic-bezier(0.65, 0, 0.35, 1) 0.2s both; }
+    .xp summary .co::after { transition: transform 0.3s var(--ease), opacity 0.2s var(--ease); }
+    .xp details[open] .body { animation: trail-open 0.42s var(--ease) both; }
+    .xp details[open] .body > * { animation: trail-text 0.42s var(--ease) both; }
+    .xp details[open] .body > :nth-child(2) { animation-delay: 0.05s; }
+    .xp details[open] .body > :nth-child(3) { animation-delay: 0.1s; }
+    @supports (interpolate-size: allow-keywords) {
+      :root { interpolate-size: allow-keywords; }
+      .xp details::details-content { height: 0; overflow: clip; transition: height 0.38s var(--ease), content-visibility 0.38s allow-discrete; }
+      .xp details[open]::details-content { height: auto; }
+    }
+    a, .btn, .co, .row, .rl .val { transition: color 0.2s var(--ease), background-color 0.2s var(--ease), border-color 0.2s var(--ease), text-decoration-color 0.2s var(--ease); }
+    @media (hover: hover) and (pointer: fine) { .row:hover::before, .row:focus-within::before { animation: tri-in 0.25s var(--ease) both; } }
+  }
+  @keyframes trail-open { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+  @keyframes trail-text { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  @keyframes tri-in { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js');</script>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><symbol id="mk" viewBox="0 0 160 176">
+      <defs>
+        <linearGradient id="mk-ice" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BDE4F2"/><stop offset="0.55" stop-color="#4FA9CB"/><stop offset="1" stop-color="#0F7DAA"/></linearGradient><linearGradient id="mk-ice-d" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2F86AC"/><stop offset="0.55" stop-color="#14658D"/><stop offset="1" stop-color="#0A4766"/></linearGradient>
+        <filter id="mk-soft" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="5"/></filter>
+        <mask id="mk-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="294" height="480">
+          <g filter="url(#mk-soft)">
+            <path class="ink ink-1" pathLength="1" stroke-width="64" d="M104 30 C 150 0, 196 30, 180 70 S 96 110, 100 70 S 160 40, 200 110"/>
+            <path class="ink ink-2" pathLength="1" stroke-width="72" d="M70 130 L 286 120 L 40 185 L 290 185 L 30 245 L 290 245 L 20 305 L 286 300"/>
+            <path class="ink ink-3" pathLength="1" stroke-width="72" d="M10 345 L 290 345 L 0 400 L 294 400 L 0 455 L 294 460"/>
+          </g>
+        </mask>
+      </defs>
+      <!-- the submerged mass -->
+      <path class="m-hull" d="M12 108 H150 L143 124 L153 141 L127 161 L99 175 L66 165 L31 152 L14 128 Z"/>
+      <path class="m-facet" d="M12 108 L66 165 M66 165 L88 108 M143 124 L88 108 M153 141 L99 175 M31 152 L52 108 M99 175 L88 108 M127 161 L143 124"/>
+      <path class="m-ink m-draw" pathLength="1" d="M12 108 L14 128 L31 152 L66 165 L99 175 L127 161 L153 141 L143 124 L150 108"/>
+      <!-- the tip -->
+      <path class="m-tip" d="M74 108 L88 84 L99 58 L107 41 L116 62 L124 56 L138 84 L152 108 Z"/>
+      <path class="m-shade" d="M107 41 L116 62 L124 56 L138 84 L152 108 L112 108 Z"/>
+      <path class="m-ink m-draw" pathLength="1" d="M74 108 L88 84 L99 58 L107 41 L116 62 L124 56 L138 84 L152 108"/>
+      <!-- the waterline -->
+      <path class="m-ink" d="M2 108 H158"/>
+      <!-- the hiker, mirrored, feet on the ledge -->
+      <g transform="translate(73 12) scale(-1 1)"><svg x="0" y="0" width="58.8" height="96" viewBox="0 0 294 480"><image href="../_shared/hiker.webp" width="294" height="480" mask="url(#mk-mask)"/></svg></g>
+    </symbol></svg>
+
+
+<header class="wrap">
+  <div class="plate" aria-hidden="true">
+    <svg class="scene scene--mtn" width="1280" height="250" viewBox="170 18 1280 250" focusable="false">
+      <defs>
+        <filter id="mtn-soft" filterUnits="userSpaceOnUse" x="-40" y="-40" width="1360" height="562"><feGaussianBlur stdDeviation="7"/></filter>
+        <mask id="mtn-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1280" height="482">
+          <g filter="url(#mtn-soft)">
+            <path class="ink i1" pathLength="1" stroke-width="170" d="M-20 300 L200 250 L400 180 L560 110 L690 40 L800 105 L950 165 L1100 215 L1300 255"/>
+            <path class="ink i2" pathLength="1" stroke-width="190" d="M-20 345 L300 320 L500 270 L700 230 L900 260 L1300 320"/>
+            <path class="ink i3" pathLength="1" stroke-width="180" d="M-20 440 L400 425 L800 435 L1300 430"/>
+          </g>
+        </mask>
+      </defs>
+      <image href="../_shared/mountain-plate.webp" width="1280" height="482" mask="url(#mtn-mask)"/>
+    </svg>
+  </div>
+  <div class="top">
+    <svg class="hiker" viewBox="0 0 294 480" aria-hidden="true" focusable="false">
+      <defs>
+        <filter id="hiker-soft" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="5"/></filter>
+        <mask id="hiker-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="294" height="480">
+          <g filter="url(#hiker-soft)">
+            <path class="ink ink-1" pathLength="1" stroke-width="64" d="M104 30 C 150 0, 196 30, 180 70 S 96 110, 100 70 S 160 40, 200 110"/>
+            <path class="ink ink-2" pathLength="1" stroke-width="72" d="M70 130 L 286 120 L 40 185 L 290 185 L 30 245 L 290 245 L 20 305 L 286 300"/>
+            <path class="ink ink-3" pathLength="1" stroke-width="72" d="M10 345 L 290 345 L 0 400 L 294 400 L 0 455 L 294 460"/>
+          </g>
+        </mask>
+      </defs>
+      <image href="../_shared/hiker.webp" width="294" height="480" mask="url(#hiker-mask)"/>
+    </svg>
+    <h1 class="name"><span class="hari">Hari</span> <span class="sur">GRIDHARAN</span></h1>
+    <p class="aff"><span class="aff-a">Applied Economics, AI&nbsp;minor</span><span class="aff-sep">&nbsp;· </span><span class="nw">Cornell&nbsp;Dyson&nbsp;’29&nbsp;· Dyson&nbsp;Scholar</span></p>
+    <p class="seek">Seeking Summer&nbsp;2027 internships in strategy, investing, business analysis and product — NYC&nbsp;/&nbsp;SF</p>
+    <div class="act">
+      <a class="btn btn-fill" href="/Hari_Gridharan_Resume.pdf">Resume<span aria-hidden="true">&nbsp;↓</span><span class="sr-only"> (PDF)</span></a>
+      <a class="btn btn-line" href="mailto:hg532@cornell.edu">Email</a>
+      <span class="soc"><a href="https://www.linkedin.com/in/harigridharan1/" target="_blank" rel="noopener">LinkedIn<span class="sr-only"> (opens in new tab)</span></a><span class="dot" aria-hidden="true">·</span><a href="https://github.com/hgridharan999" target="_blank" rel="noopener">GitHub<span class="sr-only"> (opens in new tab)</span></a></span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap tip" id="tip">
+    <section aria-labelledby="experience">
+      <h2 class="head" id="experience"><span class="idx">01</span><span class="t">Experience</span></h2>
+      <ul role="list">
+        <li class="row xp"><details>
+          <summary>
+            <span class="ttl"><span class="role">Co-Founder,</span> <span class="co">Loadstone&nbsp;Labs</span></span>
+            <span class="when">Feb&nbsp;2026&nbsp;–&nbsp;now</span>
+            <span class="line"><span class="lead">132,000+ water-rights records a day</span> from 44 Colorado counties&nbsp;· grant-funded by AWS and LvlUp&nbsp;Ventures</span>
+          </summary>
+          <div class="body">
+            <p>Co-founded a data platform for Western water rights. County records are fragmented and inconsistent, so rights are hard to find and harder to value; Loadstone pulls workflow, basin intelligence and transaction infrastructure into one place for the attorneys and engineers who work them.</p>
+            <p>Our pipeline ingests 132,000+ live water-rights records a day from 44 Colorado counties into a single schema. Supported by grants from AWS and LvlUp&nbsp;Ventures.</p>
+            <p class="meta">Ithaca, NY · <a href="https://loadstonelabs.com" target="_blank" rel="noopener">loadstonelabs.com<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+          </div>
+        </details></li>
+        <li class="row xp"><details>
+          <summary>
+            <span class="ttl"><span class="role">Consulting Intern,</span> <span class="co">EXL</span></span>
+            <span class="when">Summer&nbsp;2026</span>
+            <span class="line"><span class="lead">Built a CRM tool</span> to replace manual contract tracking across a $70M+ Fortune&nbsp;100 client portfolio</span>
+          </summary>
+          <div class="body">
+            <p>Supported a portfolio of client contracts worth $70M+ across Fortune 100 accounts, tracking scope, deliverables and renewal terms.</p>
+            <p>Built a custom CRM tool to replace manual contract tracking, administered contract data in Salesforce, and produced executive-ready decks for global teams.</p>
+            <p class="meta">New York, NY</p>
+          </div>
+        </details></li>
+        <li class="row xp"><details>
+          <summary>
+            <span class="ttl"><span class="role">Operations &amp; Strategy Intern,</span> <span class="co">Midian&nbsp;Partners</span></span>
+            <span class="when">Jun&nbsp;–&nbsp;Jul&nbsp;2026</span>
+            <span class="line"><span class="lead">6<span class="sr-only"> to </span><span aria-hidden="true">&nbsp;→&nbsp;</span>25+ signed lender partners</span> in under five&nbsp;weeks&nbsp;· mortgage fintech</span>
+          </summary>
+          <div class="body">
+            <p>Scaled an early-stage mortgage fintech’s lender network from 6 to 25+ signed partnerships in under five weeks.</p>
+            <p>Negotiated terms with partner executives, ran user testing, and coordinated a source-verified technical audit across 12 subsystems.</p>
+            <p class="meta">Remote</p>
+          </div>
+        </details></li>
+        <li class="row xp"><details>
+          <summary>
+            <span class="ttl"><span class="role">AI Strategy Consultant,</span> <span class="co">Adobe</span></span>
+            <span class="when">Jan&nbsp;–&nbsp;Apr&nbsp;2026</span>
+            <span class="line"><span class="lead">$1M+ enterprise AI deals</span>&nbsp;· market sizing and positioning for AI products</span>
+          </summary>
+          <div class="body">
+            <p>Contract role on AI product strategy tied to $1M+ enterprise contracts, supporting work with IT leadership at Fortune 500 customers.</p>
+            <p>Built market-sizing frameworks, UX benchmarks and positioning analyses, and proposed business cases for the product suite.</p>
+            <p class="meta">Remote · Contract</p>
+          </div>
+        </details></li>
+        <li class="row xp"><details>
+          <summary>
+            <span class="ttl"><span class="role">Problem Design Engineer,</span> <span class="co">IdlExperts</span></span>
+            <span class="when">Jan&nbsp;–&nbsp;Apr&nbsp;2026</span>
+            <span class="line"><span class="lead">Frontier AI model evaluations</span>&nbsp;· designed the problem sets used to test them</span>
+          </summary>
+          <div class="body">
+            <p>Designed complex, real-world problem sets used to evaluate frontier AI models in training environments.</p>
+            <p>Benchmarked agent behavior against them and turned engineer feedback into improvements for production deployments.</p>
+            <p class="meta">Remote · formerly Widget Factory</p>
+          </div>
+        </details></li>
+        <li class="row xp"><details>
+          <summary>
+            <span class="ttl"><span class="role">Co-Founder,</span> <span class="co">Commit</span></span>
+            <span class="when">Sep&nbsp;2025&nbsp;–&nbsp;Jan&nbsp;2026</span>
+            <span class="line"><span class="lead">Top&nbsp;10% of 20,000+&nbsp;YC applicants</span>&nbsp;· social prediction-market MVP built in 3&nbsp;days</span>
+          </summary>
+          <div class="body">
+            <p>Co-founded a social prediction-market platform that ranked in the top 10% of 20,000+ Y Combinator applicants.</p>
+            <p>Took it from concept to a working MVP in three days, including the prediction logic and the unit-economics model.</p>
+            <p class="meta"><a href="https://commit-landing-tau.vercel.app" target="_blank" rel="noopener">Site<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+          </div>
+        </details></li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="on-campus">
+      <h2 class="head" id="on-campus"><span class="idx">02</span><span class="t">On campus</span></h2>
+      <ul role="list">
+        <li class="row xp"><details>
+          <summary>
+            <span class="ttl"><span class="role">Analyst,</span> <span class="co">Cornell Venture&nbsp;Capital</span></span>
+            <span class="when">2026&nbsp;–&nbsp;now</span>
+            <span class="line"><span class="tk">TK: what you diligence or produce, number first</span></span>
+          </summary>
+          <div class="body">
+            <p><span class="tk">TK: 2–3 sentences on the firms or deals, the sectors, and what you produced (memos, diligence, market maps)</span></p>
+            <p class="meta">Ithaca, NY</p>
+          </div>
+        </details></li>
+        <li class="row xp"><details>
+          <summary>
+            <span class="ttl"><span class="role">Co-President,</span> <span class="co">Cornell Entrepreneurship&nbsp;Club</span></span>
+            <span class="when">Sep&nbsp;2025&nbsp;–&nbsp;now</span>
+            <span class="line"><span class="lead">Y&nbsp;Combinator speaker series</span> for 150+&nbsp;attendees&nbsp;· founder and VC programming</span>
+          </summary>
+          <div class="body">
+            <p>Co-lead Cornell’s entrepreneurship club. I run our Y Combinator speaker series, bringing founders and VC partners to campus for audiences of 150+, and coordinate directly with the firms behind them.</p>
+            <p>Grew the club’s reach to 500,000+ views across Instagram and LinkedIn, and scout student startups to sharpen the club’s investment theses.</p>
+            <p class="meta">Ithaca, NY</p>
+          </div>
+        </details></li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="projects">
+      <h2 class="head" id="projects"><span class="idx">03</span><span class="t">Projects &amp; research</span></h2>
+      <ul role="list">
+        <li class="row xp"><details>
+          <summary>
+            <span class="ttl"><span class="co">Vest Practices</span> <span class="loc">DNHacks 2026</span></span>
+            <span class="when">2026</span>
+            <span class="line"><span class="lead">AI glasses</span> that train tradespeople hands-free&nbsp;· identify the part in hand in under a second</span>
+          </summary>
+          <div class="body">
+            <p>A wearable training system for tradespeople, built on AI glasses with a team of five at DNHacks 2026 (Energy &amp; Industrialization track).</p>
+            <p>The glasses see what the trainee sees and talk back: a detector trained on our own footage, a vision model that reads part markings, voice activation and a synthesized voice in the ear. Every session is stored as structured data, so the trainer remembers what each person has learned.</p>
+            <p class="meta"><a href="https://vestpractices.vercel.app/" target="_blank" rel="noopener">Demo<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a> · <a href="https://portal.dnhacks.org/e/2026/showcase/b-v-est-practices" target="_blank" rel="noopener">Entry<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a> · <a href="https://github.com/8ddieHu0314/dnhacks" target="_blank" rel="noopener">Repo<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+          </div>
+        </details></li>
+        <li class="row xp"><details>
+          <summary>
+            <span class="ttl"><span class="co">Climate startup search</span> <span class="loc">Venture sourcing</span></span>
+            <span class="when">Dec&nbsp;2025&nbsp;–&nbsp;Jan&nbsp;2026</span>
+            <span class="line"><span class="lead">212 climate startups</span> ranked on founder, patent and market signals&nbsp;· live search in ~600ms</span>
+          </summary>
+          <div class="body">
+            <p>An investor sourcing tool over 212 indexed climate-tech startups across 12 verticals. Candidates are ranked with multi-factor scoring across founder backgrounds, patent data and market signals.</p>
+            <p>Search blends BERT embeddings (FAISS) with BM25 keyword ranking through reciprocal rank fusion, expands queries with synonyms, and is measured with NDCG@10.</p>
+            <p class="meta">Python · FastAPI · FAISS · <a href="/climate-search">Demo<span aria-hidden="true">&nbsp;→</span><span class="sr-only">: climate startup search</span></a> · <a href="https://github.com/hgridharan999/climate_tech_discovery_backend" target="_blank" rel="noopener">Repo<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+          </div>
+        </details></li>
+        <li class="row xp"><details>
+          <summary>
+            <span class="ttl"><span class="co">OEIS A363004</span> <span class="loc">Number theory</span></span>
+            <span class="when">Jul&nbsp;2026</span>
+            <span class="line"><span class="lead">Computed a term nobody had found</span>&nbsp;· now credited in the On-Line Encyclopedia of Integer Sequences</span>
+          </summary>
+          <div class="body">
+            <p>A363004 counts the sequences of n distinct positive integers whose Gilbreath transform is all ones. Nobody had computed the 12th term.</p>
+            <p>I wrote the search that found it, a(12) = 9,290,399,173. The value and my Python program are now part of the sequence’s entry.</p>
+            <p class="meta">Python · <a href="https://oeis.org/A363004" target="_blank" rel="noopener">Entry<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+          </div>
+        </details></li>
+        <li class="row xp"><details>
+          <summary>
+            <span class="ttl"><span class="co">bigred.network</span> <span class="loc">Cornell Armada</span></span>
+            <span class="when">Jan&nbsp;2026</span>
+            <span class="line"><span class="lead">65 Cornell builders</span> in a directory of the university’s founders, builders and operators</span>
+          </summary>
+          <div class="body">
+            <p>Built bigred.network, the directory of Cornell’s founders, builders and operators, as part of Cornell Armada, a YC-backed founder community. 65 builders are listed so far.</p>
+            <p>It has member filtering, a network visualization, and a manual review workflow so access stays controlled.</p>
+            <p class="meta">React · TypeScript · <a href="https://www.bigred.network/" target="_blank" rel="noopener">Site<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+          </div>
+        </details></li>
+        <!-- Project Dactyl (AI-integrated ring) returns here, by date, once it has a sentence, a date and a link. -->
+      </ul>
+    </section>
+
+  <section aria-labelledby="thesis">
+    <h2 class="head" id="thesis"><span class="idx">04</span><span class="t">Investment thesis</span></h2>
+    <p class="kicker">What I’m betting on</p>
+    <ol class="beliefs">
+      <li><span class="n" aria-hidden="true">01</span><p>People &gt; ideas — great people can create great ideas, but great ideas can’t make up for not being a great founder.</p></li>
+      <li><span class="n" aria-hidden="true">02</span><p>Physical infrastructure is the #1 most undervalued sector.</p></li>
+      <li><span class="n" aria-hidden="true">03</span><p>Way too many people are building AI, and not enough are building for AI.</p></li>
+      <li><span class="n" aria-hidden="true">04</span><p>If you aren’t a good storyteller, you won’t have people buy your story or your product.</p></li>
+    </ol>
+  </section>
+  </div>
+
+  <!-- THE WATERLINE -->
+  <div class="surface" id="surface">
+    <p class="wl-cap wrap"><span class="wl-sent">The résumé ends here. The rest is below.</span></p>
+    <div class="no-js-line"></div>
+    <svg class="wl-svg" id="wl-svg" viewBox="0 0 1000 24" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <path id="wl-air" d=""/><path id="wl-l2" d=""/><path id="wl-l1" d=""/>
+    </svg>
+  </div>
+
+  <div class="below" id="below">
+    <div class="light-band" aria-hidden="true"><canvas id="caustic"></canvas></div>
+    <div class="wrap">
+
+      <section aria-labelledby="off-the-clock">
+        <h2 class="head" id="off-the-clock"><span class="idx">05</span><span class="t">Off the clock</span></h2>
+        <ul role="list">
+          <li class="row xp has-fig dive dive--pack"><details>
+            <summary>
+              <span class="ttl"><span class="co">Mountaineering</span></span>
+            </summary>
+            <div class="body">
+              <p>Working through Colorado’s fourteeners. First was Mt. Bierstadt in 2025; most recent was Quandary Peak (14,265 ft) in under 4:30 round trip.</p>
+              <p class="meta"><a href="/hiking">Trail log<span aria-hidden="true">&nbsp;→</span><span class="sr-only">: mountaineering</span></a></p>
+            </div>
+          </details>
+            <aside class="margin-fig" id="pack-margin">
+              <iframe data-src="../_shared/pack/index-light.html" title="Fourteener pack: an interactive figure of the Ten Essentials"></iframe>
+            </aside>
+          </li>
+          <li class="row row--solo dive">
+            <figure class="spec spec--solo" data-spec="drone" aria-hidden="true"><canvas></canvas><figcaption>Fig. 2 · Sa, held</figcaption></figure>
+            <p class="line"><span class="display">Carnatic &amp; indie singing</span></p>
+          </li>
+          <li class="row row--solo dive">
+            <figure class="spec spec--solo" data-spec="spice" aria-hidden="true"><canvas></canvas><figcaption>Fig. 3 · Turmeric, chili, cumin</figcaption></figure>
+            <p class="line"><span class="display">Cooking regional Indian food</span></p>
+          </li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="essays">
+        <h2 class="head" id="essays"><span class="idx">06</span><span class="t">Select essays</span></h2>
+        <div class="dive">
+          <figure class="spec" data-spec="bubbles" aria-hidden="true"><canvas></canvas><figcaption>Fig. 4 · Four, rising</figcaption></figure>
+          <ul role="list">
+      <li class="row row--link"><a class="rl rl--essay" href="/blog/tat-tvam-asi"><span class="et"><span class="lab co">Tat Tvam Asi and Conviction</span><span class="ed">Reading an Upanishad saying against its grain, and why conviction matters more in an age of algorithmic sameness.</span></span><span class="val"><time datetime="2026-10-06">Oct 2026</time></span></a></li>
+      <li class="row row--link"><a class="rl rl--essay" href="/blog/doing-it-all"><span class="et"><span class="lab co">Why Doing It All Is Simultaneously the Greatest and Worst Thing You Can Do</span><span class="ed">A reflection on momentum, overcommitment, and the cost of staying in motion all summer.</span></span><span class="val"><time datetime="2026-06-29">Jun 2026</time></span></a></li>
+      <li class="row row--link"><a class="rl rl--essay" href="/blog/solipsism-take-every-risk"><span class="et"><span class="lab co">Solipsism and Why You Should Take Every Risk in the World</span><span class="ed">What if no one around you is actually real? And why that might be the best reason to stop holding yourself back.</span></span><span class="val"><time datetime="2026-03-15">Mar 2026</time></span></a></li>
+      <li class="row row--link"><a class="rl rl--essay" href="/blog/neuroplasticity-and-change"><span class="et"><span class="lab co">Why Neuroplasticity Gives Me Reasons to Keep Growing and Proves Bojack Wrong</span><span class="ed">On the brain’s capacity for change, the science of growth, and why giving up is never actually the answer.</span></span><span class="val"><time datetime="2026-02-23">Feb 2026</time></span></a></li>
+          </ul>
+        </div>
+      </section>
+
+      <section aria-labelledby="bullets">
+        <h2 class="head" id="bullets"><span class="idx">07</span><span class="t">About me</span></h2>
+        <div class="dive">
+          <figure class="spec" data-spec="numerals" aria-hidden="true"><canvas></canvas><figcaption>Fig. 5 · Ten, faintly lit</figcaption></figure>
+          <ul role="list">
+            <li class="row xp"><details>
+              <summary>
+                <span class="ttl"><span class="co">Me in 10 bullet points</span></span>
+              </summary>
+              <div class="body">
+                <ol class="beliefs">
+            <li><span class="n" aria-hidden="true">01</span><p>time being so limited means that you shouldn’t waste time doing stuff you don’t like.</p></li>
+            <li><span class="n" aria-hidden="true">02</span><p>your best experiences are memories shared with friends.</p></li>
+            <li><span class="n" aria-hidden="true">03</span><p>bias to action, choice paralysis kills 99% of solutions.</p></li>
+            <li><span class="n" aria-hidden="true">04</span><p>become someone who loves risk-taking.</p></li>
+            <li><span class="n" aria-hidden="true">05</span><p>health outweighs all other priorities.</p></li>
+            <li><span class="n" aria-hidden="true">06</span><p>potential is the worst thing you can have: it prevents you from maximizing effort.</p></li>
+            <li><span class="n" aria-hidden="true">07</span><p>derealization is a bottom 5 experience all time.</p></li>
+            <li><span class="n" aria-hidden="true">08</span><p>literally everyone around you is underappreciative of the things they have.</p></li>
+            <li><span class="n" aria-hidden="true">09</span><p>not knowing what comes after death should be the scariest thing you ever think about.</p></li>
+            <li><span class="n" aria-hidden="true">10</span><p>human connection is the single most undervalued experience of our time.</p></li>
+                </ol>
+              </div>
+            </details></li>
+          </ul>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</main>
+
+<footer class="seabed" id="seabed">
+  <div class="wrap">
+    <h2 class="head" id="elsewhere"><span class="idx">08</span><span class="t">Elsewhere</span></h2>
+    <ul role="list">
+      <li class="row row--link"><a class="rl" href="https://www.linkedin.com/in/harigridharan1/" target="_blank" rel="noopener"><span class="lab co">LinkedIn</span><span class="val">linkedin.com/in/harigridharan1<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></span></a></li>
+      <li class="row row--link"><a class="rl" href="https://github.com/hgridharan999" target="_blank" rel="noopener"><span class="lab co">GitHub</span><span class="val">github.com/hgridharan999<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></span></a></li>
+      <li class="row row--link"><a class="rl" href="mailto:hg532@cornell.edu"><span class="lab co">Email</span><span class="val">hg532@cornell.edu</span></a></li>
+      <li class="row row--link"><a class="rl" href="/Hari_Gridharan_Resume.pdf"><span class="lab co">Resume</span><span class="val">Hari_Gridharan_Resume.pdf<span aria-hidden="true">&nbsp;↓</span><span class="sr-only"> (PDF)</span></span></a></li>
+    </ul>
+    <figure class="plate-fig" aria-hidden="true" data-spec="plate"><canvas></canvas><figcaption><span>Fig. 6 · Quandary Peak, read as seabed</span><span>Soundings every 100 m</span></figcaption></figure>
+    <div class="foot-line"><span class="part">Last updated <time datetime="2026-10">Oct 2026</time></span><svg class="mark mark--light foot-mark" viewBox="0 0 160 176" aria-hidden="true" focusable="false"><use href="#mk"/></svg></div>
+  </div>
+</footer>
+
+<script>
+(() => {
+  'use strict';
+  const doc = document, root = doc.documentElement;
+  const $ = (s, r = doc) => r.querySelector(s);
+  const $$ = (s, r = doc) => Array.from(r.querySelectorAll(s));
+  const TAU = Math.PI * 2;
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const rmq = matchMedia('(prefers-reduced-motion: reduce)');
+  let reduce = rmq.matches;
+  const sY = () => window.scrollY || root.scrollTop || 0;
+  const rng = (seed) => { let s = seed >>> 0; return () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296); };
+  const f1 = (n) => (Math.round(n * 10) / 10);
+
+  /* ============================================================================================
+     ENGINE: one rAF loop; each job runs only while its figure is near the viewport and the tab
+     is visible. Specimens are light 2D canvases; the caustic band is the one GPU job.
+     ============================================================================================ */
+  const jobs = [];
+  let raf = 0;
+  function loop(ts) {
+    raf = requestAnimationFrame(loop);
+    let any = false;
+    for (const j of jobs) {
+      if (!j.vis || ts > (j.until || 0)) continue;
+      any = true;
+      if ((++j.n) % j.every) continue;
+      j.frame(ts / 1000);
+    }
+    if (!any) { cancelAnimationFrame(raf); raf = 0; }
+  }
+  // Finite by design: nothing animates while you scroll or sit still; a figure plays for PLAY ms when it arrives, then rests.
+  const PLAY = 5000;
+  const wake = (j) => { j.until = performance.now() + PLAY; };
+  function kick() { const now = performance.now(); if (!raf && !reduce && !doc.hidden && jobs.some((j) => j.vis && now < (j.until || 0))) raf = requestAnimationFrame(loop); }
+  doc.addEventListener('visibilitychange', () => { if (doc.hidden && raf) { cancelAnimationFrame(raf); raf = 0; } else kick(); });
+
+  function addJob(el, make, opts = {}) {
+    const j = { el, vis: false, n: 0, every: opts.every || 1, w: 1, h: 1, dpr: 1, ctx: null, frame() {}, still() {}, fit() {} };
+    jobs.push(j);
+    const cv = $('canvas', el);
+    if (cv) {
+      j.cv = cv; j.ctx = cv.getContext('2d');
+      j.fit = () => {
+        const r = cv.getBoundingClientRect(); j.dpr = Math.min(window.devicePixelRatio || 1, 2);
+        j.w = Math.max(1, Math.round(r.width)); j.h = Math.max(1, Math.round(r.height));
+        cv.width = Math.round(j.w * j.dpr); cv.height = Math.round(j.h * j.dpr);
+        j.ctx.setTransform(j.dpr, 0, 0, j.dpr, 0, 0);
+      };
+    }
+    j.fit();
+    Object.assign(j, make(j));
+    if (j.init) j.init();
+    const redraw = () => { j.fit(); if (j.resize) j.resize(); if (reduce || !j.vis) j.still(); };
+    j.redraw = redraw;
+    new ResizeObserver(redraw).observe(cv || el);
+    new IntersectionObserver((en) => {
+      j.vis = en[en.length - 1].isIntersecting;
+      if (j.vis) { if (j.onVisible) { j.onVisible(); j.onVisible = null; } if (reduce) j.still(); wake(j); kick(); }
+    }, { rootMargin: '140px' }).observe(el);
+    j.still();
+    return j;
+  }
+
+  /* ============================================================================================
+     THE WATERLINE: a crisp ink line that ripples; it answers scrolling and touch.
+     ============================================================================================ */
+  const water = (() => {
+    const sec = $('#surface'), svg = $('#wl-svg'), air = $('#wl-air'), l1 = $('#wl-l1'), l2 = $('#wl-l2');
+    let w = 1000, N = 80, energy = 0, vis = false, last = 0, lastSy = sY(), lastT = performance.now();
+    const rips = [];
+    function resize() {
+      w = Math.max(1, svg.clientWidth);
+      svg.setAttribute('viewBox', '0 0 ' + w + ' 24');
+      N = Math.max(40, Math.round(w / 12));
+    }
+    function draw(t) {
+      const amp = 0.9 + energy * 2.6;
+      let d1 = '', d2 = '';
+      for (let i = 0; i <= N; i++) {
+        const x = (i / N) * w, k = x / 1000;
+        let y = Math.sin(k * 7.1 + t * 0.9) * 0.9 + Math.sin(k * 17 - t * 1.25 + 1.7) * 0.55 + Math.sin(k * 41 + t * 2.1 + 0.4) * 0.22;
+        y *= amp;
+        for (const r of rips) {
+          const a = t - r.t; if (a < 0 || a > 4.5) continue;
+          const dx = x - r.x;
+          y += r.a * Math.sin(dx * 0.045 - a * 6.2) * Math.exp(-Math.abs(dx) / 170) * Math.exp(-a * 1.35);
+        }
+        const yy = 12 + y;
+        d1 += (i ? 'L' : 'M') + f1(x) + ' ' + f1(yy);
+        d2 += (i ? 'L' : 'M') + f1(x) + ' ' + f1(yy + 5.5 + Math.sin(k * 11 - t * 1.1) * 1.1 * amp);
+      }
+      l1.setAttribute('d', d1); l2.setAttribute('d', d2);
+      air.setAttribute('d', d1 + 'L' + w + ' 3L0 3Z');
+    }
+    function frame(t) {
+      energy *= 0.94;   // ripples come from touch and the pointer only, never from scrolling
+      for (let i = rips.length - 1; i >= 0; i--) if (t - rips[i].t > 4.5) rips.splice(i, 1);
+      draw(t);
+    }
+    function ripple(e, a) {
+      if (reduce) return;
+      const r = svg.getBoundingClientRect();
+      if (Math.abs(e.clientY - (r.top + 12)) > 64) return;
+      rips.push({ x: e.clientX - r.left, t: performance.now() / 1000, a }); if (rips.length > 6) rips.shift();
+      wake(job); kick();
+    }
+    let lastMove = 0;
+    addEventListener('pointermove', (e) => { const n = performance.now(); if (n - lastMove > 140) { lastMove = n; ripple(e, 2.2); } }, { passive: true });
+    addEventListener('pointerdown', (e) => ripple(e, 4), { passive: true });
+    const job = { vis: false, n: 0, every: 1, frame, still() { draw(11.3); } };
+    jobs.push(job);
+    resize(); draw(11.3);
+    new ResizeObserver(() => { resize(); if (reduce || !job.vis) draw(11.3); }).observe(svg);
+    new IntersectionObserver((en) => { job.vis = en[en.length - 1].isIntersecting; if (job.vis) { wake(job); kick(); } }, { rootMargin: '120px' }).observe(sec);
+    return job;
+  })();
+
+  /* ============================================================================================
+     CAUSTICS: the light just under the surface (WebGL, optional). Transparent, so the CSS
+     gradient is the fallback and the base.
+     ============================================================================================ */
+  (() => {
+    const band = $('.light-band'), cv = $('#caustic');
+    let gl;
+    try { gl = cv.getContext('webgl', { antialias: false, alpha: true, premultipliedAlpha: true, depth: false, stencil: false, powerPreference: 'low-power' }); } catch (e) { gl = null; }
+    if (!gl) return;
+    const VS = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
+    const FS = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+uniform vec2 uRes; uniform float uT;
+vec2 hash22(vec2 p){ vec3 q = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973)); q += dot(q, q.yzx + 33.33); return fract((q.xx + q.yz) * q.zy); }
+vec2 voroA(vec2 x, float t){
+  x += 0.20 * vec2(sin(x.y * 1.9 + t * 0.9), sin(x.x * 2.1 - t * 0.7));
+  vec2 n = floor(x), f = x - n; float d1 = 8.0, d2 = 8.0;
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    vec2 g = vec2(float(i), float(j)); vec2 o = hash22(n + g);
+    vec2 r = g + 0.5 + 0.46 * sin(t * vec2(1.0, 0.83) + 6.2831 * o) - f;
+    float d = dot(r, r);
+    if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) { d2 = d; }
+  }
+  return vec2(sqrt(d1), sqrt(d2));
+}
+void main(){
+  vec2 fc = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
+  float H = uRes.y; vec2 p = fc / H; float t = uT;
+  float dep = fc.y / H;
+  vec2 warp = 0.04 * vec2(sin(p.y * 7.0 + t * 0.6) + 0.5 * sin(p.y * 13.0 - t * 0.9), sin(p.x * 6.0 - t * 0.5) + 0.5 * sin(p.x * 11.0 + t * 0.7));
+  vec2 q = p + warp;
+  vec2 a = voroA(q * 4.4 + vec2(0.0, t * 0.03), t * 0.46);
+  vec2 b = voroA(mat2(0.8, -0.6, 0.6, 0.8) * q * 7.6 + vec2(t * 0.04, 3.7), t * 0.62 + 2.0);
+  float la = 1.0 - clamp((a.y - a.x) * 9.0, 0.0, 1.0); la *= la;
+  float lb = 1.0 - clamp((b.y - b.x) * 9.0, 0.0, 1.0); lb *= lb;
+  float c = 0.55 * la + 0.28 * lb + 0.9 * la * lb;
+  float top = smoothstep(0.02, 0.06, dep);
+  float a1 = clamp(c * 0.34 * exp(-dep * 5.2) * top, 0.0, 0.7);
+  vec3 col = vec3(0.86, 0.98, 1.0);
+  gl_FragColor = vec4(col * a1, a1);
+}`;
+    const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null; };
+    const vs = sh(gl.VERTEX_SHADER, VS), fs = sh(gl.FRAGMENT_SHADER, FS);
+    if (!vs || !fs) return;
+    const pr = gl.createProgram(); gl.attachShader(pr, vs); gl.attachShader(pr, fs); gl.linkProgram(pr);
+    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
+    gl.useProgram(pr);
+    const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    const uRes = gl.getUniformLocation(pr, 'uRes'), uT = gl.getUniformLocation(pr, 'uT');
+    gl.clearColor(0, 0, 0, 0);
+    const BUDGET = 0.42e6;
+    let t0 = performance.now(), off = 3;
+    const job = {
+      vis: false, n: 0, every: 1,
+      fit() {
+        const r = band.getBoundingClientRect(); let s = Math.min(window.devicePixelRatio || 1, 2);
+        const n = r.width * r.height * s * s; if (n > BUDGET) s *= Math.sqrt(BUDGET / n);
+        const w = Math.max(1, Math.round(r.width * s)), h = Math.max(1, Math.round(r.height * s));
+        if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+        gl.viewport(0, 0, w, h);
+      },
+      draw(t) { gl.clear(gl.COLOR_BUFFER_BIT); gl.uniform2f(uRes, cv.width, cv.height); gl.uniform1f(uT, t); gl.drawArrays(gl.TRIANGLES, 0, 3); },
+      frame() { job.draw((performance.now() - t0) / 1000 + off); },
+      still() { job.fit(); job.draw(13.2); }
+    };
+    jobs.push(job);
+    job.fit(); job.still();
+    new ResizeObserver(() => { job.fit(); if (reduce || !job.vis) job.draw(reduce ? 13.2 : (performance.now() - t0) / 1000 + off); }).observe(band);
+    new IntersectionObserver((en) => { job.vis = en[en.length - 1].isIntersecting; if (job.vis) { if (reduce) job.still(); wake(job); kick(); } }, { rootMargin: '60px' }).observe(band);
+    cv.addEventListener('webglcontextlost', (e) => { e.preventDefault(); job.vis = false; job.frame = () => {}; });
+  })();
+
+  /* ============================================================================================
+     SPECIMENS. Small, exact, slow. Each draws in pale ice on the water; each has a still.
+     ============================================================================================ */
+  const ICE = '228,244,250';
+
+  /* Fig. 2: a single line that breathes like a drone note (Sa, held) */
+  const drone = (j) => {
+    function draw(t) {
+      const c = j.ctx, w = j.w, h = j.h, cy = h * 0.5;
+      c.clearRect(0, 0, w, h);
+      const A = h * 0.31 * (0.52 + 0.48 * Math.sin(t * 0.72));
+      c.lineWidth = 1; c.strokeStyle = 'rgba(' + ICE + ',0.16)';
+      c.beginPath();
+      for (let i = 0; i <= 12; i++) { const x = Math.round(w * i / 12) + 0.5; c.moveTo(x, cy - 4); c.lineTo(x, cy + 4); }
+      c.moveTo(0, cy + 0.5); c.lineTo(w, cy + 0.5); c.stroke();
+      const N = Math.min(260, Math.round(w / 1.4));
+      c.beginPath();
+      for (let i = 0; i <= N; i++) {
+        const u = i / N, env = Math.pow(Math.sin(Math.PI * u), 0.85), ph = u * TAU * 2.6 - t * 1.5;
+        const y = cy + A * env * (Math.sin(ph) + 0.2 * Math.sin(2 * ph + 1.3 + t * 0.25) + 0.07 * Math.sin(3 * ph + 2.1));
+        if (i) c.lineTo(u * w, y); else c.moveTo(0, y);
+      }
+      c.lineWidth = 1.5; c.lineJoin = 'round'; c.strokeStyle = 'rgba(255,255,255,0.94)'; c.stroke();
+    }
+    return { frame: draw, still() { draw(2.3); }, every: 1 };
+  };
+
+  /* Fig. 3: spice drops dissolving into the water like ink: small grains carried apart by a slow swirl */
+  const spice = (j) => {
+    const COL = ['244,180,26', '232,71,43', '201,138,62', '127,199,123', '245,138,31'];
+    const sprites = COL.map((rgb) => {
+      const s = doc.createElement('canvas'); s.width = s.height = 32; const g = s.getContext('2d');
+      const gr = g.createRadialGradient(16, 16, 0, 16, 16, 16);
+      gr.addColorStop(0, 'rgba(' + rgb + ',1)'); gr.addColorStop(0.45, 'rgba(' + rgb + ',0.55)'); gr.addColorStop(1, 'rgba(' + rgb + ',0)');
+      g.fillStyle = gr; g.fillRect(0, 0, 32, 32); return s;
+    });
+    let ps = [], clock = 0, nextDrop = 0, seed = rng(23), dropN = 0;
+    function flow(x, y, t) {
+      const a = x * 0.021 + t * 0.11, b = y * 0.027 - t * 0.09;
+      return [Math.cos(b) * Math.sin(a) * 1.0 + Math.cos(y * 0.06 + t * 0.2) * 0.35, -Math.cos(a) * Math.sin(b) * 1.0 + Math.sin(x * 0.05 - t * 0.17) * 0.35];
+    }
+    function drop() {
+      const ci = dropN++ % COL.length, w = j.w, h = j.h;
+      const ox = w * (0.22 + seed() * 0.56), oy = h * (0.2 + seed() * 0.4);
+      for (let i = 0; i < 64; i++) {
+        const a = seed() * TAU, d = Math.pow(seed(), 0.7), sp = 4 + d * 26;
+        ps.push({ x: ox + Math.cos(a) * d * 6, y: oy + Math.sin(a) * d * 6, bx: Math.cos(a) * sp, by: Math.sin(a) * sp, r0: 1.1 + seed() * 1.6, r1: 3 + seed() * 4.5, age: 0, life: 9 + seed() * 6, s: seed() < 0.82 ? ci : (ci + 1 + (seed() * 3 | 0)) % COL.length });
+      }
+    }
+    function step(dt) {
+      clock += dt;
+      if (clock >= nextDrop) { drop(); nextDrop = clock + 4.2; }
+      for (let i = ps.length - 1; i >= 0; i--) {
+        const p = ps[i]; p.age += dt;
+        if (p.age >= p.life) { ps.splice(i, 1); continue; }
+        const f = flow(p.x, p.y, clock), k = Math.exp(-p.age * 0.9);
+        p.x += (p.bx * k + f[0] * 20) * dt; p.y += (p.by * k + f[1] * 20 + 1.5) * dt;
+      }
+    }
+    function draw() {
+      const c = j.ctx; c.clearRect(0, 0, j.w, j.h);
+      for (const p of ps) {
+        const k = p.age / p.life, r = p.r0 + (p.r1 - p.r0) * k;
+        const edge = Math.max(0, Math.min(1, p.x / 44, (j.w - p.x) / 44, p.y / 30, (j.h - p.y) / 30));
+        c.globalAlpha = Math.pow(1 - k, 1.3) * Math.min(1, p.age * 4) * edge;
+        c.drawImage(sprites[p.s], p.x - r * 2, p.y - r * 2, r * 4, r * 4);
+      }
+      c.globalAlpha = 1;
+    }
+    let lastT = 0;
+    const prime = () => { ps = []; clock = 0; nextDrop = 0; dropN = 0; seed = rng(23); for (let i = 0; i < 90; i++) step(0.1); };
+    return {
+      init: prime, resize: prime,
+      frame(t) { const dt = lastT ? Math.min(0.05, t - lastT) : 0.016; lastT = t; step(dt); draw(); },
+      still() { draw(); }, every: 1
+    };
+  };
+
+  /* Fig. 4: a column of slow rising bubbles */
+  const bubbles = (j) => {
+    let bs = [], clock = 0, next = 0, seed = rng(5);
+    function spawn() { const r = 2.4 + Math.pow(seed(), 1.6) * 6.6; bs.push({ x0: (seed() - 0.5) * 10, y: j.h + r + 2, r, ph: seed() * TAU, sp: 12 + r * 2.6 + seed() * 4 }); }
+    function step(dt) {
+      clock += dt;
+      if (clock >= next) { spawn(); next = clock + 0.32 + seed() * 0.7; }
+      for (let i = bs.length - 1; i >= 0; i--) { const b = bs[i]; b.y -= b.sp * dt; b.r *= 1 + dt * 0.012; if (b.y < -b.r * 2) bs.splice(i, 1); }
+    }
+    function draw() {
+      const c = j.ctx, w = j.w, h = j.h, cx = w * 0.5; c.clearRect(0, 0, w, h);
+      c.lineWidth = 1;
+      for (const b of bs) {
+        const x = cx + b.x0 + Math.sin(clock * 0.8 + b.ph) * (3 + b.r * 0.9), up = b.y / h;
+        const a = Math.min(1, Math.max(0, (up - 0.02) / 0.16)) * Math.min(1, (1 - up) / 0.1 + 0.15);
+        c.globalAlpha = Math.max(0, a) * 0.85;
+        c.strokeStyle = 'rgb(' + ICE + ')'; c.beginPath(); c.arc(x, b.y, b.r, 0, TAU); c.stroke();
+        c.strokeStyle = '#fff'; c.beginPath(); c.arc(x, b.y, b.r * 0.62, -2.6, -1.5); c.stroke();
+      }
+      c.globalAlpha = 1;
+    }
+    let lastT = 0;
+    const prime = () => { bs = []; clock = 0; next = 0; seed = rng(5); for (let i = 0; i < 160; i++) step(0.1); };
+    return {
+      init: prime, resize: prime,
+      frame(t) { const dt = lastT ? Math.min(0.05, t - lastT) : 0.016; lastT = t; step(dt); draw(); },
+      still() { draw(); }, every: 1
+    };
+  };
+
+  /* Fig. 5: ten faint numerals that light up like plankton */
+  const numerals = (j) => {
+    let sprites = [], cells = [];
+    const R = rng(41);
+    const ph = Array.from({ length: 10 }, () => [R() * TAU, 8 + R() * 8, R(), R()]);
+    function make() {
+      sprites = [];
+      for (let n = 1; n <= 10; n++) {
+        const s = doc.createElement('canvas'); s.width = s.height = 96; const g = s.getContext('2d');
+        g.font = 'italic 300 46px Fraunces, Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.shadowColor = 'rgba(120,235,255,0.95)'; g.shadowBlur = 16; g.fillStyle = 'rgba(190,247,255,0.9)'; g.fillText(String(n), 48, 50);
+        g.shadowBlur = 5; g.fillText(String(n), 48, 50);
+        sprites.push(s);
+      }
+    }
+    function layout() {
+      const cols = j.w > 420 ? 5 : 5, rows = 2; cells = [];
+      for (let i = 0; i < 10; i++) {
+        const cx = i % cols, cy = (i / cols) | 0, r = ph[i];
+        cells.push([(cx + 0.5 + (r[2] - 0.5) * 0.35) / cols * j.w, (cy + 0.5 + (r[3] - 0.5) * 0.3) / rows * j.h]);
+      }
+    }
+    function draw(t) {
+      const c = j.ctx; c.clearRect(0, 0, j.w, j.h);
+      if (!sprites.length) return;
+      const sc = clamp(Math.min(j.w / 360, j.h / 150), 0.62, 1.05);
+      for (let i = 0; i < 10; i++) {
+        const p = ph[i], s = Math.max(0, Math.sin(t / p[1] * TAU + p[0]));
+        const L = 0.13 + 0.87 * Math.pow(s, 5);
+        const x = cells[i][0] + Math.sin(t * 0.13 + p[0]) * 4, y = cells[i][1] + Math.cos(t * 0.1 + p[0] * 2) * 3;
+        c.globalAlpha = L * 0.8; const z = 96 * sc; c.drawImage(sprites[i], x - z / 2, y - z / 2, z, z);
+      }
+      c.globalAlpha = 1;
+    }
+    return {
+      init() { layout(); if (doc.fonts && doc.fonts.load) doc.fonts.load('italic 300 46px Fraunces').then(() => { make(); draw(reduce ? 4.1 : performance.now() / 1000); }); else make(); },
+      resize() { layout(); },
+      frame: draw, still() { draw(4.1); }, every: 2
+    };
+  };
+
+  /* Fig. 6: Quandary Peak as a slowly revolving bathymetric plate: the mountain, read as seabed */
+  const plate = (j) => {
+    let data = null, loading = false, levels = [], track = [], summit = null, minE = 0, maxE = 1;
+    const sr = rng(90);
+    const snow = Array.from({ length: 40 }, () => [sr(), sr(), 0.3 + sr() * 0.7, sr()]);
+    function load() {
+      if (loading) return; loading = true;
+      fetch('../_shared/quandary-terrain.json').then((r) => r.json()).then((d) => {
+        data = d; minE = d.minEle; maxE = d.maxEle; levels = d.contours; track = d.track; summit = d.summit; j.still(); wake(j); kick();
+      }).catch(() => {});
+    }
+    const EXAG = 1.7, EL = 0.58, CE = 0.81;
+    function draw(t) {
+      const c = j.ctx, w = j.w, h = j.h; c.clearRect(0, 0, w, h);
+      // marine snow, settling
+      c.fillStyle = 'rgb(' + ICE + ')';
+      for (const s of snow) { const y = ((s[1] + t * 0.004 * s[2]) % 1) * h; c.globalAlpha = 0.12 + 0.16 * s[3]; c.fillRect(s[0] * w + Math.sin(t * 0.2 + s[3] * 9) * 3, y, 1.4, 1.4); }
+      c.globalAlpha = 1;
+      if (!data) return;
+      const yaw = t * 0.045 + 0.5, cs = Math.cos(yaw), sn = Math.sin(yaw);
+      const s = Math.min(h * 0.92 / 124, w * 0.93 / 158);
+      const cx = w / 2, cy = h * 0.5;
+      const P = (gx, gy, ele) => {
+        const x0 = gx - 56, y0 = gy - 56, xr = x0 * cs - y0 * sn, yr = x0 * sn + y0 * cs;
+        const z = (ele - minE) / data.cellMetres * EXAG;
+        return [cx + xr * s, cy + (yr * EL + (z - 12) * CE) * s];
+      };
+      // the plate's footprint
+      c.lineWidth = 1; c.strokeStyle = 'rgba(' + ICE + ',0.26)'; c.beginPath();
+      [[0, 0], [111, 0], [111, 111], [0, 111]].forEach(([gx, gy], i) => { const p = P(gx, gy, minE); if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); });
+      c.closePath(); c.stroke();
+      // contours, shallow to deep
+      for (const lv of levels) {
+        const f = (lv.ele - minE) / (maxE - minE), idx = lv.ele % 500 === 0;
+        c.strokeStyle = 'rgba(' + ICE + ',' + (0.3 + 0.46 * (1 - f) + (idx ? 0.16 : 0)).toFixed(2) + ')';
+        c.lineWidth = idx ? 1.25 : 0.8; c.beginPath();
+        for (const ln of lv.lines) for (let i = 0; i < ln.length; i++) { const p = P(ln[i][0], ln[i][1], lv.ele); if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); }
+        c.stroke();
+      }
+      // the route he walked, as one bright thread, and the summit as a benchmark
+      c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.lineJoin = 'round'; c.beginPath();
+      track.forEach((q, i) => { const p = P(q[0], q[1], q[2]); if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); });
+      c.stroke();
+      const sp = P(summit[0], summit[1], summit[2]);
+      c.fillStyle = '#fff'; c.beginPath(); c.moveTo(sp[0], sp[1] - 6); c.lineTo(sp[0] + 4.5, sp[1] + 2); c.lineTo(sp[0] - 4.5, sp[1] + 2); c.closePath(); c.fill();
+    }
+    return { init() { }, frame: draw, still() { draw(reduce ? 7 : performance.now() / 1000); }, every: 2, onVisible: load };
+  };
+
+  const MAKERS = { drone, spice, bubbles, numerals, plate };
+  $$('[data-spec]').forEach((el) => { const m = MAKERS[el.dataset.spec]; if (m) addJob(el, m); });
+
+  /* wide screens have the room: Mountaineering opens by default beside its plate; phones keep it folded */
+  const mt = $('.dive--pack details');
+  if (mt && matchMedia('(min-width:1180px)').matches) mt.open = true;
+
+  /* the pack: loaded when it nears the viewport, never before */
+  const packFig = $('#pack-margin');
+  if (packFig) new IntersectionObserver((en, io) => {
+    if (en.some((e) => e.isIntersecting)) {
+      const f = $('iframe', packFig);
+      if (f && !f.src) {
+        // same-origin only: deepen the plate's small labels so they hold 4.5:1 once the plate is inverted onto the water
+        f.addEventListener('load', () => { try { const d = f.contentDocument, st = d.createElement('style'); st.textContent = '.iso,.iso[data-theme]{--anatomy-text:#0c0c0f;--anatomy-muted:#17171b}'; d.head.appendChild(st); } catch (e) { /* cross-origin: keep the default inks */ } });
+        f.src = f.dataset.src;
+      }
+      io.disconnect();
+    }
+  }, { rootMargin: '500px' }).observe(packFig);
+
+  /* reduced motion can change at any time */
+  (rmq.addEventListener ? rmq.addEventListener.bind(rmq, 'change') : rmq.addListener.bind(rmq))(() => {
+    reduce = rmq.matches; jobs.forEach((j) => { if (reduce) j.still(); }); kick();
+  });
+  kick();
+})();
+
+</script>
+</body>
+</html>

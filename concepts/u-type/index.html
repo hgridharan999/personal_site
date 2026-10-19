@@ -1,0 +1,1189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#FFFFFF">
+<title>Hari Gridharan — Cornell Dyson ’29</title>
+<meta name="description" content="Dyson Scholar and Loadstone Labs co-founder. Seeking Summer 2027 internships in strategy, investing, business analysis and product.">
+<!-- Site icon: the live site's hiker on a dark tile (tab bars can be light). -->
+<link rel="icon" href="../_shared/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="../_shared/favicon-32.png">
+<link rel="apple-touch-icon" href="../_shared/apple-touch-icon.png">
+<!-- Link previews (absolute URLs in the real build). -->
+<meta property="og:title" content="Hari Gridharan — Cornell Dyson ’29">
+<meta property="og:description" content="Dyson Scholar and Loadstone Labs co-founder. Seeking Summer 2027 internships in strategy, investing, business analysis and product.">
+<meta property="og:image" content="../_shared/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" as="image" href="../_shared/mountain-plate.webp" type="image/webp" fetchpriority="high">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Hanken+Grotesk:wght@400;500;600;800&family=Instrument+Serif:ital@1&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:ital,wght@1,400&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Inter+Tight:wght@400;500;600;700;800&family=Schibsted+Grotesk:wght@400;500;600;700;800&family=Fragment+Mono&family=Manrope:wght@400;500;600;700;800&family=Spline+Sans+Mono:wght@400;500&display=swap">
+<style>
+  /* ---- the hiker mark (shared component, copied verbatim) ------------------------------
+     The live site's own hiker art (cut from public/hiker-scene.jpg), revealed by three
+     thick masked strokes in drawing order: hood, then torso + pack, then legs + poles.
+     Pure CSS: fully drawn with JS off and under reduced motion; draws once in 1.2s otherwise. */
+  .hiker { display: block; height: var(--hiker-h, 132px); width: auto; aspect-ratio: 294 / 480; overflow: visible; }
+  .hiker .ink { fill: none; stroke: #fff; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    .hiker .ink { animation: hiker-ink 0.45s cubic-bezier(0.65, 0, 0.35, 1) both; }
+    .hiker .ink-1 { animation-duration: 0.3s; }
+    .hiker .ink-2 { animation-delay: 0.3s; }
+    .hiker .ink-3 { animation-delay: 0.75s; }
+  }
+  @keyframes hiker-ink { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+  /* ---- end hiker mark ----------------------------------------------------------------- */
+
+  :root {
+    --bg: #FFFFFF;
+    --cream: #111111;                      /* ink: every former cream/white is now near-black */
+    --tan: #0F7DAA;                        /* iceberg blue, 4.6:1 on white */
+    --soft: #3D3D3D;                       /* one-liners, 10.9:1 on white */
+    --muted: #5C5C5C;                      /* dates, labels, 6.7:1 on white */
+    --rule: rgba(0, 0, 0, 0.10);           /* ledger hairline */
+    --rule-head: rgba(0, 0, 0, 0.22);
+    --rule-hover: rgba(0, 0, 0, 0.28);
+    --ul: rgba(0, 0, 0, 0.40);             /* link underline */
+    --ul-tan: rgba(15, 125, 170, 0.55);
+    --outline: rgba(0, 0, 0, 0.55);
+    --sans: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --serif: "Instrument Serif", "Times New Roman", serif;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --gutter: 16px;
+    --datew: 6.75rem;                      /* fixed date column: never squeezes the title */
+    --tri-off: 14px;                       /* benchmark marker distance left of the row */
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--bg); color-scheme: light; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--cream);
+    font: 400 16px/1.6 var(--sans); font-kerning: normal;
+    -webkit-font-smoothing: antialiased; overflow-wrap: break-word;
+  }
+  h1, h2, h3, p, ul { margin: 0; padding: 0; }
+  ul { list-style: none; }
+  svg.defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+  ::selection { background: var(--tan); color: var(--bg); }
+  a { color: inherit; text-decoration: underline; text-decoration-color: var(--ul); text-decoration-thickness: 1px; text-underline-offset: 0.22em; }
+  a:focus-visible { outline: 2px solid var(--tan); outline-offset: 3px; border-radius: 2px; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+    overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+  }
+  .nw { white-space: nowrap; }
+
+  .wrap { width: 100%; max-width: calc(640px + var(--gutter) * 2); margin-inline: auto; padding-inline: var(--gutter); }
+
+  /* ---------- Header plate: the live site's background mountain, drawn in like a sketch ---------- */
+  .plate { position: relative; margin: 0 calc(var(--gutter) * -1); }
+  .scene { display: block; width: 100%; height: auto; overflow: hidden; opacity: 0.5; }
+  /* the line art was drawn cream-on-black: render it as black ink on white */
+  .scene image, .hiker image { filter: brightness(0); }
+  .scene--mtn { aspect-ratio: 1280 / 250; }
+  .scene--full { aspect-ratio: 1536 / 530; }
+  .scene[hidden] { display: none; }
+  .plate::after { content: ""; position: absolute; inset: -1px 0; background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 50%, var(--bg) 97%); pointer-events: none; }
+  .scene .ink { fill: none; stroke: #fff; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
+  @keyframes scene-ink { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+
+  /* ---------- Header: hiker logo beside the lockup, tucked into the foot of the plate ---------- */
+  .top {
+    --hiker-h: 112px;
+    position: relative; z-index: 1;
+    display: grid; grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: "mark name" "aff aff" "seek seek" "act act";
+    column-gap: 16px; align-items: center; margin-top: -22px;
+  }
+  .top .hiker { grid-area: mark; transform: scaleX(-1); } /* face the peak: he climbs the strip behind the name */
+  .name {
+    grid-area: name;
+    display: flex; flex-direction: column; align-items: flex-start;
+    font: var(--name-weight, 800) clamp(34px, 9.4vw, 48px)/1 var(--name-font, var(--sans)); letter-spacing: -0.03em;
+  }
+  .hari { font: italic 400 1.2em/0.95 var(--serif); letter-spacing: 0; color: var(--tan); }
+  .sur { text-transform: var(--name-case, uppercase); white-space: nowrap; }
+  .aff { grid-area: aff; margin-top: 16px; color: var(--soft); }
+  .aff-a { display: block; }
+  .aff-sep { display: none; }
+  .seek { grid-area: seek; margin-top: 8px; color: var(--tan); font-weight: 500; text-wrap: balance; }
+  .act { grid-area: act; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 12px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 44px; padding: 0 18px; border: 1px solid transparent; border-radius: 4px;
+    font: 600 15px/1 var(--sans); text-decoration: none;
+  }
+  .btn-fill { background: var(--tan); border-color: var(--tan); color: var(--bg); }
+  .btn-line { border-color: var(--outline); color: var(--cream); }
+  .soc { display: inline-flex; align-items: center; margin-left: -8px; }
+  .soc a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; font-size: 15px; color: var(--soft); }
+  .soc .dot { color: var(--muted); }
+
+  /* ---------- Contour dividers (decorative): two minor lines and one index line ---------- */
+  .contour { display: block; width: 100%; height: 34px; margin: 8px 0 10px; fill: none; stroke: var(--cream); }
+  .cm, .ci { fill: none; stroke: var(--cream); stroke-linecap: round; }
+  .cm { stroke-width: 0.9; stroke-opacity: 0.08; }
+  .ci { stroke-width: 1.4; stroke-opacity: 0.13; }
+
+  /* ---------- Sections: spacing and the label's hairline do the dividing ---------- */
+  main > section { padding-top: 40px; }
+  main > section:first-child { padding-top: 28px; }
+
+  /* ---------- Section labels: waypoints ---------- */
+  .head {
+    padding-bottom: 7px; border-bottom: 1px solid var(--rule-head);
+    font: 500 12px/1.7 var(--mono); letter-spacing: 0.14em; text-transform: uppercase;
+    scroll-margin-top: 16px;
+  }
+  .head .idx { color: var(--muted); }
+
+  /* ---------- Ledger rows ---------- */
+  .row {
+    position: relative; display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--datew);
+    grid-template-areas: "ttl when" "line line";
+    column-gap: 16px; align-items: baseline; padding: 12px 0 13px;
+  }
+  .row + .row { border-top: 1px solid var(--rule); }
+  .ttl { grid-area: ttl; font: 600 16px/1.4 var(--sans); text-wrap: balance; }
+  .ttl .role { font-weight: 500; }
+  .loc {
+    display: block; margin-top: 2px;
+    font: 400 12px/1.4 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+  }
+  .when {
+    grid-area: when; text-align: right; white-space: nowrap; color: var(--muted);
+    font: 400 12.5px/1.4 var(--mono); font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1;
+  }
+  .line { grid-area: line; margin-top: 1px; color: var(--soft); text-wrap: pretty; }
+  .lead { color: var(--tan); font-weight: 500; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+  a.lead { text-decoration-color: var(--ul-tan); }
+  .row--solo { grid-template-areas: "line line"; }
+  .row--solo .line { margin-top: 0; }
+
+  /* ---------- Expandable rows (Henrik-style <details>): summary stays scannable, the body opens below ---------- */
+  .row.xp { display: block; padding: 0; }
+  .xp summary {
+    display: grid; grid-template-columns: minmax(0, 1fr) var(--datew);
+    grid-template-areas: "ttl when" "line line";
+    column-gap: 16px; align-items: baseline; padding: 12px 0 13px;
+    list-style: none; cursor: pointer; border-radius: 2px;
+  }
+  .xp summary::-webkit-details-marker { display: none; }
+  .xp summary:focus-visible { outline: 2px solid var(--tan); outline-offset: 4px; }
+  .xp .ttl { display: block; }
+  .xp .when, .xp .line { display: block; }
+  /* the open/close mark: a small tan plus after the title that turns to a cross */
+  .xp summary .co::after {
+    content: ""; display: inline-block; width: 9px; height: 9px; margin-left: 9px; vertical-align: 0.06em;
+    background: linear-gradient(var(--tan), var(--tan)) center / 100% 1.5px no-repeat,
+                linear-gradient(var(--tan), var(--tan)) center / 1.5px 100% no-repeat;
+    opacity: 0.6;
+  }
+  .xp details[open] summary .co::after { opacity: 1; transform: rotate(45deg); }
+  .xp .body {
+    margin: -2px 0 16px; padding: 2px 0 2px 16px;
+    border-left: 1px solid rgba(15, 125, 170, 0.45);
+    color: var(--soft);
+  }
+  .xp .body p + p { margin-top: 8px; }
+  .xp .meta { font: 400 12.5px/1.7 var(--mono); color: var(--muted); }
+  .xp .meta a { color: var(--cream); }
+
+  /* theses */
+  .kicker { margin-top: 12px; font: 400 12.5px/1.6 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .beliefs { margin: 4px 0 0; padding: 0; list-style: none; }
+  .beliefs li { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr); align-items: baseline; padding: 11px 0 12px; }
+  .beliefs li + li { border-top: 1px solid var(--rule); }
+  .beliefs .n { font: 400 12.5px/1 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .beliefs p { color: var(--soft); text-wrap: pretty; }
+  .xp .body .beliefs li { padding: 7px 0 8px; }
+  .xp .body .beliefs li:first-child { padding-top: 2px; }
+  .theses-more { margin-top: 14px; border-top: 1px solid var(--rule); }
+  /* essays: title and its one-line description on the left, the date on the right */
+  .rl.rl--essay { align-items: flex-start; padding: 11px 0 12px; }
+  .rl.rl--essay .et { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .rl.rl--essay .ed { color: var(--muted); font-size: 15px; line-height: 1.5; text-wrap: pretty; }
+  .rl.rl--essay .val { text-decoration: none; white-space: nowrap; line-height: 22px; }
+
+  /* mockup-only: content still needed from Hari */
+  .tk {
+    display: inline-block; padding: 1px 8px; border: 1px dashed var(--tan); border-radius: 3px;
+    font: 400 12.5px/1.6 var(--mono); color: var(--tan);
+  }
+
+  /* ---------- The pack: beside Mountaineering on wide screens, inside it when opened on narrow ones ---------- */
+  .row.has-fig { position: relative; }
+  .margin-fig { display: none; }
+  .margin-fig iframe, .finale iframe { display: block; border: 0; background: var(--bg); }
+  .margin-fig iframe { width: 100%; height: 100%; }
+  .has-fig:has(details[open]) .margin-fig { display: block; height: min(110vw, 440px); margin: 0 0 16px; }
+  @media (min-width: 1180px) {
+    .margin-fig, .has-fig:has(details[open]) .margin-fig {
+      display: block; position: absolute; top: -132px; left: calc(100% + 56px);
+      width: 320px; height: 380px; margin: 0;
+    }
+  }
+  /* ?pack=finale: one figure at the end of the trail instead */
+  .finale { padding-top: 56px; }
+  .finale[hidden] { display: none; }
+  .finale figure { margin: 0; }
+  .finale iframe { width: calc(100% + var(--gutter) * 2); margin-inline: calc(var(--gutter) * -1); height: min(118vw, 470px); }
+  .finale figcaption { margin-top: 10px; font: 400 12.5px/1.6 var(--mono); color: var(--muted); }
+  @media (min-width: 600px) { .finale iframe { width: 100%; margin-inline: 0; height: 440px; } }
+
+  /* ---------- P: audit fixes ---------- */
+  .foot-contact { width: 100%; margin-bottom: 6px; font: 400 14px/1.8 var(--sans); letter-spacing: 0; text-transform: none; color: var(--ink, #111); }
+  .foot-contact .dot { color: var(--muted); }
+  @media (max-width: 599px) {
+    /* phones: the date moves under the title so titles stop wrapping */
+    .xp summary { grid-template-columns: minmax(0, 1fr); grid-template-areas: "ttl" "when" "line"; }
+    .xp .when { text-align: left; margin-top: 1px; }
+    .xp summary .co::after { width: 12px; height: 12px; opacity: 0.85; }
+  }
+
+
+  /* ---------- The ending: under the surface (the page's one animation) ---------- */
+  .band {
+    --band-h: 260px;
+    position: relative; height: var(--band-h); margin-top: 56px; overflow: hidden; isolation: isolate;
+    background: linear-gradient(to bottom,
+      #fff 0, #fff 21.9%, #C9EAF4 22%, #8FD0E6 33%, #2F9CC4 51%, #0F7DAA 66%, #0A4D6E 83%, #0A1822 100%);
+  }
+  @media (min-width: 600px)  { .band { --band-h: 320px; } }
+  @media (min-width: 1000px) { .band { --band-h: 380px; } }
+  .band canvas, .band svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .band canvas { touch-action: pan-y; -webkit-tap-highlight-color: transparent; }
+  .band svg { pointer-events: none; }
+  .band[data-gl="on"] svg { display: none; }
+  .deep { background: #0A1822; color: #D9EEF7; }
+  .deep-in { max-width: calc(640px + var(--gutter) * 2); margin: 0 auto; padding: 4px var(--gutter) 40px; }
+  .deep-contact { margin: 0; font: 400 15px/2 var(--sans); }
+  .deep-contact a { color: #F2FBFE; text-decoration-color: rgba(242, 251, 254, 0.45); }
+  .deep-contact a:hover { color: #9BF3EA; text-decoration-color: #9BF3EA; }
+  .deep-contact .dot { color: #8FB2C3; }
+  .deep-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-top: 10px; }
+  .deep-line p, .motion-toggle { margin: 0; font: 400 12px/1.4 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: #9FC3D3; }
+  .motion-toggle { background: none; border: 0; padding: 0 0 0 0; min-height: 44px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(159, 195, 211, 0.5); }
+  .motion-toggle:hover { color: #F2FBFE; }
+  .deep a:focus-visible, .motion-toggle:focus-visible { outline: 2px solid #9BF3EA; outline-offset: 3px; border-radius: 2px; }
+  .band[data-gl="off"] ~ .deep .motion-toggle, html:not(.has-gl) .motion-toggle { display: none; }
+
+
+  /* ---------- Mockup only: typeface pairings ---------- */
+  html[data-font="instrument"] { --sans: "Instrument Sans", sans-serif; --mono: "JetBrains Mono", monospace; --serif: "Instrument Serif", serif; --name-weight: 700; --name-case: none; }
+  html[data-font="geist"]      { --sans: "Geist", sans-serif; --mono: "Geist Mono", monospace; --serif: "Instrument Serif", serif; --name-weight: 700; --name-case: none; }
+  html[data-font="plex"]       { --sans: "IBM Plex Sans", sans-serif; --mono: "IBM Plex Mono", monospace; --serif: "IBM Plex Serif", serif; --name-weight: 600; --name-case: none; }
+  html[data-font="editorial"]  { --sans: "Newsreader", Georgia, serif; --mono: "Geist Mono", monospace; --serif: "Newsreader", Georgia, serif; --name-weight: 500; --name-case: none; }
+  html[data-font="swiss"]      { --sans: "Inter Tight", sans-serif; --mono: "JetBrains Mono", monospace; --serif: "Instrument Serif", serif; --name-weight: 700; --name-case: none; }
+  html[data-font="schibsted"]  { --sans: "Schibsted Grotesk", sans-serif; --mono: "Fragment Mono", monospace; --serif: "Instrument Serif", serif; --name-weight: 800; --name-case: uppercase; }
+  html[data-font="manrope"]    { --sans: "Manrope", sans-serif; --mono: "Spline Sans Mono", monospace; --serif: "Instrument Serif", serif; --name-weight: 800; --name-case: none; }
+  html[data-font="editorial"] body { font-size: 17.5px; }
+  html[data-font="editorial"] .hari { font-size: 1.05em; }
+  html[data-case="upper"] { --name-case: uppercase; }
+  html[data-case="mixed"] { --name-case: none; }
+
+  .typepick {
+    position: fixed; z-index: 50; right: 12px; bottom: 12px; width: 300px; max-width: calc(100vw - 24px);
+    background: rgba(255, 255, 255, 0.96); border: 1px solid rgba(0, 0, 0, 0.14); border-radius: 10px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12); padding: 10px 12px 12px;
+    font: 400 12px/1.4 "DM Mono", ui-monospace, monospace; color: #111;
+  }
+  .typepick summary { cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase; color: #5C5C5C; list-style: none; }
+  .typepick summary::-webkit-details-marker { display: none; }
+  .typepick[open] summary { margin-bottom: 8px; }
+  .typepick .opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 6px; }
+  .typepick button {
+    font: 400 12.5px/1.2 inherit; text-align: left; padding: 8px 10px; min-height: 36px; border-radius: 6px; cursor: pointer;
+    background: #fff; color: #111; border: 1px solid rgba(0, 0, 0, 0.14);
+  }
+  .typepick button[aria-pressed="true"] { background: #111; color: #fff; border-color: #111; }
+  .typepick button:focus-visible { outline: 2px solid #0F7DAA; outline-offset: 2px; }
+  .typepick .row2 { display: flex; gap: 6px; margin-top: 8px; }
+  .typepick .row2 button { flex: 1; text-align: center; }
+
+  /* rows with a standalone action link in the right column */
+  .row--act { grid-template-areas: "ttl act" "line line"; }
+  .go {
+    grid-area: act; align-self: center; justify-self: end; margin-block: -11px;
+    display: inline-flex; align-items: center; min-height: 44px;
+    font-weight: 500; font-size: 15px; white-space: nowrap;
+  }
+
+  /* ELSEWHERE: label / value rows */
+  .row--link { display: block; padding: 0; }
+  .rl {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    min-height: 44px; padding: 8px 0 9px; text-decoration: none;
+  }
+  .rl .lab { font-weight: 500; }
+  .rl .val {
+    text-align: right; overflow-wrap: anywhere; color: var(--muted);
+    font: 400 12.5px/1.5 var(--mono);
+    text-decoration: underline; text-decoration-color: var(--ul); text-decoration-thickness: 1px; text-underline-offset: 0.25em;
+  }
+
+  /* ---------- Footer ---------- */
+  .foot { padding-bottom: 48px; }
+  .foot .contour { margin-top: 4px; }
+  .foot-line {
+    display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 16px;
+    font: 400 12px/1.7 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+  }
+  .foot-line .part { display: block; }
+  .foot-line .sep { display: none; }
+  .scale { display: inline-flex; align-items: center; gap: 8px; }
+  .bar {
+    display: block; width: 64px; height: 6px; border: 1px solid var(--muted);
+    background: repeating-linear-gradient(90deg, var(--muted) 0 16px, transparent 16px 32px);
+  }
+
+  /* ---------- Wider viewports ---------- */
+  @media (min-width: 600px) {
+    :root { --datew: 11.25rem; } /* fits "Sep 2025 – Jan 2026" */
+    .plate { margin-inline: 0; padding-top: 24px; }
+    .top {
+      --hiker-h: 140px;
+      grid-template-areas: "mark name" "mark aff" "seek seek" "act act";
+      column-gap: 24px; margin-top: -40px;
+    }
+    .name { flex-direction: row; align-items: baseline; column-gap: 0.2em; align-self: end; }
+    .aff { margin-top: 8px; align-self: start; text-wrap: balance; }
+    .aff-a { display: inline; }
+    .aff-sep { display: inline; }
+    .seek { margin-top: 22px; }
+    .act { margin-top: 14px; }
+    .loc { display: inline-block; margin: 0 0 0 0.7em; }
+    .foot-line .part { display: inline; }
+    .foot-line .sep { display: inline; }
+  }
+  @media (min-width: 768px) {
+    :root { --gutter: 32px; --tri-off: 26px; }
+  }
+
+  /* ---------- Desktop pointers only: benchmark marker, company name, hairline ---------- */
+  @media (hover: hover) and (pointer: fine) {
+    .row:hover::before, .row:focus-within::before {
+      content: ""; position: absolute; left: calc(var(--tri-off) * -1); top: 18px;
+      width: 10px; height: 9px; pointer-events: none;
+      background: radial-gradient(circle at 50% 68%, var(--bg) 0 1.1px, transparent 1.3px), var(--tan);
+      clip-path: polygon(50% 0, 0 100%, 100% 100%);
+    }
+    .row--solo:hover::before, .row--solo:focus-within::before { top: 20px; }
+    .row--link:hover::before, .row--link:focus-within::before { top: 17px; }
+    .row:hover, .row:focus-within { border-top-color: var(--rule-hover); }
+    .row:hover + .row, .row:focus-within + .row { border-top-color: var(--rule-hover); }
+    .row:hover .co, .row:focus-within .co { color: var(--tan); }
+    .xp summary:hover .co::after { opacity: 1; }
+    a:hover { color: var(--tan); text-decoration-color: var(--tan); }
+    .rl:hover { color: inherit; }
+    .rl:hover .val { color: var(--tan); text-decoration-color: var(--tan); }
+    .btn-fill:hover { background: #0B6A93; border-color: #0B6A93; color: var(--bg); }
+    .btn-line:hover { border-color: var(--tan); color: var(--tan); }
+  }
+
+  /* ---------- All motion lives here ---------- */
+  @media (prefers-reduced-motion: no-preference) {
+    /* Plate first (ridge left to right, then the slopes), then the hiker logo walks in. */
+    .scene .ink { animation: scene-ink 0.5s cubic-bezier(0.65, 0, 0.35, 1) both; }
+    .scene .i1 { animation-duration: 0.6s; }
+    .scene .i2 { animation-delay: 0.2s; }
+    .scene .i3 { animation-delay: 0.4s; }
+    .scene .i4 { animation-delay: 0.8s; animation-duration: 0.2s; }
+    .scene .i5 { animation-delay: 0.9s; animation-duration: 0.3s; }
+    .scene .i6 { animation-delay: 1.05s; animation-duration: 0.3s; }
+    .scene .i7 { animation-delay: 1.2s; animation-duration: 0.15s; }
+    .top .hiker .ink-1 { animation-delay: 0.45s; }
+    .top .hiker .ink-2 { animation-delay: 0.75s; }
+    .top .hiker .ink-3 { animation-delay: 1.2s; }
+    /* Opening a row: the plus turns, the trail line draws down and the text follows it. */
+    .xp summary .co::after { transition: transform 0.3s var(--ease), opacity 0.2s var(--ease); }
+    .xp details[open] .body { animation: trail-open 0.42s var(--ease) both; }
+    .xp details[open] .body > * { animation: trail-text 0.42s var(--ease) both; }
+    .xp details[open] .body > :nth-child(2) { animation-delay: 0.05s; }
+    .xp details[open] .body > :nth-child(3) { animation-delay: 0.1s; }
+    /* Where supported, the row's height also eases open and closed instead of jumping. */
+    @supports (interpolate-size: allow-keywords) {
+      :root { interpolate-size: allow-keywords; }
+      .xp details::details-content { height: 0; overflow: clip; transition: height 0.38s var(--ease), content-visibility 0.38s allow-discrete; }
+      .xp details[open]::details-content { height: auto; }
+    }
+    a, .btn, .co, .row, .rl .val { transition: color 0.2s var(--ease), background-color 0.2s var(--ease), border-color 0.2s var(--ease), text-decoration-color 0.2s var(--ease); }
+    @media (hover: hover) and (pointer: fine) {
+      .row:hover::before, .row:focus-within::before { animation: tri-in 0.25s var(--ease) both; }
+    }
+  }
+  @keyframes trail-open { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+  @keyframes trail-text { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  @keyframes tri-in { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+
+<!-- Contour lines: fractal-noise terrain, two minor lines around one index line. Reused at different offsets as dividers. -->
+<svg class="defs" width="0" height="0" aria-hidden="true" focusable="false"><defs><g id="topo">
+  <path class="cm" d="M0 11.8q12 -0.7 18 -0.8q6 -0.1 12 0.3q6 0.5 12 0.5q6 0 12 -0.7q6 -0.7 12 -1q6 -0.4 12 -0.4q6 -0.1 12 -0.3q6 -0.2 12 0.1q6 0.3 12 1.2q6 0.9 12 1q6 0.2 12 -0.4q6 -0.6 12 -0.9q6 -0.4 12 -0.8q6 -0.4 12 -1.2q6 -0.7 12 -1q6 -0.2 12 -0.2q6 0.1 12 -0.6q6 -0.7 12 -1.7q6 -1 12 -1.4q6 -0.4 12 -0.5q6 -0.2 12 -0.2q6 0 12 0.8q6 0.8 12 1.8q6 1 12 1.3q6 0.2 12 0.2q6 0 12 0.3q6 0.4 12 0.5q6 0.2 12 0.3q6 0.1 12 0.7q6 0.6 12 1q6 0.4 12 -0.1q6 -0.5 12 -1q6 -0.5 12 -0.4q6 0.1 12 0.1q6 0 12 0.4q6 0.3 12 1.3q6 1 12 1.7q6 0.7 12 0.5q6 -0.2 12 -0.2q6 -0.1 12 0.1q6 0.2 12 0q6 -0.2 12 -0.3q6 -0.1 12 0.1q6 0.2 12 -0.3q6 -0.5 12 -1.8q6 -1.3 12 -2.2q6 -0.9 12 -1.4q6 -0.5 12 -1q6 -0.5 12 -0.5q6 0 12 0.6q6 0.6 12 0.5q6 0 12 -0.5q6 -0.5 12 -0.4q6 0.1 12 0.4q6 0.3 12 0.3q6 0.1 12 0.5q6 0.4 12 0.9q6 0.5 12 0q6 -0.4 12 -1.2q6 -0.8 12 -1q6 -0.2 12 -0.1q6 0 12 0.1q6 0.1 12 0.8q6 0.7 12 1.6q6 0.9 12 1q6 0.1 12 0.2q6 0.1 12 0.8q6 0.7 12 1.3q6 0.6 12 1.1q6 0.4 12 1.2q6 0.7 12 1q6 0.3 12 -0.5q6 -0.8 12 -1.6q6 -0.8 12 -1.1q6 -0.3 12 -0.7q6 -0.4 12 -0.7q6 -0.3 12 -0.1q6 0.2 12 0.2q6 -0.1 12 -0.8q6 -0.7 12 -1.1q6 -0.3 12 0q6 0.3 12 0.4q6 0.1 12 0.3q6 0.2 12 0.6q6 0.4 12 0q6 -0.4 12 -1.4q6 -1.1 12 -1.7q6 -0.6 12 -0.8q6 -0.2 12 -0.5q6 -0.3 12 -0.3q6 0 12 0.4q6 0.4 12 0.2q6 -0.2 12 -0.5q6 -0.4 12 0.1q6 0.5 12 1.3q6 0.9 12 1.6q6 0.7 12 1.6q6 0.9 12 1.8q6 0.9 12 0.8q6 -0.1 12 -0.6q6 -0.5 12 -0.4q6 0.1 12 0.3q6 0.2 12 0q6 -0.1 12 0.1q6 0.2 12 0.3q6 0.1 12 -0.5q6 -0.6 12 -1.1q6 -0.5 12 -0.1q6 0.4 12 0.8q6 0.5 12 0.7q6 0.3 12 0.8q6 0.5 12 0.6q6 0.1 12 -0.8q6 -0.9 12 -1.6q6 -0.7 12 -0.9q6 -0.2 12 -0.6q6 -0.4 12 -1q6 -0.5 12 -0.8q6 -0.2 12 -0.8L1440 5.6"/>
+  <path class="ci" d="M0 22.9q12 -0.8 18 -0.9q6 -0.1 12 0.4q6 0.6 12 0.6q6 0 12 -0.8q6 -0.8 12 -1.2q6 -0.4 12 -0.5q6 -0.1 12 -0.3q6 -0.2 12 0.2q6 0.4 12 1.4q6 1 12 1.2q6 0.2 12 -0.5q6 -0.7 12 -1.1q6 -0.4 12 -0.9q6 -0.5 12 -1.4q6 -0.9 12 -1.1q6 -0.3 12 -0.2q6 0.1 12 -0.7q6 -0.8 12 -1.9q6 -1.2 12 -1.6q6 -0.4 12 -0.6q6 -0.2 12 -0.2q6 0 12 0.9q6 1 12 2.2q6 1.2 12 1.5q6 0.3 12 0.2q6 0 12 0.4q6 0.4 12 0.6q6 0.2 12 0.3q6 0.1 12 0.8q6 0.7 12 1.2q6 0.5 12 -0.1q6 -0.6 12 -1.2q6 -0.6 12 -0.5q6 0.1 12 0.1q6 0.1 12 0.4q6 0.4 12 1.6q6 1.2 12 2q6 0.8 12 0.6q6 -0.2 12 -0.3q6 -0.1 12 0.1q6 0.2 12 0q6 -0.2 12 -0.3q6 -0.1 12 0.1q6 0.3 12 -0.3q6 -0.6 12 -2.1q6 -1.5 12 -2.6q6 -1.1 12 -1.6q6 -0.6 12 -1.2q6 -0.6 12 -0.6q6 0 12 0.7q6 0.7 12 0.6q6 0 12 -0.6q6 -0.5 12 -0.5q6 0.1 12 0.4q6 0.3 12 0.4q6 0.1 12 0.5q6 0.5 12 1q6 0.6 12 0q6 -0.5 12 -1.5q6 -0.9 12 -1.1q6 -0.2 12 -0.1q6 0.1 12 0.2q6 0.1 12 1q6 0.9 12 1.9q6 1 12 1.1q6 0.1 12 0.2q6 0.1 12 0.9q6 0.8 12 1.5q6 0.7 12 1.2q6 0.5 12 1.4q6 0.9 12 1.2q6 0.3 12 -0.6q6 -0.9 12 -1.9q6 -1 12 -1.3q6 -0.3 12 -0.8q6 -0.5 12 -0.8q6 -0.3 12 -0.1q6 0.3 12 0.2q6 -0.1 12 -1q6 -0.9 12 -1.2q6 -0.4 12 0q6 0.3 12 0.4q6 0.1 12 0.3q6 0.2 12 0.7q6 0.5 12 0.1q6 -0.4 12 -1.7q6 -1.3 12 -2q6 -0.7 12 -1q6 -0.2 12 -0.6q6 -0.4 12 -0.4q6 0 12 0.5q6 0.5 12 0.3q6 -0.2 12 -0.6q6 -0.4 12 0.1q6 0.5 12 1.6q6 1 12 1.8q6 0.8 12 1.9q6 1.1 12 2.1q6 1 12 0.9q6 -0.1 12 -0.7q6 -0.6 12 -0.4q6 0.1 12 0.3q6 0.2 12 0q6 -0.1 12 0.1q6 0.2 12 0.4q6 0.2 12 -0.6q6 -0.7 12 -1.3q6 -0.5 12 -0.1q6 0.5 12 1q6 0.5 12 0.9q6 0.3 12 0.9q6 0.6 12 0.7q6 0.1 12 -0.9q6 -1 12 -1.9q6 -0.9 12 -1.1q6 -0.2 12 -0.7q6 -0.5 12 -1.1q6 -0.6 12 -0.9q6 -0.2 12 -0.9L1440 15.6"/>
+  <path class="cm" d="M0 32.4q12 -1 18 -1.2q6 -0.2 12 0.4q6 0.6 12 0.5q6 0 12 -0.9q6 -0.9 12 -1.3q6 -0.5 12 -0.5q6 -0.1 12 -0.3q6 -0.2 12 0.2q6 0.5 12 1.6q6 1.1 12 1.3q6 0.2 12 -0.5q6 -0.7 12 -1.2q6 -0.5 12 -1.1q6 -0.6 12 -1.6q6 -1 12 -1.4q6 -0.4 12 -0.4q6 0 12 -1q6 -1 12 -2.3q6 -1.4 12 -2q6 -0.6 12 -0.9q6 -0.3 12 -0.4q6 -0.1 12 0.9q6 1 12 2.3q6 1.3 12 1.6q6 0.3 12 0.3q6 0 12 0.6q6 0.5 12 0.8q6 0.3 12 0.5q6 0.2 12 1.1q6 0.9 12 1.5q6 0.6 12 0q6 -0.6 12 -1.1q6 -0.6 12 -0.4q6 0.1 12 0.2q6 0.1 12 0.5q6 0.4 12 1.7q6 1.3 12 2.1q6 0.9 12 0.6q6 -0.2 12 -0.3q6 -0.1 12 0.2q6 0.3 12 0.1q6 -0.2 12 -0.3q6 -0.1 12 0.3q6 0.3 12 -0.2q6 -0.5 12 -2.1q6 -1.5 12 -2.6q6 -1.1 12 -1.6q6 -0.5 12 -1.1q6 -0.6 12 -0.5q6 0.1 12 0.8q6 0.7 12 0.7q6 -0.1 12 -0.7q6 -0.7 12 -0.6q6 0 12 0.3q6 0.2 12 0.2q6 -0.1 12 0.3q6 0.4 12 0.9q6 0.5 12 -0.2q6 -0.7 12 -1.8q6 -1.1 12 -1.4q6 -0.3 12 -0.3q6 0 12 0.1q6 0.1 12 1.1q6 1 12 2.1q6 1.1 12 1.3q6 0.2 12 0.3q6 0.1 12 1.1q6 0.9 12 1.7q6 0.8 12 1.4q6 0.6 12 1.5q6 0.9 12 1.3q6 0.3 12 -0.7q6 -1 12 -2.1q6 -1.1 12 -1.5q6 -0.4 12 -1q6 -0.5 12 -0.9q6 -0.4 12 -0.1q6 0.3 12 0.2q6 -0.1 12 -1q6 -0.9 12 -1.2q6 -0.3 12 0.1q6 0.4 12 0.7q6 0.2 12 0.6q6 0.3 12 1q6 0.6 12 0.3q6 -0.3 12 -1.6q6 -1.3 12 -2q6 -0.7 12 -0.9q6 -0.2 12 -0.6q6 -0.4 12 -0.4q6 0 12 0.5q6 0.5 12 0.2q6 -0.3 12 -0.8q6 -0.6 12 -0.1q6 0.5 12 1.5q6 1 12 1.8q6 0.8 12 1.9q6 1.1 12 2.2q6 1 12 0.9q6 -0.2 12 -0.8q6 -0.6 12 -0.5q6 0.1 12 0.3q6 0.2 12 0.1q6 -0.1 12 0.2q6 0.3 12 0.5q6 0.2 12 -0.6q6 -0.8 12 -1.4q6 -0.6 12 -0.1q6 0.5 12 1q6 0.5 12 0.8q6 0.3 12 0.9q6 0.6 12 0.6q6 0 12 -1.2q6 -1.2 12 -2.2q6 -1 12 -1.3q6 -0.3 12 -0.8q6 -0.5 12 -1.2q6 -0.7 12 -0.9q6 -0.2 12 -0.9L1440 23"/>
+</g></defs></svg>
+
+<header class="wrap">
+  <div class="plate" aria-hidden="true">
+    <!-- Default: the mountain alone, so the hiker appears once, as the logo. Explicit size: no layout shift. -->
+    <svg class="scene scene--mtn" width="1280" height="250" viewBox="170 18 1280 250" focusable="false">
+      <defs>
+        <filter id="mtn-soft" filterUnits="userSpaceOnUse" x="-40" y="-40" width="1360" height="562"><feGaussianBlur stdDeviation="7"/></filter>
+        <mask id="mtn-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1280" height="482">
+          <g filter="url(#mtn-soft)">
+            <path class="ink i1" pathLength="1" stroke-width="170" d="M-20 300 L200 250 L400 180 L560 110 L690 40 L800 105 L950 165 L1100 215 L1300 255"/>
+            <path class="ink i2" pathLength="1" stroke-width="190" d="M-20 345 L300 320 L500 270 L700 230 L900 260 L1300 320"/>
+            <path class="ink i3" pathLength="1" stroke-width="180" d="M-20 440 L400 425 L800 435 L1300 430"/>
+          </g>
+        </mask>
+      </defs>
+      <image href="../_shared/mountain-plate.webp" width="1280" height="482" mask="url(#mtn-mask)"/>
+    </svg>
+    <!-- ?plate=full: the original scene with its own hiker, as in concept I. -->
+    <svg class="scene scene--full" width="1536" height="530" viewBox="0 0 1536 530" focusable="false" hidden>
+      <defs>
+        <filter id="full-soft" filterUnits="userSpaceOnUse" x="-40" y="-40" width="1616" height="610"><feGaussianBlur stdDeviation="7"/></filter>
+        <mask id="full-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1536" height="530">
+          <g filter="url(#full-soft)">
+            <path class="ink i1" pathLength="1" stroke-width="170" d="M-20 300 L150 268 L300 235 L400 185 L470 130 L545 72 L600 100 L670 140 L770 180 L900 215 L1060 270"/>
+            <path class="ink i2" pathLength="1" stroke-width="190" d="M-20 330 L300 320 L420 270 L560 255 L700 265 L900 285 L1060 335"/>
+            <path class="ink i3" pathLength="1" stroke-width="170" d="M100 440 L500 430 L800 440 L1060 440"/>
+            <path class="ink i4" pathLength="1" stroke-width="90" d="M1075 100 L1205 100 L1090 145 L1205 145"/>
+            <path class="ink i5" pathLength="1" stroke-width="76" d="M1030 160 L1290 160 L1030 215 L1290 215 L1030 265 L1290 265 L1030 315 L1290 315"/>
+            <path class="ink i6" pathLength="1" stroke-width="76" d="M1020 360 L1300 360 L1020 415 L1300 415 L1020 470 L1300 470 L1020 515 L1300 515"/>
+            <path class="ink i7" pathLength="1" stroke-width="170" d="M1290 330 L1560 300 L1290 420 L1560 400"/>
+          </g>
+        </mask>
+      </defs>
+      <image href="../_shared/hiker-scene-strip.webp" width="1536" height="530" mask="url(#full-mask)"/>
+    </svg>
+  </div>
+  <div class="top">
+  <svg class="hiker" viewBox="0 0 294 480" aria-hidden="true" focusable="false">
+    <defs>
+      <filter id="hiker-soft" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="5"/></filter>
+      <mask id="hiker-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="294" height="480">
+        <g filter="url(#hiker-soft)">
+          <path class="ink ink-1" pathLength="1" stroke-width="64" d="M104 30 C 150 0, 196 30, 180 70 S 96 110, 100 70 S 160 40, 200 110"/>
+          <path class="ink ink-2" pathLength="1" stroke-width="72" d="M70 130 L 286 120 L 40 185 L 290 185 L 30 245 L 290 245 L 20 305 L 286 300"/>
+          <path class="ink ink-3" pathLength="1" stroke-width="72" d="M10 345 L 290 345 L 0 400 L 294 400 L 0 455 L 294 460"/>
+        </g>
+      </mask>
+    </defs>
+    <image href="../_shared/hiker.webp" width="294" height="480" mask="url(#hiker-mask)"/>
+  </svg>
+  <h1 class="name"><span class="hari">Hari</span> <span class="sur">Gridharan</span></h1>
+  <p class="aff"><span class="aff-a">Applied Economics, AI&nbsp;minor</span><span class="aff-sep">&nbsp;· </span><span class="nw">Cornell&nbsp;Dyson&nbsp;’29&nbsp;· Dyson&nbsp;Scholar</span></p>
+  <p class="seek">Seeking Summer&nbsp;2027 internships in strategy, investing, business analysis and product — NYC&nbsp;/&nbsp;SF</p>
+  <div class="act">
+    <a class="btn btn-fill" href="/Hari_Gridharan_Resume.pdf">Resume<span aria-hidden="true">&nbsp;↓</span><span class="sr-only"> (PDF)</span></a>
+    <a class="btn btn-line" href="mailto:hg532@cornell.edu">Email</a>
+    <span class="soc"><a href="https://www.linkedin.com/in/harigridharan1/" target="_blank" rel="noopener">LinkedIn<span class="sr-only"> (opens in new tab)</span></a><span class="dot" aria-hidden="true">·</span><a href="https://github.com/hgridharan999" target="_blank" rel="noopener">GitHub<span class="sr-only"> (opens in new tab)</span></a></span>
+  </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section aria-labelledby="experience">
+    <h2 class="head" id="experience"><span class="idx">01</span> · EXPERIENCE</h2>
+    <ul role="list">
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Co-Founder,</span> <span class="co">Loadstone&nbsp;Labs</span></span>
+          <span class="when">Feb&nbsp;2026&nbsp;–&nbsp;now</span>
+          <span class="line"><span class="lead">132,000+ water-rights records a day</span> from 44 Colorado counties&nbsp;· grant-funded by AWS and LvlUp&nbsp;Ventures</span>
+        </summary>
+        <div class="body">
+          <p>Co-founded a data platform for Western water rights. County records are fragmented and inconsistent, so rights are hard to find and harder to value; Loadstone pulls workflow, basin intelligence and transaction infrastructure into one place for the attorneys and engineers who work them.</p>
+          <p>Our pipeline ingests 132,000+ live water-rights records a day from 44 Colorado counties into a single schema. Supported by grants from AWS and LvlUp&nbsp;Ventures.</p>
+          <p class="meta">Ithaca, NY · <a href="https://loadstonelabs.com" target="_blank" rel="noopener">loadstonelabs.com<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Consulting Intern,</span> <span class="co">EXL</span></span>
+          <span class="when">Summer&nbsp;2026</span>
+          <span class="line"><span class="lead">Built a CRM tool</span> to replace manual contract tracking across a $70M+ Fortune&nbsp;100 client portfolio</span>
+        </summary>
+        <div class="body">
+          <p>Supported a portfolio of client contracts worth $70M+ across Fortune 100 accounts, tracking scope, deliverables and renewal terms.</p>
+          <p>Built a custom CRM tool to replace manual contract tracking, administered contract data in Salesforce, and produced executive-ready decks for global teams.</p>
+          <p class="meta">New York, NY</p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Operations &amp; Strategy Intern,</span> <span class="co">Midian&nbsp;Partners</span></span>
+          <span class="when">Jun&nbsp;–&nbsp;Jul&nbsp;2026</span>
+          <span class="line"><span class="lead">6<span class="sr-only"> to </span><span aria-hidden="true">&nbsp;→&nbsp;</span>25+ signed lender partners</span> in under five&nbsp;weeks&nbsp;· mortgage fintech</span>
+        </summary>
+        <div class="body">
+          <p>Scaled an early-stage mortgage fintech’s lender network from 6 to 25+ signed partnerships in under five weeks.</p>
+          <p>Negotiated terms with partner executives, ran user testing, and coordinated a source-verified technical audit across 12 subsystems.</p>
+          <p class="meta">Remote</p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">AI Strategy Consultant,</span> <span class="co">Adobe</span></span>
+          <span class="when">Jan&nbsp;–&nbsp;Apr&nbsp;2026</span>
+          <span class="line"><span class="lead">$1M+ enterprise AI deals</span>&nbsp;· market sizing and positioning for AI products</span>
+        </summary>
+        <div class="body">
+          <p>Contract role on AI product strategy tied to $1M+ enterprise contracts, supporting work with IT leadership at Fortune 500 customers.</p>
+          <p>Built market-sizing frameworks, UX benchmarks and positioning analyses, and proposed business cases for the product suite.</p>
+          <p class="meta">Remote · Contract</p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Problem Design Engineer,</span> <span class="co">IdlExperts</span></span>
+          <span class="when">Jan&nbsp;–&nbsp;Apr&nbsp;2026</span>
+          <span class="line"><span class="lead">Frontier AI model evaluations</span>&nbsp;· designed the problem sets used to test them</span>
+        </summary>
+        <div class="body">
+          <p>Designed complex, real-world problem sets used to evaluate frontier AI models in training environments.</p>
+          <p>Benchmarked agent behavior against them and turned engineer feedback into improvements for production deployments.</p>
+          <p class="meta">Remote · formerly Widget Factory</p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Co-Founder,</span> <span class="co">Commit</span></span>
+          <span class="when">Sep&nbsp;2025&nbsp;–&nbsp;Jan&nbsp;2026</span>
+          <span class="line"><span class="lead">Top&nbsp;10% of 20,000+&nbsp;YC applicants</span>&nbsp;· social prediction-market MVP built in 3&nbsp;days</span>
+        </summary>
+        <div class="body">
+          <p>Co-founded a social prediction-market platform that ranked in the top 10% of 20,000+ Y Combinator applicants.</p>
+          <p>Took it from concept to a working MVP in three days, including the prediction logic and the unit-economics model.</p>
+          <p class="meta"><a href="https://commit-landing-tau.vercel.app" target="_blank" rel="noopener">Site<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="on-campus">
+    <h2 class="head" id="on-campus"><span class="idx">02</span> · ON CAMPUS</h2>
+    <ul role="list">
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Analyst,</span> <span class="co">Cornell Venture&nbsp;Capital</span></span>
+          <span class="when">2026&nbsp;–&nbsp;now</span>
+          <span class="line"><span class="tk">TK: what you diligence or produce, number first</span></span>
+        </summary>
+        <div class="body">
+          <p><span class="tk">TK: 2–3 sentences on the firms or deals, the sectors, and what you produced (memos, diligence, market maps)</span></p>
+          <p class="meta">Ithaca, NY</p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Co-President,</span> <span class="co">Cornell Entrepreneurship&nbsp;Club</span></span>
+          <span class="when">Sep&nbsp;2025&nbsp;–&nbsp;now</span>
+          <span class="line"><span class="lead">Y&nbsp;Combinator speaker series</span> for 150+&nbsp;attendees&nbsp;· founder and VC programming</span>
+        </summary>
+        <div class="body">
+          <p>Co-lead Cornell’s entrepreneurship club. I run our Y Combinator speaker series, bringing founders and VC partners to campus for audiences of 150+, and coordinate directly with the firms behind them.</p>
+          <p>Grew the club’s reach to 500,000+ views across Instagram and LinkedIn, and scout student startups to sharpen the club’s investment theses.</p>
+          <p class="meta">Ithaca, NY</p>
+        </div>
+      </details></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="projects">
+    <h2 class="head" id="projects"><span class="idx">03</span> · PROJECTS &amp; RESEARCH</h2>
+    <ul role="list">
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="co">Vest Practices</span> <span class="loc">DNHacks 2026</span></span>
+          <span class="when">2026</span>
+          <span class="line"><span class="lead">AI glasses</span> that train tradespeople hands-free&nbsp;· identify the part in hand in under a second</span>
+        </summary>
+        <div class="body">
+          <p>A wearable training system for tradespeople, built on AI glasses with a team of five at DNHacks 2026 (Energy &amp; Industrialization track).</p>
+          <p>The glasses see what the trainee sees and talk back: a detector trained on our own footage, a vision model that reads part markings, voice activation and a synthesized voice in the ear. Every session is stored as structured data, so the trainer remembers what each person has learned.</p>
+          <p class="meta"><a href="https://vestpractices.vercel.app/" target="_blank" rel="noopener">Demo<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a> · <a href="https://portal.dnhacks.org/e/2026/showcase/b-v-est-practices" target="_blank" rel="noopener">Entry<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a> · <a href="https://github.com/8ddieHu0314/dnhacks" target="_blank" rel="noopener">Repo<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="co">Climate startup search</span> <span class="loc">Venture sourcing</span></span>
+          <span class="when">Dec&nbsp;2025&nbsp;–&nbsp;Jan&nbsp;2026</span>
+          <span class="line"><span class="lead">212 climate startups</span> ranked on founder, patent and market signals&nbsp;· live search in ~600ms</span>
+        </summary>
+        <div class="body">
+          <p>An investor sourcing tool over 212 indexed climate-tech startups across 12 verticals. Candidates are ranked with multi-factor scoring across founder backgrounds, patent data and market signals.</p>
+          <p>Search blends BERT embeddings (FAISS) with BM25 keyword ranking through reciprocal rank fusion, expands queries with synonyms, and is measured with NDCG@10.</p>
+          <p class="meta">Python · FastAPI · FAISS · <a href="/climate-search">Demo<span aria-hidden="true">&nbsp;→</span><span class="sr-only">: climate startup search</span></a> · <a href="https://github.com/hgridharan999/climate_tech_discovery_backend" target="_blank" rel="noopener">Repo<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="co">OEIS A363004</span> <span class="loc">Number theory</span></span>
+          <span class="when">Jul&nbsp;2026</span>
+          <span class="line"><span class="lead">Computed a term nobody had found</span>&nbsp;· now credited in the On-Line Encyclopedia of Integer Sequences</span>
+        </summary>
+        <div class="body">
+          <p>A363004 counts the sequences of n distinct positive integers whose Gilbreath transform is all ones. Nobody had computed the 12th term.</p>
+          <p>I wrote the search that found it, a(12) = 9,290,399,173. The value and my Python program are now part of the sequence’s entry.</p>
+          <p class="meta">Python · <a href="https://oeis.org/A363004" target="_blank" rel="noopener">Entry<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="co">bigred.network</span> <span class="loc">Cornell Armada</span></span>
+          <span class="when">Jan&nbsp;2026</span>
+          <span class="line"><span class="lead">65 Cornell builders</span> in a directory of the university’s founders, builders and operators</span>
+        </summary>
+        <div class="body">
+          <p>Built bigred.network, the directory of Cornell’s founders, builders and operators, as part of Cornell Armada, a YC-backed founder community. 65 builders are listed so far.</p>
+          <p>It has member filtering, a network visualization, and a manual review workflow so access stays controlled.</p>
+          <p class="meta">React · TypeScript · <a href="https://www.bigred.network/" target="_blank" rel="noopener">Site<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+      <!-- Project Dactyl (AI-integrated ring) returns here, by date, once it has a sentence, a date and a link. -->
+    </ul>
+  </section>
+
+  <section aria-labelledby="writing">
+    <h2 class="head" id="writing"><span class="idx">04</span> · WRITING</h2>
+    <p class="kicker">Investment thesis · what I’m betting on</p>
+    <ol class="beliefs">
+      <li><span class="n" aria-hidden="true">01</span><p>People &gt; ideas — great people can create great ideas, but great ideas can’t make up for not being a great founder.</p></li>
+      <li><span class="n" aria-hidden="true">02</span><p>Physical infrastructure is the #1 most undervalued sector.</p></li>
+      <li><span class="n" aria-hidden="true">03</span><p>Way too many people are building AI, and not enough are building for AI.</p></li>
+      <li><span class="n" aria-hidden="true">04</span><p>If you aren’t a good storyteller, you won’t have people buy your story or your product.</p></li>
+    </ol>
+    <ul role="list" class="theses-more">
+      <li class="row row--link"><a class="rl" href="/writing"><span class="lab co">Essays and notes</span><span class="val">4 essays · Me in 10 bullet points<span aria-hidden="true">&nbsp;→</span></span></a></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="off-the-clock">
+    <h2 class="head" id="off-the-clock"><span class="idx">05</span> · OFF THE CLOCK</h2>
+    <ul role="list">
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="co">Mountaineering</span> <span class="loc">Colorado fourteeners</span></span>
+          <span class="when">2025&nbsp;–&nbsp;now</span>
+          <span class="line"><span class="lead">Quandary Peak, 14,265&nbsp;ft</span> most recent&nbsp;· first was Mt.&nbsp;Bierstadt</span>
+        </summary>
+        <div class="body">
+          <p>Working through Colorado’s fourteeners. First was Mt. Bierstadt in 2025; most recent was Quandary Peak (14,265 ft) in under 4:30 round trip.</p>
+          <p class="meta"><a href="/hiking">Trail log<span aria-hidden="true">&nbsp;→</span><span class="sr-only">: mountaineering</span></a></p>
+        </div>
+      </details>
+      </li>
+      <li class="row row--solo">
+        <p class="line"><span class="lead co">Carnatic &amp; indie singing</span>&nbsp;· cooking regional Indian food</p>
+      </li>
+    </ul>
+  </section>
+
+</main>
+
+<!-- The one animation: the page ends by going under the surface. -->
+<section class="band" id="band" aria-label="The rest of the iceberg, under the surface">
+  <svg id="fallback" viewBox="-3 0 6 1" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"></svg>
+  <canvas id="gl" aria-hidden="true"></canvas>
+</section>
+
+<footer class="deep">
+  <div class="deep-in">
+    <p class="deep-contact"><a href="/Hari_Gridharan_Resume.pdf">Resume<span aria-hidden="true">&nbsp;↓</span><span class="sr-only"> (PDF)</span></a><span class="dot" aria-hidden="true"> · </span><a href="mailto:hg532@cornell.edu">hg532@cornell.edu</a><span class="dot" aria-hidden="true"> · </span><a href="https://www.linkedin.com/in/harigridharan1/" target="_blank" rel="noopener">LinkedIn<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a><span class="dot" aria-hidden="true"> · </span><a href="https://github.com/hgridharan999" target="_blank" rel="noopener">GitHub<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+    <div class="deep-line">
+      <p>Last updated <time datetime="2026-10">Oct 2026</time></p>
+      <button type="button" class="motion-toggle" id="motion-toggle" aria-pressed="false">Pause motion</button>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Mockup switch only: ?plate=full shows the original scene (with its own hiker) instead of the mountain alone.
+  if (new URLSearchParams(location.search).get('plate') === 'full') {
+    document.querySelector('.scene--mtn').hidden = true;
+    document.querySelector('.scene--full').hidden = false;
+  }
+</script>
+<script>
+(() => {
+  'use strict';
+
+  /* ------------------------------------------------------------------------------------------
+     The iceberg. Vertices in band-height units: x from the centre line, y relative to the
+     waterline (negative = above the water). One polygon: the tip, then the submerged mass.
+     ------------------------------------------------------------------------------------------ */
+  const WL = 0.22;                                   // waterline, as a fraction of band height
+  const BERG = [
+    [-0.200,  0.000], [-0.170, -0.040], [-0.115, -0.060], [-0.085, -0.115], [-0.030, -0.150],
+    [ 0.005, -0.105], [ 0.045, -0.165], [ 0.095, -0.095], [ 0.150, -0.070], [ 0.205, -0.020],
+    [ 0.300,  0.040], [ 0.440,  0.075], [ 0.570,  0.150], [ 0.660,  0.235], [ 0.700,  0.310],
+    [ 0.580,  0.370], [ 0.570,  0.440], [ 0.440,  0.470], [ 0.400,  0.550], [ 0.280,  0.600],
+    [ 0.200,  0.520], [ 0.120,  0.640], [ 0.020,  0.585], [-0.080,  0.600], [-0.150,  0.500],
+    [-0.260,  0.550], [-0.360,  0.470], [-0.380,  0.400], [-0.520,  0.410], [-0.620,  0.330],
+    [-0.600,  0.240], [-0.700,  0.190], [-0.580,  0.110], [-0.420,  0.070], [-0.310,  0.045]
+  ];
+  const NV = BERG.length;
+  const STILL_T = 13.2;                              // the frame shown under reduced motion
+  const PIXEL_BUDGET = 0.72e6;                        // canvas pixels; the shader is per-pixel, keep it bounded
+
+  const band = document.getElementById('band');
+  const canvas = document.getElementById('gl');
+  const fallback = document.getElementById('fallback');
+  const reduceMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const toggle = document.getElementById('motion-toggle');
+  let paused = false;
+
+  /* ------------------------------------------------------------------------------------------
+     Static fallback: the same polygon as a low-poly SVG over the CSS gradient.
+     ------------------------------------------------------------------------------------------ */
+  function buildFallback() {
+    const NS = 'http://www.w3.org/2000/svg';
+    const pts = BERG.map(([x, y]) => [x, WL + y]);
+    const str = (a) => a.map((p) => p[0].toFixed(4) + ',' + p[1].toFixed(4)).join(' ');
+    const add = (parent, tag, attrs) => {
+      const el = document.createElementNS(NS, tag);
+      for (const k in attrs) el.setAttribute(k, attrs[k]);
+      parent.appendChild(el);
+      return el;
+    };
+    const defs = add(fallback, 'defs', {});
+    const grad = add(defs, 'linearGradient', { id: 'fb-ice', gradientUnits: 'userSpaceOnUse', x1: 0, y1: WL, x2: 0, y2: WL + 0.65 });
+    [['0', '#E6F8FD'], ['0.45', '#8FD3EA'], ['1', '#3C9DC0']].forEach(([o, c]) => add(grad, 'stop', { offset: o, 'stop-color': c }));
+    const clip = add(defs, 'clipPath', { id: 'fb-hull' });
+    add(clip, 'polygon', { points: str(pts.slice(9)) });
+    // the submerged hull, with irregular facets: random triangles and chords across it, clipped to its outline
+    add(fallback, 'polygon', { points: str(pts.slice(9)), fill: 'url(#fb-ice)', 'fill-opacity': '0.9' });
+    const g = add(fallback, 'g', { 'clip-path': 'url(#fb-hull)' });
+    let seed = 11;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const sub = pts.slice(9), n = sub.length;
+    for (let k = 0; k < 14; k++) {
+      const i = Math.floor(rnd() * n);
+      const tri = [sub[i], sub[(i + 3 + Math.floor(rnd() * 6)) % n], sub[(i + 10 + Math.floor(rnd() * 9)) % n]];
+      add(g, 'polygon', { points: str(tri), fill: '#fff', 'fill-opacity': (0.05 + rnd() * 0.16).toFixed(2) });
+    }
+    for (let k = 0; k < 16; k++) {
+      const i = Math.floor(rnd() * n), j = (i + 4 + Math.floor(rnd() * 12)) % n;
+      add(g, 'line', { x1: sub[i][0], y1: sub[i][1], x2: sub[j][0], y2: sub[j][1], stroke: '#fff', 'stroke-opacity': '0.42', 'stroke-width': '0.003' });
+    }
+    add(fallback, 'polygon', { points: str(sub), fill: 'none', stroke: '#fff', 'stroke-opacity': '0.7', 'stroke-width': '0.004', 'stroke-linejoin': 'round' });
+    // the tip, drawn like the rest of the site: pale facets and a blue line
+    const tip = pts.slice(0, 10).concat([[0.25, WL]]);
+    add(fallback, 'polygon', { points: str(tip), fill: '#F3FAFD', stroke: '#0F7DAA', 'stroke-width': '0.004', 'stroke-linejoin': 'round' });
+    add(fallback, 'polygon', { points: str([tip[2], tip[3], tip[4], tip[5]]), fill: '#BBDDEC', 'fill-opacity': '0.8' });
+    add(fallback, 'polygon', { points: str([tip[6], tip[7], tip[8], tip[9]]), fill: '#9CCBE0', 'fill-opacity': '0.5' });
+    // waterline
+    add(fallback, 'line', { x1: -3, x2: 3, y1: WL, y2: WL, stroke: '#0F7DAA', 'stroke-width': '0.004', 'stroke-opacity': '0.8' });
+  }
+  buildFallback();
+
+  /* ------------------------------------------------------------------------------------------
+     WebGL: one canvas, one full-screen triangle, one fragment shader.
+     ------------------------------------------------------------------------------------------ */
+  const f = (n) => (Math.round(n * 10000) / 10000).toFixed(4);
+  const vconst = BERG.map(([x, y], i) => `const vec2 V${i} = vec2(${f(x)}, ${f(WL + y)});`).join('\n');
+  const edges = BERG.map((_, i) => `edge(p, V${(i + NV - 1) % NV}, V${i}, d, s);`).join('\n  ');
+
+  const VS = 'attribute vec2 aPos; void main(){ gl_Position = vec4(aPos, 0.0, 1.0); }';
+
+  const FS = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+
+uniform vec2  uRes;      // canvas size, device px
+uniform float uT;        // seconds
+uniform vec4  uRip[5];   // ripple: x, y (band-height units from centre-top), start time, strength
+
+const float WL = ${f(WL)};
+
+${vconst}
+
+float hash12(vec2 p){ vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
+vec2  hash22(vec2 p){ vec3 q = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973)); q += dot(q, q.yzx + 33.33); return fract((q.xx + q.yz) * q.zy); }
+
+/* signed distance to the iceberg polygon (negative inside); the edges are unrolled at build time */
+void edge(vec2 p, vec2 pv, vec2 cv, inout float d, inout float s){
+  vec2 e = pv - cv; vec2 w = p - cv;
+  vec2 b = w - e * clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
+  d = min(d, dot(b, b));
+  bool c1 = p.y >= cv.y; bool c2 = p.y < pv.y; bool c3 = e.x * w.y > e.y * w.x;
+  if ((c1 && c2 && c3) || (!c1 && !c2 && !c3)) s = -s;
+}
+float sdBerg(vec2 p){
+  float d = dot(p - V0, p - V0);
+  float s = 1.0;
+  ${edges}
+  return s * sqrt(d);
+}
+
+/* static Voronoi: F1, F2, id of the nearest cell (the ice's facets) */
+vec4 voroS(vec2 x){
+  vec2 n = floor(x), f = x - n;
+  float d1 = 8.0, d2 = 8.0; vec2 id = vec2(0.0);
+  for (int j = -1; j <= 1; j++) {
+    for (int i = -1; i <= 1; i++) {
+      vec2 g = vec2(float(i), float(j));
+      vec2 o = hash22(n + g);
+      vec2 r = g + 0.5 + (o - 0.5) * 0.9 - f;
+      float d = dot(r, r);
+      if (d < d1) { d2 = d1; d1 = d; id = n + g; }
+      else if (d < d2) { d2 = d; }
+    }
+  }
+  return vec4(sqrt(d1), sqrt(d2), id);
+}
+
+/* animated Voronoi: F1, F2 (the caustic network lives on F2 - F1). The input is bent first so cell walls curve. */
+vec2 voroA(vec2 x, float t){
+  x += 0.20 * vec2(sin(x.y * 1.9 + t * 0.9), sin(x.x * 2.1 - t * 0.7));
+  vec2 n = floor(x), f = x - n;
+  float d1 = 8.0, d2 = 8.0;
+  for (int j = -1; j <= 1; j++) {
+    for (int i = -1; i <= 1; i++) {
+      vec2 g = vec2(float(i), float(j));
+      vec2 o = hash22(n + g);
+      vec2 r = g + 0.5 + 0.46 * sin(t * vec2(1.0, 0.83) + 6.2831 * o) - f;
+      float d = dot(r, r);
+      if (d < d1) { d2 = d1; d1 = d; }
+      else if (d < d2) { d2 = d; }
+    }
+  }
+  return vec2(sqrt(d1), sqrt(d2));
+}
+
+/* two warped Voronoi networks at different scales and headings, crossed: thin bright filaments, sparkle where they meet */
+float caustic(vec2 p, float t){
+  vec2 a = voroA(p * 4.4 + vec2(0.0, t * 0.030), t * 0.46);
+  vec2 b = voroA(mat2(0.8, -0.6, 0.6, 0.8) * p * 7.6 + vec2(t * 0.040, 3.7), t * 0.62 + 2.0);
+  float ea = a.y - a.x, eb = b.y - b.x;
+  float la = 1.0 - clamp(ea * 9.0, 0.0, 1.0); la *= la;
+  float lb = 1.0 - clamp(eb * 9.0, 0.0, 1.0); lb *= lb;
+  return 0.55 * la + 0.38 * lb + 1.1 * la * lb + 0.10 * exp(-ea * 7.0);
+}
+
+/* the open water only gets the first network (one Voronoi pass instead of two) */
+float causticLite(vec2 p, float t){
+  vec2 a = voroA(p * 4.4 + vec2(0.0, t * 0.030), t * 0.46);
+  float ea = a.y - a.x;
+  float la = 1.0 - clamp(ea * 9.0, 0.0, 1.0);
+  return 0.95 * la * la + 0.12 * exp(-ea * 7.0);
+}
+
+vec3 ramp(float d){
+  vec3 c0 = vec3(0.788, 0.918, 0.957);   // pale cyan  #C9EAF4
+  vec3 c1 = vec3(0.561, 0.816, 0.902);   //            #8FD0E6
+  vec3 c2 = vec3(0.184, 0.612, 0.769);   //            #2F9CC4
+  vec3 c3 = vec3(0.059, 0.490, 0.667);   // iceberg    #0F7DAA
+  vec3 c4 = vec3(0.039, 0.302, 0.431);   //            #0A4D6E
+  vec3 c5 = vec3(0.039, 0.094, 0.133);   // near-ink   #0A1822
+  vec3 c = mix(c0, c1, smoothstep(0.00, 0.14, d));
+  c = mix(c, c2, smoothstep(0.14, 0.34, d));
+  c = mix(c, c3, smoothstep(0.34, 0.54, d));
+  c = mix(c, c4, smoothstep(0.54, 0.76, d));
+  c = mix(c, c5, smoothstep(0.74, 0.97, d));
+  return c;
+}
+
+void main(){
+  vec2 fc = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
+  float H = uRes.y;
+  float px = 1.0 / H;                                  // one device pixel, in band-height units
+  vec2 p = (fc - vec2(uRes.x * 0.5, 0.0)) / H;
+  float t = uT;
+
+  /* ripples from touches: a travelling ring packet; it warps the light and lifts the surface */
+  vec2 disp = vec2(0.0); float rh = 0.0;
+  for (int i = 0; i < 5; i++) {
+    vec4 r = uRip[i];
+    float age = t - r.z;
+    if (age > 0.0 && age < 5.0) {
+      vec2 dv = p - r.xy; float d = length(dv);
+      float w = d - age * 0.34;
+      float h = sin(w * 44.0) * exp(-w * w * 70.0) * exp(-age * 0.85) * r.w / (1.0 + d * 3.5);
+      disp += dv / (d + 1e-4) * h; rh += h;
+    }
+  }
+
+  /* waterline: three slow sines, a little ripple */
+  float wl = WL + 0.0042 * sin(p.x * 9.0 + t * 0.8) + 0.0028 * sin(p.x * 17.0 - t * 1.15 + 1.7)
+                + 0.0016 * sin(p.x * 33.0 + t * 1.9 + 0.4) - 0.011 * rh;
+  float below = smoothstep(-px, px, p.y - wl);
+
+  /* water colour by depth (the edges sit a little deeper than the middle) */
+  float dep = clamp((p.y - WL) / (1.0 - WL) + 0.10 * smoothstep(0.5, 1.9, abs(p.x)), 0.0, 1.0);
+  vec3 water = ramp(dep);
+
+  /* god rays: diverge from a point above the surface, slow and soft, strongest just under it */
+  float ang = (p.x + 0.10) / (p.y + 0.60);
+  float rayA = sin(ang * 13.0 + t * 0.21 + 1.7 * sin(ang * 3.1 - t * 0.12));
+  float rayB = sin(ang * 27.0 - t * 0.16 + 2.0);
+  float ray = smoothstep(0.42, 1.0, 0.5 + 0.5 * (0.62 * rayA + 0.38 * rayB));
+  float rayFade = exp(-dep * 2.8) / (1.0 + 0.55 * p.x * p.x);
+  water += vec3(0.62, 0.92, 1.0) * ray * ray * 0.28 * rayFade;
+  /* a wash of light under the surface */
+  water += vec3(0.30, 0.55, 0.62) * 0.08 * exp(-(p.y - wl) * 7.0) / (1.0 + 0.3 * p.x * p.x);
+
+  /* the warp that bends all the light: slow swell plus the ripples */
+  vec2 warp = 0.045 * vec2(sin(p.y * 7.0 + t * 0.6) + 0.5 * sin(p.y * 13.0 - t * 0.9),
+                           sin(p.x * 6.0 - t * 0.5) + 0.5 * sin(p.x * 11.0 + t * 0.7)) + 0.075 * disp;
+
+  /* the iceberg's silhouette, seen through the moving water */
+  float uw = smoothstep(WL - 0.012, WL + 0.03, p.y);
+  vec2 shim = 0.0035 * vec2(sin(p.y * 29.0 + t * 1.3), sin(p.x * 23.0 - t * 1.1));
+  vec2 pb = p + (shim + 0.05 * disp) * uw;             // seen through moving water
+  float sd = 1.0;
+  if (abs(pb.x) < 0.78 && pb.y > 0.0 && pb.y < 0.95) sd = sdBerg(pb);
+  float sdpx = sd * H;
+
+  /* the water's own caustics: a faint net that fades with depth (skipped where it can't be seen: deep, or behind the ice) */
+  if (dep < 0.6 && sd > -0.02) {
+    water += vec3(0.80, 0.97, 1.0) * causticLite(p + warp, t) * 0.26 * exp(-dep * 4.0);
+  }
+
+  /* marine snow */
+  for (int k = 0; k < 2; k++) {
+    float sc = k == 0 ? 9.0 : 15.0;
+    vec2 q = p * sc + vec2(t * (k == 0 ? 0.02 : -0.03), -t * (k == 0 ? 0.045 : 0.07)) + float(k) * 17.0;
+    vec2 id = floor(q); vec2 fq = fract(q) - 0.5;
+    vec2 o = (hash22(id) - 0.5) * 0.7;
+    float rad = 0.035 + 0.07 * hash12(id + 7.0);
+    float on = step(0.5, hash12(id + 3.0));
+    float tw = 0.65 + 0.35 * sin(t * 1.4 + hash12(id) * 40.0);
+    water += vec3(0.8, 0.96, 1.0) * smoothstep(rad, rad * 0.25, length(fq - o)) * on * tw * (0.34 - 0.2 * dep);
+  }
+
+  vec3 col = mix(vec3(1.0), water, below);
+
+  /* ---------------- the iceberg ---------------- */
+  if (sd < 0.06) {
+    bool sub = p.y > wl;
+    vec3 bc;
+    float inA;
+    if (sub) {
+      float dd = clamp((pb.y - WL) / 0.65, 0.0, 1.0);
+      vec4 v = voroS(vec2(pb.x * 0.92 + pb.y * 0.30, pb.y * 1.12 - pb.x * 0.18) * 4.6 + 3.7);
+      float fh = hash12(v.zw);
+      float edgePx = (v.y - v.x) * 0.5 * H / 4.6;
+      /* lightness: bright near the surface, each facet its own plane, darker (and bluer) with depth */
+      float L = (1.0 - 0.80 * dd) * (0.74 + 0.40 * fh);
+      vec3 cA = vec3(0.10, 0.50, 0.68), cB = vec3(0.42, 0.80, 0.92), cC = vec3(0.90, 0.985, 1.0);
+      bc = mix(mix(cA, cB, smoothstep(0.0, 0.5, L)), cC, smoothstep(0.5, 1.05, L));
+      bc = mix(bc, water, 0.10 * dd + 0.30 * dd * dd);
+      /* strata: faint horizontal banding in the ice */
+      bc += vec3(0.03, 0.06, 0.07) * sin((pb.y + 0.03 * sin(pb.x * 9.0)) * 70.0 + fh * 6.0);
+      /* caustics land on the facets: each facet is a different plane, so the pattern breaks at its edges */
+      float cb = caustic(pb * 0.9 + hash22(v.zw) * 9.0 + warp * 0.6, t);
+      bc += vec3(0.80, 1.0, 1.0) * cb * (0.48 - 0.22 * dd);
+      /* refracted facet edges */
+      bc = mix(bc, vec3(0.93, 1.0, 1.0), (1.0 - smoothstep(0.3, 1.4, edgePx)) * 0.55);
+      /* edge glow inside the silhouette, and the crisp rim */
+      bc += vec3(0.30, 0.75, 0.88) * 0.30 * exp(min(sdpx, 0.0) / 6.0);
+      bc = mix(bc, vec3(0.96, 1.0, 1.0), (1.0 - smoothstep(0.3, 1.3, abs(sdpx))) * 0.85);
+      inA = 0.88;
+    } else {
+      vec4 v = voroS(vec2(pb.x * 0.9 + pb.y * 0.3, pb.y * 1.1 - pb.x * 0.2) * 10.0 + 1.3);
+      float fh = hash12(v.zw);
+      float edgePx = (v.y - v.x) * 0.5 * H / 10.0;
+      bc = mix(vec3(1.0), vec3(0.62, 0.82, 0.91), fh * fh * 0.85 + 0.05);
+      bc = mix(bc, vec3(0.059, 0.490, 0.667), (1.0 - smoothstep(0.3, 1.2, edgePx)) * 0.45);
+      bc = mix(bc, vec3(0.059, 0.490, 0.667), (1.0 - smoothstep(0.5, 1.4, abs(sdpx))) * 0.92);
+      inA = 1.0;
+    }
+    float inside = 1.0 - smoothstep(-0.7, 0.7, sdpx);
+    /* a cold halo just outside the hull */
+    if (sub) col += vec3(0.30, 0.70, 0.85) * 0.16 * exp(-max(sdpx, 0.0) / 8.0) * (1.0 - inside) * below;
+    col = mix(col, bc, inside * inA);
+  }
+
+  /* the rings themselves: light crests, dim troughs */
+  col += vec3(0.60, 0.90, 1.0) * rh * 0.30 * below;
+
+  /* the waterline itself: a thin blue hairline that breaks up a little as it moves */
+  float lineD = (p.y - wl) * H;
+  float lineA = 0.55 + 0.45 * sin(p.x * 21.0 + t * 0.7) * sin(p.x * 7.3 - t * 0.4);
+  col = mix(col, vec3(0.059, 0.490, 0.667), (1.0 - smoothstep(0.35, 1.15, abs(lineD))) * lineA * 0.9);
+
+  /* floor: slightly darker in the lower corners, dithered so the deep gradient never bands */
+  col *= 1.0 - 0.18 * smoothstep(0.9, 2.2, abs(p.x)) * smoothstep(0.4, 1.0, p.y);
+  col = mix(col, vec3(0.039, 0.094, 0.133), smoothstep(0.93, 1.0, p.y));   // exactly the footer's colour at the floor
+  col += (hash12(gl_FragCoord.xy + fract(t) * 91.7) - 0.5) / 255.0;
+  gl_FragColor = vec4(col, 1.0);
+}
+`;
+
+  let gl = null, prog = null, uRes, uT, uRip;
+  let cssW = 1, cssH = 1, quality = 1;
+  let visible = true, raf = 0, glOK = false;
+  const t0 = performance.now();
+  const clock = () => (performance.now() - t0) / 1000 + 3.0;
+  const rips = new Float32Array(20).fill(0);
+  for (let i = 0; i < 5; i++) rips[i * 4 + 2] = -100;
+  let ripI = 0;
+
+  function initGL() {
+    try {
+      gl = canvas.getContext('webgl', { antialias: false, alpha: false, depth: false, stencil: false, powerPreference: 'low-power' })
+        || canvas.getContext('experimental-webgl');
+    } catch (e) { gl = null; }
+    if (!gl) return false;
+    const sh = (type, src) => {
+      const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.warn(gl.getShaderInfoLog(s)); return null; }
+      return s;
+    };
+    const vs = sh(gl.VERTEX_SHADER, VS), fs = sh(gl.FRAGMENT_SHADER, FS);
+    if (!vs || !fs) return false;
+    prog = gl.createProgram(); gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { console.warn(gl.getProgramInfoLog(prog)); return false; }
+    gl.useProgram(prog);
+    const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog, 'aPos'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    uRes = gl.getUniformLocation(prog, 'uRes'); uT = gl.getUniformLocation(prog, 'uT'); uRip = gl.getUniformLocation(prog, 'uRip');
+    return true;
+  }
+
+  function resize() {
+    const r = band.getBoundingClientRect();
+    cssW = Math.max(1, r.width); cssH = Math.max(1, r.height);
+    let s = Math.min(window.devicePixelRatio || 1, 2) * quality;
+    const n = cssW * cssH * s * s;
+    if (n > PIXEL_BUDGET) s *= Math.sqrt(PIXEL_BUDGET / n);
+    const w = Math.max(1, Math.round(cssW * s)), h = Math.max(1, Math.round(cssH * s));
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    gl.viewport(0, 0, w, h);
+  }
+
+  function draw(t) {
+    gl.uniform2f(uRes, canvas.width, canvas.height);
+    gl.uniform1f(uT, t);
+    gl.uniform4fv(uRip, rips);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    if (band.dataset.gl !== 'on') band.dataset.gl = 'on';
+  }
+
+  /* ---- frame governor: if the GPU cannot hold ~40fps, shed resolution, then frame rate ---- */
+  let last = 0, ema = 16.7, slow = 0, halfRate = false, skip = false;
+  function frame(ts) {
+    raf = requestAnimationFrame(frame);
+    if (last) {
+      const dt = ts - last;
+      if (dt < 120) {
+        ema += (dt - ema) * 0.08;
+        slow = ema > (halfRate ? 50 : 27) ? slow + 1 : 0;
+        if (slow > 45) {
+          slow = 0;
+          if (quality > 0.55) { quality *= 0.8; resize(); } else { halfRate = true; }
+        }
+      }
+    }
+    last = ts;
+    if (halfRate) { skip = !skip; if (skip) return; }
+    draw(clock());
+  }
+
+  function still() { if (glOK) { resize(); draw(STILL_T); } }
+
+  function sync() {
+    const run = glOK && !paused && !reduceMQ.matches && visible && !document.hidden;
+    if (run && !raf) { last = 0; raf = requestAnimationFrame(frame); }
+    else if (!run && raf) { cancelAnimationFrame(raf); raf = 0; }
+    if (glOK && reduceMQ.matches) still();
+  }
+
+  /* ---- touch the water ---- */
+  let lastRip = { x: -1e3, y: -1e3, t: 0 };
+  function ripple(e, strength) {
+    if (!glOK || paused || reduceMQ.matches) return;
+    const r = canvas.getBoundingClientRect();
+    const x = (e.clientX - r.left - r.width / 2) / r.height;
+    const y = (e.clientY - r.top) / r.height;
+    const i = ripI * 4; ripI = (ripI + 1) % 5;
+    rips[i] = x; rips[i + 1] = y; rips[i + 2] = clock(); rips[i + 3] = strength;
+    lastRip = { x: e.clientX, y: e.clientY, t: performance.now() };
+  }
+  canvas.addEventListener('pointerdown', (e) => ripple(e, 1.0));
+  canvas.addEventListener('pointermove', (e) => {
+    const dx = e.clientX - lastRip.x, dy = e.clientY - lastRip.y;
+    if (performance.now() - lastRip.t > 110 && dx * dx + dy * dy > 34 * 34) ripple(e, e.buttons ? 0.8 : 0.5);
+  });
+
+  /* ---- pause: the animation loops, so it can be stopped (and it stops by itself offscreen) ---- */
+  toggle.addEventListener('click', () => {
+    paused = !paused;
+    toggle.setAttribute('aria-pressed', String(paused));
+    toggle.textContent = paused ? 'Play motion' : 'Pause motion';
+    sync();
+    if (paused && glOK) draw(clock());
+  });
+
+  /* ---- boot ---- */
+  glOK = initGL();
+  if (glOK && !reduceMQ.matches) document.documentElement.classList.add('has-gl');
+  if (glOK) {
+    resize();
+    canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); glOK = false; delete band.dataset.gl; sync(); });
+    new ResizeObserver(() => { if (!glOK) return; resize(); if (!raf) draw(reduceMQ.matches ? STILL_T : clock()); }).observe(band);
+    new IntersectionObserver((en) => { visible = en[en.length - 1].isIntersecting; sync(); }, { threshold: 0 }).observe(band);
+    document.addEventListener('visibilitychange', sync);
+    (reduceMQ.addEventListener ? reduceMQ.addEventListener.bind(reduceMQ, 'change') : reduceMQ.addListener.bind(reduceMQ))(sync);
+    if (reduceMQ.matches) still(); else draw(clock());
+    sync();
+  }
+})();
+</script>
+
+<details class="typepick">
+  <summary>Typeface · mockup only</summary>
+  <div class="opts" role="group" aria-label="Typeface pairing">
+    <button type="button" data-font="current">Current</button>
+    <button type="button" data-font="instrument">Instrument</button>
+    <button type="button" data-font="geist">Geist</button>
+    <button type="button" data-font="plex">IBM Plex</button>
+    <button type="button" data-font="editorial">Editorial serif</button>
+    <button type="button" data-font="swiss">Swiss (Inter Tight)</button>
+    <button type="button" data-font="schibsted">Schibsted</button>
+    <button type="button" data-font="manrope">Manrope</button>
+  </div>
+  <div class="row2" role="group" aria-label="Surname case">
+    <button type="button" data-case="upper">GRIDHARAN</button>
+    <button type="button" data-case="mixed">Gridharan</button>
+  </div>
+</details>
+<script>
+(() => {
+  const root = document.documentElement, q = new URLSearchParams(location.search);
+  const DEF_CASE = { current: 'upper', instrument: 'mixed', geist: 'mixed', plex: 'mixed', editorial: 'mixed', swiss: 'mixed', schibsted: 'upper', manrope: 'mixed' };
+  let font = q.get('font') || 'current', kase = q.get('case') || DEF_CASE[font] || 'upper';
+  const apply = () => {
+    if (font === 'current') root.removeAttribute('data-font'); else root.dataset.font = font;
+    root.dataset.case = kase;
+    document.querySelectorAll('.typepick [data-font]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.font === font)));
+    document.querySelectorAll('.typepick [data-case]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.case === kase)));
+    const u = new URL(location.href); u.searchParams.set('font', font); u.searchParams.set('case', kase); history.replaceState(null, '', u);
+  };
+  document.querySelector('.typepick').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.font) { font = b.dataset.font; kase = DEF_CASE[font]; }
+    if (b.dataset.case) kase = b.dataset.case;
+    apply();
+  });
+  apply();
+  if (matchMedia('(min-width: 1180px)').matches) document.querySelector('.typepick').open = true;
+})();
+</script>
+</body>
+</html>

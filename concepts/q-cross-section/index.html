@@ -1,0 +1,2020 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#FFFFFF">
+<title>Hari Gridharan — Cornell Dyson ’29</title>
+<meta name="description" content="Dyson Scholar and Loadstone Labs co-founder. Seeking Summer 2027 internships in strategy, investing, business analysis and product.">
+<!-- Site icon: the mark in miniature (see NOTES.md). -->
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../_shared/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="../_shared/apple-touch-icon.png">
+<meta property="og:title" content="Hari Gridharan — Cornell Dyson ’29">
+<meta property="og:description" content="Dyson Scholar and Loadstone Labs co-founder. Seeking Summer 2027 internships in strategy, investing, business analysis and product.">
+<meta property="og:image" content="../_shared/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" as="image" href="../_shared/mountain-plate.webp" type="image/webp" fetchpriority="high">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Hanken+Grotesk:wght@400;500;600;800&family=Instrument+Serif:ital@1&display=swap">
+<script>document.documentElement.className = 'js' + (matchMedia('(prefers-reduced-motion: reduce)').matches ? ' rm' : '');</script>
+<style>
+  /* ======================================================================================
+     CROSS-SECTION. One motif everywhere: the page is a vertical slice through an iceberg.
+     Above the waterline: white, ink, the tip. Below: iceberg blue that deepens to the seabed.
+     Layers (back to front): tip SVG / sea gradient -> waterline strip -> fixed WebGL light ->
+     station canvases -> content -> gauge rail.
+     ====================================================================================== */
+  :root {
+    --bg: #FFFFFF;
+    --cream: #111111;                      /* ink */
+    --tan: #0F7DAA;                        /* iceberg blue, 4.6:1 on white */
+    --soft: #3D3D3D;
+    --muted: #5C5C5C;
+    --rule: rgba(0, 0, 0, 0.10);
+    --rule-head: rgba(0, 0, 0, 0.22);
+    --rule-hover: rgba(0, 0, 0, 0.28);
+    --ul: rgba(0, 0, 0, 0.40);
+    --ul-tan: rgba(15, 125, 170, 0.55);
+    --outline: rgba(0, 0, 0, 0.55);
+    --sans: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --serif: "Instrument Serif", "Times New Roman", serif;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --gutter: 16px;
+    --datew: 6.75rem;
+    --tri-off: 14px;
+    --berg: #0F7DAA;                       /* the blue at the bottom of icebergs */
+    --abyss: #06141C;                      /* seabed: end of the gradient = footer colour */
+    --wl: 2400px;                          /* set by script: where the waterline falls */
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--bg); color-scheme: light; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body {
+    position: relative; margin: 0; background: var(--bg); color: var(--cream);
+    font: 400 16px/1.6 var(--sans); font-kerning: normal;
+    -webkit-font-smoothing: antialiased; overflow-wrap: break-word; overflow-x: clip;
+  }
+  h1, h2, h3, p, ul, ol, figure { margin: 0; padding: 0; }
+  ul, ol { list-style: none; }
+  ::selection { background: var(--tan); color: var(--bg); }
+  a { color: inherit; text-decoration: underline; text-decoration-color: var(--ul); text-decoration-thickness: 1px; text-underline-offset: 0.22em; }
+  a:focus-visible { outline: 2px solid var(--tan); outline-offset: 3px; border-radius: 2px; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+    overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+  }
+  .nw { white-space: nowrap; }
+  .skip { position: absolute; left: 8px; top: -60px; z-index: 20; padding: 10px 14px; background: #111; color: #fff; border-radius: 4px; font: 600 14px/1 var(--sans); }
+  .skip:focus { top: 8px; }
+  .wrap { position: relative; z-index: 2; width: 100%; max-width: calc(640px + var(--gutter) * 2); margin-inline: auto; padding-inline: var(--gutter); }
+
+  /* ---------- the tip: ink facets above the water, drawn by script (empty without JS) ---------- */
+  .tip { position: absolute; left: 0; top: 0; width: 100%; height: var(--wl); z-index: 0; pointer-events: none; overflow: visible; }
+  .tip svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .tip .ice { fill: url(#tip-fill); }
+  .tip .rim { fill: none; stroke: #111; stroke-width: 1.2; stroke-linejoin: round; stroke-linecap: round; stroke-opacity: 0.78; }
+  .tip .roof { stroke: url(#roof-fade); stroke-opacity: 1; stroke-width: 1; stroke-dasharray: 1; }
+  .tip .fac { stroke: #111; stroke-width: 0.6; stroke-opacity: 0.22; stroke-linejoin: round; }
+  .tip .hat { stroke: #111; stroke-width: 0.6; stroke-opacity: 0.34; stroke-linecap: round; fill: none; }
+  .tip .crk { stroke: #111; stroke-width: 0.7; stroke-opacity: 0.3; stroke-linecap: round; fill: none; }
+
+  /* ---------- Header plate: the sketched mountain is the iceberg's tip ---------- */
+  header.wrap { z-index: 2; }
+  .plate { position: relative; margin: 0 calc(var(--gutter) * -1); -webkit-mask-image: linear-gradient(to bottom, #000 52%, transparent 98%); mask-image: linear-gradient(to bottom, #000 52%, transparent 98%); }
+  .scene { display: block; width: 100%; height: auto; overflow: hidden; opacity: 0.5; aspect-ratio: 1280 / 250; }
+  .scene image { filter: brightness(0); }
+  .scene .ink { fill: none; stroke: #fff; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
+  @keyframes scene-ink { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+
+  /* ---------- The mark: the hiker on the tip of a faceted iceberg, the waterline cutting through it ---------- */
+  .top {
+    --mark-h: 132px;
+    position: relative; z-index: 1;
+    display: grid; grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: "mark name" "aff aff" "seek seek" "act act";
+    column-gap: 14px; align-items: center; margin-top: -18px;
+  }
+  .mark { grid-area: mark; display: block; height: var(--mark-h); width: auto; aspect-ratio: 132 / 172; overflow: visible; }
+  .mark .hk image { filter: brightness(0); }
+  .mark .ink { fill: none; stroke: #fff; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
+  .mark .m-rim { fill: none; stroke: #111; stroke-width: 1.3; stroke-linejoin: round; stroke-linecap: round; }
+  .mark .m-rdg { fill: none; stroke: #111; stroke-width: 0.6; stroke-opacity: 0.55; stroke-linecap: round; }
+  .mark .m-wl { fill: none; stroke: #0F7DAA; stroke-width: 1.7; stroke-linecap: round; }
+  .mark .m-wl2 { fill: none; stroke: #0F7DAA; stroke-width: 1; stroke-linecap: round; stroke-opacity: 0.45; }
+  .mark .m-hf { stroke: #fff; stroke-width: 0.7; stroke-opacity: 0.7; stroke-linejoin: round; }
+  .name {
+    grid-area: name;
+    display: flex; flex-direction: column; align-items: flex-start;
+    font: 800 clamp(34px, 9.4vw, 48px)/1 var(--sans); letter-spacing: -0.03em;
+  }
+  .hari { font: italic 400 1.2em/0.95 var(--serif); letter-spacing: 0; color: var(--tan); }
+  .sur { text-transform: uppercase; white-space: nowrap; }
+  .aff { grid-area: aff; margin-top: 16px; color: var(--soft); }
+  .aff-a { display: block; }
+  .aff-sep { display: none; }
+  .seek { grid-area: seek; margin-top: 8px; color: var(--tan); font-weight: 500; text-wrap: balance; }
+  .act { grid-area: act; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 12px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 44px; padding: 0 18px; border: 1px solid transparent; border-radius: 4px;
+    font: 600 15px/1 var(--sans); text-decoration: none;
+  }
+  .btn-fill { background: var(--tan); border-color: var(--tan); color: var(--bg); }
+  .btn-line { border-color: var(--outline); color: var(--cream); background: rgba(255, 255, 255, 0.7); }
+  .soc { display: inline-flex; align-items: center; margin-left: -8px; }
+  .soc a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; font-size: 15px; color: var(--soft); }
+  .soc .dot { color: var(--muted); }
+
+  /* ---------- Sections and labels (a label is a reading on the gauge) ---------- */
+  main > .wrap > section { padding-top: 40px; }
+  main > .wrap > section:first-child { padding-top: 28px; }
+  #tipcol { padding-bottom: 84px; }
+  .head {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+    padding-bottom: 7px; border-bottom: 1px solid var(--rule-head);
+    font: 500 12px/1.7 var(--mono); letter-spacing: 0.14em; text-transform: uppercase;
+    scroll-margin-top: 16px;
+  }
+  .head .idx { color: var(--muted); }
+  .head .rd { margin-left: auto; padding-left: 12px; font-weight: 400; letter-spacing: 0.1em; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .head .rd:empty { display: none; }
+
+  /* ---------- Ledger rows ---------- */
+  .row {
+    position: relative; display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--datew);
+    grid-template-areas: "ttl when" "line line";
+    column-gap: 16px; align-items: baseline; padding: 12px 0 13px;
+  }
+  .row + .row { border-top: 1px solid var(--rule); }
+  .ttl { grid-area: ttl; font: 600 16px/1.4 var(--sans); text-wrap: balance; }
+  .ttl .role { font-weight: 500; }
+  .loc { display: block; margin-top: 2px; font: 400 12px/1.4 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .when {
+    grid-area: when; text-align: right; white-space: nowrap; color: var(--muted);
+    font: 400 12.5px/1.4 var(--mono); font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1;
+  }
+  .line { grid-area: line; margin-top: 1px; color: var(--soft); text-wrap: pretty; }
+  .lead { color: var(--tan); font-weight: 500; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+  a.lead { text-decoration-color: var(--ul-tan); }
+  .row--solo { grid-template-areas: "line line"; }
+  .row--solo .line { margin-top: 0; }
+
+  .row.xp { display: block; padding: 0; }
+  .xp summary {
+    display: grid; grid-template-columns: minmax(0, 1fr) var(--datew);
+    grid-template-areas: "ttl when" "line line";
+    column-gap: 16px; align-items: baseline; padding: 12px 0 13px;
+    list-style: none; cursor: pointer; border-radius: 2px;
+  }
+  .xp summary::-webkit-details-marker { display: none; }
+  .xp summary:focus-visible { outline: 2px solid var(--tan); outline-offset: 4px; }
+  .xp .ttl { display: block; }
+  .xp .when, .xp .line { display: block; }
+  .xp summary .co::after {
+    content: ""; display: inline-block; width: 9px; height: 9px; margin-left: 9px; vertical-align: 0.06em;
+    background: linear-gradient(var(--tan), var(--tan)) center / 100% 1.5px no-repeat,
+                linear-gradient(var(--tan), var(--tan)) center / 1.5px 100% no-repeat;
+    opacity: 0.6;
+  }
+  .xp details[open] summary .co::after { opacity: 1; transform: rotate(45deg); }
+  .xp .body { margin: -2px 0 16px; padding: 2px 0 2px 16px; border-left: 1px solid var(--ul-tan); color: var(--soft); }
+  .xp .body p + p { margin-top: 8px; }
+  .xp .meta { font: 400 12.5px/1.7 var(--mono); color: var(--muted); }
+  .xp .meta a { color: var(--cream); }
+
+  .kicker { margin-top: 12px; font: 400 12.5px/1.6 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .beliefs { margin: 4px 0 0; padding: 0; list-style: none; }
+  .beliefs li { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr); align-items: baseline; padding: 11px 0 12px; }
+  .beliefs li + li { border-top: 1px solid var(--rule); }
+  .beliefs .n { font: 400 12.5px/1 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .beliefs p { color: var(--soft); text-wrap: pretty; }
+  .theses-more { margin-top: 14px; border-top: 1px solid var(--rule); }
+
+  .tk { display: inline-block; padding: 1px 8px; border: 1px dashed var(--tan); border-radius: 3px; font: 400 12.5px/1.6 var(--mono); color: var(--tan); }
+
+  .row--link { display: block; padding: 0; }
+  .rl { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 44px; padding: 8px 0 9px; text-decoration: none; }
+  .rl .lab { font-weight: 500; }
+  .rl .val {
+    text-align: right; overflow-wrap: anywhere; color: var(--muted);
+    font: 400 12.5px/1.5 var(--mono);
+    text-decoration: underline; text-decoration-color: var(--ul); text-decoration-thickness: 1px; text-underline-offset: 0.25em;
+  }
+  .rl.rl--essay { align-items: flex-start; padding: 11px 0 12px; }
+  .rl.rl--essay .et { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .rl.rl--essay .ed { color: var(--muted); font-size: 15px; line-height: 1.5; text-wrap: pretty; }
+  .rl.rl--essay .val { text-decoration: none; white-space: nowrap; line-height: 22px; }
+
+  @media (max-width: 599px) {
+    .xp summary { grid-template-columns: minmax(0, 1fr); grid-template-areas: "ttl" "when" "line"; }
+    .xp .when { text-align: left; margin-top: 1px; }
+    .xp summary .co::after { width: 12px; height: 12px; opacity: 0.85; }
+  }
+
+  /* ======================================================================================
+     THE SEA. One block from the waterline to the footer. Its background is the water
+     itself (it stays pinned to the content while scrolling); WebGL adds the light on top.
+     The theme variables flip here, so every row below inherits "pale on blue".
+     ====================================================================================== */
+  .sea {
+    --cream: #F1FAFD;
+    --tan: #BDEFFC;                        /* lead lines and markers: pale cyan */
+    --soft: #DDF0F7;
+    --muted: #DCEFF6;                      /* >= 4.5:1 on #0B6A93 and deeper */
+    --rule: rgba(221, 244, 252, 0.20);
+    --rule-head: rgba(221, 244, 252, 0.42);
+    --rule-hover: rgba(221, 244, 252, 0.46);
+    --ul: rgba(221, 244, 252, 0.55);
+    --ul-tan: rgba(189, 239, 252, 0.6);
+    --outline: rgba(221, 244, 252, 0.6);
+    position: relative; color: var(--cream); overflow-x: clip;
+    background: linear-gradient(to bottom,
+      #E4F5FA 0, #C9EAF4 40px, #9DD6E8 110px, #6BBFDC 240px, #3098C0 330px, #0F7DAA 400px, #0B6A93 460px,
+      #0A5C82 700px, #0A4D6E 1150px, #083D58 62%, #072A3E 84%, #06141C 100%);
+  }
+  .sea ::selection { background: #F1FAFD; color: #0A4D6E; }
+  .sea a:focus-visible, .sea .xp summary:focus-visible { outline-color: #FFFFFF; }
+  .sea a:hover { color: #FFFFFF; }
+
+  /* the waterline strip: the meniscus ripples (script moves the path) */
+  .surface { position: absolute; left: 0; right: 0; top: -40px; height: 80px; z-index: 0; pointer-events: none; }
+  .surface svg { display: block; width: 100%; height: 80px; }
+  .hull-fb { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; display: block; }
+  .sea[data-gl="on"] .hull-fb { display: none; }
+
+  /* the surface band: ink on pale water; the light zone ends where the stations begin */
+  .waterline { position: relative; z-index: 2; min-height: 460px; padding-top: 44px;
+    --cream: #051C29; --muted: #082B3D; --rule-head: rgba(5, 28, 41, 0.38); }
+  .waterline .head { color: var(--cream); }
+  .waterline .head .idx, .waterline .head .rd { color: var(--muted); }
+  .surf-line { margin-top: 22px; font: italic 400 clamp(34px, 8.6vw, 46px)/1.04 var(--serif); letter-spacing: 0; color: var(--cream); text-wrap: balance; }
+  .surf-sub { margin-top: 10px; font: 400 12.5px/1.7 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--cream); text-wrap: balance; }
+  .js .surf-line, .js .surf-sub { opacity: 0; transform: translateY(10px); }
+  .js .sea.crossed .surf-line, .js .sea.crossed .surf-sub { opacity: 1; transform: none; }
+  .js.rm .surf-line, .js.rm .surf-sub { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: no-preference) {
+    .js .surf-line, .js .surf-sub { transition: opacity 0.9s var(--ease) 0.25s, transform 1.1s var(--ease) 0.25s; }
+    .js .surf-sub { transition-delay: 0.5s; }
+  }
+
+  /* stations: each one a depth, each with its own living graphic */
+  .stn { position: relative; isolation: isolate; padding-top: 72px; }
+  .stn:first-child { padding-top: 24px; }
+  .gfx { display: block; width: 100%; height: 300px; margin: 18px 0 8px; position: relative; }
+  .gfx canvas { display: block; width: 100%; height: 100%; }
+  .bleed { position: absolute; z-index: -1; top: 0; bottom: 0; left: 50%; width: 100vw; margin-left: -50vw; pointer-events: none; }
+  .bleed canvas { display: block; width: 100%; height: 100%; }
+  .gfx-voice canvas { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 76%, transparent 100%), linear-gradient(to bottom, transparent 0, #000 14%, #000 86%, transparent 100%); -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 76%, transparent 100%), linear-gradient(to bottom, transparent 0, #000 14%, #000 86%, transparent 100%); mask-composite: intersect; touch-action: pan-y; cursor: crosshair; }
+  .gfx-voice { height: 210px; }
+  .gfx-sonar { height: 300px; }
+  .gfx figcaption { position: absolute; left: 0; bottom: 4px; font: 400 11px/1.4 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); pointer-events: none; }
+  .dim-note { margin-top: 10px; font: 400 12px/1.5 var(--mono); letter-spacing: 0.08em; color: var(--muted); }
+
+  /* the pack: in the right margin on wide screens, inside the row when opened on narrow ones */
+  .row.has-fig { position: relative; }
+  .margin-fig { display: none; }
+  .margin-fig iframe { display: block; width: 100%; height: 100%; border: 1px solid rgba(221, 244, 252, 0.28); border-radius: 6px; background: #0A4D6E; color-scheme: dark; }
+  .has-fig:has(details[open]) .margin-fig { display: block; height: min(110vw, 440px); margin: 0 0 16px; }
+  @media (min-width: 1360px) {
+    .margin-fig, .has-fig:has(details[open]) .margin-fig {
+      display: block; position: absolute; top: -178px; left: calc(100% + 36px);
+      width: min(316px, calc(50vw - 372px)); height: 380px; margin: 0;
+    }
+  }
+
+  /* below the deepest ledge: bullets glow in the dark water */
+  #bullets .beliefs { margin-top: 10px; }
+  #bullets .beliefs li { padding: 13px 0 14px; grid-template-columns: 2.9rem minmax(0, 1fr); }
+  #bullets .beliefs .n { position: relative; z-index: 0; color: #9BF3EA; font-weight: 500; }
+  #bullets .beliefs .n::before {
+    content: ""; position: absolute; z-index: -1; left: 0; top: 50%; width: 42px; height: 42px; margin: -21px 0 0 -9px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(110, 240, 228, 0.42) 0%, rgba(70, 210, 220, 0.16) 42%, rgba(70, 210, 220, 0) 70%);
+    opacity: 0.75;
+  }
+  #bullets .beliefs p { color: #E3F4FA; }
+  .live #bullets .beliefs .n::before { animation: breathe 5.2s ease-in-out infinite; }
+  .live #bullets .beliefs li:nth-child(3n+2) .n::before { animation-duration: 6.4s; animation-delay: -2.1s; }
+  .live #bullets .beliefs li:nth-child(3n) .n::before { animation-duration: 7.3s; animation-delay: -4.4s; }
+  .live #bullets .beliefs li:nth-child(5n+1) .n::before { animation-delay: -1.2s; }
+  @keyframes breathe { 0%, 100% { opacity: 0.35; transform: scale(0.82); } 50% { opacity: 1; transform: scale(1.12); } }
+
+  /* ---------- the seabed: footer ---------- */
+  .seabed { position: relative; isolation: isolate; background: var(--abyss); color: #E3F4FA; overflow-x: clip;
+    --cream: #F1FAFD; --tan: #BDEFFC; --soft: #DDF0F7; --muted: #C3DFEB; --rule: rgba(221, 244, 252, 0.2); --rule-head: rgba(221, 244, 252, 0.42); --ul: rgba(221, 244, 252, 0.55); }
+  .seabed .wrap { padding-top: 64px; padding-bottom: 150px; }
+  .seabed .rl .val { color: var(--muted); }
+  .seabed a:hover { color: #FFFFFF; }
+  .seabed a:focus-visible { outline-color: #FFFFFF; }
+  .seabed .row:hover .co { color: #FFFFFF; }
+  .foot-line { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; }
+  .foot-line p { max-width: calc(640px + var(--gutter) * 2); margin: 0 auto; padding: 0 var(--gutter) 26px; font: 400 12px/1.7 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: #BCD9E6; }
+
+  /* ---------- gauge rail ---------- */
+  .rail { position: fixed; left: 0; top: 0; width: 14px; height: 100vh; z-index: 5; pointer-events: none; }
+  .rail canvas { display: block; width: 100%; height: 100%; }
+  @media (min-width: 900px) { .rail { width: 116px; left: 8px; } }
+  .no-js .rail, .no-js .gfx, .no-js .bleed { display: none; }
+
+  /* ---------- Wider viewports ---------- */
+  @media (min-width: 600px) {
+    :root { --datew: 11.25rem; }
+    .plate { margin-inline: 0; padding-top: 24px; }
+    .top {
+      --mark-h: 158px;
+      grid-template-areas: "mark name" "mark aff" "seek seek" "act act";
+      column-gap: 22px; margin-top: -44px;
+    }
+    .name { flex-direction: row; align-items: baseline; column-gap: 0.2em; align-self: end; }
+    .aff { margin-top: 8px; align-self: start; text-wrap: balance; }
+    .aff-a { display: inline; }
+    .aff-sep { display: inline; }
+    .seek { margin-top: 16px; }
+    .act { margin-top: 14px; }
+    .loc { display: inline-block; margin: 0 0 0 0.7em; }
+  }
+  @media (min-width: 768px) { :root { --gutter: 32px; --tri-off: 26px; } }
+
+  @media (hover: hover) and (pointer: fine) {
+    .row:hover::before, .row:focus-within::before {
+      content: ""; position: absolute; left: calc(var(--tri-off) * -1); top: 18px;
+      width: 10px; height: 9px; pointer-events: none;
+      background: var(--tan);
+      clip-path: polygon(50% 0, 0 100%, 100% 100%);
+    }
+    .row--solo:hover::before, .row--solo:focus-within::before { top: 20px; }
+    .row--link:hover::before, .row--link:focus-within::before { top: 17px; }
+    .row:hover, .row:focus-within { border-top-color: var(--rule-hover); }
+    .row:hover + .row, .row:focus-within + .row { border-top-color: var(--rule-hover); }
+    .row:hover .co, .row:focus-within .co { color: var(--tan); }
+    .xp summary:hover .co::after { opacity: 1; }
+    a:hover { color: var(--tan); text-decoration-color: var(--tan); }
+    .rl:hover { color: inherit; }
+    .rl:hover .val { color: var(--tan); text-decoration-color: var(--tan); }
+    .btn-fill:hover { background: #0B6A93; border-color: #0B6A93; color: var(--bg); }
+    .btn-line:hover { border-color: var(--tan); color: var(--tan); }
+  }
+
+  /* ---------- Motion: the draw-in, the opening of rows ---------- */
+  @media (prefers-reduced-motion: no-preference) {
+    .scene .ink { animation: scene-ink 0.5s cubic-bezier(0.65, 0, 0.35, 1) both; }
+    .scene .i1 { animation-duration: 0.6s; }
+    .scene .i2 { animation-delay: 0.2s; }
+    .scene .i3 { animation-delay: 0.4s; }
+    .tip .roof { animation: scene-ink 1.1s cubic-bezier(0.65, 0, 0.35, 1) 0.5s both; }
+    .mark .ink { animation: scene-ink 0.45s cubic-bezier(0.65, 0, 0.35, 1) both; }
+    .mark .ink-1 { animation-duration: 0.3s; animation-delay: 0.95s; }
+    .mark .ink-2 { animation-delay: 1.2s; }
+    .mark .ink-3 { animation-delay: 1.65s; }
+    .mark .m-draw { stroke-dasharray: 1; animation: scene-ink 0.8s cubic-bezier(0.65, 0, 0.35, 1) 0.2s both; }
+    .mark .m-wl, .mark .m-wl2 { stroke-dasharray: 1; animation: scene-ink 0.7s cubic-bezier(0.65, 0, 0.35, 1) 0.7s both; }
+    .mark .m-hull { animation: m-fade 0.9s var(--ease) 0.8s both; }
+    .xp summary .co::after { transition: transform 0.3s var(--ease), opacity 0.2s var(--ease); }
+    .xp details[open] .body { animation: trail-open 0.42s var(--ease) both; }
+    .xp details[open] .body > * { animation: trail-text 0.42s var(--ease) both; }
+    .xp details[open] .body > :nth-child(2) { animation-delay: 0.05s; }
+    .xp details[open] .body > :nth-child(3) { animation-delay: 0.1s; }
+    @supports (interpolate-size: allow-keywords) {
+      :root { interpolate-size: allow-keywords; }
+      .xp details::details-content { height: 0; overflow: clip; transition: height 0.38s var(--ease), content-visibility 0.38s allow-discrete; }
+      .xp details[open]::details-content { height: auto; }
+    }
+    a, .btn, .co, .row, .rl .val { transition: color 0.2s var(--ease), background-color 0.2s var(--ease), border-color 0.2s var(--ease), text-decoration-color 0.2s var(--ease); }
+    @media (hover: hover) and (pointer: fine) {
+      .row:hover::before, .row:focus-within::before { animation: tri-in 0.25s var(--ease) both; }
+    }
+  }
+  @keyframes m-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes trail-open { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+  @keyframes trail-text { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  @keyframes tri-in { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- gauge rail: elevation above the waterline, depth below it (decorative; every section label repeats its reading as text) -->
+<div class="rail" id="rail" aria-hidden="true"><canvas id="railCv"></canvas></div>
+
+<!-- the tip's ink facets are drawn here by script, behind the column -->
+<div class="tip" id="tip" aria-hidden="true"></div>
+
+<header class="wrap">
+  <div class="plate" aria-hidden="true">
+    <!-- the sketched mountain from the live site: it is the tip of the iceberg -->
+    <svg class="scene scene--mtn" width="1280" height="250" viewBox="170 18 1280 250" focusable="false">
+      <defs>
+        <filter id="mtn-soft" filterUnits="userSpaceOnUse" x="-40" y="-40" width="1360" height="562"><feGaussianBlur stdDeviation="7"/></filter>
+        <mask id="mtn-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1280" height="482">
+          <g filter="url(#mtn-soft)">
+            <path class="ink i1" pathLength="1" stroke-width="170" d="M-20 300 L200 250 L400 180 L560 110 L690 40 L800 105 L950 165 L1100 215 L1300 255"/>
+            <path class="ink i2" pathLength="1" stroke-width="190" d="M-20 345 L300 320 L500 270 L700 230 L900 260 L1300 320"/>
+            <path class="ink i3" pathLength="1" stroke-width="180" d="M-20 440 L400 425 L800 435 L1300 430"/>
+          </g>
+        </mask>
+      </defs>
+      <image href="../_shared/mountain-plate.webp" width="1280" height="482" mask="url(#mtn-mask)"/>
+    </svg>
+  </div>
+  <div class="top">
+    <!-- THE MARK. The hiker (his own line art, mirrored to face the peak, drawn black above the water)
+         stands on the tip of a faceted iceberg; the waterline cuts through it and the hull glows below. -->
+    <svg class="mark" viewBox="0 0 132 172" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="mk-hull" x1="0" y1="100" x2="0" y2="171" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#B4E2F0"/><stop offset="0.32" stop-color="#4AAECF"/><stop offset="0.7" stop-color="#0F7DAA"/><stop offset="1" stop-color="#0A5C82"/>
+        </linearGradient>
+        <clipPath id="mk-clip"><polygon points="16,100 3,112 13,128 9,142 31,156 50,152 66,170 84,152 104,156 122,142 118,126 130,112 116,100"/></clipPath>
+        <filter id="mk-soft" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="5"/></filter>
+        <mask id="mk-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="294" height="480">
+          <g filter="url(#mk-soft)">
+            <path class="ink ink-1" pathLength="1" stroke-width="64" d="M104 30 C 150 0, 196 30, 180 70 S 96 110, 100 70 S 160 40, 200 110"/>
+            <path class="ink ink-2" pathLength="1" stroke-width="72" d="M70 130 L 286 120 L 40 185 L 290 185 L 30 245 L 290 245 L 20 305 L 286 300"/>
+            <path class="ink ink-3" pathLength="1" stroke-width="72" d="M10 345 L 290 345 L 0 400 L 294 400 L 0 455 L 294 460"/>
+          </g>
+        </mask>
+      </defs>
+      <!-- below the waterline: translucent, light-refracting hull -->
+      <g class="m-hull">
+        <polygon points="16,100 3,112 13,128 9,142 31,156 50,152 66,170 84,152 104,156 122,142 118,126 130,112 116,100" fill="url(#mk-hull)" fill-opacity="0.94"/>
+        <g clip-path="url(#mk-clip)">
+          <polygon class="m-hf" points="16,100 66,110 40,116 3,112" fill="#fff" fill-opacity="0.26"/>
+          <polygon class="m-hf" points="16,100 116,100 92,118 66,110" fill="#fff" fill-opacity="0.12"/>
+          <polygon class="m-hf" points="116,100 130,112 104,134 92,118" fill="#fff" fill-opacity="0.30"/>
+          <polygon class="m-hf" points="3,112 40,116 30,132 13,128" fill="#0A4D6E" fill-opacity="0.20"/>
+          <polygon class="m-hf" points="40,116 66,110 92,118 80,134 52,136" fill="#fff" fill-opacity="0.08"/>
+          <polygon class="m-hf" points="13,128 30,132 52,136 31,156 9,142" fill="#0A4D6E" fill-opacity="0.24"/>
+          <polygon class="m-hf" points="52,136 80,134 66,152 50,152 31,156" fill="#fff" fill-opacity="0.10"/>
+          <polygon class="m-hf" points="80,134 104,134 122,142 104,156 84,152 66,152" fill="#0A4D6E" fill-opacity="0.26"/>
+          <polygon class="m-hf" points="104,134 122,142 118,126 130,112" fill="#fff" fill-opacity="0.20"/>
+          <polygon class="m-hf" points="66,152 84,152 66,170" fill="#06141C" fill-opacity="0.34"/>
+          <polygon class="m-hf" points="50,152 66,152 66,170" fill="#fff" fill-opacity="0.12"/>
+        </g>
+      </g>
+      <!-- the waterline, cutting through -->
+      <path class="m-wl" pathLength="1" d="M0 100 Q8 97.8 16 100 T32 100 T48 100 T64 100 T80 100 T96 100 T112 100 T132 100"/>
+      <path class="m-wl2" pathLength="1" d="M8 105 Q13 103.8 18 105 T28 105 M96 105 Q101 103.8 106 105 T116 105"/>
+      <!-- above the waterline: the tip, in ink and pale facets -->
+      <g>
+        <polygon points="14,100 26,91 38,84 46,76 52,69 62,64 74,58 62,100" fill="#F4FBFE"/>
+        <polygon points="74,58 84,70 86,100 62,100" fill="#CFE7F2"/>
+        <polygon points="84,70 96,77 106,88 118,100 86,100" fill="#A7CFE3"/>
+        <path class="m-rdg" d="M74 58 L62 100 M74 58 L86 100 M84 70 L86 100"/>
+        <path class="m-rdg" d="M96 82 L89 92 M101 86 L92 98 M107 92 L99 100"/>
+        <path class="m-rim m-draw" pathLength="1" d="M14 100 L26 91 L38 84 L46 76 L52 69 L62 64 L74 58 L84 70 L96 77 L106 88 L118 100"/>
+      </g>
+      <!-- the hiker, mirrored to face the summit, black above water -->
+      <g class="hk" transform="translate(70.4 8) scale(-0.125 0.125)">
+        <image href="../_shared/hiker.webp" width="294" height="480" mask="url(#mk-mask)"/>
+      </g>
+    </svg>
+    <h1 class="name"><span class="hari">Hari</span> <span class="sur">GRIDHARAN</span></h1>
+    <p class="aff"><span class="aff-a">Applied Economics, AI&nbsp;minor</span><span class="aff-sep">&nbsp;· </span><span class="nw">Cornell&nbsp;Dyson&nbsp;’29&nbsp;· Dyson&nbsp;Scholar</span></p>
+    <p class="seek">Seeking Summer&nbsp;2027 internships in strategy, investing, business analysis and product — NYC&nbsp;/&nbsp;SF</p>
+    <div class="act">
+      <a class="btn btn-fill" href="/Hari_Gridharan_Resume.pdf">Resume<span aria-hidden="true">&nbsp;↓</span><span class="sr-only"> (PDF)</span></a>
+      <a class="btn btn-line" href="mailto:hg532@cornell.edu">Email</a>
+      <span class="soc"><a href="https://www.linkedin.com/in/harigridharan1/" target="_blank" rel="noopener">LinkedIn<span class="sr-only"> (opens in new tab)</span></a><span class="dot" aria-hidden="true">·</span><a href="https://github.com/hgridharan999" target="_blank" rel="noopener">GitHub<span class="sr-only"> (opens in new tab)</span></a></span>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+<div class="wrap" id="tipcol">
+  <section aria-labelledby="experience">
+    <h2 class="head" id="experience"><span class="ht"><span class="idx">01</span> · EXPERIENCE</span><span class="rd" aria-hidden="true"></span></h2>
+    <ul role="list">
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Co-Founder,</span> <span class="co">Loadstone&nbsp;Labs</span></span>
+          <span class="when">Feb&nbsp;2026&nbsp;–&nbsp;now</span>
+          <span class="line"><span class="lead">132,000+ water-rights records a day</span> from 44 Colorado counties&nbsp;· grant-funded by AWS and LvlUp&nbsp;Ventures</span>
+        </summary>
+        <div class="body">
+          <p>Co-founded a data platform for Western water rights. County records are fragmented and inconsistent, so rights are hard to find and harder to value; Loadstone pulls workflow, basin intelligence and transaction infrastructure into one place for the attorneys and engineers who work them.</p>
+          <p>Our pipeline ingests 132,000+ live water-rights records a day from 44 Colorado counties into a single schema. Supported by grants from AWS and LvlUp&nbsp;Ventures.</p>
+          <p class="meta">Ithaca, NY · <a href="https://loadstonelabs.com" target="_blank" rel="noopener">loadstonelabs.com<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Consulting Intern,</span> <span class="co">EXL</span></span>
+          <span class="when">Summer&nbsp;2026</span>
+          <span class="line"><span class="lead">Built a CRM tool</span> to replace manual contract tracking across a $70M+ Fortune&nbsp;100 client portfolio</span>
+        </summary>
+        <div class="body">
+          <p>Supported a portfolio of client contracts worth $70M+ across Fortune 100 accounts, tracking scope, deliverables and renewal terms.</p>
+          <p>Built a custom CRM tool to replace manual contract tracking, administered contract data in Salesforce, and produced executive-ready decks for global teams.</p>
+          <p class="meta">New York, NY</p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Operations &amp; Strategy Intern,</span> <span class="co">Midian&nbsp;Partners</span></span>
+          <span class="when">Jun&nbsp;–&nbsp;Jul&nbsp;2026</span>
+          <span class="line"><span class="lead">6<span class="sr-only"> to </span><span aria-hidden="true">&nbsp;→&nbsp;</span>25+ signed lender partners</span> in under five&nbsp;weeks&nbsp;· mortgage fintech</span>
+        </summary>
+        <div class="body">
+          <p>Scaled an early-stage mortgage fintech’s lender network from 6 to 25+ signed partnerships in under five weeks.</p>
+          <p>Negotiated terms with partner executives, ran user testing, and coordinated a source-verified technical audit across 12 subsystems.</p>
+          <p class="meta">Remote</p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">AI Strategy Consultant,</span> <span class="co">Adobe</span></span>
+          <span class="when">Jan&nbsp;–&nbsp;Apr&nbsp;2026</span>
+          <span class="line"><span class="lead">$1M+ enterprise AI deals</span>&nbsp;· market sizing and positioning for AI products</span>
+        </summary>
+        <div class="body">
+          <p>Contract role on AI product strategy tied to $1M+ enterprise contracts, supporting work with IT leadership at Fortune 500 customers.</p>
+          <p>Built market-sizing frameworks, UX benchmarks and positioning analyses, and proposed business cases for the product suite.</p>
+          <p class="meta">Remote · Contract</p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Problem Design Engineer,</span> <span class="co">IdlExperts</span></span>
+          <span class="when">Jan&nbsp;–&nbsp;Apr&nbsp;2026</span>
+          <span class="line"><span class="lead">Frontier AI model evaluations</span>&nbsp;· designed the problem sets used to test them</span>
+        </summary>
+        <div class="body">
+          <p>Designed complex, real-world problem sets used to evaluate frontier AI models in training environments.</p>
+          <p>Benchmarked agent behavior against them and turned engineer feedback into improvements for production deployments.</p>
+          <p class="meta">Remote · formerly Widget Factory</p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Co-Founder,</span> <span class="co">Commit</span></span>
+          <span class="when">Sep&nbsp;2025&nbsp;–&nbsp;Jan&nbsp;2026</span>
+          <span class="line"><span class="lead">Top&nbsp;10% of 20,000+&nbsp;YC applicants</span>&nbsp;· social prediction-market MVP built in 3&nbsp;days</span>
+        </summary>
+        <div class="body">
+          <p>Co-founded a social prediction-market platform that ranked in the top 10% of 20,000+ Y Combinator applicants.</p>
+          <p>Took it from concept to a working MVP in three days, including the prediction logic and the unit-economics model.</p>
+          <p class="meta"><a href="https://commit-landing-tau.vercel.app" target="_blank" rel="noopener">Site<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="on-campus">
+    <h2 class="head" id="on-campus"><span class="ht"><span class="idx">02</span> · ON CAMPUS</span><span class="rd" aria-hidden="true"></span></h2>
+    <ul role="list">
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Analyst,</span> <span class="co">Cornell Venture&nbsp;Capital</span></span>
+          <span class="when">2026&nbsp;–&nbsp;now</span>
+          <span class="line"><span class="tk">TK: what you diligence or produce, number first</span></span>
+        </summary>
+        <div class="body">
+          <p><span class="tk">TK: 2–3 sentences on the firms or deals, the sectors, and what you produced (memos, diligence, market maps)</span></p>
+          <p class="meta">Ithaca, NY</p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Co-President,</span> <span class="co">Cornell Entrepreneurship&nbsp;Club</span></span>
+          <span class="when">Sep&nbsp;2025&nbsp;–&nbsp;now</span>
+          <span class="line"><span class="lead">Y&nbsp;Combinator speaker series</span> for 150+&nbsp;attendees&nbsp;· founder and VC programming</span>
+        </summary>
+        <div class="body">
+          <p>Co-lead Cornell’s entrepreneurship club. I run our Y Combinator speaker series, bringing founders and VC partners to campus for audiences of 150+, and coordinate directly with the firms behind them.</p>
+          <p>Grew the club’s reach to 500,000+ views across Instagram and LinkedIn, and scout student startups to sharpen the club’s investment theses.</p>
+          <p class="meta">Ithaca, NY</p>
+        </div>
+      </details></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="projects">
+    <h2 class="head" id="projects"><span class="ht"><span class="idx">03</span> · PROJECTS &amp; RESEARCH</span><span class="rd" aria-hidden="true"></span></h2>
+    <ul role="list">
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="co">Vest Practices</span> <span class="loc">DNHacks 2026</span></span>
+          <span class="when">2026</span>
+          <span class="line"><span class="lead">AI glasses</span> that train tradespeople hands-free&nbsp;· identify the part in hand in under a second</span>
+        </summary>
+        <div class="body">
+          <p>A wearable training system for tradespeople, built on AI glasses with a team of five at DNHacks 2026 (Energy &amp; Industrialization track).</p>
+          <p>The glasses see what the trainee sees and talk back: a detector trained on our own footage, a vision model that reads part markings, voice activation and a synthesized voice in the ear. Every session is stored as structured data, so the trainer remembers what each person has learned.</p>
+          <p class="meta"><a href="https://vestpractices.vercel.app/" target="_blank" rel="noopener">Demo<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a> · <a href="https://portal.dnhacks.org/e/2026/showcase/b-v-est-practices" target="_blank" rel="noopener">Entry<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a> · <a href="https://github.com/8ddieHu0314/dnhacks" target="_blank" rel="noopener">Repo<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="co">Climate startup search</span> <span class="loc">Venture sourcing</span></span>
+          <span class="when">Dec&nbsp;2025&nbsp;–&nbsp;Jan&nbsp;2026</span>
+          <span class="line"><span class="lead">212 climate startups</span> ranked on founder, patent and market signals&nbsp;· live search in ~600ms</span>
+        </summary>
+        <div class="body">
+          <p>An investor sourcing tool over 212 indexed climate-tech startups across 12 verticals. Candidates are ranked with multi-factor scoring across founder backgrounds, patent data and market signals.</p>
+          <p>Search blends BERT embeddings (FAISS) with BM25 keyword ranking through reciprocal rank fusion, expands queries with synonyms, and is measured with NDCG@10.</p>
+          <p class="meta">Python · FastAPI · FAISS · <a href="/climate-search">Demo<span aria-hidden="true">&nbsp;→</span><span class="sr-only">: climate startup search</span></a> · <a href="https://github.com/hgridharan999/climate_tech_discovery_backend" target="_blank" rel="noopener">Repo<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="co">OEIS A363004</span> <span class="loc">Number theory</span></span>
+          <span class="when">Jul&nbsp;2026</span>
+          <span class="line"><span class="lead">Computed a term nobody had found</span>&nbsp;· now credited in the On-Line Encyclopedia of Integer Sequences</span>
+        </summary>
+        <div class="body">
+          <p>A363004 counts the sequences of n distinct positive integers whose Gilbreath transform is all ones. Nobody had computed the 12th term.</p>
+          <p>I wrote the search that found it, a(12) = 9,290,399,173. The value and my Python program are now part of the sequence’s entry.</p>
+          <p class="meta">Python · <a href="https://oeis.org/A363004" target="_blank" rel="noopener">Entry<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="co">bigred.network</span> <span class="loc">Cornell Armada</span></span>
+          <span class="when">Jan&nbsp;2026</span>
+          <span class="line"><span class="lead">65 Cornell builders</span> in a directory of the university’s founders, builders and operators</span>
+        </summary>
+        <div class="body">
+          <p>Built bigred.network, the directory of Cornell’s founders, builders and operators, as part of Cornell Armada, a YC-backed founder community. 65 builders are listed so far.</p>
+          <p>It has member filtering, a network visualization, and a manual review workflow so access stays controlled.</p>
+          <p class="meta">React · TypeScript · <a href="https://www.bigred.network/" target="_blank" rel="noopener">Site<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+      <!-- Project Dactyl (AI-integrated ring) returns here, by date, once it has a sentence, a date and a link. -->
+    </ul>
+  </section>
+
+  <section aria-labelledby="writing">
+    <h2 class="head" id="writing"><span class="ht"><span class="idx">04</span> · WRITING</span><span class="rd" aria-hidden="true"></span></h2>
+    <p class="kicker">Investment thesis · what I’m betting on</p>
+    <ol class="beliefs">
+      <li><span class="n" aria-hidden="true">01</span><p>People &gt; ideas — great people can create great ideas, but great ideas can’t make up for not being a great founder.</p></li>
+      <li><span class="n" aria-hidden="true">02</span><p>Physical infrastructure is the #1 most undervalued sector.</p></li>
+      <li><span class="n" aria-hidden="true">03</span><p>Way too many people are building AI, and not enough are building for AI.</p></li>
+      <li><span class="n" aria-hidden="true">04</span><p>If you aren’t a good storyteller, you won’t have people buy your story or your product.</p></li>
+    </ol>
+    <ul role="list" class="theses-more">
+      <li class="row row--link"><a class="rl" href="#essays"><span class="lab co">Essays and notes</span><span class="val">4 essays · Me in 10 bullet points<span aria-hidden="true">&nbsp;↓</span></span></a></li>
+    </ul>
+  </section>
+</div>
+
+<!-- ================= THE WATERLINE ================= -->
+<div class="sea" id="sea">
+  <div class="surface" id="surface" aria-hidden="true"><svg id="surfSvg" viewBox="0 0 1000 80" preserveAspectRatio="none" focusable="false">
+    <defs><linearGradient id="sg" x1="0" y1="40" x2="0" y2="80" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E4F5FA"/><stop offset="1" stop-color="#C9EAF4"/></linearGradient></defs>
+    <path id="sSky" d="" fill="#FFFFFF"/>
+    <path id="sWater" d="" fill="url(#sg)"/>
+    <path id="sLine2" d="" fill="none" stroke="#FFFFFF" stroke-width="1.2" stroke-opacity="0.85"/>
+    <path id="sLine" d="" fill="none" stroke="#0F7DAA" stroke-width="1.5" stroke-linejoin="round"/>
+  </svg></div>
+  <svg class="hull-fb" id="hullFb" aria-hidden="true" focusable="false"></svg>
+
+  <div class="wrap">
+    <section class="waterline" id="waterline" aria-labelledby="h-wl">
+      <h2 class="head" id="h-wl"><span class="ht"><span class="idx">00</span> · WATERLINE</span><span class="rd" aria-hidden="true"></span></h2>
+      <p class="surf-line">Most of it is below the surface.</p>
+      <p class="surf-sub">Mountaineering · singing · cooking · essays · ten bullet points</p>
+    </section>
+  </div>
+
+  <div class="wrap">
+    <!-- 05: sonar bathymetry of the real mountain -->
+    <section class="stn" id="mountaineering" aria-labelledby="h-mtn">
+      <h2 class="head" id="h-mtn"><span class="ht"><span class="idx">05</span> · MOUNTAINEERING</span><span class="rd" aria-hidden="true"></span></h2>
+      <figure class="gfx gfx-sonar" id="g-sonar" aria-hidden="true"><canvas></canvas><figcaption>Sonar sounding · Quandary Peak · his route</figcaption></figure>
+      <ul role="list">
+        <li class="row xp has-fig"><details>
+          <summary>
+            <span class="ttl"><span class="co">Mountaineering</span> <span class="loc">Colorado fourteeners</span></span>
+            <span class="when">2025&nbsp;–&nbsp;now</span>
+            <span class="line"><span class="lead">Quandary Peak, 14,265&nbsp;ft</span> most recent&nbsp;· first was Mt.&nbsp;Bierstadt</span>
+          </summary>
+          <div class="body">
+            <p>Working through Colorado’s fourteeners. First was Mt. Bierstadt in 2025; most recent was Quandary Peak (14,265 ft) in under 4:30 round trip.</p>
+            <p class="meta"><a href="/hiking">Trail log<span aria-hidden="true">&nbsp;→</span><span class="sr-only">: mountaineering</span></a></p>
+          </div>
+        </details>
+          <aside class="margin-fig" id="pack-margin">
+            <iframe id="packFrame" data-src="../_shared/pack/index.html" title="Fourteener pack: an interactive figure of the Ten Essentials" loading="lazy"></iframe>
+          </aside>
+        </li>
+      </ul>
+    </section>
+
+    <!-- 06: sound in water -->
+    <section class="stn" id="singing" aria-labelledby="h-sing">
+      <h2 class="head" id="h-sing"><span class="ht"><span class="idx">06</span> · SINGING &amp; COOKING</span><span class="rd" aria-hidden="true"></span></h2>
+      <figure class="gfx gfx-voice" id="g-voice" aria-hidden="true"><canvas></canvas></figure>
+      <ul role="list">
+        <li class="row row--solo">
+          <p class="line"><span class="lead co">Carnatic &amp; indie singing</span>&nbsp;· cooking regional Indian food</p>
+        </li>
+      </ul>
+    </section>
+
+    <!-- 07: marine snow drifts past the essays -->
+    <section class="stn" id="essays" aria-labelledby="h-essays">
+      <div class="bleed" aria-hidden="true"><canvas id="g-snow"></canvas></div>
+      <h2 class="head" id="h-essays"><span class="ht"><span class="idx">07</span> · ESSAYS</span><span class="rd" aria-hidden="true"></span></h2>
+      <p class="kicker">Select essays</p>
+      <ul role="list">
+        <li class="row row--link"><a class="rl rl--essay" href="/blog/tat-tvam-asi"><span class="et"><span class="lab co">Tat Tvam Asi and Conviction</span><span class="ed">Reading an Upanishad saying against its grain, and why conviction matters more in an age of algorithmic sameness.</span></span><span class="val"><time datetime="2026-10-06">Oct 2026</time></span></a></li>
+        <li class="row row--link"><a class="rl rl--essay" href="/blog/doing-it-all"><span class="et"><span class="lab co">Why Doing It All Is Simultaneously the Greatest and Worst Thing You Can Do</span><span class="ed">A reflection on momentum, overcommitment, and the cost of staying in motion all summer.</span></span><span class="val"><time datetime="2026-06-29">Jun 2026</time></span></a></li>
+        <li class="row row--link"><a class="rl rl--essay" href="/blog/solipsism-take-every-risk"><span class="et"><span class="lab co">Solipsism and Why You Should Take Every Risk in the World</span><span class="ed">What if no one around you is actually real? And why that might be the best reason to stop holding yourself back.</span></span><span class="val"><time datetime="2026-03-15">Mar 2026</time></span></a></li>
+        <li class="row row--link"><a class="rl rl--essay" href="/blog/neuroplasticity-and-change"><span class="et"><span class="lab co">Why Neuroplasticity Gives Me Reasons to Keep Growing and Proves Bojack Wrong</span><span class="ed">On the brain’s capacity for change, the science of growth, and why giving up is never actually the answer.</span></span><span class="val"><time datetime="2026-02-23">Feb 2026</time></span></a></li>
+      </ul>
+    </section>
+
+    <!-- 08: the deepest, darkest water -->
+    <section class="stn" id="bullets" aria-labelledby="h-bul">
+      <div class="bleed" aria-hidden="true"><canvas id="g-glow"></canvas></div>
+      <h2 class="head" id="h-bul"><span class="ht"><span class="idx">08</span> · ME IN 10 BULLET POINTS</span><span class="rd" aria-hidden="true"></span></h2>
+      <ol class="beliefs">
+        <li><span class="n" aria-hidden="true">01</span><p>time being so limited means that you shouldn’t waste time doing stuff you don’t like.</p></li>
+        <li><span class="n" aria-hidden="true">02</span><p>your best experiences are memories shared with friends.</p></li>
+        <li><span class="n" aria-hidden="true">03</span><p>bias to action, choice paralysis kills 99% of solutions.</p></li>
+        <li><span class="n" aria-hidden="true">04</span><p>become someone who loves risk-taking.</p></li>
+        <li><span class="n" aria-hidden="true">05</span><p>health outweighs all other priorities.</p></li>
+        <li><span class="n" aria-hidden="true">06</span><p>potential is the worst thing you can have: it prevents you from maximizing effort.</p></li>
+        <li><span class="n" aria-hidden="true">07</span><p>derealization is a bottom 5 experience all time.</p></li>
+        <li><span class="n" aria-hidden="true">08</span><p>literally everyone around you is underappreciative of the things they have.</p></li>
+        <li><span class="n" aria-hidden="true">09</span><p>not knowing what comes after death should be the scariest thing you ever think about.</p></li>
+        <li><span class="n" aria-hidden="true">10</span><p>human connection is the single most undervalued experience of our time.</p></li>
+      </ol>
+    </section>
+  </div>
+</div>
+</main>
+
+<!-- ================= THE SEABED ================= -->
+<footer class="seabed" id="seabed">
+  <div class="bleed" aria-hidden="true"><canvas id="g-bed"></canvas></div>
+  <div class="wrap">
+    <h2 class="head" id="h-bed"><span class="ht"><span class="idx">09</span> · ELSEWHERE</span><span class="rd" aria-hidden="true"></span></h2>
+    <ul role="list">
+      <li class="row row--link"><a class="rl" href="https://www.linkedin.com/in/harigridharan1/" target="_blank" rel="noopener"><span class="lab co">LinkedIn</span><span class="val">linkedin.com/in/harigridharan1<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></span></a></li>
+      <li class="row row--link"><a class="rl" href="https://github.com/hgridharan999" target="_blank" rel="noopener"><span class="lab co">GitHub</span><span class="val">github.com/hgridharan999<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></span></a></li>
+      <li class="row row--link"><a class="rl" href="mailto:hg532@cornell.edu"><span class="lab co">Email</span><span class="val">hg532@cornell.edu</span></a></li>
+      <li class="row row--link"><a class="rl" href="/Hari_Gridharan_Resume.pdf"><span class="lab co">Resume</span><span class="val">Hari_Gridharan_Resume.pdf<span aria-hidden="true">&nbsp;↓</span><span class="sr-only"> (PDF)</span></span></a></li>
+    </ul>
+  </div>
+  <div class="foot-line"><p>Last updated <time datetime="2026-10">Oct 2026</time></p></div>
+</footer>
+
+<canvas id="gl" aria-hidden="true" style="position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:1;pointer-events:none;display:none"></canvas>
+<script>
+(() => {
+  'use strict';
+  /* ------------------------------------------------------------------------------------------
+     Core: helpers, layout measurement, the gauge's two scales.
+     ------------------------------------------------------------------------------------------ */
+  const D = document, W = window, de = D.documentElement;
+  const $ = (s, r = D) => r.querySelector(s);
+  const $$ = (s, r = D) => Array.from(r.querySelectorAll(s));
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  const easeInOut = (t) => { t = clamp(t, 0, 1); return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
+  const easeOut = (t) => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+  const TAU = Math.PI * 2;
+  const NS = 'http://www.w3.org/2000/svg';
+  function rng(seed) {
+    let a = seed >>> 0;
+    return () => {
+      a = (a + 0x6D2B79F5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function svgEl(parent, tag, attrs) {
+    const el = D.createElementNS(NS, tag);
+    for (const k in attrs) el.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(el);
+    return el;
+  }
+  const reduceMQ = W.matchMedia('(prefers-reduced-motion: reduce)');
+  let reduce = reduceMQ.matches;
+
+  /* The gauge. Feet above the waterline on the tip, feet below it in the sea. The tip is 96 ft
+     (a real berg's sail), the sea reads to -960 ft at the seabed: ten times as much, drawn at a
+     compressed scale (the rail marks the break at the waterline). */
+  const TIP_FT = 96, SEA_FT = 960;
+
+  const L = { vw: 1440, vh: 900, WL: 2400, H: 5600, colL: 400, colR: 1040, plB: 160, bulletsTop: 4800, heads: [], S: 0 };
+  const seaEl = $('#sea');
+  function measure() {
+    const sy = W.scrollY;
+    const topOf = (el) => el.getBoundingClientRect().top + sy;
+    L.vw = de.clientWidth; L.vh = W.innerHeight;
+    L.WL = Math.round(topOf(seaEl));
+    const bed = $('#seabed');
+    L.H = Math.round(topOf(bed) + bed.offsetHeight);
+    L.plB = $('.plate').getBoundingClientRect().bottom + sy;
+    const hr = $('#experience').getBoundingClientRect();
+    L.colL = hr.left; L.colR = hr.right;
+    L.bulletsTop = topOf($('#bullets'));
+    L.S = L.vw >= 700 ? clamp(L.colL * 0.30, 8, 130) : 0;
+    L.heads = $$('.head').map((h) => {
+      const r = h.getBoundingClientRect();
+      const idx = h.querySelector('.idx');
+      return { y: r.top + sy + r.height * 0.5, idx: idx ? idx.textContent : '', rd: h.querySelector('.rd') };
+    });
+    de.style.setProperty('--wl', L.WL + 'px');
+  }
+  const ftAt = (y) => (y <= L.WL ? TIP_FT * (1 - y / L.WL) : -SEA_FT * (y - L.WL) / (L.H - L.WL));
+  const yAtFt = (ft) => (ft >= 0 ? L.WL * (1 - ft / TIP_FT) : L.WL + (-ft / SEA_FT) * (L.H - L.WL));
+  const fmtFt = (ft) => {
+    const v = Math.round(ft);
+    return v === 0 ? '0 FT' : (v > 0 ? '+' : '−') + Math.abs(v).toLocaleString('en-US') + ' FT';
+  };
+  function writeReadings() {
+    L.heads.forEach((h) => { if (h.rd) h.rd.textContent = h.idx === '00' ? '0 FT' : fmtFt(ftAt(h.y)); });
+  }
+
+  /* ------------------------------------------------------------------------------------------
+     The tip: ink facets above the water. The sketched mountain in the header is its apex; two
+     faceted flanks run down either side of the column and flare at the waterline.
+     ------------------------------------------------------------------------------------------ */
+  const tipEl = $('#tip');
+  function hatchSegs(poly, ang, gap, xmax) {
+    const c = Math.cos(ang), s = Math.sin(ang), out = [];
+    const uv = poly.map(([x, y]) => [x * c + y * s, -x * s + y * c]);
+    let vmin = 1e9, vmax = -1e9;
+    uv.forEach((p) => { vmin = Math.min(vmin, p[1]); vmax = Math.max(vmax, p[1]); });
+    for (let v = vmin + gap * 0.5; v < vmax; v += gap) {
+      let u0 = 1e9, u1 = -1e9;
+      for (let i = 0; i < uv.length; i++) {
+        const a = uv[i], b = uv[(i + 1) % uv.length];
+        if ((a[1] <= v && b[1] > v) || (b[1] <= v && a[1] > v)) {
+          const u = a[0] + ((v - a[1]) / (b[1] - a[1])) * (b[0] - a[0]);
+          if (u < u0) u0 = u; if (u > u1) u1 = u;
+        }
+      }
+      if (u1 <= u0) continue;
+      let x0 = u0 * c - v * s, y0 = u0 * s + v * c, x1 = u1 * c - v * s, y1 = u1 * s + v * c;
+      if (xmax != null) {
+        if (x0 > xmax && x1 > xmax) continue;
+        if (x1 > xmax) { const k = (xmax - x0) / (x1 - x0); y1 = y0 + (y1 - y0) * k; x1 = xmax; }
+        else if (x0 > xmax) { const k = (xmax - x1) / (x0 - x1); y0 = y1 + (y0 - y1) * k; x0 = xmax; }
+      }
+      out.push([x0, y0, x1, y1]);
+    }
+    return out;
+  }
+
+  function buildTip() {
+    tipEl.textContent = '';
+    const { vw, WL, colL, colR, plB, S } = L;
+    if (WL < 500) return;
+    const svg = svgEl(tipEl, 'svg', { viewBox: `0 0 ${vw} ${WL}`, preserveAspectRatio: 'none', focusable: 'false' });
+    const defs = svgEl(svg, 'defs', {});
+    const g = svgEl(defs, 'linearGradient', { id: 'tip-fill', x1: 0, y1: plB, x2: 0, y2: WL, gradientUnits: 'userSpaceOnUse' });
+    [['0', '#FFFFFF'], ['0.72', '#FFFFFF'], ['0.9', '#F6FBFD'], ['1', '#E6F4F9']].forEach(([o, c]) => svgEl(g, 'stop', { offset: o, 'stop-color': c }));
+    if (S < 12) {                                    // phones: no silhouette, only the page taking on a cold tint toward the surface
+      svgEl(svg, 'rect', { x: 0, y: plB, width: vw, height: WL - plB, fill: 'url(#tip-fill)' });
+      return;
+    }
+    // the roof: the sketched mountain's own ridge, continued as the iceberg's outline
+    const sc = $('.scene').getBoundingClientRect(), sY = sc.top + W.scrollY, k = sc.width / 1280;
+    const rp = (x, y) => [sc.left + (x - 170) * k, sY + (y - 18) * k];
+    const roofL = [rp(200, 252), rp(300, 215), rp(400, 181), rp(485, 150), rp(560, 112), rp(630, 76), rp(690, 40)];
+    const roofR = [rp(690, 40), rp(745, 74), rp(800, 106), rp(880, 138), rp(950, 166), rp(1030, 190), rp(1100, 214), rp(1200, 238), rp(1300, 256)];
+    const yL0 = roofL[0][1] + (colL - 3 - roofL[0][0]) * 0.25, yR0 = roofR[roofR.length - 1][1] + (colR + 3 - roofR[roofR.length - 1][0]) * 0.22;
+    const rnd = rng(11), y0 = Math.max(yL0, yR0), n = Math.max(6, Math.round((WL - y0) / 300));
+    const Lo = [[colL - 3, yL0]], Ro = [[colR + 3, yR0]], Li = [[colL + 60, yL0]], Ri = [[colR - 60, yR0]];
+    for (let i = 1; i <= n; i++) {
+      const t = i / n;
+      const y = lerp(y0, WL, t) + (i < n ? (rnd() - 0.5) * 110 : 0);
+      const spread = S * Math.pow(t, 1.15);
+      const zl = i === n ? 0 : (i % 2 ? 7 : -5) * (0.5 + rnd());
+      const zr = i === n ? 0 : (i % 2 ? -5 : 7) * (0.5 + rnd());
+      Lo.push([colL - 3 - spread - zl, y]);
+      Ro.push([colR + 3 + spread + zr, y]);
+      Li.push([colL + 60, y + (rnd() - 0.5) * 80]);
+      Ri.push([colR - 60, y + (rnd() - 0.5) * 80]);
+    }
+    // the ice body, roof included
+    const roof = [[colL - 3, yL0]].concat(roofL, roofR.slice(1), [[colR + 3, yR0]]);
+    const body = roof.concat(Ro.slice(1).reverse(), Lo.slice(1));
+    svgEl(svg, 'polygon', { class: 'ice', points: body.map((p) => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ') });
+    // facets live only outside the column, so no linework runs behind the text
+    const rf = svgEl(defs, 'linearGradient', { id: 'roof-fade', x1: colL, y1: 0, x2: colL + 260, y2: 0, gradientUnits: 'userSpaceOnUse' });
+    svgEl(rf, 'stop', { offset: '0', 'stop-color': '#111', 'stop-opacity': '0' }); svgEl(rf, 'stop', { offset: '1', 'stop-color': '#111', 'stop-opacity': '0.6' });
+    const cp = svgEl(defs, 'clipPath', { id: 'tip-out' });
+    svgEl(cp, 'path', { 'clip-rule': 'evenodd', d: `M0 0H${vw}V${WL}H0Z M${colL + 1} 0V${WL}H${colR - 1}V0Z` });
+    // faceted strips on both flanks
+    const pal = ['#FFFFFF', '#EEF8FC', '#DCEFF7', '#C9E4F0', '#B8DCEB'];
+    const fg = svgEl(svg, 'g', { 'clip-path': 'url(#tip-out)' });
+    const hg = svgEl(svg, 'g', { 'clip-path': 'url(#tip-out)' });
+    const strip = (O, I, side) => {
+      for (let i = 0; i < n; i++) {
+        const tris = [[O[i], O[i + 1], I[i]], [O[i + 1], I[i + 1], I[i]]];
+        tris.forEach((tr) => {
+          const dep = (i / n);
+          const f = pal[Math.min(pal.length - 1, Math.floor(rnd() * rnd() * 5 + dep * 1.2))];
+          svgEl(fg, 'polygon', { class: 'fac', points: tr.map((p) => p.join(',')).join(' '), fill: f, 'fill-opacity': (0.5 + rnd() * 0.4).toFixed(2) });
+          if (rnd() < 0.42) {
+            const sg = hatchSegs(tr, (side < 0 ? 0.95 : 2.2) + (rnd() - 0.5) * 0.3, 5.2 + rnd() * 2.5, side < 0 ? colL : null);
+            sg.forEach(([x1, y1, x2, y2]) => {
+              if (side > 0 && x2 < colR && x1 < colR) return;
+              svgEl(hg, 'line', { class: 'hat', x1: x1.toFixed(1), y1: y1.toFixed(1), x2: x2.toFixed(1), y2: y2.toFixed(1) });
+            });
+          }
+        });
+      }
+    };
+    strip(Lo, Li, -1); strip(Ro, Ri, 1);
+    // a few long cracks running in from the rim
+    const cg = svgEl(svg, 'g', { 'clip-path': 'url(#tip-out)' });
+    for (let k = 0; k < 6; k++) {
+      const side = k % 2 ? 1 : -1, O = side < 0 ? Lo : Ro;
+      const i = 1 + Math.floor(rnd() * (n - 1)), p = O[i];
+      const len = 40 + rnd() * 90, a = 0.5 + rnd() * 0.9;
+      const x2 = side < 0 ? Math.min(colL - 2, p[0] + Math.cos(a) * len) : Math.max(colR + 2, p[0] - Math.cos(a) * len);
+      svgEl(cg, 'path', { class: 'crk', d: `M${p[0].toFixed(1)} ${p[1].toFixed(1)} L${((p[0] + x2) / 2 + (rnd() - 0.5) * 10).toFixed(1)} ${(p[1] + Math.sin(a) * len * 0.55).toFixed(1)} L${x2.toFixed(1)} ${(p[1] + Math.sin(a) * len).toFixed(1)}` });
+    }
+    // the rim, in ink
+    const path = (pts) => 'M' + pts.map((p) => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' L');
+    svgEl(svg, 'path', { class: 'rim', d: path(Lo) });
+    svgEl(svg, 'path', { class: 'rim', d: path(Ro) });
+    svgEl(svg, 'path', { class: 'rim roof', pathLength: 1, d: path([[colL - 3, yL0]].concat(roofL, roofR.slice(1), [[colR + 3, yR0]])) });
+  }
+
+  /* ------------------------------------------------------------------------------------------
+     The submerged hull: one polygon shared by the shader and the static fallback.
+     (nx, ny) are fractions of the hull's half-width and its depth; the first and last vertices
+     sit on the waterline where the tip ends.
+     ------------------------------------------------------------------------------------------ */
+  const HULL = [
+    null, [-0.62, 0.035], [-0.80, 0.075], [-0.98, 0.15], [-0.90, 0.24], [-1.00, 0.31], [-0.86, 0.41], [-0.90, 0.49],
+    [-0.74, 0.57], [-0.70, 0.66], [-0.54, 0.74], [-0.45, 0.83], [-0.30, 0.91], [-0.13, 0.965], [0.03, 1.0],
+    [0.17, 0.93], [0.31, 0.86], [0.47, 0.79], [0.58, 0.70], [0.78, 0.63], [0.80, 0.53], [0.97, 0.45], [0.89, 0.35],
+    [1.0, 0.26], [0.91, 0.17], [0.77, 0.095], [0.59, 0.04], null
+  ];
+  function hullGeom() {
+    const hw = L.vw < 700 ? Math.max(L.vw * 1.8, 340) : clamp(L.vw * 0.62, 340, 900);
+    const depth = Math.max(1500, L.bulletsTop - L.WL + 140);
+    const ta = (L.colR - L.colL) / 2 + 3 + L.S;
+    return { cx: (L.colL + L.colR) / 2, hw, depth, ta };
+  }
+  const hullFb = $('#hullFb');
+  function buildHullFallback() {
+    hullFb.textContent = '';
+    const G = hullGeom(), vw = L.vw, seaH = Math.max(1, L.H - L.WL);
+    hullFb.setAttribute('viewBox', `0 0 ${vw} ${seaH}`);
+    hullFb.setAttribute('preserveAspectRatio', 'none');
+    const pts = HULL.map((v, i) => (v ? [G.cx + v[0] * G.hw, v[1] * G.depth] : [G.cx + (i === 0 ? -G.ta : G.ta), 0]));
+    const str = (a) => a.map((p) => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+    const defs = svgEl(hullFb, 'defs', {});
+    const gr = svgEl(defs, 'linearGradient', { id: 'fb-ice', gradientUnits: 'userSpaceOnUse', x1: 0, y1: 0, x2: 0, y2: G.depth });
+    [['0', '#9DD6E8'], ['0.04', '#6BBFDC'], ['0.085', '#3098C0'], ['0.115', '#0F7DAA'], ['0.15', '#0B6A93'], ['0.5', '#0A5C82'], ['1', '#0A4D6E']].forEach(([o, c]) => svgEl(gr, 'stop', { offset: o, 'stop-color': c }));
+    const clip = svgEl(defs, 'clipPath', { id: 'fb-hull' });
+    svgEl(clip, 'polygon', { points: str(pts) });
+    svgEl(hullFb, 'polygon', { points: str(pts), fill: 'url(#fb-ice)', 'fill-opacity': '0.92' });
+    const fg = svgEl(defs, 'linearGradient', { id: 'fb-fadeg', gradientUnits: 'userSpaceOnUse', x1: 0, y1: G.depth * 0.04, x2: 0, y2: G.depth * 0.17 });
+    svgEl(fg, 'stop', { offset: '0', 'stop-color': '#000' }); svgEl(fg, 'stop', { offset: '1', 'stop-color': '#fff' });
+    const fm = svgEl(defs, 'mask', { id: 'fb-fade', maskUnits: 'userSpaceOnUse', x: 0, y: 0, width: vw, height: G.depth * 1.05 });
+    svgEl(fm, 'rect', { x: 0, y: 0, width: vw, height: G.depth * 1.05, fill: 'url(#fb-fadeg)' });
+    const g = svgEl(hullFb, 'g', { 'clip-path': 'url(#fb-hull)', mask: 'url(#fb-fade)' });
+    const rnd = rng(23), n = pts.length;
+    for (let k = 0; k < 30; k++) {
+      const i = Math.floor(rnd() * n), tri = [pts[i], pts[(i + 2 + Math.floor(rnd() * 4)) % n], pts[(i + 5 + Math.floor(rnd() * 5)) % n]];
+      if ((tri[0][1] + tri[1][1] + tri[2][1]) / 3 < G.depth * 0.16) continue;      // keep the light zone clear
+      const dark = rnd() < 0.5;
+      svgEl(g, 'polygon', { points: str(tri), fill: dark ? '#04283B' : '#9BDCF0', 'fill-opacity': (dark ? 0.08 + rnd() * 0.14 : 0.025 + rnd() * 0.04).toFixed(2) });
+    }
+    for (let k = 0; k < 16; k++) {
+      const i = Math.floor(rnd() * n), j = (i + 2 + Math.floor(rnd() * 4)) % n;
+      svgEl(g, 'line', { x1: pts[i][0].toFixed(1), y1: pts[i][1].toFixed(1), x2: pts[j][0].toFixed(1), y2: pts[j][1].toFixed(1), stroke: '#CFF1FA', 'stroke-opacity': '0.14', 'stroke-width': '1' });
+    }
+    svgEl(hullFb, 'polygon', { points: str(pts), fill: 'none', stroke: '#CFF1FA', 'stroke-opacity': '0.5', 'stroke-width': '1.3', 'stroke-linejoin': 'round' });
+  }
+
+  /* ------------------------------------------------------------------------------------------
+     The waterline. A 1-D wave simulation drawn as an SVG strip: idle swell, plus a splash that
+     travels outward along the surface when the reader crosses it (and when you poke it).
+     ------------------------------------------------------------------------------------------ */
+  const surf = {
+    svg: $('#surfSvg'), sky: $('#sSky'), water: $('#sWater'), l1: $('#sLine'), l2: $('#sLine2'),
+    n: 0, dx: 8, h: null, v: null, energy: 0, t: 0, on: false, step: 0
+  };
+  function surfResize() {
+    const n = clamp(Math.round(L.vw / 9), 40, 220);
+    surf.n = n; surf.dx = L.vw / (n - 1);
+    surf.h = new Float32Array(n); surf.v = new Float32Array(n);
+    surf.svg.setAttribute('viewBox', `0 0 ${L.vw} 80`);
+    surf.energy = 0;
+    surfDraw(0);
+  }
+  function splash(x, amp) {
+    if (reduce || !surf.h) return;
+    const c = clamp(Math.round(x / surf.dx), 2, surf.n - 3);
+    for (let k = -4; k <= 4; k++) surf.v[c + k] -= amp * Math.exp(-(k * k) / 5);
+    surf.energy = Math.max(surf.energy, amp * 4);
+  }
+  function surfSim() {
+    const { n, h, v } = surf, c2 = 0.30;
+    for (let i = 1; i < n - 1; i++) v[i] += (h[i - 1] + h[i + 1] - 2 * h[i]) * c2;
+    for (let i = 0; i < n; i++) {
+      const edge = Math.min(i, n - 1 - i);
+      v[i] *= edge < 14 ? 0.90 + edge * 0.007 : 0.994;
+      h[i] += v[i];
+    }
+    h[0] = h[1] * 0.5; h[n - 1] = h[n - 2] * 0.5;
+    let e = 0;
+    for (let i = 0; i < n; i += 2) e += Math.abs(h[i]) + Math.abs(v[i]) * 3;
+    surf.energy = e / (n / 2);
+  }
+  function surfDraw(t) {
+    const { n, dx, h } = surf;
+    const calm = reduce ? 0 : 1;
+    const ys = new Array(n);
+    for (let i = 0; i < n; i++) {
+      const x = i * dx;
+      const amb = calm * (1.3 * Math.sin(x * 0.011 + t * 0.9) + 0.8 * Math.sin(x * 0.027 - t * 1.3 + 1.7) + 0.4 * Math.sin(x * 0.06 + t * 2.1)) + (reduce ? 0.8 * Math.sin(x * 0.013 + 1) : 0);
+      ys[i] = 40 + h[i] + amb;
+    }
+    let curve = '', curve2 = '', sky = 'M0 40 ', wat = '';
+    for (let i = 0; i < n; i++) {
+      const xs = (i * dx).toFixed(1);
+      curve += (i ? ' L' : 'M') + xs + ' ' + ys[i].toFixed(2);
+      curve2 += (i ? ' L' : 'M') + xs + ' ' + (ys[i] + 3.2).toFixed(2);
+      sky += 'L' + xs + ' ' + Math.max(40, ys[i]).toFixed(2) + ' ';
+    }
+    sky += 'L' + L.vw + ' 40 Z';
+    wat = curve + ' L' + L.vw + ' 80 L0 80 Z';
+    surf.l1.setAttribute('d', curve);
+    surf.l2.setAttribute('d', curve2);
+    surf.sky.setAttribute('d', sky);
+    surf.water.setAttribute('d', wat);
+  }
+  function surfActive(sy) {
+    return sy + L.vh > L.WL - 90 && sy < L.WL + 140;
+  }
+  function surfTick(dt, now, sy) {
+    surf.t += dt;
+    let steps = 1;
+    if (surf.energy > 0.02) { surf.step += dt * 60; steps = Math.min(3, Math.floor(surf.step)); surf.step -= steps; for (let s = 0; s < steps; s++) surfSim(); }
+    surfDraw(surf.t);
+  }
+  const surfBusy = (sy) => !reduce && surfActive(sy);
+
+  /* crossing: the splash, the burst of light, the caption */
+  const cross = { crossed: null, burstT: -1e9, pulse: 0 };
+  function checkCross(sy, now, silent) {
+    const c = L.WL - sy < L.vh * 0.55;
+    if (cross.crossed === null) { cross.crossed = c; seaEl.classList.toggle('crossed', c); return; }
+    if (c === cross.crossed) return;
+    cross.crossed = c;
+    seaEl.classList.toggle('crossed', c);
+    if (silent || reduce) return;
+    cross.burstT = now; cross.pulse = 1;
+    const cx = (L.colL + L.colR) / 2;
+    splash(cx - 6, 4.4); splash(cx + 70, 2.0);
+    setTimeout(() => { splash(cx - 40, 2.6); wake(); }, 260);
+  }
+  /* poking the surface: the pointer near the waterline sends out small waves */
+  let lastPoke = 0;
+  W.addEventListener('pointermove', (e) => {
+    if (reduce || !surfActive(W.scrollY)) return;
+    const dy = e.clientY + W.scrollY - L.WL;
+    const now = performance.now();
+    if (Math.abs(dy) < 36 && now - lastPoke > 90) { lastPoke = now; splash(e.clientX, 0.7); wake(); }
+  }, { passive: true });
+  W.addEventListener('pointerdown', (e) => {
+    if (reduce || !surfActive(W.scrollY)) return;
+    const dy = e.clientY + W.scrollY - L.WL;
+    if (Math.abs(dy) < 70) { splash(e.clientX, 1.6); wake(); }
+  }, { passive: true });
+
+  /* ------------------------------------------------------------------------------------------
+     The gauge rail: a depth tape fixed in the margin. Feet above the waterline on the tip,
+     feet below in the sea; every section label is a flag on it. The chip reads the water level
+     at the point 40% down the viewport.
+     ------------------------------------------------------------------------------------------ */
+  const rail = { cv: $('#railCv'), c: null, w: 14, h: 0, dpr: 1, dirty: true, chipY: 0 };
+  function railResize() {
+    const wide = L.vw >= 900;
+    rail.w = wide ? 116 : 14; rail.h = L.vh;
+    rail.dpr = Math.min(W.devicePixelRatio || 1, 2);
+    rail.cv.width = Math.round(rail.w * rail.dpr); rail.cv.height = Math.round(rail.h * rail.dpr);
+    rail.c = rail.cv.getContext('2d');
+    rail.c.setTransform(rail.dpr, 0, 0, rail.dpr, 0, 0);
+    rail.dirty = true;
+  }
+  function railDraw(sy, now) {
+    const c = rail.c; if (!c) return;
+    const wide = rail.w > 20, W_ = rail.w, H_ = rail.h;
+    c.clearRect(0, 0, W_, H_);
+    const ax = wide ? 20 : 6;                      // the axis
+    const wlS = L.WL - sy;                         // waterline, in viewport px
+    const INK = '17,17,17', PALE = '232,248,253';
+    const mono = '500 10px "DM Mono", ui-monospace, Menlo, Consolas, monospace';
+    const chipY = Math.round(H_ * 0.40);
+    const reading = ftAt(sy + chipY);
+    const under = reading < 0;
+    // axis, split at the waterline
+    c.lineWidth = 1;
+    const aboveEnd = clamp(wlS, 0, H_);
+    c.strokeStyle = `rgba(${INK},0.5)`; c.beginPath(); c.moveTo(ax + 0.5, 0); c.lineTo(ax + 0.5, aboveEnd); c.stroke();
+    if (wlS < H_) { c.strokeStyle = `rgba(${PALE},0.75)`; c.beginPath(); c.moveTo(ax + 0.5, Math.max(0, wlS)); c.lineTo(ax + 0.5, H_); c.stroke(); }
+    // ticks
+    const y0 = sy - 12, y1 = sy + H_ + 12;
+    const tick = (y, len, col, a) => { c.strokeStyle = `rgba(${col},${a})`; c.beginPath(); c.moveTo(ax, y + 0.5); c.lineTo(ax + len, y + 0.5); c.stroke(); };
+    c.font = mono; c.textBaseline = 'middle'; c.textAlign = 'left';
+    const label = (txt, y, col, a) => {
+      if (!wide || Math.abs(y - chipY) < 17) return;
+      c.fillStyle = `rgba(${col},${a})`; c.fillText(txt, ax + 24, y);
+    };
+    // above: one tick per foot, labels every 10 ft
+    const fHi = Math.min(TIP_FT, Math.ceil(ftAt(Math.max(0, y0)))), fLo = Math.max(0, Math.floor(ftAt(Math.min(L.WL, y1))));
+    for (let f = fLo; f <= fHi; f++) {
+      const y = yAtFt(f) - sy; if (y < -4 || y > H_ + 4) continue;
+      const major = f % 10 === 0, mid = f % 5 === 0;
+      tick(y, major ? 14 : mid ? 9 : 5, INK, major ? 0.7 : 0.42);
+      if (major && f > 0) label('+' + f, y, INK, 0.6);
+    }
+    // below: one tick per 10 ft, labels every 50 ft
+    if (y1 > L.WL) {
+      const fa = Math.max(0, Math.floor(-ftAt(Math.min(L.H, y1)) / 10)), fb = Math.ceil(-ftAt(Math.max(L.WL, y0)) / 10);
+      for (let k = Math.max(1, fa); k <= fb; k++) {
+        const ft = -k * 10, y = yAtFt(ft) - sy; if (y < -4 || y > H_ + 4 || ft < -SEA_FT) continue;
+        const major = k % 5 === 0;
+        tick(y, major ? 14 : 5, PALE, major ? 0.85 : 0.5);
+        if (major) label('−' + (k * 10), y, PALE, 0.8);
+      }
+    }
+    // special readings on the tape
+    const flag = (y, txt, col, bold) => {
+      if (y < -10 || y > H_ + 10) return;
+      c.strokeStyle = `rgba(${col},0.95)`; c.lineWidth = 1.5; c.beginPath(); c.moveTo(ax - 2, y + 0.5); c.lineTo(ax + (wide ? 18 : 10), y + 0.5); c.stroke(); c.lineWidth = 1;
+      if (wide && txt && Math.abs(y - chipY) > 17) { c.font = bold ? '500 10px "DM Mono", ui-monospace, monospace' : mono; c.fillStyle = `rgba(${col},0.95)`; c.fillText(txt, ax + 24, y); c.font = mono; }
+    };
+    L.heads.forEach((h) => { if (h.idx !== '00') flag(h.y - sy, h.idx, h.y < L.WL ? INK : PALE, false); });
+    flag(-sy + 16, 'THE TIP', INK, true);
+    c.strokeStyle = 'rgba(15,125,170,1)'; c.lineWidth = 2;
+    if (wlS > -6 && wlS < H_ + 6) {
+      c.beginPath(); c.moveTo(ax - 6, wlS + 0.5); c.lineTo(ax + 40, wlS + 0.5); c.stroke(); c.lineWidth = 1;
+      if (wide && Math.abs(wlS - chipY) > 26) { c.fillStyle = 'rgba(15,125,170,1)'; c.fillText('WATERLINE', ax + 24, wlS - 10); c.fillStyle = `rgba(${INK},0.6)`; c.fillText('÷10 below', ax + 24, wlS + 12); }
+    }
+    flag(L.H - 40 - sy, 'SEABED', PALE, true);
+    // the chip
+    const pulse = cross.pulse;
+    const chipTxt = fmtFt(reading);
+    if (wide) {
+      const cw = 82, chh = 22, cx0 = ax - 10, cy0 = chipY - chh / 2;
+      c.fillStyle = under ? 'rgba(236,250,254,0.96)' : 'rgba(17,17,17,0.94)';
+      c.beginPath(); c.roundRect ? c.roundRect(cx0, cy0, cw, chh, 3) : c.rect(cx0, cy0, cw, chh); c.fill();
+      if (pulse > 0.01) { c.strokeStyle = `rgba(143,227,245,${pulse})`; c.lineWidth = 2 + pulse * 6; c.beginPath(); c.roundRect ? c.roundRect(cx0 - pulse * 4, cy0 - pulse * 4, cw + pulse * 8, chh + pulse * 8, 6) : c.rect(cx0, cy0, cw, chh); c.stroke(); c.lineWidth = 1; }
+      c.fillStyle = under ? '#0A3A52' : '#FFFFFF'; c.font = '500 11px "DM Mono", ui-monospace, Menlo, Consolas, monospace'; c.textAlign = 'center';
+      c.fillText(chipTxt, cx0 + cw / 2, chipY + 0.5); c.textAlign = 'left';
+    } else {
+      c.fillStyle = under ? '#E8F8FD' : '#111'; c.beginPath(); c.moveTo(ax + 2, chipY - 5); c.lineTo(ax + 11, chipY); c.lineTo(ax + 2, chipY + 5); c.closePath(); c.fill();
+    }
+    rail.dirty = false;
+  }
+
+  /* ------------------------------------------------------------------------------------------
+     WebGL: the light under the surface. One fixed canvas, one full-screen triangle. The page
+     scroll is a uniform, so the shader computes page coordinates and paints only what is on
+     screen: the submerged ice (facets, caustics, rim), the caustic net in the open water, god
+     rays, and the burst that ripples out when the reader crosses the waterline. The water
+     colour itself is the sea's CSS gradient, so the surface edge never lags the scroll.
+     Adapted from lab/under-the-iceberg.html.
+     ------------------------------------------------------------------------------------------ */
+  const glc = $('#gl');
+  const GLU = 380;                                   // css px per shader unit
+  const gl_ = { ok: false, gl: null, prog: null, u: {}, k: 1, quality: 1, w: 0, h: 0, active: false, cleared: true, drawnT: -1 };
+  const STILL_T = 13.2;
+
+  const GL_VS = 'attribute vec2 aPos; void main(){ gl_Position = vec4(aPos, 0.0, 1.0); }';
+  function hullShaderEdges() {
+    const N = HULL.length;
+    const V = (i) => {
+      const v = HULL[i];
+      if (!v) return i === 0 ? 'vec2(-uTA, 0.0)' : 'vec2(uTA, 0.0)';
+      return `vec2(${v[0].toFixed(3)} * uHW, ${v[1].toFixed(3)} * uHD)`;
+    };
+    let src = '';
+    for (let i = 0; i < N; i++) src += `  edge(p, ${V((i + N - 1) % N)}, ${V(i)}, d, s);\n`;
+    return { first: V(0), edges: src };
+  }
+  function glFragment() {
+    const H = hullShaderEdges();
+    return `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+uniform vec2  uRes;     // canvas px
+uniform vec2  uOrg;     // css px: iceberg centre x, waterline page y
+uniform float uK;       // canvas px per css px
+uniform float uScroll;  // css px
+uniform float uT;
+uniform float uBurst;   // 1 -> 0 after crossing the waterline
+uniform float uU;       // css px per unit
+uniform float uHW, uHD, uTA, uColH;
+
+float hash12(vec2 p){ vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
+vec2  hash22(vec2 p){ vec3 q = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973)); q += dot(q, q.yzx + 33.33); return fract((q.xx + q.yz) * q.zy); }
+
+void edge(vec2 p, vec2 pv, vec2 cv, inout float d, inout float s){
+  vec2 e = pv - cv; vec2 w = p - cv;
+  vec2 b = w - e * clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
+  d = min(d, dot(b, b));
+  bool c1 = p.y >= cv.y; bool c2 = p.y < pv.y; bool c3 = e.x * w.y > e.y * w.x;
+  if ((c1 && c2 && c3) || (!c1 && !c2 && !c3)) s = -s;
+}
+float sdBerg(vec2 p){
+  vec2 v0 = ${H.first};
+  float d = dot(p - v0, p - v0);
+  float s = 1.0;
+${H.edges}  return s * sqrt(d);
+}
+
+vec4 voroS(vec2 x){
+  vec2 n = floor(x), f = x - n;
+  float d1 = 8.0, d2 = 8.0; vec2 id = vec2(0.0);
+  for (int j = -1; j <= 1; j++) {
+    for (int i = -1; i <= 1; i++) {
+      vec2 g = vec2(float(i), float(j));
+      vec2 o = hash22(n + g);
+      vec2 r = g + 0.5 + (o - 0.5) * 0.9 - f;
+      float d = dot(r, r);
+      if (d < d1) { d2 = d1; d1 = d; id = n + g; }
+      else if (d < d2) { d2 = d; }
+    }
+  }
+  return vec4(sqrt(d1), sqrt(d2), id);
+}
+vec2 voroA(vec2 x, float t){
+  x += 0.20 * vec2(sin(x.y * 1.9 + t * 0.9), sin(x.x * 2.1 - t * 0.7));
+  vec2 n = floor(x), f = x - n;
+  float d1 = 8.0, d2 = 8.0;
+  for (int j = -1; j <= 1; j++) {
+    for (int i = -1; i <= 1; i++) {
+      vec2 g = vec2(float(i), float(j));
+      vec2 o = hash22(n + g);
+      vec2 r = g + 0.5 + 0.46 * sin(t * vec2(1.0, 0.83) + 6.2831 * o) - f;
+      float d = dot(r, r);
+      if (d < d1) { d2 = d1; d1 = d; }
+      else if (d < d2) { d2 = d; }
+    }
+  }
+  return vec2(sqrt(d1), sqrt(d2));
+}
+float caustic(vec2 p, float t){
+  vec2 a = voroA(p * 4.4 + vec2(0.0, t * 0.030), t * 0.46);
+  vec2 b = voroA(mat2(0.8, -0.6, 0.6, 0.8) * p * 7.6 + vec2(t * 0.040, 3.7), t * 0.62 + 2.0);
+  float ea = a.y - a.x, eb = b.y - b.x;
+  float la = 1.0 - clamp(ea * 9.0, 0.0, 1.0); la *= la;
+  float lb = 1.0 - clamp(eb * 9.0, 0.0, 1.0); lb *= lb;
+  return 0.55 * la + 0.38 * lb + 1.1 * la * lb + 0.10 * exp(-ea * 7.0);
+}
+float causticLite(vec2 p, float t){
+  vec2 a = voroA(p * 4.4 + vec2(0.0, t * 0.030), t * 0.46);
+  float ea = a.y - a.x;
+  float la = 1.0 - clamp(ea * 9.0, 0.0, 1.0);
+  return 0.95 * la * la + 0.12 * exp(-ea * 7.0);
+}
+
+void main(){
+  vec2 fc = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) / uK;      // css px in the viewport
+  vec2 pg = vec2(fc.x, fc.y + uScroll);                                // css px on the page
+  vec2 p = (pg - uOrg) / uU;                                           // shader units from the waterline, centred
+  float t = uT;
+  if (p.y < -0.04) { gl_FragColor = vec4(0.0); return; }               // above the surface: nothing
+
+  float H = uU * uK;                                                   // device px per unit
+  float surf = smoothstep(0.0, 0.07, p.y);
+  float dep = p.y;
+  // the column the text lives in: light is held back here so pale text stays readable
+  float colM = 1.0 - smoothstep(uColH * 0.6, uColH + 0.9, abs(p.x));
+  float cap = colM * smoothstep(0.9, 1.25, p.y);
+  float fade = exp(-p.y * 0.85);                                        // the light dies with depth
+
+  vec3 Lc = vec3(0.80, 0.97, 1.0);
+  float I = 0.0;
+
+  // god rays from above the surface, soft, strongest just under it
+  float ang = (p.x + 0.10) / (p.y + 0.70);
+  float rayA = sin(ang * 13.0 + t * 0.21 + 1.7 * sin(ang * 3.1 - t * 0.12));
+  float rayB = sin(ang * 27.0 - t * 0.16 + 2.0);
+  float ray = smoothstep(0.42, 1.0, 0.5 + 0.5 * (0.62 * rayA + 0.38 * rayB));
+  I += ray * ray * 0.24 * fade / (1.0 + 0.08 * p.x * p.x);
+  I += 0.10 * exp(-p.y * 4.5);                                         // a wash of light under the surface
+
+  // the burst: a ring of light travelling out under the surface when the reader crosses the waterline
+  if (uBurst > 0.001) {
+    float r = (1.0 - uBurst) * 5.2;
+    float q = length(vec2(p.x * 0.55, p.y)) - r;
+    I += exp(-q * q * 9.0) * uBurst * 0.85 * exp(-p.y * 0.45);
+    I += uBurst * uBurst * 0.45 * exp(-p.y * 2.0) * (0.55 + 0.45 * sin(p.x * 3.0 - t * 2.0));
+  }
+
+  vec2 warp = 0.045 * vec2(sin(p.y * 7.0 + t * 0.6) + 0.5 * sin(p.y * 13.0 - t * 0.9),
+                           sin(p.x * 6.0 - t * 0.5) + 0.5 * sin(p.x * 11.0 + t * 0.7));
+  float uw = smoothstep(0.0, 0.08, p.y);
+  vec2 pb = p + 0.0035 * vec2(sin(p.y * 29.0 + t * 1.3), sin(p.x * 23.0 - t * 1.1)) * uw;
+  float sd = 1.0;
+  if (abs(pb.x) < uHW * 1.06 && pb.y > 0.0 && pb.y < uHD * 1.06) sd = sdBerg(pb);
+  float sdpx = sd * H;
+
+  // the water's own caustic net (skipped behind the ice and in deep water)
+  if (dep < 5.0 && sd > -0.02) I += causticLite(p + warp, t) * 0.34 * exp(-dep * 0.95);
+
+  I *= surf * (1.0 - 0.96 * cap);
+  vec3 outc = Lc * I;
+  float outa = I;
+
+  if (sd < 0.06) {
+    float inside = 1.0 - smoothstep(-0.7, 0.7, sdpx);
+    float dd = clamp(pb.y / uHD, 0.0, 1.0);
+    vec4 v = voroS(vec2(pb.x * 0.92 + pb.y * 0.30, pb.y * 1.12 - pb.x * 0.18) * 5.4 + 3.7);
+    float fh = hash12(v.zw);
+    float edgePx = (v.y - v.x) * 0.5 * H / 5.4;
+    float fdb = exp(-pb.y * 0.85);
+    float Ls = (0.16 + 0.84 * fdb) * (0.82 + 0.26 * fh);
+    vec3 cA = vec3(0.06, 0.36, 0.54), cB = vec3(0.30, 0.68, 0.84), cC = vec3(0.80, 0.95, 1.0);
+    vec3 bc = mix(mix(cA, cB, smoothstep(0.0, 0.5, Ls)), cC, smoothstep(0.55, 1.05, Ls));
+    bc = mix(bc, vec3(0.03, 0.20, 0.31), 0.10 * dd + 0.40 * dd * dd);
+    bc += vec3(0.03, 0.06, 0.07) * sin((pb.y + 0.03 * sin(pb.x * 9.0)) * 70.0 + fh * 6.0) * (0.3 + 0.7 * fdb);
+    float cb = caustic(pb * 0.9 + hash22(v.zw) * 9.0 + warp * 0.6, t);
+    bc += vec3(0.80, 1.0, 1.0) * cb * (0.05 + 0.27 * fdb);
+    bc = mix(bc, vec3(0.93, 1.0, 1.0), (1.0 - smoothstep(0.3, 1.4, edgePx)) * (0.08 + 0.26 * fdb));
+    // inside the text column the ice sinks to a deep, saturated blue so pale text keeps its contrast
+    float lum = dot(bc, vec3(0.299, 0.587, 0.114));
+    bc = mix(bc, vec3(0.035, 0.30, 0.45) * (0.72 + 0.55 * lum), cap * 0.92);
+    bc += vec3(0.30, 0.75, 0.88) * 0.24 * exp(min(sdpx, 0.0) / 6.0) * (0.25 + 0.75 * fdb) * (1.0 - cap);
+    bc = mix(bc, vec3(0.90, 1.0, 1.0), (1.0 - smoothstep(0.3, 1.3, abs(sdpx))) * (0.35 + 0.5 * fdb));
+    float iceA = inside * 0.90 * smoothstep(0.0, 0.05, p.y);
+    float halo = 0.16 * exp(-max(sdpx, 0.0) / 8.0) * (1.0 - inside) * surf;
+    outc += vec3(0.30, 0.70, 0.85) * halo; outa += halo;
+    outc = bc * iceA + outc * (1.0 - iceA);
+    outa = iceA + outa * (1.0 - iceA);
+  }
+  gl_FragColor = vec4(outc, clamp(outa, 0.0, 1.0));
+}
+`;
+  }
+
+  function glInit() {
+    try {
+      gl_.gl = glc.getContext('webgl', { antialias: false, alpha: true, premultipliedAlpha: true, depth: false, stencil: false, powerPreference: 'low-power' })
+        || glc.getContext('experimental-webgl');
+    } catch (e) { gl_.gl = null; }
+    const gl = gl_.gl;
+    if (!gl) return false;
+    const sh = (type, src) => {
+      const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.warn(gl.getShaderInfoLog(s)); return null; }
+      return s;
+    };
+    const vs = sh(gl.VERTEX_SHADER, GL_VS), fs = sh(gl.FRAGMENT_SHADER, glFragment());
+    if (!vs || !fs) return false;
+    const prog = gl.createProgram(); gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { console.warn(gl.getProgramInfoLog(prog)); return false; }
+    gl.useProgram(prog); gl_.prog = prog;
+    const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog, 'aPos'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    ['uRes', 'uOrg', 'uK', 'uScroll', 'uT', 'uBurst', 'uU', 'uHW', 'uHD', 'uTA', 'uColH'].forEach((n) => { gl_.u[n] = gl.getUniformLocation(prog, n); });
+    gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    glc.addEventListener('webglcontextlost', (e) => { e.preventDefault(); gl_.ok = false; glc.style.display = 'none'; seaEl.removeAttribute('data-gl'); });
+    return true;
+  }
+  function glResize() {
+    if (!gl_.ok) return;
+    const budget = L.vw < 1000 ? 0.42e6 : 0.58e6;
+    let k = Math.min(W.devicePixelRatio || 1, 1.25) * gl_.quality;
+    const n = L.vw * L.vh * k * k;
+    if (n > budget) k *= Math.sqrt(budget / n);
+    gl_.k = k;
+    const w = Math.max(1, Math.round(L.vw * k)), h = Math.max(1, Math.round(L.vh * k));
+    if (glc.width !== w || glc.height !== h) { glc.width = w; glc.height = h; }
+    gl_.gl.viewport(0, 0, w, h);
+    gl_.cleared = false;
+  }
+  function glActive(sy) {
+    const G = hullGeom();
+    return gl_.ok && sy + L.vh > L.WL - 40 && sy < L.WL + G.depth + 700;
+  }
+  function glDraw(sy, t, burst) {
+    const gl = gl_.gl, u = gl_.u, G = hullGeom();
+    glc.style.display = 'block';
+    if (seaEl.dataset.gl !== 'on') seaEl.dataset.gl = 'on';
+    gl.uniform2f(u.uRes, glc.width, glc.height);
+    gl.uniform2f(u.uOrg, G.cx, L.WL);
+    gl.uniform1f(u.uK, gl_.k);
+    gl.uniform1f(u.uScroll, sy);
+    gl.uniform1f(u.uT, t);
+    gl.uniform1f(u.uBurst, burst);
+    gl.uniform1f(u.uU, GLU);
+    gl.uniform1f(u.uHW, G.hw / GLU);
+    gl.uniform1f(u.uHD, G.depth / GLU);
+    gl.uniform1f(u.uTA, G.ta / GLU);
+    gl.uniform1f(u.uColH, ((L.colR - L.colL) / 2) / GLU);
+    gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl_.cleared = false;
+  }
+  function glClear() {
+    if (!gl_.ok || gl_.cleared) return;
+    gl_.gl.clearColor(0, 0, 0, 0); gl_.gl.clear(gl_.gl.COLOR_BUFFER_BIT);
+    gl_.cleared = true;
+  }
+
+  /* ------------------------------------------------------------------------------------------
+     Stations: each personal section gets its own living graphic. All are lazy (initialised when
+     they come within 400px of the viewport), paused off-screen and when the tab is hidden,
+     DPR-capped, and drawn once as a still under prefers-reduced-motion.
+     ------------------------------------------------------------------------------------------ */
+  const stations = [];
+  function canvasFor(cv, w, h, cap) {
+    const dpr = Math.min(W.devicePixelRatio || 1, cap || 2);
+    cv.width = Math.max(1, Math.round(w * dpr)); cv.height = Math.max(1, Math.round(h * dpr));
+    const c = cv.getContext('2d');
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { c, dpr };
+  }
+  const MONO = '"DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+
+  /* ---- 05 · Mountaineering: sonar bathymetry of real Quandary terrain, and his route ------- */
+  const sonar = (() => {
+    const fig = $('#g-sonar'), cv = $('canvas', fig);
+    const FT = 3.28084;
+    let c, dpr, w, h, data = null, loading = false, failed = false, T0 = 0;
+    let layers = null, route = null, labels = null, sum = null;
+    const mk = (cw, ch) => { const k = D.createElement('canvas'); k.width = cw; k.height = ch; return k; };
+
+    function view() {
+      const tr = data.track; let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+      tr.forEach((p) => { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); });
+      let vw_ = (x1 - x0) * 1.22 + 10, vh_ = (y1 - y0) * 1.22 + 10;
+      const asp = w / h;
+      if (vw_ / vh_ < asp) vw_ = vh_ * asp; else vh_ = vw_ / asp;
+      const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+      return { vx: cx - vw_ / 2, vy: cy - vh_ / 2, s: w / vw_ };
+    }
+    function sample(hs, gx, gy) {
+      const G = hs.length, i = clamp(Math.floor(gx), 0, G - 2), j = clamp(Math.floor(gy), 0, G - 2);
+      const fx = clamp(gx - i, 0, 1), fy = clamp(gy - j, 0, 1);
+      return lerp(lerp(hs[j][i], hs[j][i + 1], fx), lerp(hs[j + 1][i], hs[j + 1][i + 1], fx), fy);
+    }
+    function build() {
+      w = Math.max(240, fig.clientWidth); h = fig.clientHeight || 300;
+      ({ c, dpr } = canvasFor(cv, w, h, 1.5));
+      if (!data) return;
+      const V = view(), hs = data.heights, G = hs.length;
+      const toPx = (gx, gy) => [(gx - V.vx) * V.s, (gy - V.vy) * V.s];
+      const pw = Math.round(w * dpr), ph = Math.round(h * dpr);
+      // shaded relief, computed on a coarse pixel grid and smoothed up
+      const rw = Math.round(w / 2.4), rh = Math.round(h / 2.4);
+      const sm = mk(rw, rh), sc = sm.getContext('2d'), img = sc.createImageData(rw, rh);
+      let emin = 1e9, emax = -1e9;
+      for (let j = 0; j < G; j++) for (let i = 0; i < G; i++) { const e = hs[j][i]; if (e < emin) emin = e; if (e > emax) emax = e; }
+      for (let py = 0; py < rh; py++) {
+        for (let px = 0; px < rw; px++) {
+          const gx = V.vx + (px / rw) * (w / V.s), gy = V.vy + (py / rh) * (h / V.s);
+          const e = sample(hs, gx, gy), ex = sample(hs, gx + 0.7, gy) - sample(hs, gx - 0.7, gy), ey = sample(hs, gx, gy + 0.7) - sample(hs, gx, gy - 0.7);
+          const t = clamp((e - 3300) / (emax - 3300), 0, 1);
+          const sh = clamp(0.55 - (ex * 0.60 + ey * 0.45) / 55, 0.12, 1.1);
+          const k = (py * rw + px) * 4, a = clamp((0.10 + 0.55 * Math.pow(t, 1.15)) * (0.55 + 0.7 * sh), 0, 0.82);
+          img.data[k] = lerp(14, 150, Math.pow(t, 1.1)) * (0.7 + 0.5 * sh); img.data[k + 1] = lerp(70, 226, Math.pow(t, 1.1)) * (0.7 + 0.4 * sh); img.data[k + 2] = lerp(108, 246, Math.pow(t, 1.1)); img.data[k + 3] = a * 255;
+        }
+      }
+      sc.putImageData(img, 0, 0);
+      const relief = mk(pw, ph), rc = relief.getContext('2d');
+      rc.imageSmoothingQuality = 'high'; rc.drawImage(sm, 0, 0, pw, ph);
+      // contours: marching squares every 30 m, an index line every 150 m
+      const thin = new Path2D(), idx = new Path2D(), INT = 30;
+      for (let j = 0; j < G - 1; j++) {
+        for (let i = 0; i < G - 1; i++) {
+          const a = hs[j][i], b = hs[j][i + 1], cc = hs[j + 1][i + 1], d = hs[j + 1][i];
+          const mn = Math.min(a, b, cc, d), mx = Math.max(a, b, cc, d);
+          for (let lv = Math.ceil(mn / INT); lv * INT <= mx; lv++) {
+            const Lv = lv * INT, P = lv % 5 === 0 ? idx : thin, pts = [];
+            if ((a >= Lv) !== (b >= Lv)) pts.push([i + (Lv - a) / (b - a), j]);
+            if ((b >= Lv) !== (cc >= Lv)) pts.push([i + 1, j + (Lv - b) / (cc - b)]);
+            if ((d >= Lv) !== (cc >= Lv)) pts.push([i + (Lv - d) / (cc - d), j + 1]);
+            if ((a >= Lv) !== (d >= Lv)) pts.push([i, j + (Lv - a) / (d - a)]);
+            if (pts.length === 2 || pts.length === 4) for (let q = 0; q < pts.length; q += 2) {
+              const p0 = toPx(pts[q][0], pts[q][1]), p1 = toPx(pts[q + 1][0], pts[q + 1][1]);
+              if ((p0[0] < -4 && p1[0] < -4) || (p0[0] > w + 4 && p1[0] > w + 4) || (p0[1] < -4 && p1[1] < -4) || (p0[1] > h + 4 && p1[1] > h + 4)) continue;
+              P.moveTo(p0[0], p0[1]); P.lineTo(p1[0], p1[1]);
+            }
+          }
+        }
+      }
+      const base = mk(pw, ph), bc = base.getContext('2d'); bc.scale(dpr, dpr);
+      bc.lineCap = 'round'; bc.lineWidth = 0.7; bc.strokeStyle = 'rgba(176,230,244,0.36)'; bc.stroke(thin);
+      const ix = mk(pw, ph), xc = ix.getContext('2d'); xc.scale(dpr, dpr);
+      xc.lineCap = 'round'; xc.lineWidth = 1.25; xc.strokeStyle = 'rgba(224,248,255,0.96)'; xc.stroke(idx);
+      const tmp = mk(pw, ph);
+      layers = { relief, base, ix, tmp };
+      // route
+      const pts = data.track.map((p) => toPx(p[0], p[1])), cum = [0];
+      for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+      let si = 0; data.track.forEach((p, i) => { if (p[2] > data.track[si][2]) si = i; });
+      route = { pts, cum, total: cum[cum.length - 1], si };
+      sum = toPx(data.summit[0], data.summit[1]);
+      // chart soundings: small elevations scattered where the route is not
+      const r = rng(5); labels = [];
+      for (let n = 0; n < 60 && labels.length < (w < 500 ? 7 : 15); n++) {
+        const px = 20 + r() * (w - 40), py = 18 + r() * (h - 44);
+        if (Math.hypot(px - sum[0], py - sum[1]) < 70) continue;
+        if (pts.some((p) => Math.hypot(p[0] - px, p[1] - py) < 28)) continue;
+        if (labels.some((l) => Math.hypot(l.x - px, l.y - py) < 62)) continue;
+        const e = sample(hs, V.vx + px / V.s, V.vy + py / V.s) * FT;
+        labels.push({ x: px, y: py, t: Math.round(e / 10) * 10 });
+      }
+    }
+
+    const PERIOD = 13, DRAW = 6.5;
+    function frame(dt, now) {
+      if (!layers || !route) return;
+      const t = reduce ? 7.4 : ((now - T0) / 1000) % PERIOD;
+      c.clearRect(0, 0, w, h);
+      c.drawImage(layers.relief, 0, 0, w, h);
+      c.drawImage(layers.base, 0, 0, w, h);
+      c.globalAlpha = 0.5; c.drawImage(layers.ix, 0, 0, w, h); c.globalAlpha = 1;
+      // route progress: climbs, arrives, holds, fades
+      const u = reduce ? 1 : easeInOut(clamp(t / DRAW, 0, 1));
+      const fade = reduce ? 1 : 1 - sstep(PERIOD - 1.6, PERIOD - 0.3, t);
+      const len = u * route.total;
+      // sonar ping from the summit, sent as the route reaches the top
+      const tArr = DRAW * 0.5 * (1 + 0);              // approximate arrival (the climb is the first half of the route)
+      const ringT = reduce ? 0.42 : (t - tArr) / 4.4;
+      if (ringT > 0 && ringT < 1) {
+        const rmax = Math.hypot(Math.max(sum[0], w - sum[0]), Math.max(sum[1], h - sum[1])) * 1.02;
+        const r = easeOut(ringT) * rmax, band = 70 + rmax * 0.16, tc = layers.tmp.getContext('2d');
+        tc.setTransform(1, 0, 0, 1, 0, 0); tc.globalCompositeOperation = 'source-over'; tc.clearRect(0, 0, tc.canvas.width, tc.canvas.height);
+        tc.drawImage(layers.ix, 0, 0);
+        tc.globalCompositeOperation = 'destination-in';
+        const g = tc.createRadialGradient(sum[0] * dpr, sum[1] * dpr, Math.max(0, r - band) * dpr, sum[0] * dpr, sum[1] * dpr, (r + 5) * dpr);
+        const fa = 1 - ringT;
+        g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.55, `rgba(0,0,0,${0.5 * fa})`); g.addColorStop(0.94, `rgba(0,0,0,${fa})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+        tc.fillStyle = g; tc.fillRect(0, 0, tc.canvas.width, tc.canvas.height);
+        c.globalCompositeOperation = 'lighter'; c.drawImage(layers.tmp, 0, 0, w, h); c.globalCompositeOperation = 'source-over';
+        c.strokeStyle = `rgba(190,240,252,${0.55 * fa})`; c.lineWidth = 1.2; c.beginPath(); c.arc(sum[0], sum[1], r, 0, TAU); c.stroke();
+        c.strokeStyle = `rgba(190,240,252,${0.22 * fa})`; c.beginPath(); c.arc(sum[0], sum[1], r * 0.9, 0, TAU); c.stroke();
+      }
+      // the route: a luminous trail with a moving head
+      c.save(); c.globalAlpha = fade; c.lineJoin = 'round'; c.lineCap = 'round';
+      const trace = () => { c.beginPath(); c.moveTo(route.pts[0][0], route.pts[0][1]); for (let i = 1; i < route.pts.length; i++) { if (route.cum[i] > len) { const k = (len - route.cum[i - 1]) / (route.cum[i] - route.cum[i - 1]); c.lineTo(lerp(route.pts[i - 1][0], route.pts[i][0], k), lerp(route.pts[i - 1][1], route.pts[i][1], k)); return; } c.lineTo(route.pts[i][0], route.pts[i][1]); } };
+      c.strokeStyle = 'rgba(120,225,245,0.26)'; c.lineWidth = 6; trace(); c.stroke();
+      c.strokeStyle = 'rgba(255,255,255,0.95)'; c.lineWidth = 1.6; trace(); c.stroke();
+      if (len > 0 && len < route.total - 1) {
+        let i = 1; while (i < route.cum.length - 1 && route.cum[i] < len) i++;
+        const k = (len - route.cum[i - 1]) / (route.cum[i] - route.cum[i - 1] || 1);
+        const hx = lerp(route.pts[i - 1][0], route.pts[i][0], k), hy = lerp(route.pts[i - 1][1], route.pts[i][1], k);
+        const g = c.createRadialGradient(hx, hy, 0, hx, hy, 14); g.addColorStop(0, 'rgba(255,255,255,0.95)'); g.addColorStop(0.3, 'rgba(160,238,252,0.5)'); g.addColorStop(1, 'rgba(160,238,252,0)');
+        c.fillStyle = g; c.beginPath(); c.arc(hx, hy, 14, 0, TAU); c.fill();
+      }
+      c.restore();
+      // labels
+      c.font = `400 9.5px ${MONO}`; c.textBaseline = 'middle'; c.textAlign = 'center';
+      c.fillStyle = 'rgba(200,238,250,0.5)';
+      labels.forEach((l) => c.fillText(l.t.toLocaleString('en-US'), l.x, l.y));
+      c.textAlign = 'left';
+      const s0 = route.pts[0];
+      c.fillStyle = 'rgba(255,255,255,0.95)'; c.beginPath(); c.arc(s0[0], s0[1], 2.6, 0, TAU); c.fill();
+      c.font = `500 10px ${MONO}`; c.fillStyle = 'rgba(232,250,255,0.95)';
+      c.fillText('TRAILHEAD ' + (Math.round(data.track[0][2] * FT / 10) * 10).toLocaleString('en-US') + ' FT', clamp(s0[0] - 112, 6, w - 150), s0[1] + 16);
+      // the summit marker, as on a chart
+      const a = reduce ? 1 : clamp((t - tArr + 0.1) / 0.9, 0, 1);
+      if (a > 0) {
+        const aa = a * fade;
+        c.globalAlpha = aa; c.fillStyle = '#FFFFFF'; c.beginPath(); c.moveTo(sum[0], sum[1] - 6.5); c.lineTo(sum[0] + 5.6, sum[1] + 4); c.lineTo(sum[0] - 5.6, sum[1] + 4); c.closePath(); c.fill();
+        c.font = `500 11px ${MONO}`; c.fillStyle = '#FFFFFF'; c.fillText('14,265 FT', sum[0] + 11, sum[1] - 13); c.globalAlpha = 1;
+      }
+    }
+    return {
+      el: fig, fps: 30,
+      init() { T0 = performance.now(); if (data || loading) return; loading = true; fetch('../_shared/quandary-terrain.json').then((r) => r.json()).then((j) => { data = j; build(); this.ready = true; if (reduce) frame(0, 0); wake(); }).catch(() => { failed = true; }); },
+      resize() { if (data) build(); else { w = fig.clientWidth; h = fig.clientHeight; } },
+      frame, still() { frame(0, 0); },
+      get ok() { return !!layers; }
+    };
+  })();
+
+  /* ---- 06 · Singing & cooking: a voice in water (a real 2-D wave field, driven by a raga-ish phrase) ---- */
+  const voice = (() => {
+    const fig = $('#g-voice'), cv = $('canvas', fig);
+    let c, w, h, gw = 150, gh = 50, a, b, n, damp, small, sc, simg, sx, sy, ph = 0, T0 = 0, tSim = 0;
+    const C2 = 0.2, P = 11, GAIN = 2.8, RATE = 150;
+    // phrase: [semitone, start, duration]
+    const NOTES = [[0, 0.0, 1.2], [2, 1.2, 0.9], [3, 2.1, 0.9], [5, 3.0, 1.4], [7, 4.4, 1.7], [5, 6.1, 0.8], [3, 6.9, 0.8], [2, 7.7, 0.8], [0, 8.5, 1.3]];
+    function voiceAt(t) {
+      let semi = 0, amp = 0;
+      for (let i = 0; i < NOTES.length; i++) {
+        const [s, st, du] = NOTES[i];
+        if (t >= st && t < st + du + (i === NOTES.length - 1 ? 0.2 : 0)) {
+          const prev = i ? NOTES[i - 1][0] : s, g = sstep(0, 0.28, t - st);
+          semi = lerp(prev, s, g) + 0.5 * Math.sin(t * 34.5) * g * (du > 1 ? 1 : 0.4);
+          const on = clamp((t - st) / 0.07, 0, 1), off = 1 - sstep(st + du - 0.18, st + du + 0.1, t);
+          amp = on * off * (0.62 + 0.38 * Math.exp(-(t - st) * 0.8));
+          break;
+        }
+      }
+      return { semi, amp };
+    }
+    function step(tp) {
+      const { semi, amp } = voiceAt(tp % P);
+      const lam = 26 / Math.pow(2, semi / 12);
+      ph += (TAU * Math.sqrt(C2)) / lam;
+      for (let j = 1; j < gh - 1; j++) {
+        const row = j * gw;
+        for (let i = 1; i < gw - 1; i++) {
+          const k = row + i;
+          n[k] = (2 * a[k] - b[k] + C2 * (a[k - 1] + a[k + 1] + a[k - gw] + a[k + gw] - 4 * a[k])) * damp[k];
+        }
+      }
+      const t_ = b; b = a; a = n; n = t_;
+      const k0 = sy * gw + sx;
+      const sv = amp * Math.sin(ph); a[k0] += sv * 0.55; a[k0 + 1] += sv * 0.28; a[k0 - 1] += sv * 0.28; a[k0 + gw] += sv * 0.28; a[k0 - gw] += sv * 0.28;
+    }
+    function render() {
+      const d = simg.data;
+      for (let j = 1; j < gh - 1; j++) {
+        for (let i = 1; i < gw - 1; i++) {
+          const k = j * gw + i, o = k * 4;
+          const v = ((a[k + 1] - a[k - 1]) + (a[k + gw] - a[k - gw])) * 0.7 * GAIN;   // surface slope toward a light up and to the left
+          if (v > 0) { d[o] = 214; d[o + 1] = 248; d[o + 2] = 255; d[o + 3] = Math.pow(Math.min(1, v), 1.3) * 215; }
+          else { d[o] = 3; d[o + 1] = 32; d[o + 2] = 56; d[o + 3] = Math.pow(Math.min(1, -v), 1.3) * 120; }
+        }
+      }
+      sc.putImageData(simg, 0, 0);
+      c.clearRect(0, 0, w, h);
+      c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+      c.drawImage(small, 0, 0, w, h);
+      // the singer: a small bright source
+      const px = (sx + 0.5) / gw * w, py = (sy + 0.5) / gh * h;
+      const g = c.createRadialGradient(px, py, 0, px, py, 16); g.addColorStop(0, 'rgba(255,255,255,0.9)'); g.addColorStop(0.35, 'rgba(170,240,252,0.35)'); g.addColorStop(1, 'rgba(170,240,252,0)');
+      c.fillStyle = g; c.beginPath(); c.arc(px, py, 16, 0, TAU); c.fill();
+    }
+    function build() {
+      w = Math.max(240, fig.clientWidth); h = fig.clientHeight || 210;
+      ({ c } = canvasFor(cv, w, h, 1.5));
+      gw = w < 500 ? 200 : 340; gh = Math.round(gw * h / w);
+      a = new Float32Array(gw * gh); b = new Float32Array(gw * gh); n = new Float32Array(gw * gh); damp = new Float32Array(gw * gh);
+      for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++) { const e = Math.min(i, j, gw - 1 - i, gh - 1 - j); damp[j * gw + i] = (e < 16 ? 0.86 + e * 0.0087 : 0.9968); }
+      small = D.createElement('canvas'); small.width = gw; small.height = gh; sc = small.getContext('2d'); simg = sc.createImageData(gw, gh);
+      sx = Math.round(gw * 0.16); sy = Math.round(gh * 0.5); ph = 0; tSim = 0;
+      if (reduce) { for (let s = 0; s < 1000; s++) { step(s / RATE + 1.2); } render(); }
+    }
+    let carry = 0;
+    function frame(dt, now) {
+      if (!a) return;
+      if (reduce) return;
+      const t = (now - T0) / 1000;
+      carry += Math.min(dt, 0.08) * RATE;
+      let s = Math.floor(carry); carry -= s; s = Math.min(s, 6);
+      for (; s > 0; s--) { tSim += 1 / RATE; step(tSim); }
+      render();
+    }
+    function drop(e) {
+      if (!a) return;
+      const r = cv.getBoundingClientRect(), gx = Math.round((e.clientX - r.left) / r.width * gw), gy = Math.round((e.clientY - r.top) / r.height * gh);
+      for (let j = -3; j <= 3; j++) for (let i = -3; i <= 3; i++) { const x = gx + i, y = gy + j; if (x > 1 && y > 1 && x < gw - 2 && y < gh - 2) a[y * gw + x] += 1.4 * Math.exp(-(i * i + j * j) / 3.2); }
+      if (reduce) render();
+      wake();
+    }
+    cv.addEventListener('pointerdown', drop);
+    return { el: fig, fps: 30, init() { T0 = performance.now(); build(); this.ready = true; }, resize() { build(); }, frame, still() { if (a) render(); }, get ok() { return !!a; } };
+  })();
+
+  /* ---- 07 · Essays: marine snow drifting past the words ---------------------------------- */
+  function snowField(cv, host, opt) {
+    let c, w, h, parts = [], T0 = 0, hf = null;
+    const sprite = (() => { const k = D.createElement('canvas'); k.width = k.height = 32; const g = k.getContext('2d'), gr = g.createRadialGradient(16, 16, 0, 16, 16, 16); gr.addColorStop(0, 'rgba(230,250,255,1)'); gr.addColorStop(0.4, 'rgba(200,240,252,0.45)'); gr.addColorStop(1, 'rgba(200,240,252,0)'); g.fillStyle = gr; g.fillRect(0, 0, 32, 32); return k; })();
+    function build() {
+      const r = host.getBoundingClientRect(); w = Math.max(200, host.clientWidth || r.width); h = Math.max(120, host.clientHeight || r.height);
+      ({ c } = canvasFor(cv, w, h, 1.5));
+      const rnd = rng(opt.seed), cnt = clamp(Math.round(w * h / opt.density), 24, opt.max);
+      parts = [];
+      for (let i = 0; i < cnt; i++) {
+        const l = rnd();
+        parts.push({ x: rnd() * w, y: rnd() * h, r: 0.7 + l * l * 2.4, vy: 5 + l * 15, ph: rnd() * TAU, a: 0.18 + l * 0.5, l });
+      }
+      if (opt.settle) { hf = new Float32Array(Math.ceil(w / 6) + 2); }
+    }
+    function floorAt(x) { return opt.settle ? opt.settle(x, w, h) + hf[Math.min(hf.length - 1, Math.floor(x / 6))] : h + 20; }
+    function draw(t) {
+      c.clearRect(0, 0, w, h);
+      if (opt.before) opt.before(c, w, h, t, hf);
+      for (const p of parts) {
+        if (p.r > 1.5) { const s = p.r * 4.2; c.globalAlpha = p.a * 0.8; c.drawImage(sprite, p.x - s / 2, p.y - s / 2, s, s); }
+        else { c.globalAlpha = p.a; c.fillStyle = '#DDF6FF'; c.beginPath(); c.arc(p.x, p.y, p.r, 0, TAU); c.fill(); }
+      }
+      c.globalAlpha = 1;
+      if (opt.after) opt.after(c, w, h, t, hf);
+    }
+    function frame(dt, now) {
+      if (!parts.length) return;
+      const t = (now - T0) / 1000;
+      dt = Math.min(dt, 0.1);
+      for (const p of parts) {
+        p.y += p.vy * dt; p.x += Math.sin(t * 0.5 + p.ph) * (4 + p.l * 9) * dt;
+        const fl = floorAt(p.x);
+        if (p.y > fl) {
+          if (opt.settle && hf) { const i = Math.min(hf.length - 2, Math.floor(p.x / 6)); hf[i] = Math.min(hf[i] + 0.16, 12); hf[i + 1] = Math.min(hf[i + 1] + 0.08, 12); if (i) hf[i - 1] = Math.min(hf[i - 1] + 0.08, 12); }
+          p.y = -6; p.x = Math.random() * w;
+        }
+        if (p.x < -4) p.x += w + 8; else if (p.x > w + 4) p.x -= w + 8;
+      }
+      draw(t);
+    }
+    return {
+      el: host, fps: opt.fps || 30,
+      init() { T0 = performance.now(); build(); this.ready = true; if (reduce) draw(6); },
+      resize() { build(); if (reduce) draw(6); },
+      frame, still() { draw(6); }, get ok() { return parts.length > 0; }, build, draw
+    };
+  }
+  const snow = snowField($('#g-snow'), $('#g-snow').parentNode, { seed: 3, density: 11000, max: 130 });
+
+  /* ---- 08 · Ten bullets: bioluminescence in the deepest water (motes with long-exposure trails) ---- */
+  const glow = (() => {
+    const cv = $('#g-glow'), host = cv.parentNode;
+    let c, w, h, motes = [], T0 = 0;
+    function build() {
+      w = Math.max(200, host.clientWidth); h = Math.max(160, host.clientHeight);
+      ({ c } = canvasFor(cv, w, h, 1.25));
+      const rnd = rng(9), cnt = clamp(Math.round(w * h / 52000), 12, 34);
+      motes = [];
+      for (let i = 0; i < cnt; i++) motes.push({ x: rnd() * w, y: rnd() * h, sp: 9 + rnd() * 16, o: rnd() * 100, fl: 0, nx: 4 + rnd() * 9 });
+    }
+    function stamp(m, big) {
+      if (big) { const g = c.createRadialGradient(m.x, m.y, 0, m.x, m.y, 13 * big); g.addColorStop(0, `rgba(120,240,226,${0.30 * big})`); g.addColorStop(1, 'rgba(60,200,220,0)'); c.fillStyle = g; c.beginPath(); c.arc(m.x, m.y, 13 * big, 0, TAU); c.fill(); }
+      c.fillStyle = 'rgba(120,240,226,0.72)'; c.beginPath(); c.arc(m.x, m.y, 1.1, 0, TAU); c.fill();
+    }
+    function frame(dt, now) {
+      if (!motes.length) return;
+      const t = (now - T0) / 1000; dt = Math.min(dt, 0.1);
+      c.globalCompositeOperation = 'destination-out'; c.fillStyle = 'rgba(0,0,0,0.075)'; c.fillRect(0, 0, w, h);
+      c.globalCompositeOperation = 'lighter';
+      for (const m of motes) {
+        const ang = Math.sin(m.x * 0.0042 + t * 0.11 + m.o) * 2.1 + Math.cos(m.y * 0.0051 - t * 0.14 + m.o * 0.7) * 2.1;
+        m.x += Math.cos(ang) * m.sp * dt; m.y += Math.sin(ang) * m.sp * dt * 0.8 - 1.5 * dt;
+        if (m.x < -10) m.x += w + 20; else if (m.x > w + 10) m.x -= w + 20;
+        if (m.y < -10) m.y += h + 20; else if (m.y > h + 10) m.y -= h + 20;
+        if (m.fl <= 0 && Math.random() < dt * 0.05) m.fl = 1;
+        if (m.fl > 0) m.fl = Math.max(0, m.fl - dt * 0.9);
+        stamp(m, m.fl > 0 ? Math.sin(m.fl * Math.PI) : 0);
+      }
+      c.globalCompositeOperation = 'source-over';
+    }
+    function still() {
+      if (!c) return; c.clearRect(0, 0, w, h); c.globalCompositeOperation = 'lighter';
+      const rnd = rng(4);
+      motes.forEach((m, i) => { for (let s = 0; s < 14; s++) { const k = s / 14; c.globalAlpha = 0.5 * (1 - k); c.fillStyle = 'rgba(170,255,244,0.9)'; c.beginPath(); c.arc(m.x - s * m.nx * 0.8, m.y + Math.sin(s * 0.5 + i) * 3, 1.1, 0, TAU); c.fill(); } stamp(m, i % 4 === 0 ? 0.7 : 0); });
+      c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
+    }
+    return { el: host, fps: 30, init() { T0 = performance.now(); build(); this.ready = true; if (reduce) still(); }, resize() { build(); if (reduce) still(); }, frame, still, get ok() { return motes.length > 0; } };
+  })();
+
+  /* ---- 09 · The seabed: kelp rising from silt, snow settling (verlet ropes, adapted from the cloth in lab/prayer-flags) ---- */
+  const bed = (() => {
+    const cv = $('#g-bed'), host = cv.parentNode;
+    let c, w, h, strands = [], hf = null, flakes = [], T0 = 0, sprite;
+    const SEG = 14;
+    const baseY = () => h - 30;
+    const duneAt = (x) => 15 + 9 * Math.sin(x * 0.011 + 1) + 6 * Math.sin(x * 0.031) + 3.5 * Math.sin(x * 0.083 + 2);
+    const topAt = (x) => baseY() - duneAt(x) - hf[Math.min(hf.length - 1, Math.max(0, Math.floor(x / 6)))];
+    function build() {
+      w = Math.max(240, host.clientWidth); h = Math.max(260, host.clientHeight);
+      ({ c } = canvasFor(cv, w, h, 1.5));
+      hf = new Float32Array(Math.ceil(w / 6) + 2);
+      const rnd = rng(31), margin = (w - (L.colR - L.colL)) / 2, wide = margin > 90;
+      strands = [];
+      const place = (x0, x1, count) => {
+        for (let i = 0; i < count; i++) {
+          const x = lerp(x0, x1, (i + 0.15 + rnd() * 0.7) / count), len = (wide ? 150 + rnd() * 230 : 56 + rnd() * 64), far = rnd() < 0.35;
+          const s = { x, len: far ? len * 0.8 : len, seg: 0, far, ph: rnd() * TAU, w0: (far ? 6 : 9.5) + rnd() * 4, px: [], py: [], X: [], Y: [] };
+          s.seg = s.len / SEG;
+          const ry = topAt(x) + 4;
+          for (let k = 0; k <= SEG; k++) { s.X.push(x); s.Y.push(ry - k * s.seg); s.px.push(x); s.py.push(ry - k * s.seg); }
+          strands.push(s);
+        }
+      };
+      if (wide) { place(18, margin - 140, Math.round(clamp(margin / 70, 3, 7))); place(w - margin + 140, w - 18, Math.round(clamp(margin / 70, 3, 7))); }
+      else { place(2, w * 0.15, 2); place(w * 0.85, w - 2, 2); }
+      strands.sort((a, b) => (b.far ? 1 : 0) - (a.far ? 1 : 0));
+      flakes = [];
+      const cnt = clamp(Math.round(w / 34), 14, 48);
+      for (let i = 0; i < cnt; i++) { const l = rnd(); flakes.push({ x: rnd() * w, y: rnd() * h * 0.9, r: 0.7 + l * l * 2.0, vy: 6 + l * 14, ph: rnd() * TAU, a: 0.2 + l * 0.5 }); }
+      sprite = sprite || (() => { const k = D.createElement('canvas'); k.width = k.height = 32; const g = k.getContext('2d'), gr = g.createRadialGradient(16, 16, 0, 16, 16, 16); gr.addColorStop(0, 'rgba(230,250,255,1)'); gr.addColorStop(0.4, 'rgba(200,240,252,0.4)'); gr.addColorStop(1, 'rgba(200,240,252,0)'); g.fillStyle = gr; g.fillRect(0, 0, 32, 32); return k; })();
+      if (reduce) { for (let s = 0; s < 260; s++) sim(1 / 60, 40 + s / 60); for (let s = 0; s < 80; s++) { const i = Math.floor(Math.random() * hf.length); hf[i] = Math.min(hf[i] + 1.2, 8); } draw(0); }
+    }
+    function sim(dt, t) {
+      for (const s of strands) {
+        const { X, Y, px, py } = s;
+        for (let i = 1; i <= SEG; i++) {
+          const k = i / SEG;
+          const cur = (Math.sin(t * 0.42 + X[i] * 0.0042 + i * 0.26 + s.ph) * 15 + Math.sin(t * 0.83 + i * 0.5 + s.ph * 2) * 4) * k * k;
+          const vx = (X[i] - px[i]) * 0.965, vy = (Y[i] - py[i]) * 0.965;
+          px[i] = X[i]; py[i] = Y[i];
+          X[i] += vx + cur * dt * dt * 60 * 0.9; Y[i] += vy - (28 + 80 * k) * dt * dt;
+        }
+        const ry = topAt(s.x) + 4; X[0] = s.x; Y[0] = ry;
+        for (let it = 0; it < 4; it++) {
+          for (let i = 1; i <= SEG; i++) {
+            const dx = X[i] - X[i - 1], dy = Y[i] - Y[i - 1], d = Math.hypot(dx, dy) || 1, diff = (d - s.seg) / d;
+            if (i === 1) { X[i] -= dx * diff; Y[i] -= dy * diff; } else { X[i] -= dx * diff * 0.5; Y[i] -= dy * diff * 0.5; X[i - 1] += dx * diff * 0.5; Y[i - 1] += dy * diff * 0.5; }
+          }
+          for (let i = 2; i <= SEG; i++) { X[i] += (2 * X[i - 1] - X[i - 2] - X[i]) * 0.11; Y[i] += (2 * Y[i - 1] - Y[i - 2] - Y[i]) * 0.11; }
+        }
+      }
+    }
+    function drawKelp(s) {
+      const { X, Y } = s, L_ = [], R_ = [];
+      for (let i = 0; i <= SEG; i++) {
+        const a = Math.atan2(Y[Math.min(SEG, i + 1)] - Y[Math.max(0, i - 1)], X[Math.min(SEG, i + 1)] - X[Math.max(0, i - 1)]) + Math.PI / 2;
+        const wd = (s.w0 * Math.pow(1 - i / SEG, 0.75) + 0.6) * (1 + 0.18 * Math.sin(i * 1.3 + s.ph)) * 0.5;
+        L_.push([X[i] + Math.cos(a) * wd, Y[i] + Math.sin(a) * wd]); R_.push([X[i] - Math.cos(a) * wd, Y[i] - Math.sin(a) * wd]);
+      }
+      const g = c.createLinearGradient(X[0], Y[0], X[SEG], Y[SEG]);
+      g.addColorStop(0, s.far ? 'rgba(8,48,66,0.8)' : 'rgba(7,52,70,0.95)'); g.addColorStop(1, s.far ? 'rgba(36,112,136,0.6)' : 'rgba(42,136,160,0.9)');
+      c.fillStyle = g; c.beginPath(); c.moveTo(L_[0][0], L_[0][1]);
+      for (let i = 1; i <= SEG; i++) c.lineTo(L_[i][0], L_[i][1]);
+      for (let i = SEG; i >= 0; i--) c.lineTo(R_[i][0], R_[i][1]);
+      c.closePath(); c.fill();
+      // blades
+      for (let i = 3; i < SEG; i += 3) {
+        const side = (i / 3) % 2 ? 1 : -1, bl = (13 + s.w0 * 1.7) * (1 - i / SEG * 0.55), dx = X[i + 1] - X[i - 1], dy = Y[i + 1] - Y[i - 1], dl = Math.hypot(dx, dy) || 1;
+        const nx = -dy / dl * side, ny = dx / dl * side, tx = dx / dl, ty = dy / dl;
+        c.beginPath(); c.moveTo(X[i], Y[i]); c.quadraticCurveTo(X[i] + nx * bl * 0.8 + tx * bl * 0.2, Y[i] + ny * bl * 0.8 + ty * bl * 0.2, X[i] + nx * bl * 0.55 + tx * bl * 1.1, Y[i] + ny * bl * 0.55 + ty * bl * 1.1);
+        c.quadraticCurveTo(X[i] + nx * bl * 0.2 + tx * bl * 0.5, Y[i] + ny * bl * 0.2 + ty * bl * 0.5, X[i], Y[i]); c.fill();
+      }
+    }
+    function draw(t) {
+      c.clearRect(0, 0, w, h);
+      for (const s of strands) drawKelp(s);
+      // silt: the heightfield, lit from above
+      const by = baseY();
+      const g = c.createLinearGradient(0, by - 40, 0, h);
+      g.addColorStop(0, '#2A6479'); g.addColorStop(0.28, '#133546'); g.addColorStop(1, '#06141C');
+      c.fillStyle = g; c.beginPath(); c.moveTo(0, h);
+      for (let x = 0; x <= w; x += 6) c.lineTo(x, topAt(x));
+      c.lineTo(w, h); c.closePath(); c.fill();
+      c.strokeStyle = 'rgba(170,230,245,0.28)'; c.lineWidth = 1; c.beginPath();
+      for (let x = 0; x <= w; x += 6) { const y = topAt(x); if (x) c.lineTo(x, y); else c.moveTo(x, y); }
+      c.stroke();
+      for (const p of flakes) {
+        if (p.r > 1.5) { const s = p.r * 4.2; c.globalAlpha = p.a * 0.8; c.drawImage(sprite, p.x - s / 2, p.y - s / 2, s, s); }
+        else { c.globalAlpha = p.a; c.fillStyle = '#DDF6FF'; c.beginPath(); c.arc(p.x, p.y, p.r, 0, TAU); c.fill(); }
+      }
+      c.globalAlpha = 1;
+    }
+    function frame(dt, now) {
+      if (!strands.length) return;
+      dt = Math.min(dt, 0.05); const t = (now - T0) / 1000;
+      const n = Math.max(1, Math.round(dt * 60));
+      for (let s = 0; s < n; s++) sim(1 / 60, t);
+      for (const p of flakes) {
+        p.y += p.vy * dt; p.x += Math.sin(t * 0.5 + p.ph) * 7 * dt;
+        if (p.y > topAt(clamp(p.x, 0, w - 1))) {
+          const i = clamp(Math.floor(p.x / 6), 1, hf.length - 2); hf[i] = Math.min(hf[i] + 0.2, 9); hf[i + 1] = Math.min(hf[i + 1] + 0.1, 9); hf[i - 1] = Math.min(hf[i - 1] + 0.1, 9);
+          p.y = -6; p.x = Math.random() * w;
+        }
+      }
+      draw(t);
+    }
+    return { el: host, fps: 30, init() { T0 = performance.now(); build(); this.ready = true; }, resize() { build(); }, frame, still() { draw(0); }, get ok() { return strands.length > 0; } };
+  })();
+
+  [sonar, voice, snow, glow, bed].forEach((g) => { g.vis = false; g.ready = false; g.acc = 0; stations.push(g); });
+
+  /* ------------------------------------------------------------------------------------------
+     The pack figure (the Ten Essentials), retinted for the water: same figure, recoloured by
+     overriding its own CSS variables. It loads only when its row is near the viewport.
+     ------------------------------------------------------------------------------------------ */
+  const packFrame = $('#packFrame');
+  const PACK_CSS = 'html,body{background:#0A4D6E!important}.iso{--anatomy-page:#0A4D6E;--anatomy-card:#0A4D6E;--anatomy-text:#D5ECF5;--anatomy-strong:#F1FAFD;--anatomy-muted:#BBDCEA;--anatomy-paper:#0A4D6E;--anatomy-face:#0F6086;--anatomy-top:#137099;--anatomy-shade-0:#08425F;--anatomy-shade-1:#0A4D6E;--anatomy-shade-2:#0C5878;--anatomy-shade-3:#0F6489;--anatomy-lit-top:#2A86AD;--anatomy-lit-shade:#116C94;--anatomy-hi:#E3F6FC;--anatomy-mid:#8FC3DA;--anatomy-lo:#4A8FAF;--anatomy-faint:#1F6B8D;--anatomy-lit:#FFFFFF;--anatomy-halo:#04202E;--anatomy-halo-opacity:.8;--anatomy-dot:#E3F6FC}';
+  function ensurePack() {
+    if (!packFrame || packFrame.getAttribute('src')) return;
+    packFrame.addEventListener('load', () => {
+      try {
+        const d = packFrame.contentDocument; if (!d) return;
+        const s = d.createElement('style'); s.textContent = PACK_CSS; d.head.appendChild(s);
+      } catch (e) { /* cross-origin (file://): the figure keeps its own dark theme */ }
+    });
+    packFrame.setAttribute('src', packFrame.dataset.src);
+  }
+  const packRow = $('.has-fig');
+  packRow.querySelector('details').addEventListener('toggle', () => { if (packRow.querySelector('details').open) ensurePack(); });
+
+  /* ------------------------------------------------------------------------------------------
+     The scheduler: one requestAnimationFrame loop for everything, asleep whenever nothing is
+     on screen or moving. Station graphics run at their own cadence and only while visible.
+     ------------------------------------------------------------------------------------------ */
+  let raf = 0, lastNow = 0, lastSy = -1, layoutDirty = true, layoutT = 0, lastW = 0;
+  const glGov = { ema: 16, slow: 0, last: 0, dirty: true };
+  function wake() { if (!raf && !D.hidden) { lastNow = performance.now(); raf = W.requestAnimationFrame(tick); } }
+
+  function relayout(full) {
+    layoutDirty = false;
+    measure();
+    const widthChanged = L.vw !== lastW; lastW = L.vw;
+    buildTip(); buildHullFallback(); writeReadings();
+    if (widthChanged || !surf.h) surfResize();
+    railResize(); glResize();
+    stations.forEach((g) => { if (g.ready && (widthChanged || full)) g.resize(); });
+    glGov.dirty = true; rail.dirty = true;
+  }
+
+  function tick(now) {
+    raf = 0;
+    if (D.hidden) return;
+    const dt = Math.min(0.1, (now - lastNow) / 1000 || 0.016); lastNow = now;
+    if (layoutDirty && now - layoutT > 130) relayout(false);
+    const sy = W.scrollY, scrolled = sy !== lastSy; lastSy = sy;
+    let busy = layoutDirty;
+
+    checkCross(sy, now, false);
+    if (cross.pulse > 0) { cross.pulse = Math.max(0, cross.pulse - dt * 0.9); rail.dirty = true; busy = true; }
+
+    // the waterline strip
+    if (surfActive(sy) && (!reduce || scrolled)) {
+      if (reduce) surfDraw(0); else { surfTick(dt, now, sy); busy = true; }
+    }
+
+    // the light in the water
+    if (glActive(sy)) {
+      const age = (now - cross.burstT) / 3200;
+      const burst = age >= 0 && age < 1 ? Math.pow(1 - age, 1.6) : 0;
+      if (reduce) {
+        if (scrolled || glGov.dirty) { glDraw(sy, STILL_T, 0); glGov.dirty = false; }
+      } else {
+        if (scrolled || burst > 0 || now - glGov.last > 33 || glGov.dirty) {
+          const f0 = performance.now();
+          glDraw(sy, now / 1000 + 3.0, burst); glGov.last = now; glGov.dirty = false;
+          // frame governor: if the GPU cannot hold ~40fps, shed resolution
+          glGov.ema += (dt * 1000 - glGov.ema) * 0.06;
+          glGov.slow = glGov.ema > 30 ? glGov.slow + 1 : 0;
+          if (glGov.slow > 60 && gl_.quality > 0.5) { glGov.slow = 0; gl_.quality *= 0.82; glResize(); }
+        }
+        busy = true;
+      }
+    } else glClear();
+
+    // stations: only the ones on screen
+    for (const g of stations) {
+      if (!g.vis || !g.ready) continue;
+      if (reduce) continue;
+      g.acc += dt;
+      if (g.acc >= 1 / g.fps - 0.002) { const a = g.acc; g.acc = 0; g.frame(a, now); }
+      busy = true;
+    }
+
+    if (scrolled || rail.dirty) railDraw(sy, now);
+    if (surf.energy > 0.02) busy = true;
+    if (busy) raf = W.requestAnimationFrame(tick);
+  }
+
+  /* lazy stations: initialise within 400px of the viewport, pause when they leave */
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      const g = stations.find((s) => s.el === e.target); if (!g) return;
+      g.vis = e.isIntersecting;
+      if (e.isIntersecting && !g.ready) { g.init(); if (reduce && g.ready) g.still(); }
+      if (e.isIntersecting && g.ready && reduce) g.still();
+    });
+    wake();
+  }, { rootMargin: '400px 0px 400px 0px' });
+  stations.forEach((g) => io.observe(g.el));
+  new IntersectionObserver((en) => { if (en.some((e) => e.isIntersecting) && (W.matchMedia('(min-width:1360px)').matches)) ensurePack(); }, { rootMargin: '500px 0px' }).observe(packRow);
+  // the "live" class lets the CSS glow on the bullets breathe only while that station is on screen
+  new IntersectionObserver((en) => { en.forEach((e) => D.documentElement.classList.toggle('live', e.isIntersecting && !reduce)); }, { rootMargin: '0px' }).observe($('#bullets'));
+
+  /* ---- boot ---- */
+  function boot() {
+    W.addEventListener('scroll', wake, { passive: true });
+    W.addEventListener('resize', () => { layoutDirty = true; layoutT = performance.now(); wake(); });
+    D.addEventListener('visibilitychange', () => { if (!D.hidden) { glGov.dirty = true; wake(); } });
+    new ResizeObserver(() => { layoutDirty = true; layoutT = performance.now(); wake(); }).observe(D.body);
+    (reduceMQ.addEventListener ? reduceMQ.addEventListener.bind(reduceMQ, 'change') : reduceMQ.addListener.bind(reduceMQ))(() => {
+      reduce = reduceMQ.matches; de.classList.toggle('rm', reduce);
+      if (reduce) { surfDraw(0); stations.forEach((g) => { if (g.ready) g.still(); }); }
+      relayout(true); wake();
+    });
+    if (D.fonts && D.fonts.ready) D.fonts.ready.then(() => { layoutDirty = true; layoutT = performance.now() - 200; rail.dirty = true; wake(); });
+    gl_.ok = de.clientWidth >= 700 && glInit();          // phones keep the static hull
+    relayout(true);
+    const qy = new URLSearchParams(location.search).get('y');   // mockup switch: ?y=NNNN opens the page scrolled to that offset
+    if (qy) { W.scrollTo(0, +qy); }
+    checkCross(W.scrollY, performance.now(), true);
+    wake();
+  }
+  boot();
+})();
+</script>
+</body>
+</html>

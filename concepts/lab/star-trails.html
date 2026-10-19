@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab: star trails over the peak</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Hanken+Grotesk:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #FFFFFF;
+    --ink: #111111;
+    --muted: #5C5C5C;
+    --ice: #0F7DAA;
+    --mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --gutter: 16px;
+    --band-h: 340px;
+    --ramp: 100px;          /* the dusk ease: white -> navy */
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--bg); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.6 var(--sans); overflow-x: hidden; }
+  p { margin: 0; }
+
+  .wrap { width: 100%; max-width: calc(640px + var(--gutter) * 2); margin-inline: auto; padding-inline: var(--gutter); }
+  .lab-cap { padding-top: 56px; padding-bottom: 12px; font: 400 12px/1.4 var(--mono); color: var(--muted); letter-spacing: 0.04em; }
+
+  /* ---- the night band --------------------------------------------------------------------
+     Full-bleed. The gradient does the dusk: a short eased ramp from white to deep navy, then
+     navy settling toward ink. Everything else (stars, ridge, trees) lives on one canvas. */
+  .band {
+    position: relative; width: 100%; height: var(--band-h); overflow: hidden;
+    background: linear-gradient(to bottom,
+      #ffffff 0,
+      #f2f5f8 calc(var(--ramp) * 0.10),
+      #dbe4ec calc(var(--ramp) * 0.22),
+      #b2c3d4 calc(var(--ramp) * 0.36),
+      #7f98b2 calc(var(--ramp) * 0.50),
+      #4b6b8e calc(var(--ramp) * 0.64),
+      #26456c calc(var(--ramp) * 0.78),
+      #122c4d calc(var(--ramp) * 0.90),
+      #0b1e3a var(--ramp),
+      #08162d 60%,
+      #040a16 100%);
+    touch-action: pan-y; cursor: ew-resize;
+    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+  }
+  .band canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .stage {
+    position: absolute; inset: 0; margin-inline: auto; width: 100%; max-width: 1100px;
+    pointer-events: none;
+  }
+  .tag, .exp {
+    position: absolute; bottom: 14px; font: 400 10.5px/1.3 var(--mono); letter-spacing: 0.12em; text-transform: uppercase;
+    color: rgba(188, 214, 232, 0.78); white-space: nowrap;
+  }
+  .tag { left: var(--gutter); }
+  .exp { right: var(--gutter); color: rgba(188, 214, 232, 0.5); font-variant-numeric: tabular-nums; }
+
+  .foot { padding-top: 20px; padding-bottom: 48px; }
+  .foot p { font: 400 12px/1.7 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+
+  @media (max-width: 640px) {
+    :root { --band-h: 240px; --ramp: 72px; }
+    .tag, .exp { font-size: 9.5px; bottom: 12px; letter-spacing: 0.1em; }
+    .exp { display: none; }
+    .foot .part { display: block; }
+    .foot .sep { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap lab-cap"><p>LAB / STAR TRAILS OVER THE PEAK</p></div>
+
+<section class="band" id="band">
+  <canvas id="sky" aria-hidden="true"></canvas>
+  <div class="stage">
+    <span class="tag">Quandary Peak · 14,265 ft · Long exposure</span>
+    <span class="exp" id="exp" aria-hidden="true"></span>
+  </div>
+</section>
+
+<footer class="wrap foot"><p><span class="part">Contour interval 1 year<span class="sep"> · </span></span><span class="part">Last updated Oct 2026</span></p></footer>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---------------------------------------------------------------- constants
+  const STAGE_MAX = 1100;
+  const DEG = Math.PI / 180;
+  const OMEGA = 15 * DEG;           // Earth turns 15 degrees per hour
+  const T_START = 0.85;             // hours already on the sensor when you arrive
+  const T_MAX = 5.2;                // hours: the finished frame
+  const BASE_RATE = 0.115;          // exposure hours per real second
+  const HOLD_S = 5.5, FADE_OUT_S = 1.1, FADE_IN_S = 1.4;
+  const STAR_MAX = 460, STAR_MIN = 240;
+
+  // Fallback skyline (metres): max height down each column of quandary-terrain.json.
+  // The page fetches the real file and recomputes this; the copy only covers file:// and offline.
+  const FALLBACK_SKY = [4122,4128,4136,4158,4181,4203,4220,4240,4259,4275,4279,4280,4291,4292,4303,4311,4318,4330,4331,4325,4324,4313,4298,4276,4252,4228,4206,4180,4160,4137,4109,4087,4084,4078,4069,4058,4045,4035,4025,4015,4005,4000,3999,3998,3993,3983,3974,3966,3955,3941,3930,3920,3910,3899,3886,3873,3861,3847,3831,3813,3793,3773,3752,3733,3716,3708,3715,3719,3718,3714,3706,3696,3687,3678,3671,3662,3652,3640,3631,3628,3621,3616,3606,3589,3574,3569,3563,3554,3546,3537,3529,3521,3512,3505,3494,3482,3481,3483,3495,3503,3510,3517,3525,3533,3542,3551,3560,3568,3576,3584,3592,3598];
+
+  const band = document.getElementById('band');
+  const cv = document.getElementById('sky');
+  const ctx = cv.getContext('2d');
+  const expEl = document.getElementById('exp');
+  const mqReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const params = new URLSearchParams(location.search);
+
+  // ---------------------------------------------------------------- helpers
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const smooth = (t) => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };
+  const easeOutCubic = (t) => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+  const easeInOutCubic = (t) => { t = clamp(t, 0, 1); return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
+  function rng(seed) {                       // mulberry32
+    let a = seed >>> 0;
+    return () => {
+      a = (a + 0x6D2B79F5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function noise1(seed) {                    // smooth 1D value noise, returns fn(x) in [-1, 1]
+    const r = rng(seed), v = new Float32Array(512);
+    for (let i = 0; i < 512; i++) v[i] = r() * 2 - 1;
+    return (x) => {
+      const i = Math.floor(x), f = x - i, s = f * f * (3 - 2 * f);
+      return lerp(v[i & 511], v[(i + 1) & 511], s);
+    };
+  }
+  const nA = noise1(11), nB = noise1(23), nC = noise1(37);
+
+  // ---------------------------------------------------------------- terrain skyline
+  let colMax = FALLBACK_SKY;                 // metres, one per grid column
+  function loadTerrain() {
+    return fetch('../_shared/quandary-terrain.json')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('terrain ' + r.status))))
+      .then((d) => {
+        const n = d.heights.length, out = new Array(d.heights[0].length).fill(-Infinity);
+        for (let r = 0; r < n; r++) {
+          const row = d.heights[r];
+          for (let c = 0; c < row.length; c++) if (row[c] > out[c]) out[c] = row[c];
+        }
+        colMax = out;
+      })
+      .catch(() => { /* keep the embedded copy */ });
+  }
+  function skyAt(col) {                      // Catmull-Rom through the column maxima
+    const n = colMax.length;
+    const i = Math.floor(col), f = col - i;
+    const p0 = colMax[clamp(i - 1, 0, n - 1)], p1 = colMax[clamp(i, 0, n - 1)];
+    const p2 = colMax[clamp(i + 1, 0, n - 1)], p3 = colMax[clamp(i + 2, 0, n - 1)];
+    return p1 + 0.5 * f * (p2 - p0 + f * (2 * p0 - 5 * p1 + 4 * p2 - p3 + f * (3 * (p1 - p2) + p3 - p0)));
+  }
+  const ELE_LOW = 3540, ELE_HIGH = 4332, FOOT = 3360;   // metres: framing of the silhouette
+
+  // ---------------------------------------------------------------- scene state
+  let W = 0, H = 0, dpr = 1, SW = 0, sx0 = 0;
+  let baseY = 0, pole = { x: 0, y: 0 };
+  let ridgeTop = new Float32Array(1);
+  let ridgePath = null, rimPath = null, treePath = null, farPath = null;
+  let gRidge = null, gRim = null, gHaze = null, gFade = null, polarisSprite = null;
+  let N = 0;
+  let sx = new Float32Array(0), sy = new Float32Array(0), sr = new Float32Array(0), sa = new Float32Array(0);
+  let sb = new Uint8Array(0), sHeadOn = new Uint8Array(0);
+  let buckets = [];
+  let traces = [];                           // meteors the long exposure keeps: {x0,y0,x1,y1,t}
+  const TINTS = [[176, 208, 255], [236, 241, 255], [255, 224, 186]];       // cool, neutral, warm
+  const LEVELS = [                            // [stroke px, alpha] dim to bright
+    [0.55, 0.30], [0.7, 0.46], [0.95, 0.66], [1.35, 0.86]
+  ];
+
+  function ridgeY(x) {
+    const i = clamp(Math.round(x), 0, ridgeTop.length - 1);
+    return ridgeTop[i];
+  }
+
+  function buildRidge() {
+    ridgeTop = new Float32Array(W + 1);
+    const visCols = clamp(SW / 7.6, 62, 144);
+    const colStart = -Math.round(visCols * 0.12);
+    const pxPerCol = SW / visCols;
+    const nCols = colMax.length;
+    const padL = 17, padR = 22;
+    const hillAmp = H * 0.045;
+    for (let x = 0; x <= W; x++) {
+      const col = colStart + (x - sx0) / pxPerCol;
+      let e;
+      if (col < 0) e = lerp(skyAt(0), FOOT, smooth(-col / padL));
+      else if (col > nCols - 1) e = lerp(skyAt(nCols - 1), FOOT, smooth((col - (nCols - 1)) / padR));
+      else e = skyAt(col);
+      // rock texture: fine, and stronger where it is steeper/higher
+      e += nB(x * 0.065 + 3.1) * 7 + nC(x * 0.19 + 9.4) * 2.6;
+      let t = clamp((e - ELE_LOW) / (ELE_HIGH - ELE_LOW), -0.6, 1);
+      t = t > 0 ? Math.pow(t, 1.7) : t * 0.5;                       // sharpen the summit against its shoulders
+      let y = baseY - H * (0.085 + 0.46 * t);
+      // gentle foothills out where the grid runs out
+      const outside = 1 - smooth((e - FOOT) / 120);
+      y -= outside * (nA(x * 0.012 + 40) * 0.5 + 0.5) * hillAmp;
+      ridgeTop[x] = y;
+    }
+    ridgePath = new Path2D(); rimPath = new Path2D();
+    ridgePath.moveTo(0, H); ridgePath.lineTo(0, ridgeTop[0]);
+    rimPath.moveTo(0, ridgeTop[0]);
+    for (let x = 1; x <= W; x++) { ridgePath.lineTo(x, ridgeTop[x]); rimPath.lineTo(x, ridgeTop[x]); }
+    ridgePath.lineTo(W, H); ridgePath.closePath();
+    // a lighter, distant range behind it: depth, and a place for the haze to read
+    farPath = new Path2D();
+    farPath.moveTo(0, H);
+    for (let x = 0; x <= W; x += 2) {
+      const f = nA(x * 0.0065 + 100) * 0.55 + nB(x * 0.018 + 50) * 0.3 + nC(x * 0.055 + 8) * 0.15;
+      farPath.lineTo(x, baseY - H * (0.205 + 0.085 * f));
+    }
+    farPath.lineTo(W, H); farPath.closePath();
+  }
+
+  function buildTrees() {
+    const r = rng(7001);
+    treePath = new Path2D();
+    const g0 = baseY + H * 0.01;
+    const ground = (x) => g0 + nA(x * 0.021 + 5) * 2.2 + nB(x * 0.07) * 1.1;
+    treePath.moveTo(-2, H + 2);
+    treePath.lineTo(-2, ground(0));
+    let x = 0;
+    while (x < W + 6) {
+      const clump = nC(x * 0.011 + 70) * 0.5 + 0.5;                // clearings between stands
+      if (r() < 0.10 + clump * 0.9) {
+        const h = (6 + Math.pow(r(), 1.7) * 26) * (0.55 + clump * 0.7);
+        const w = h * (0.34 + r() * 0.1), g = ground(x);
+        const tiers = 3;
+        treePath.lineTo(x - w / 2, g);
+        for (let k = 0; k < tiers; k++) {
+          const a = (k + 1) / tiers;
+          const yy = g - h * a * 0.97 + (k === tiers - 1 ? 0 : h * 0.07);
+          const half = (w / 2) * (1 - a) * 0.92 + 0.35;
+          treePath.lineTo(x - half * 1.55, yy + h * 0.1);
+          treePath.lineTo(x - half * 0.55, yy);
+        }
+        treePath.lineTo(x, g - h);
+        for (let k = tiers - 1; k >= 0; k--) {
+          const a = (k + 1) / tiers;
+          const yy = g - h * a * 0.97 + (k === tiers - 1 ? 0 : h * 0.07);
+          const half = (w / 2) * (1 - a) * 0.92 + 0.35;
+          treePath.lineTo(x + half * 0.55, yy);
+          treePath.lineTo(x + half * 1.55, yy + h * 0.1);
+        }
+        treePath.lineTo(x + w / 2, g);
+        x += w * (0.45 + r() * 0.55);
+      } else {
+        treePath.lineTo(x, ground(x));
+        x += 3 + r() * 5;
+      }
+    }
+    treePath.lineTo(W + 2, ground(W));
+    treePath.lineTo(W + 2, H + 2);
+    treePath.closePath();
+  }
+
+  function buildGradients() {
+    const top = Math.min(...ridgeTop);
+    gRidge = ctx.createLinearGradient(0, top, 0, baseY + H * 0.02);
+    gRidge.addColorStop(0, '#0c1c30');
+    gRidge.addColorStop(0.55, '#070f1c');
+    gRidge.addColorStop(1, '#04080f');
+    gRim = ctx.createLinearGradient(0, top, 0, baseY - H * 0.1);
+    gRim.addColorStop(0, 'rgba(176,214,238,0.55)');
+    gRim.addColorStop(0.5, 'rgba(120,176,214,0.22)');
+    gRim.addColorStop(1, 'rgba(120,176,214,0)');
+    // dusk glow sitting on the horizon; also what makes stars thin out toward the ground
+    gHaze = ctx.createLinearGradient(0, H * 0.34, 0, baseY + H * 0.01);
+    gHaze.addColorStop(0, 'rgba(24,66,106,0)');
+    gHaze.addColorStop(0.55, 'rgba(26,72,114,0.34)');
+    gHaze.addColorStop(1, 'rgba(34,92,134,0.74)');
+    // erases stars where the sky is still pale (the white-to-navy ramp)
+    const ramp = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ramp')) || 112;
+    gFade = ctx.createLinearGradient(0, ramp * 0.5, 0, ramp * 1.7);
+    gFade.addColorStop(0, 'rgba(0,0,0,1)');
+    gFade.addColorStop(1, 'rgba(0,0,0,0)');
+    // Polaris halo, pre-rendered
+    const s = 30, c = document.createElement('canvas');
+    c.width = c.height = s * 2 * dpr;
+    const g = c.getContext('2d');
+    g.scale(dpr, dpr);
+    const rg = g.createRadialGradient(s, s, 0, s, s, s);
+    rg.addColorStop(0, 'rgba(255,255,255,1)');
+    rg.addColorStop(0.07, 'rgba(236,244,255,0.9)');
+    rg.addColorStop(0.16, 'rgba(210,228,255,0.38)');
+    rg.addColorStop(0.4, 'rgba(170,205,255,0.1)');
+    rg.addColorStop(1, 'rgba(170,205,255,0)');
+    g.fillStyle = rg; g.fillRect(0, 0, s * 2, s * 2);
+    polarisSprite = c;
+  }
+
+  function buildStars() {
+    const r = rng(20260715);
+    // Polaris: off-centre, up and to the right, above the lowest part of the ridge
+    pole.x = sx0 + SW * (W < 560 ? 0.76 : 0.69);
+    pole.y = H * (W < 560 ? 0.40 : 0.42);
+    const rMax = Math.hypot(Math.max(pole.x, W - pole.x), Math.max(pole.y, H - pole.y)) * 1.02;
+    const maxAngle = T_MAX * OMEGA;
+    const xs = [], ys = [], rs = [], as = [], bs = [];
+    let tries = 0;
+    const target = clamp(Math.round((STAR_MAX * SW * H) / (1100 * 340)), STAR_MIN, STAR_MAX);
+    while (xs.length < target && tries++ < 20000) {
+      const rad = rMax * Math.pow(r(), 0.7);              // slight excess near the pole: more concentric arcs
+      if (rad < 5) continue;
+      const a0 = r() * Math.PI * 2;
+      // keep it only if some part of its sweep is on-screen and above the ridge
+      let seen = false;
+      for (let k = 0; k <= 10 && !seen; k++) {
+        const a = a0 - (maxAngle * k) / 10;
+        const px = pole.x + rad * Math.cos(a), py = pole.y + rad * Math.sin(a);
+        if (px > 1 && px < W - 1 && py > 2 && py < ridgeY(px) - 3) seen = true;
+      }
+      if (!seen) continue;
+      xs.push(pole.x + rad * Math.cos(a0)); ys.push(pole.y + rad * Math.sin(a0));
+      rs.push(rad); as.push(a0);
+      let u = r();                                         // brightness: a few bright, mostly dim
+      if (rad > rMax * 0.55) u *= 0.9;                     // the far, near-straight arcs stay quieter
+      bs.push(u < 0.56 ? 0 : u < 0.83 ? 1 : u < 0.95 ? 2 : 3);
+    }
+    N = xs.length;
+    sx = Float32Array.from(xs); sy = Float32Array.from(ys); sr = Float32Array.from(rs); sa = Float32Array.from(as);
+    // bucket = tint * 4 + level
+    sb = new Uint8Array(N); sHeadOn = new Uint8Array(N);
+    buckets = Array.from({ length: 12 }, () => []);
+    for (let i = 0; i < N; i++) {
+      const tr = r();
+      const tint = tr < 0.34 ? 0 : tr < 0.76 ? 1 : 2;
+      sb[i] = tint * 4 + bs[i];
+      buckets[sb[i]].push(i);
+      sHeadOn[i] = bs[i] >= 2 ? 1 : 0;
+    }
+  }
+
+  function layout() {
+    W = Math.max(1, Math.round(band.clientWidth));
+    H = Math.max(1, Math.round(band.clientHeight));
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    SW = Math.min(STAGE_MAX, W); sx0 = (W - SW) / 2;
+    baseY = H * 0.855;
+    buildRidge(); buildTrees(); buildGradients(); buildStars();
+    buildTraces();
+  }
+
+  // ---------------------------------------------------------------- meteors
+  function buildTraces() {
+    // The long exposure keeps every meteor as a thin line. Reduced motion gets two, fixed.
+    traces = [];
+    if (mqReduce.matches) {
+      traces.push(mkTrace(0.44, 0.34, 0.545, 0.46, 0));
+      traces.push(mkTrace(0.835, 0.40, 0.90, 0.55, 0));
+    }
+  }
+  function mkTrace(fx0, fy0, fx1, fy1, t) {
+    return { x0: sx0 + SW * fx0, y0: H * fy0, x1: sx0 + SW * fx1, y1: H * fy1, t };
+  }
+  let meteor = null, meteorIn = 7;
+  function spawnMeteor(tNow) {
+    const r = Math.random;
+    const len = SW * (0.11 + r() * 0.08);
+    const ang = (22 + r() * 30) * DEG;
+    const dir = r() < 0.5 ? -1 : 1;
+    const x0 = sx0 + SW * (0.18 + r() * 0.62), y0 = H * (0.12 + r() * 0.2);
+    meteor = {
+      x0, y0, x1: x0 + dir * Math.cos(ang) * len, y1: y0 + Math.sin(ang) * len,
+      born: performance.now(), dur: 620 + r() * 260, tExp: tNow
+    };
+  }
+
+  // ---------------------------------------------------------------- draw
+  function draw(t, fade) {
+    ctx.clearRect(0, 0, W, H);
+    const sweep = t * OMEGA;
+    if (fade > 0.002) {
+      ctx.globalAlpha = fade;
+      ctx.lineCap = 'round';
+      // trails: one path per tint x brightness bucket
+      for (let b = 0; b < 12; b++) {
+        const idx = buckets[b];
+        if (!idx.length) continue;
+        const tint = TINTS[(b / 4) | 0], lv = LEVELS[b & 3];
+        ctx.strokeStyle = 'rgba(' + tint[0] + ',' + tint[1] + ',' + tint[2] + ',' + lv[1] + ')';
+        ctx.lineWidth = lv[0];
+        ctx.beginPath();
+        for (let k = 0; k < idx.length; k++) {
+          const i = idx[k];
+          ctx.moveTo(sx[i], sy[i]);
+          ctx.arc(pole.x, pole.y, sr[i], sa[i], sa[i] - sweep, true);
+        }
+        ctx.stroke();
+      }
+      // leading tips of the brighter stars: where each one is "now"
+      for (let i = 0; i < N; i++) {
+        if (!sHeadOn[i]) continue;
+        const a = sa[i] - sweep, hx = pole.x + sr[i] * Math.cos(a), hy = pole.y + sr[i] * Math.sin(a);
+        if (hy < ridgeY(hx) - 1 && hx > 0 && hx < W) {
+          const tint = TINTS[(sb[i] / 4) | 0];
+          ctx.fillStyle = 'rgba(' + Math.min(255, tint[0] + 24) + ',' + Math.min(255, tint[1] + 14) + ',' + Math.min(255, tint[2] + 10) + ',0.95)';
+          const s = (sb[i] & 3) === 3 ? 1.7 : 1.2;
+          ctx.fillRect(hx - s / 2, hy - s / 2, s, s);
+        }
+      }
+      // kept meteor lines
+      ctx.lineWidth = 0.8;
+      ctx.strokeStyle = 'rgba(232,242,255,0.5)';
+      ctx.beginPath();
+      for (let k = 0; k < traces.length; k++) {
+        const m = traces[k];
+        if (m.t <= t) { ctx.moveTo(m.x0, m.y0); ctx.lineTo(m.x1, m.y1); }
+      }
+      ctx.stroke();
+      // Polaris
+      const ps = 30;
+      ctx.drawImage(polarisSprite, pole.x - ps, pole.y - ps, ps * 2, ps * 2);
+      ctx.globalAlpha = 1;
+    }
+    // live meteor
+    if (meteor) {
+      const p = (performance.now() - meteor.born) / meteor.dur;
+      if (p >= 1) {
+        traces.push({ x0: meteor.x0, y0: meteor.y0, x1: meteor.x1, y1: meteor.y1, t: meteor.tExp });
+        if (traces.length > 5) traces.shift();
+        meteor = null;
+      } else {
+        const hp = easeOutCubic(p * 1.15), tp = Math.max(0, easeInOutCubic(p * 1.15 - 0.22));
+        const hx = lerp(meteor.x0, meteor.x1, hp), hy = lerp(meteor.y0, meteor.y1, hp);
+        const tx = lerp(meteor.x0, meteor.x1, tp), ty = lerp(meteor.y0, meteor.y1, tp);
+        const g = ctx.createLinearGradient(tx, ty, hx, hy);
+        const a = Math.sin(Math.min(1, p) * Math.PI);
+        g.addColorStop(0, 'rgba(235,244,255,0)');
+        g.addColorStop(1, 'rgba(255,255,255,' + (0.95 * a).toFixed(3) + ')');
+        ctx.strokeStyle = g; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(hx, hy); ctx.stroke();
+      }
+    }
+    // keep stars out of the pale part of the dusk ramp
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = gFade; ctx.fillRect(0, 0, W, H * 0.7);
+    ctx.globalCompositeOperation = 'source-over';
+    // horizon glow + ridge + rim + trees
+    ctx.fillStyle = gHaze; ctx.fillRect(0, H * 0.34, W, baseY - H * 0.34 + H * 0.02);
+    ctx.fillStyle = '#0a1a2d'; ctx.fill(farPath);
+    ctx.fillStyle = gRidge; ctx.fill(ridgePath);
+    ctx.strokeStyle = gRim; ctx.lineWidth = 1; ctx.lineJoin = 'round'; ctx.stroke(rimPath);
+    ctx.fillStyle = '#03060b'; ctx.fill(treePath);
+  }
+
+  // ---------------------------------------------------------------- time + input
+  let tExp = T_START, vel = BASE_RATE, fade = 1;
+  let phase = 'run', phaseT = 0, holdT = 0;
+  const drag = { on: false, id: -1, lastX: 0, dx: 0, v: 0 };
+  let lastMin = -1;
+  function showExposure() {
+    const m = Math.floor(tExp * 60);
+    if (m === lastMin) return;
+    lastMin = m;
+    expEl.textContent = 'Exposure ' + Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0') + 'm';
+  }
+
+  let raf = 0, last = 0, onScreen = false, running = false;
+  function frame(now) {
+    raf = 0;
+    if (!running) return;
+    // a slow exposure doesn't need 60 fps: idle at ~30, go full rate for drags, meteors and fades
+    if (!drag.on && !meteor && phase === 'run' && now - last < 30) { raf = requestAnimationFrame(frame); return; }
+    const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000));
+    last = now;
+    step(dt);
+    draw(tExp, fade);
+    showExposure();
+    raf = requestAnimationFrame(frame);
+  }
+  function step(dt) {
+    if (phase === 'run') {
+      if (drag.on) {
+        const target = drag.dx * (T_MAX / (SW * 0.9)) / dt;
+        drag.dx = 0;
+        drag.v = lerp(drag.v, target, 0.55);
+        vel = drag.v;
+      } else {
+        vel += (BASE_RATE - vel) * (1 - Math.exp(-dt / 0.6));
+      }
+      tExp = clamp(tExp + vel * dt, 0, T_MAX);
+      if (tExp >= T_MAX - 1e-4 && !drag.on) {
+        holdT += dt;
+        if (holdT > HOLD_S) { phase = 'out'; phaseT = 0; }
+      } else holdT = 0;
+      // the occasional meteor, only while the exposure is still open
+      meteorIn -= dt;
+      if (meteorIn <= 0) {
+        if (!meteor && tExp < T_MAX - 0.4) spawnMeteor(tExp);
+        meteorIn = 13 + Math.random() * 16;
+      }
+    } else if (phase === 'out') {
+      phaseT += dt; fade = 1 - easeInOutCubic(phaseT / FADE_OUT_S);
+      if (phaseT >= FADE_OUT_S) { tExp = T_START * 0.6; traces = []; meteor = null; vel = BASE_RATE; phase = 'in'; phaseT = 0; }
+    } else {
+      phaseT += dt; fade = easeInOutCubic(phaseT / FADE_IN_S);
+      if (phaseT >= FADE_IN_S) { fade = 1; phase = 'run'; }
+    }
+  }
+
+  function setRunning() {
+    const want = onScreen && !document.hidden && !mqReduce.matches;
+    if (want && !running) { running = true; last = performance.now(); raf = requestAnimationFrame(frame); }
+    else if (!want && running) { running = false; if (raf) cancelAnimationFrame(raf); raf = 0; }
+  }
+  function stillFrame() { tExp = T_MAX; fade = 1; meteor = null; draw(T_MAX, 1); showExposure(); }
+
+  function applyMotionPref() {
+    buildTraces();
+    if (mqReduce.matches) { running = false; if (raf) cancelAnimationFrame(raf); raf = 0; stillFrame(); }
+    else { tExp = T_START; fade = 1; phase = 'run'; draw(tExp, fade); setRunning(); }
+  }
+
+  band.addEventListener('pointerdown', (e) => {
+    if (mqReduce.matches || phase !== 'run' || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    drag.on = true; drag.id = e.pointerId; drag.lastX = e.clientX; drag.dx = 0; drag.v = vel;
+    try { band.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+    band.style.cursor = 'grabbing';
+  });
+  band.addEventListener('pointermove', (e) => {
+    if (!drag.on || e.pointerId !== drag.id) return;
+    drag.dx += e.clientX - drag.lastX; drag.lastX = e.clientX;
+  });
+  function endDrag(e) {
+    if (!drag.on || (e && e.pointerId !== drag.id)) return;
+    drag.on = false; band.style.cursor = '';
+  }
+  band.addEventListener('pointerup', endDrag);
+  band.addEventListener('pointercancel', endDrag);
+  band.addEventListener('lostpointercapture', endDrag);
+
+  new IntersectionObserver((es) => { onScreen = es[es.length - 1].isIntersecting; setRunning(); }, { threshold: 0 }).observe(band);
+  document.addEventListener('visibilitychange', setRunning);
+  let rzT = 0;
+  new ResizeObserver(() => {
+    cancelAnimationFrame(rzT);
+    rzT = requestAnimationFrame(() => { layout(); if (!running) draw(tExp, fade); });
+  }).observe(band);
+  (mqReduce.addEventListener ? mqReduce.addEventListener.bind(mqReduce, 'change') : mqReduce.addListener.bind(mqReduce))(applyMotionPref);
+
+  // ---------------------------------------------------------------- boot
+  const startT = parseFloat(params.get('t'));                 // debug: ?t=3.2 opens the shutter at 3.2 h
+  loadTerrain().then(() => {
+    layout();
+    if (!isNaN(startT)) tExp = clamp(startT, 0, T_MAX);
+    if (mqReduce.matches) stillFrame(); else { draw(tExp, fade); setRunning(); }
+    showExposure();
+    window.__lab = { get t() { return tExp; }, set t(v) { tExp = v; draw(tExp, fade); }, spawnMeteor: () => spawnMeteor(tExp), step, draw: () => draw(tExp, fade) };
+  });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (!running && W) draw(tExp, fade); });
+})();
+</script>
+</body>
+</html>

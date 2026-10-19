@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hari Gridharan — Cornell Dyson ’29</title>
+<meta name="description" content="Dyson Scholar and Loadstone Labs co-founder. Seeking Summer 2027 roles in strategy, investing, BA and PM.">
+<meta name="theme-color" content="#0B0A0A">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;800&family=Instrument+Serif:ital@1&family=Space+Mono&display=swap">
+<style>
+:root{
+  --bg:#0B0A0A;
+  --cream:#EDE7DA;
+  --tan:#E8C089;
+  --tan-hi:#F1D3A5;
+  --muted:#A39E94;            /* 7.4:1 on --bg */
+  --cream-40:rgb(237 231 218 / .4);
+  --cream-35:rgb(237 231 218 / .35);
+  --sans:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --serif:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --mono:"Space Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  --expo:cubic-bezier(0.16,1,0.3,1);
+  --pen:cubic-bezier(0.65,0,0.35,1);
+  --col:640px;
+  --gutter:16px;
+  --lock:min(48px,10.4vw);
+  --gap:clamp(4rem,3rem + 5vw,6rem);   /* space between sections, 64 → 96px */
+  --row-pad:13px;
+  --tri-x:-15px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg);color:var(--cream);color-scheme:dark;overflow-x:clip;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--cream);font:400 1rem/1.6 var(--sans);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;overflow-wrap:break-word}
+h1,h2,h3,p,ul{margin:0;padding:0}
+ul{list-style:none}
+a{color:inherit;text-decoration:none}
+::selection{background:var(--tan);color:var(--bg)}
+:focus-visible{outline:2px solid var(--tan);outline-offset:3px;border-radius:2px}
+.sprite{position:absolute;width:0;height:0;overflow:hidden}
+
+.page{box-sizing:content-box;max-width:var(--col);margin-inline:auto;padding-inline:var(--gutter)}
+
+/* ---------- header ---------- */
+.head{display:grid;gap:20px;padding-top:clamp(40px,8vw,88px)}
+.mark{display:block;width:96px;height:96px;color:var(--cream);stroke-width:2;overflow:visible}
+.mark .accent{stroke:var(--tan)}
+.lockup{font-size:var(--lock);line-height:1;white-space:nowrap;margin-bottom:16px}
+.hari{font:italic 400 1.2em/0 var(--serif);color:var(--tan);letter-spacing:-.005em;margin-right:.08em}
+.surname{font-family:var(--sans);font-weight:800;text-transform:uppercase;letter-spacing:-.035em}
+.cred{text-wrap:balance}
+.seek{color:var(--tan);font-weight:500;letter-spacing:-.01em;text-wrap:balance;margin-top:2px}
+.actions{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin-top:22px}
+.btn{display:inline-flex;align-items:center;gap:.5em;min-height:44px;padding:0 16px;border:1px solid transparent;border-radius:2px;font:500 .9375rem/1 var(--sans);letter-spacing:.01em;transition:background-color 220ms var(--expo),border-color 220ms var(--expo),transform 220ms var(--expo)}
+.btn-fill{background:var(--tan);color:var(--bg)}
+.btn-line{color:var(--cream);border-color:var(--cream-40)}
+.btn:active{transform:translateY(1px)}
+.alt{display:inline-flex;align-items:center;gap:8px;margin-left:2px;color:var(--muted)}
+.alt a{display:inline-flex;align-items:center;min-height:44px;color:var(--cream)}
+.alt a,.lnk{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.24em;text-decoration-color:var(--cream-35);transition:color 220ms var(--expo),text-decoration-color 220ms var(--expo)}
+.lnk{color:var(--cream)}
+
+/* ---------- icons ---------- */
+.ico{display:inline-block;width:.78em;height:.78em;margin-left:.3em;vertical-align:-.04em;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;transition:transform 220ms var(--expo)}
+.btn .ico{margin:0}
+
+/* ---------- contour dividers ---------- */
+.contour{display:block;width:100%;height:28px;fill:none;stroke:var(--cream);overflow:visible;margin:calc((var(--gap) - 28px) / 2 - var(--row-pad)) 0 calc((var(--gap) - 28px) / 2)}
+.head + .contour{margin-top:calc((var(--gap) - 28px) / 2)}
+.contour.flip{transform:scaleX(-1)}
+.contour-sm{width:168px;height:16px;margin:0}
+
+/* ---------- sections ---------- */
+.label-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-bottom:12px;scroll-margin-top:24px}
+.label{font:400 .75rem/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);scroll-margin-top:24px;text-wrap:balance}
+.label .n{color:var(--tan)}
+.label .dot{color:var(--muted);margin:0 .1em}
+.label .nm{color:var(--cream)}
+
+.rows{display:block}
+.row{position:relative;padding-block:var(--row-pad)}
+.row-head{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:16px;align-items:baseline}
+.who{text-wrap:balance}
+.who.has-tk{text-wrap:wrap}
+.who h3{display:inline;font:500 1.0625rem/1.4 var(--sans)}
+.co{transition:color 220ms var(--expo)}
+.meta{margin-left:.9em;font:400 .6875rem/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.yr{font:400 .75rem/1 var(--mono);letter-spacing:.06em;font-variant-numeric:tabular-nums;color:var(--muted);text-align:right;white-space:nowrap}
+.side{font-size:.9375rem;white-space:nowrap;text-align:right}
+.line{margin-top:2px;color:var(--muted);text-wrap:pretty}
+.n{color:var(--cream);font-weight:500;font-variant-numeric:tabular-nums}
+.label .n{font-weight:400}
+.tk-yr{grid-column:1 / -1;justify-self:end;margin-top:6px}
+
+/* mockup annotation chip for unresolved [TK] items */
+.tk{display:inline-block;max-width:100%;margin:0;padding:1px 6px;border:1px dashed var(--tan);border-radius:2px;font:400 .6875rem/1.5 var(--mono);letter-spacing:.04em;text-transform:none;color:var(--tan);vertical-align:.06em;white-space:normal;text-wrap:balance}
+
+.more{margin-top:10px;padding-bottom:var(--row-pad)}
+.off{padding-bottom:var(--row-pad)}
+.off p{text-wrap:pretty}
+.off .label-row + p{margin-top:var(--row-pad)}
+.off p + p{margin-top:12px}
+.off .k{color:var(--muted)}
+.elsewhere{display:grid;grid-template-columns:auto auto;justify-content:start;align-items:center;gap:0 28px;color:var(--muted)}
+.elsewhere > span{display:none}
+.elsewhere a{display:inline-flex;align-items:center;min-height:44px;color:var(--cream);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.24em;text-decoration-color:var(--cream-35);transition:color 220ms var(--expo),text-decoration-color 220ms var(--expo)}
+
+.foot{display:grid;gap:14px;justify-items:start;padding-block:var(--gap) 72px}
+.foot p{font:400 .6875rem/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+
+/* ---------- wider screens ---------- */
+@media (min-width:36rem){
+  .elsewhere{display:flex;flex-wrap:wrap;gap:0 12px}
+  .elsewhere > span{display:inline}
+}
+@media (min-width:42.5rem){
+  .head{grid-template-columns:104px minmax(0,1fr);column-gap:20px;align-items:start}
+  .mark{width:104px;height:104px;stroke-width:1.85}
+  .lockup{margin-top:2px}
+}
+@media (min-width:46rem){
+  :root{--tri-x:-24px;--row-pad:14px}
+}
+
+/* ---------- desktop pointer: hover only ---------- */
+@media (hover:hover) and (pointer:fine){
+  .row::before{content:"";position:absolute;left:var(--tri-x);top:calc(var(--row-pad) + 8px);width:9px;height:8px;background:var(--tan);clip-path:polygon(50% 0,100% 100%,0 100%);opacity:0;transform:translateX(-6px);transition:transform 220ms var(--expo),opacity 220ms var(--expo);pointer-events:none}
+  .row:hover::before,.row:focus-within::before{opacity:1;transform:translateX(0)}
+  .row:hover .co,.row:focus-within .co{color:var(--tan)}
+  .lnk:hover,.alt a:hover,.elsewhere a:hover{color:var(--tan);text-decoration-color:var(--tan)}
+  .lnk:hover .ico{transform:translate(2px,-2px)}
+  .lnk:hover .ico-e{transform:translateX(3px)}
+  .btn-fill:hover{background:var(--tan-hi)}
+  .btn-line:hover{border-color:var(--cream)}
+  .btn:hover .ico{transform:translateY(2px)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <defs>
+    <g id="c1"><path d="M0 9.9L8 6.3L16 4.3L24 3.3L32 3.0L40 3.1L48 4.2L56 4.5L64 4.0L72 3.9L80 4.2L88 4.9L96 5.4L104 6.0L112 5.4L120 4.2L128 3.6L136 3.6L144 4.1L152 5.4L160 7.9L168 9.0L176 9.1L184 9.3L192 9.6L200 8.8L208 7.8L216 8.1L224 8.0L232 7.2L240 6.8L248 7.8L256 8.4L264 8.5L272 9.8L280 11.6L288 13.0L296 14.0L304 15.6L312 16.2L320 15.7L328 15.2L336 15.4L344 16.1L352 17.1L360 18.9L368 19.9L376 20.0L384 19.7L392 19.3L400 18.7L408 18.4L416 19.0L424 18.3L432 16.5L440 14.5L448 13.2L456 11.7L464 10.8L472 11.7L480 12.6L488 12.2L496 11.4L504 11.4L512 10.7L520 9.4L528 9.3L536 9.8L544 9.7L552 9.1L560 9.7L568 10.1L576 9.9L584 9.7L592 10.0L600 10.1L608 9.5L616 9.4L624 8.7L632 7.2L640 5.2" vector-effect="non-scaling-stroke" stroke-width="1.25" stroke-opacity=".08"/><path d="M0 12.6L8 10.0L16 9.0L24 8.7L32 8.7L40 9.8L48 10.5L56 10.6L64 10.4L72 10.9L80 11.5L88 12.0L96 12.9L104 12.7L112 11.6L120 10.4L128 10.3L136 10.2L144 10.9L152 12.8L160 14.2L168 14.4L176 14.2L184 14.6L192 14.1L200 13.1L208 13.0L216 13.4L224 13.1L232 12.4L240 13.3L248 14.3L256 14.7L264 15.5L272 17.4L280 19.1L288 20.0L296 21.4L304 22.3L312 22.2L320 21.2L328 21.1L336 21.3L344 21.8L352 23.2L360 24.3L368 24.6L376 24.1L384 23.9L392 23.3L400 22.9L408 23.3L416 23.4L424 22.3L432 20.4L440 19.5L448 18.2L456 17.3L464 17.6L472 18.9L480 19.0L488 18.1L496 18.0L504 17.5L512 16.3L520 15.3L528 15.6L536 15.6L544 14.8L552 14.7L560 15.1L568 15.1L576 14.5L584 14.9L592 15.0L600 14.8L608 14.7L616 14.5L624 13.6L632 11.9L640 10.7" vector-effect="non-scaling-stroke" stroke-width="1.25" stroke-opacity=".045"/></g>
+    <g id="c2"><path d="M0 20.0L8 19.7L16 18.6L24 17.3L32 17.1L40 17.0L48 16.6L56 16.1L64 16.5L72 16.2L80 15.4L88 14.9L96 15.3L104 15.2L112 14.5L120 13.9L128 13.7L136 12.8L144 11.8L152 11.8L160 12.7L168 13.1L176 13.4L184 14.3L192 15.1L200 15.2L208 15.2L216 15.9L224 16.3L232 15.8L240 14.7L248 13.9L256 12.6L264 11.1L272 9.9L280 9.7L288 9.2L296 8.5L304 7.9L312 7.7L320 7.0L328 6.5L336 6.1L344 6.1L352 5.6L360 4.7L368 3.8L376 3.4L384 3.0L392 3.2L400 4.0L408 5.5L416 6.8L424 8.1L432 9.4L440 11.0L448 12.5L456 13.7L464 14.8L472 15.7L480 16.0L488 15.5L496 15.0L504 15.1L512 15.3L520 15.3L528 15.7L536 16.3L544 16.6L552 16.2L560 16.4L568 16.9L576 16.9L584 16.2L592 15.9L600 15.3L608 14.1L616 12.5L624 12.3L632 12.6L640 12.9" vector-effect="non-scaling-stroke" stroke-width="1.25" stroke-opacity=".08"/><path d="M0 24.5L8 23.6L16 22.1L24 21.6L32 21.5L40 21.4L48 20.9L56 21.2L64 21.5L72 21.1L80 20.5L88 21.0L96 21.4L104 21.0L112 20.4L120 20.3L128 19.7L136 18.6L144 18.0L152 18.6L160 18.9L168 19.0L176 19.3L184 20.1L192 20.1L200 19.9L208 20.2L216 20.8L224 20.6L232 19.7L240 19.0L248 18.3L256 16.9L264 15.8L272 15.6L280 15.6L288 15.2L296 14.7L304 14.5L312 14.1L320 13.5L328 13.0L336 12.9L344 12.4L352 11.5L360 10.4L368 9.6L376 9.0L384 8.8L392 9.1L400 10.2L408 11.4L416 12.7L424 13.8L432 15.4L440 17.0L448 18.5L456 19.7L464 20.9L472 21.6L480 21.7L488 21.2L496 21.3L504 21.5L512 21.7L520 21.7L528 22.3L536 22.6L544 22.3L552 21.9L560 22.1L568 22.1L576 21.5L584 20.7L592 20.3L600 19.3L608 17.7L616 17.0L624 17.4L632 17.8L640 18.0" vector-effect="non-scaling-stroke" stroke-width="1.25" stroke-opacity=".045"/></g>
+    <g id="c3"><path d="M0 13.9L8 12.1L16 12.4L24 13.2L32 13.5L40 13.5L48 14.1L56 13.8L64 13.5L72 13.9L80 15.6L88 16.5L96 16.7L104 16.0L112 15.4L120 15.3L128 15.9L136 16.6L144 17.5L152 18.6L160 18.7L168 17.7L176 17.2L184 17.9L192 17.9L200 16.9L208 15.7L216 14.3L224 11.9L232 9.6L240 8.3L248 8.1L256 7.3L264 6.4L272 5.2L280 4.5L288 4.1L296 4.3L304 4.1L312 4.5L320 4.7L328 4.1L336 3.0L344 3.3L352 4.5L360 5.2L368 5.7L376 6.9L384 8.0L392 8.5L400 9.3L408 10.7L416 12.0L424 12.4L432 12.2L440 11.6L448 11.5L456 11.5L464 11.4L472 11.1L480 11.5L488 11.7L496 11.4L504 11.2L512 12.6L520 13.8L528 14.0L536 13.8L544 14.4L552 14.4L560 14.4L568 14.7L576 15.8L584 16.3L592 16.6L600 16.6L608 17.1L616 18.2L624 19.5L632 20.0L640 20.0" vector-effect="non-scaling-stroke" stroke-width="1.25" stroke-opacity=".08"/><path d="M0 18.3L8 17.7L16 18.1L24 18.5L32 18.3L40 18.6L48 18.7L56 18.2L64 18.4L72 19.7L80 21.1L88 21.7L96 21.6L104 21.1L112 21.1L120 21.5L128 22.4L136 23.3L144 24.5L152 24.9L160 24.3L168 23.3L176 23.6L184 23.7L192 22.9L200 21.4L208 20.2L216 18.0L224 15.5L232 13.7L240 13.2L248 12.6L256 11.9L264 10.9L272 10.2L280 9.9L288 10.2L296 10.4L304 10.7L312 11.3L320 11.2L328 10.3L336 10.1L344 11.1L352 11.9L360 12.3L368 12.9L376 14.1L384 14.4L392 14.8L400 15.6L408 16.8L416 17.3L424 17.2L432 16.6L440 16.3L448 16.3L456 16.5L464 16.2L472 16.5L480 17.1L488 17.3L496 17.1L504 18.1L512 19.7L520 20.3L528 20.3L536 20.6L544 20.9L552 20.6L560 20.7L568 21.3L576 21.9L584 21.9L592 21.8L600 21.7L608 22.5L616 23.5L624 24.3L632 24.2L640 24.4" vector-effect="non-scaling-stroke" stroke-width="1.25" stroke-opacity=".045"/></g>
+    <symbol id="i-ne" viewBox="0 0 12 12"><path d="M3 9.2 9 3M4.2 3H9v4.8"/></symbol>
+    <symbol id="i-e" viewBox="0 0 12 12"><path d="M1.8 6h8.4M7 2.8 10.2 6 7 9.2"/></symbol>
+    <symbol id="i-s" viewBox="0 0 12 12"><path d="M6 1.8v8.4M2.8 7 6 10.2 9.2 7"/></symbol>
+  </defs>
+</svg>
+
+<div class="page">
+
+<header class="head">
+  <svg class="mark" viewBox="0 0 120 120" width="104" height="104" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+    <path d="M56.5 36 C51 28.5 52.5 16 59 10 C62 7.2 64.5 5.8 67.5 4.5 C74 6.5 80.5 10 82 17.5 C83 22.5 82 26.5 80.5 30"/>
+    <path d="M75.5 13.5 C71 16 69.5 20.5 70.8 24.8 C71.8 27.4 73.3 28.8 76 29.5"/>
+    <path d="M52.5 35 C58.5 37.5 67.5 34 72.5 39 C76.2 44 72.5 56 65.5 66.5"/>
+    <path d="M72 40.5 C75 45 77 49.5 78 52.5 C79.5 54.7 81 55.6 83.8 55.6"/>
+    <path d="M55 30 C46.5 24.5 37.5 28.5 36.3 39 C35.7 46 35.2 55 35.3 61 C35.5 67.2 39.5 71 46.5 71.4 C52 71.6 57.5 70 61.5 66"/>
+    <path class="accent" d="M59.5 35 C57 43 57.5 51 54.5 60 C54 62 53.2 63.8 52 65.5"/>
+    <path d="M58 69 C58.5 78 55 85 50.5 91 C46.5 96.5 41 101 35.5 106 L42.5 110.8"/>
+    <path d="M62.5 68 C66.5 76 70.5 83 72 91 C73 97 72.5 102 71.5 106.5 L80.8 110.6"/>
+    <path d="M35.8 51 C29.5 70 22.5 90 16.2 112"/>
+    <path d="M80 49 C86 66 92 88 98.3 112"/>
+  </svg>
+  <script>
+  /* Pen-stroke draw-in. Progressive enhancement only: without JS (or with
+     prefers-reduced-motion) the hiker is simply there, fully drawn. */
+  (function(){
+    var svg=document.querySelector('.mark');
+    if(!svg||!svg.animate||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+    try{
+      var ease=getComputedStyle(document.documentElement).getPropertyValue('--pen').trim()||'cubic-bezier(0.65,0,0.35,1)';
+      var ps=[].slice.call(svg.querySelectorAll('path')),n=ps.length;
+      var len=ps.map(function(p){return p.getTotalLength()}),max=Math.max.apply(null,len);
+      var dur=len.map(function(l){return 240+300*l/max}),step=(1200-dur[n-1])/(n-1);
+      var run=ps.map(function(p,i){
+        var d=len[i]+' '+len[i];
+        return p.animate([{strokeDasharray:d,strokeDashoffset:len[i]},{strokeDasharray:d,strokeDashoffset:0}],{duration:dur[i],delay:i*step,easing:ease,fill:'backwards'});
+      });
+      if(document.hidden){
+        run.forEach(function(a){a.pause()});
+        document.addEventListener('visibilitychange',function go(){
+          if(document.hidden)return;
+          document.removeEventListener('visibilitychange',go);
+          run.forEach(function(a){a.play()});
+        });
+      }
+    }catch(e){}
+  })();
+  </script>
+  <div class="id">
+    <h1 class="lockup"><span class="hari">Hari</span> <span class="surname">GRIDHARAN</span></h1>
+    <p class="cred">Applied Economics + AI · Cornell&nbsp;Dyson&nbsp;’29 · Dyson&nbsp;Scholar</p>
+    <p class="seek">Seeking Summer&nbsp;2027 roles in strategy, investing, BA&nbsp;&amp;&nbsp;PM&nbsp;— NYC&nbsp;/&nbsp;SF</p>
+    <div class="actions">
+      <a class="btn btn-fill" href="/Hari_Gridharan_Resume.pdf" download>Resume <svg class="ico" aria-hidden="true" focusable="false"><use href="#i-s"/></svg></a>
+      <a class="btn btn-line" href="mailto:hg532@cornell.edu">Email</a>
+      <span class="alt"><a href="https://www.linkedin.com/in/harigridharan1/" target="_blank" rel="noopener noreferrer">LinkedIn</a><span aria-hidden="true">·</span><a href="https://github.com/hgridharan999" target="_blank" rel="noopener noreferrer">GitHub</a></span>
+    </div>
+  </div>
+</header>
+
+<svg class="contour" viewBox="0 0 640 28" preserveAspectRatio="none" aria-hidden="true" focusable="false"><use href="#c1"/></svg>
+
+<main>
+
+<section aria-labelledby="now">
+  <div class="label-row"><h2 class="label" id="now"><span class="n">01</span> <span class="dot">·</span> <span class="nm">NOW</span></h2></div>
+  <ul class="rows" role="list">
+    <li class="row">
+      <div class="row-head">
+        <div class="who"><h3>Co-Founder, <span class="co">Loadstone Labs</span></h3></div>
+        <span class="yr">2026</span>
+        <span class="tk tk-yr">TK: 2025 or 2026</span>
+      </div>
+      <p class="line">Venture-backed data platform for Western water rights <span aria-hidden="true">·</span> <span class="tk">TK: shared metric</span> <span aria-hidden="true">·</span> <a class="lnk" href="https://loadstonelabs.com" target="_blank" rel="noopener noreferrer">loadstonelabs.com<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-ne"/></svg></a></p>
+    </li>
+    <li class="row">
+      <div class="row-head">
+        <div class="who"><h3>Co-Founder, <span class="co">Commit</span></h3></div>
+        <span class="yr">2025</span>
+      </div>
+      <p class="line"><span class="n">Top&nbsp;10% of&nbsp;20,000+</span> YC&nbsp;applicants <span aria-hidden="true">·</span> prediction-market MVP built in 3&nbsp;days</p>
+    </li>
+    <li class="row">
+      <div class="row-head">
+        <div class="who"><h3>President, <span class="co">Cornell Entrepreneurship Club</span></h3></div>
+        <span class="yr">2025</span>
+      </div>
+      <p class="line"><span class="n">150+&nbsp;attendees</span> at the YC speaker series I&nbsp;run <span aria-hidden="true">·</span> <span class="tk">TK: one verified reach number</span></p>
+    </li>
+    <li class="row">
+      <div class="row-head">
+        <div class="who"><h3>Builder, <span class="co">Cornell Armada</span></h3></div>
+        <span class="yr">2026</span>
+      </div>
+      <p class="line">Built <a class="lnk" href="https://www.bigred.network/" target="_blank" rel="noopener noreferrer">bigred.network<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-ne"/></svg></a>, Cornell’s founder directory <span aria-hidden="true">·</span> <span class="tk">TK: member count</span></p>
+    </li>
+    <li class="row">
+      <div class="row-head">
+        <div class="who"><h3>Business Analyst, <span class="co">Cornell DTI</span></h3></div>
+        <span class="yr">2025</span>
+      </div>
+      <p class="line"><span class="n">15,000+&nbsp;Cornell users</span> on the student tools I&nbsp;analyze <span aria-hidden="true">·</span> benchmarked 8&nbsp;peer platforms</p>
+    </li>
+  </ul>
+</section>
+
+<svg class="contour flip" viewBox="0 0 640 28" preserveAspectRatio="none" aria-hidden="true" focusable="false"><use href="#c2"/></svg>
+
+<section aria-labelledby="before">
+  <div class="label-row"><h2 class="label" id="before"><span class="n">02</span> <span class="dot">·</span> <span class="nm">BEFORE</span></h2></div>
+  <ul class="rows" role="list">
+    <li class="row">
+      <div class="row-head">
+        <div class="who"><h3>Consulting Intern, <span class="co">EXL</span></h3><span class="meta">New York</span></div>
+        <span class="yr">2026</span>
+      </div>
+      <p class="line"><span class="n">$70M+ Fortune&nbsp;100 contract book</span> supported <span aria-hidden="true">·</span> built a CRM tool that replaced manual tracking</p>
+    </li>
+    <li class="row">
+      <div class="row-head">
+        <div class="who"><h3>Operations &amp; Strategy Intern, <span class="co">Midian Partners</span></h3></div>
+        <span class="yr">2026</span>
+      </div>
+      <p class="line"><span class="n">6&nbsp;→&nbsp;25+ signed lender partners</span> in five weeks</p>
+    </li>
+    <li class="row">
+      <div class="row-head">
+        <div class="who"><h3>AI/Strategy Consultant (Contract), <span class="co">Adobe</span></h3></div>
+        <span class="yr">2026</span>
+      </div>
+      <p class="line"><span class="n">$1M+&nbsp;enterprise contracts</span> shaped by AI market sizing and positioning work</p>
+    </li>
+    <li class="row">
+      <div class="row-head">
+        <div class="who has-tk"><h3>Problem Design Engineer, <span class="co">Widget Factory</span></h3> <span class="tk">TK: or “IdlExperts (fka Widget Factory)”</span></div>
+        <span class="yr">2026</span>
+      </div>
+      <p class="line">Problem sets used to evaluate frontier AI models</p>
+    </li>
+  </ul>
+</section>
+
+<svg class="contour" viewBox="0 0 640 28" preserveAspectRatio="none" aria-hidden="true" focusable="false"><use href="#c3"/></svg>
+
+<section aria-labelledby="built">
+  <div class="label-row"><h2 class="label" id="built"><span class="n">03</span> <span class="dot">·</span> <span class="nm">BUILT</span></h2></div>
+  <ul class="rows" role="list">
+    <li class="row">
+      <div class="row-head">
+        <div class="who"><h3><span class="co">Climate startup search</span></h3></div>
+        <a class="lnk side" href="/climate-search">Try it<svg class="ico ico-e" aria-hidden="true" focusable="false"><use href="#i-e"/></svg></a>
+      </div>
+      <p class="line"><span class="n">212&nbsp;startups, ~600ms</span> hybrid BERT + BM25 queries</p>
+    </li>
+    <li class="row">
+      <div class="row-head">
+        <div class="who"><h3><span class="co">LLM Cost Optimizer</span></h3></div>
+        <a class="lnk side" href="https://github.com/hgridharan999/token_optimizer" target="_blank" rel="noopener noreferrer">Repo<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-ne"/></svg></a>
+      </div>
+      <p class="line">Model routing + semantic caching across GPT-4, Claude and Gemini <span aria-hidden="true">·</span> <span class="tk">TK: % cost cut</span></p>
+    </li>
+    <li class="row">
+      <div class="row-head">
+        <div class="who has-tk"><h3><span class="co">TrailSense</span></h3> <span class="tk">TK: ships only if deployed or demoed</span></div>
+        <a class="lnk side" href="/trailsense">View<svg class="ico ico-e" aria-hidden="true" focusable="false"><use href="#i-e"/></svg></a>
+      </div>
+      <p class="line">XGBoost + SHAP trail-feasibility scoring on live NWS weather</p>
+    </li>
+  </ul>
+</section>
+
+<svg class="contour flip" viewBox="0 0 640 28" preserveAspectRatio="none" aria-hidden="true" focusable="false"><use href="#c1"/></svg>
+
+<section aria-labelledby="writing">
+  <div class="label-row"><h2 class="label" id="writing"><span class="n">04</span> <span class="dot">·</span> <span class="nm">WRITING</span></h2><span class="tk">TK: hidden until 2 essays are live</span></div>
+  <ul class="rows" role="list">
+    <li class="row">
+      <div class="row-head">
+        <div class="who"><h3><span class="co">Water is the bottleneck nobody prices</span></h3></div>
+        <span class="yr">Draft</span>
+      </div>
+    </li>
+    <li class="row">
+      <div class="row-head">
+        <div class="who"><h3><span class="co">What scaling a lender network taught me about mortgage pricing engines</span></h3></div>
+        <span class="yr">Draft</span>
+      </div>
+    </li>
+    <li class="row">
+      <div class="row-head">
+        <div class="who"><h3><span class="co">Regression to the mean: what LLM homogenization means for consumer brands</span></h3></div>
+        <span class="yr">Draft</span>
+      </div>
+    </li>
+  </ul>
+  <p class="more"><a class="lnk" href="/writing">All writing<svg class="ico ico-e" aria-hidden="true" focusable="false"><use href="#i-e"/></svg></a></p>
+</section>
+
+<svg class="contour" viewBox="0 0 640 28" preserveAspectRatio="none" aria-hidden="true" focusable="false"><use href="#c2"/></svg>
+
+<section class="off" aria-labelledby="off-the-clock">
+  <div class="label-row"><h2 class="label" id="off-the-clock"><span class="n">05</span> <span class="dot">·</span> <span class="nm">OFF THE CLOCK</span></h2></div>
+  <p>Hiking Colorado 14ers — most recent: Quandary Peak, <span class="n">14,265&nbsp;ft</span>, <span class="n">under&nbsp;4:30</span> round trip <a class="lnk" href="/hiking">trail log<svg class="ico ico-e" aria-hidden="true" focusable="false"><use href="#i-e"/></svg></a></p>
+  <p class="k">Carnatic &amp; indie singing <span aria-hidden="true">·</span> cooking regional Indian food</p>
+</section>
+
+<svg class="contour flip" viewBox="0 0 640 28" preserveAspectRatio="none" aria-hidden="true" focusable="false"><use href="#c3"/></svg>
+
+<section aria-labelledby="elsewhere">
+  <div class="label-row"><h2 class="label" id="elsewhere"><span class="n">06</span> <span class="dot">·</span> <span class="nm">ELSEWHERE</span></h2></div>
+  <p class="elsewhere"><a href="https://www.linkedin.com/in/harigridharan1/" target="_blank" rel="noopener noreferrer">LinkedIn</a><span aria-hidden="true">·</span><a href="https://github.com/hgridharan999" target="_blank" rel="noopener noreferrer">GitHub</a><span aria-hidden="true">·</span><a href="mailto:hg532@cornell.edu">hg532@cornell.edu</a><span aria-hidden="true">·</span><a href="/Hari_Gridharan_Resume.pdf" download>Resume</a></p>
+</section>
+
+</main>
+
+<footer class="foot">
+  <svg class="contour contour-sm" viewBox="0 0 640 28" preserveAspectRatio="none" aria-hidden="true" focusable="false"><use href="#c1"/></svg>
+  <p>Last updated <time datetime="2026-10">Oct 2026</time></p>
+</footer>
+
+</div>
+</body>
+</html>

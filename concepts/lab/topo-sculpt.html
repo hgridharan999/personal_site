@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab: sculptable topo field</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Hanken+Grotesk:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #FFFFFF;
+    --ink: #111111;
+    --muted: #5C5C5C;
+    --ice: #0F7DAA;
+    --mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --gutter: 16px;
+    --band-h: 340px;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--bg); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.6 var(--sans); overflow-x: hidden; }
+  p { margin: 0; }
+
+  .wrap { width: 100%; max-width: calc(640px + var(--gutter) * 2); margin-inline: auto; padding-inline: var(--gutter); }
+  .lab-cap { padding-top: 56px; padding-bottom: 12px; font: 400 12px/1.4 var(--mono); color: var(--muted); letter-spacing: 0.04em; }
+
+  /* The band is full-bleed white; the map is a centred 1100px canvas whose edges dissolve into the page. */
+  .band { position: relative; width: 100%; height: var(--band-h); }
+  .map {
+    position: absolute; inset: 0; margin-inline: auto; width: 100%; max-width: 1100px; height: 100%; display: block;
+    touch-action: pan-y; cursor: crosshair;
+    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+    -webkit-mask-image:
+      linear-gradient(to right, transparent 0, #000 10%, #000 90%, transparent 100%),
+      linear-gradient(to bottom, transparent 0, #000 17%, #000 83%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image:
+      linear-gradient(to right, transparent 0, #000 10%, #000 90%, transparent 100%),
+      linear-gradient(to bottom, transparent 0, #000 17%, #000 83%, transparent 100%);
+    mask-composite: intersect;
+  }
+
+  .foot { padding-top: 20px; padding-bottom: 48px; }
+  .foot p { font: 400 12px/1.7 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+
+  @media (max-width: 640px) {
+    :root { --band-h: 240px; }
+    .foot .part { display: block; }
+    .foot .sep { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap lab-cap"><p>LAB / SCULPTABLE TOPO FIELD</p></div>
+
+<section class="band" id="band">
+  <canvas class="map" id="map" aria-hidden="true"></canvas>
+</section>
+
+<footer class="wrap foot"><p><span class="part">Contour interval 1 year<span class="sep"> · </span></span><span class="part">Last updated Oct 2026</span></p></footer>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---------------------------------------------------------------- tuning
+  const STAGE_MAX = 1100;
+  const INTERVAL = 100;            // feet between contours
+  const INDEX_EVERY = 5;           // every 5th line is an index contour
+  const E0 = 12900, E_STD = 600;   // feet: mean and spread of the drifting terrain
+  const SCULPT_CAP = 1100;          // feet a lingering cursor can raise the ground
+  const TAU_IN = 0.4;              // s: how slowly the peak eases up under the cursor
+  const TAU_OUT = 6.5;             // s: how slowly it settles back
+  const IDLE_MS = 50;              // redraw cadence when only the terrain drift is changing
+  const MAX_SUMMITS = 10;
+  const INK = '17,17,17', ICE = '#0F7DAA';
+  const STILL_T = 31;              // seconds of drift shown in the reduced-motion still
+
+  const band = document.getElementById('band');
+  const cv = document.getElementById('map');
+  const ctx = cv.getContext('2d');
+  const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const params = new URLSearchParams(location.search);
+
+  // ---------------------------------------------------------------- helpers
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const easeOutCubic = (t) => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+  const easeInOutCubic = (t) => { t = clamp(t, 0, 1); return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
+  const easeOutBack = (t) => { t = clamp(t, 0, 1); const c1 = 1.9, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };
+  function rng(seed) {
+    let a = seed >>> 0;
+    return () => {
+      a = (a + 0x6D2B79F5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function perlin(seed) {          // 2D gradient noise, roughly [-0.7, 0.7]
+    const r = rng(seed), p = new Uint8Array(512), g = new Float32Array(512 * 2);
+    for (let i = 0; i < 256; i++) p[i] = i;
+    for (let i = 255; i > 0; i--) { const j = Math.floor(r() * (i + 1)); const t = p[i]; p[i] = p[j]; p[j] = t; }
+    for (let i = 0; i < 256; i++) p[i + 256] = p[i];
+    for (let i = 0; i < 512; i++) { const a = r() * Math.PI * 2; g[i * 2] = Math.cos(a); g[i * 2 + 1] = Math.sin(a); }
+    const fade = (t) => t * t * t * (t * (t * 6 - 15) + 10);
+    return (x, y) => {
+      const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+      const X = xi & 255, Y = yi & 255;
+      const aa = p[p[X] + Y], ab = p[p[X] + Y + 1], ba = p[p[X + 1] + Y], bb = p[p[X + 1] + Y + 1];
+      const u = fade(xf), v = fade(yf);
+      const n00 = g[aa * 2] * xf + g[aa * 2 + 1] * yf;
+      const n10 = g[ba * 2] * (xf - 1) + g[ba * 2 + 1] * yf;
+      const n01 = g[ab * 2] * xf + g[ab * 2 + 1] * (yf - 1);
+      const n11 = g[bb * 2] * (xf - 1) + g[bb * 2 + 1] * (yf - 1);
+      return lerp(lerp(n00, n10, u), lerp(n01, n11, u), v);
+    };
+  }
+
+  // ---------------------------------------------------------------- grid state
+  let W = 0, H = 0, dpr = 1, cell = 4, gw = 0, gh = 0, NC = 0;
+  let fLA, fLB, fHA, fHB, base, val, S;
+  let sculptMax = 0;                                   // feet; 0 means the sculpt layer is flat
+  const summits = [];                                  // {x, y, E, born, sigma}
+  let anchors = [];                                    // label slots that ride along the index contours
+  let initialSummitDone = false;
+  const ptr = { inside: false, x: 0, y: 0, sx: 0, sy: 0, px: 0, py: 0, fresh: true };
+  const ghost = { on: false, start: 0, dur: 3300, armed: true, armedAt: 0 };
+  let userTouched = false;
+
+  function sigmaFor() { return clamp(W * 0.045, 28, 52); }
+
+  function buildFields() {
+    cell = W >= 800 ? 5 : 4;
+    gw = Math.ceil(W / cell) + 1; gh = Math.ceil(H / cell) + 1; NC = gw * gh;
+    fLA = new Float32Array(NC); fLB = new Float32Array(NC); fHA = new Float32Array(NC); fHB = new Float32Array(NC);
+    base = new Float32Array(NC); val = new Float32Array(NC); S = new Float32Array(NC);
+    sculptMax = 0;
+    const P0 = clamp(W * 0.5, 270, 560);               // longest wavelength in px
+    const nLA = perlin(101), nLB = perlin(202), nHA = perlin(303), nHB = perlin(404);
+    const f0 = 1 / P0, f1 = 2.05 / P0, f2 = 3.4 / P0, f3 = 6.7 / P0;
+    for (let j = 0; j < gh; j++) {
+      const y = j * cell;
+      for (let i = 0; i < gw; i++) {
+        const x = i * cell, k = j * gw + i;
+        fLA[k] = nLA(x * f0 + 7.3, y * f0 + 1.9) + 0.5 * nLA(x * f1 + 3.1, y * f1 + 8.2);
+        fLB[k] = nLB(x * f0 + 2.7, y * f0 + 5.1) + 0.5 * nLB(x * f1 + 9.9, y * f1 + 4.4);
+        fHA[k] = 0.5 * nHA(x * f2 + 1.3, y * f2 + 6.6) + 0.5 * nHA(x * f3 + 5.9, y * f3 + 2.2);
+        fHB[k] = 0.5 * nHB(x * f2 + 8.8, y * f2 + 3.3) + 0.5 * nHB(x * f3 + 4.1, y * f3 + 7.7);
+      }
+    }
+    for (const f of [fLA, fLB, fHA, fHB]) {            // unit variance, zero mean
+      let m = 0, v = 0;
+      for (let k = 0; k < NC; k++) m += f[k];
+      m /= NC;
+      for (let k = 0; k < NC; k++) { const d = f[k] - m; v += d * d; }
+      const sd = Math.sqrt(v / NC) || 1;
+      for (let k = 0; k < NC; k++) f[k] = (f[k] - m) / sd;
+    }
+  }
+
+  const TWO_PI = Math.PI * 2;
+  function updateBase(tSec) {
+    const pl = (tSec * TWO_PI) / 280, ph = (tSec * TWO_PI) / 190 + 1.7;
+    const cl = Math.cos(pl) * 0.95 * E_STD, sl = Math.sin(pl) * 0.95 * E_STD;
+    const ch = Math.cos(ph) * 0.3 * E_STD, sh = Math.sin(ph) * 0.3 * E_STD;
+    for (let k = 0; k < NC; k++) base[k] = E0 + cl * fLA[k] + sl * fLB[k] + ch * fHA[k] + sh * fHB[k];
+  }
+
+  // ---------------------------------------------------------------- sculpt layer
+  const gxT = new Float32Array(256), gyT = new Float32Array(256);
+  function stamp(px, py, sigma, k) {
+    const R = Math.ceil((sigma * 3) / cell);
+    const ci = Math.round(px / cell), cj = Math.round(py / cell);
+    const i0 = Math.max(0, ci - R), i1 = Math.min(gw - 1, ci + R), j0 = Math.max(0, cj - R), j1 = Math.min(gh - 1, cj + R);
+    const inv = 1 / (2 * sigma * sigma);
+    for (let i = i0; i <= i1; i++) { const d = i * cell - px; gxT[i - i0] = Math.exp(-d * d * inv); }
+    for (let j = j0; j <= j1; j++) { const d = j * cell - py; gyT[j - j0] = Math.exp(-d * d * inv); }
+    for (let j = j0; j <= j1; j++) {
+      const gy = gyT[j - j0] * k, row = j * gw;
+      for (let i = i0; i <= i1; i++) S[row + i] += (SCULPT_CAP - S[row + i]) * gxT[i - i0] * gy;
+    }
+    sculptMax = SCULPT_CAP;
+  }
+
+  function addBump(A, px, py, sigma) {
+    const R = Math.ceil((sigma * 3.2) / cell);
+    const ci = Math.round(px / cell), cj = Math.round(py / cell);
+    const i0 = Math.max(0, ci - R), i1 = Math.min(gw - 1, ci + R), j0 = Math.max(0, cj - R), j1 = Math.min(gh - 1, cj + R);
+    const inv = 1 / (2 * sigma * sigma);
+    for (let i = i0; i <= i1; i++) { const d = i * cell - px; gxT[i - i0] = Math.exp(-d * d * inv); }
+    for (let j = j0; j <= j1; j++) { const d = j * cell - py; gyT[j - j0] = Math.exp(-d * d * inv); }
+    for (let j = j0; j <= j1; j++) {
+      const gy = gyT[j - j0] * A, row = j * gw;
+      for (let i = i0; i <= i1; i++) val[row + i] += gxT[i - i0] * gy;
+    }
+  }
+
+  // ---------------------------------------------------------------- label anchors
+  function buildAnchors() {
+    const r = rng(9);
+    const cols = Math.max(2, Math.round(W / 215)), rows = 2;
+    anchors = [];
+    for (let cx = 0; cx < cols; cx++) {
+      for (let ry = 0; ry < rows; ry++) {
+        const x = W * (0.12 + 0.76 * ((cx + 0.2 + r() * 0.6 + (ry ? 0.35 : 0)) / (cols + 0.35)));
+        const y = H * (ry ? 0.64 : 0.34) + (r() - 0.5) * H * 0.1;
+        anchors.push({ ax: x, ay: y, lx: x, ly: y, c2: 1, s2: 0, level: -1, alpha: 0, found: false, bx: 0, by: 0, bc: 1, bs: 0, bl: -1, bscore: 0 });
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------- marching squares
+  // One pass over the grid. For each cell only the contour levels that actually cross it are visited,
+  // and only the edges those levels cross are interpolated. Output goes to two Path2Ds (hairline, index).
+  let thinPath = null, indexPath = null;
+  const R_LABEL = 95, SPACING_MIN = 10, INV_I = 1 / INTERVAL;
+  const EP = new Float64Array(8);                       // crossings on edges T, R, B, L as (x, y) pairs
+  function contour() {
+    thinPath = new Path2D(); indexPath = new Path2D();
+    const A = anchors, nA = A.length;
+    for (let q = 0; q < nA; q++) { A[q].found = false; A[q].bscore = 1e12; }
+    const cl = cell;
+    for (let j = 0; j < gh - 1; j++) {
+      const y0 = j * cl, y1 = y0 + cl, row = j * gw;
+      for (let i = 0; i < gw - 1; i++) {
+        const k = row + i;
+        const a = val[k], b = val[k + 1], d = val[k + gw], c = val[k + gw + 1];   // tl, tr, bl, br
+        let mn = a, mx = a;
+        if (b < mn) mn = b; else if (b > mx) mx = b;
+        if (c < mn) mn = c; else if (c > mx) mx = c;
+        if (d < mn) mn = d; else if (d > mx) mx = d;
+        let lv = Math.floor(mn * INV_I) + 1;
+        const lvEnd = Math.floor(mx * INV_I);
+        if (lv > lvEnd) continue;
+        const x0 = i * cl, x1 = x0 + cl;
+        for (; lv <= lvEnd; lv++) {
+          const L = lv * INTERVAL;
+          const ha = a >= L, hb = b >= L, hc = c >= L, hd = d >= L;
+          const eT = ha !== hb, eR = hb !== hc, eB = hd !== hc, eL = ha !== hd;
+          let n = 0;
+          if (eT) { EP[0] = x0 + cl * (L - a) / (b - a); EP[1] = y0; n++; }
+          if (eR) { EP[2] = x1; EP[3] = y0 + cl * (L - b) / (c - b); n++; }
+          if (eB) { EP[4] = x0 + cl * (L - d) / (c - d); EP[5] = y1; n++; }
+          if (eL) { EP[6] = x0; EP[7] = y0 + cl * (L - a) / (d - a); n++; }
+          const isIndex = lv % INDEX_EVERY === 0;
+          const P = isIndex ? indexPath : thinPath;
+          let sx0, sy0, sx1, sy1;
+          if (n === 2) {
+            let u = eT ? 0 : eR ? 1 : eB ? 2 : 3;                      // first crossed edge
+            let v = eL ? 3 : eB ? 2 : 1;                                // last crossed edge
+            sx0 = EP[u * 2]; sy0 = EP[u * 2 + 1]; sx1 = EP[v * 2]; sy1 = EP[v * 2 + 1];
+            P.moveTo(sx0, sy0); P.lineTo(sx1, sy1);
+          } else if (n === 4) {                                         // saddle: the centre decides how the pairs join
+            const centreHigh = (a + b + c + d) * 0.25 >= L;
+            const bdHigh = hb;                                          // b and d high, a and c low
+            const tl = bdHigh === centreHigh;                           // pair T-L and B-R
+            if (tl) { P.moveTo(EP[0], EP[1]); P.lineTo(EP[6], EP[7]); P.moveTo(EP[4], EP[5]); P.lineTo(EP[2], EP[3]); }
+            else { P.moveTo(EP[0], EP[1]); P.lineTo(EP[2], EP[3]); P.moveTo(EP[6], EP[7]); P.lineTo(EP[4], EP[5]); }
+            sx0 = EP[0]; sy0 = EP[1]; sx1 = tl ? EP[6] : EP[2]; sy1 = tl ? EP[7] : EP[3];
+          } else continue;
+          if (isIndex && nA) {
+            const gxs = ((b - a) + (c - d)) / (2 * cl), gys = ((d - a) + (c - b)) / (2 * cl);
+            const spacing = INTERVAL / (Math.sqrt(gxs * gxs + gys * gys) + 1e-6);
+            if (spacing < SPACING_MIN) continue;
+            const mx2 = (sx0 + sx1) * 0.5, my2 = (sy0 + sy1) * 0.5;
+            const st = spacing < 18 ? 18 - spacing : 0, pen = st * st * 30;
+            for (let q = 0; q < nA; q++) {
+              const an = A[q], ddx = mx2 - an.ax, ddy = my2 - an.ay, d2 = ddx * ddx + ddy * ddy;
+              if (d2 > R_LABEL * R_LABEL) continue;
+              const score = (d2 + pen) * (lv === an.level ? 1 : 2.6);
+              if (score < an.bscore) {
+                an.bscore = score; an.found = true; an.bx = mx2; an.by = my2; an.bl = lv;
+                const th = Math.atan2(sy1 - sy0, sx1 - sx0);
+                an.bc = Math.cos(2 * th); an.bs = Math.sin(2 * th);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------- summits
+  const fmtFt = (e) => Math.round(e).toLocaleString('en-US');
+  function sampleIdx(x, y) {
+    return clamp(Math.round(y / cell), 0, gh - 1) * gw + clamp(Math.round(x / cell), 0, gw - 1);
+  }
+  function addSummit(x, y, forceE, now) {
+    const k = sampleIdx(x, y);
+    const E = forceE != null ? forceE : Math.round((base[k] + Math.max(S[k] + 240, 640)) / 5) * 5;
+    if (summits.length >= MAX_SUMMITS) summits.shift();
+    summits.push({ x, y, E, born: now, sigma: sigmaFor() * 0.92 });
+  }
+  function placeInitialSummit(now) {
+    // the highest ground near the middle of the map gets the one summit that is always there
+    let best = -1, bk = 0;
+    const j0 = Math.floor(gh * 0.3), j1 = Math.floor(gh * 0.72), i0 = Math.floor(gw * 0.34), i1 = Math.floor(gw * 0.7);
+    for (let j = j0; j < j1; j++) for (let i = i0; i < i1; i++) {
+      const k = j * gw + i;
+      if (base[k] > best) { best = base[k]; bk = k; }
+    }
+    const x = (bk % gw) * cell, y = Math.floor(bk / gw) * cell;
+    summits.length = 0;
+    addSummit(x, y, 14265, now);
+    initialSummitDone = true;
+  }
+
+  // ---------------------------------------------------------------- update + render
+  let tSec = 0;
+  function summitAmp(s, now) {
+    const k = sampleIdx(s.x, s.y);
+    const rise = easeOutCubic((now - s.born) / 900);
+    return Math.max(s.E - base[k] - S[k], 140) * rise;
+  }
+  function summitsAnimating(now) {
+    for (let i = 0; i < summits.length; i++) if (now - summits[i].born < 1000) return true;
+    return false;
+  }
+
+  function update(now, dt, instant) {
+    updateBase(tSec);
+    // pointer: the peak follows the cursor with a little lag, and builds up while you linger
+    if (ptr.inside) {
+      if (ptr.fresh) { ptr.sx = ptr.x; ptr.sy = ptr.y; ptr.px = ptr.x; ptr.py = ptr.y; ptr.fresh = false; }
+      ptr.sx += (ptr.x - ptr.sx) * (1 - Math.exp(-dt / 0.06));
+      ptr.sy += (ptr.y - ptr.sy) * (1 - Math.exp(-dt / 0.06));
+      const sg = sigmaFor(), dist = Math.hypot(ptr.sx - ptr.px, ptr.sy - ptr.py);
+      const steps = clamp(Math.ceil(dist / (sg * 0.55)), 1, 8);
+      const kEach = (1 - Math.exp(-dt / TAU_IN)) / steps;
+      for (let s = 1; s <= steps; s++) stamp(lerp(ptr.px, ptr.sx, s / steps), lerp(ptr.py, ptr.sy, s / steps), sg, kEach);
+      ptr.px = ptr.sx; ptr.py = ptr.sy;
+    }
+    if (sculptMax > 0) {
+      const f = Math.exp(-dt / TAU_OUT);
+      for (let k = 0; k < NC; k++) S[k] *= f;
+      sculptMax *= ptr.inside ? 1 : f;
+      if (sculptMax < 0.6) { S.fill(0); sculptMax = 0; }
+    }
+    for (let k = 0; k < NC; k++) val[k] = base[k] + S[k];
+    for (let i = 0; i < summits.length; i++) {
+      const s = summits[i];
+      addBump(summitAmp(s, now), s.x, s.y, s.sigma);
+    }
+    contour();
+    updateAnchors(dt, instant);
+  }
+
+  function updateAnchors(dt, instant) {
+    const k = instant ? 1 : 1 - Math.exp(-dt / 0.18);
+    if (instant) dt = 10;
+    for (let q = 0; q < anchors.length; q++) {
+      const an = anchors[q];
+      let ok = an.found;
+      if (ok) {                                         // stay clear of summit markers
+        for (let s = 0; s < summits.length; s++) {
+          const m = summits[s], dx = an.bx - m.x, dy = an.by - m.y;
+          if ((dx > -56 && dx < 112 && Math.abs(dy) < 20) || dx * dx + dy * dy < 1300) { ok = false; break; }
+        }
+      }
+      if (ok) {
+        if (an.level !== an.bl) { an.level = an.bl; an.alpha = 0; an.lx = an.bx; an.ly = an.by; an.c2 = an.bc; an.s2 = an.bs; }
+        an.lx += (an.bx - an.lx) * k; an.ly += (an.by - an.ly) * k;
+        an.c2 += (an.bc - an.c2) * k; an.s2 += (an.bs - an.s2) * k;
+        an.alpha = Math.min(1, an.alpha + dt / 0.5);
+      } else {
+        an.alpha = Math.max(0, an.alpha - dt / 0.35);
+      }
+    }
+  }
+
+  function render(now) {
+    ctx.clearRect(0, 0, W, H);
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.lineWidth = 0.7; ctx.strokeStyle = 'rgba(' + INK + ',0.74)'; ctx.stroke(thinPath);
+    ctx.lineWidth = 1.2; ctx.strokeStyle = ICE; ctx.stroke(indexPath);
+
+    // index labels: the line is knocked out behind the number, like a printed map
+    ctx.font = '500 9.5px "DM Mono", ui-monospace, Menlo, Consolas, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (let q = 0; q < anchors.length; q++) {
+      const an = anchors[q];
+      if (an.alpha < 0.02 || an.level < 0) continue;
+      let th = Math.atan2(an.s2, an.c2) / 2;
+      if (th > Math.PI / 2) th -= Math.PI; else if (th < -Math.PI / 2) th += Math.PI;
+      const txt = fmtFt(an.level * INTERVAL), w = txt.length * 5.7 + 7;
+      ctx.save();
+      ctx.translate(an.lx, an.ly); ctx.rotate(th);
+      ctx.globalAlpha = an.alpha;
+      ctx.fillStyle = '#fff'; ctx.fillRect(-w / 2, -5.5, w, 11);
+      ctx.fillStyle = ICE; ctx.fillText(txt, 0, 0.5);
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+
+    // summits: a ring ripples out, the triangle lands, the elevation is set in feet
+    for (let i = 0; i < summits.length; i++) {
+      const s = summits[i], age = now - s.born;
+      if (age < 0) continue;
+      if (age < 900) {
+        const p = easeOutCubic(age / 900);
+        ctx.strokeStyle = 'rgba(' + INK + ',' + (0.5 * (1 - p)).toFixed(3) + ')'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(s.x, s.y, 4 + p * 26, 0, TWO_PI); ctx.stroke();
+      }
+      const sc = easeOutBack(age / 520);
+      const hw = 5.2 * sc, hh = 4.6 * sc;
+      ctx.beginPath();
+      ctx.moveTo(s.x, s.y - hh * 1.15); ctx.lineTo(s.x + hw, s.y + hh * 0.85); ctx.lineTo(s.x - hw, s.y + hh * 0.85); ctx.closePath();
+      ctx.lineWidth = 3; ctx.strokeStyle = '#fff'; ctx.stroke();
+      ctx.fillStyle = '#111'; ctx.fill();
+      const a = clamp((age - 160) / 380, 0, 1);
+      if (a > 0) {
+        ctx.font = '500 10.5px "DM Mono", ui-monospace, Menlo, Consolas, monospace';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        const txt = fmtFt(s.E) + ' FT', tx = s.x + 10 + (1 - easeOutCubic(a)) * -4, ty = s.y + 1;
+        ctx.globalAlpha = a;
+        ctx.lineWidth = 4; ctx.strokeStyle = '#fff'; ctx.strokeText(txt, tx, ty);
+        ctx.fillStyle = '#111'; ctx.fillText(txt, tx, ty);
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------- loop
+  let raf = 0, running = false, onScreen = false, shown = false, lastUpdate = 0, lastRender = 0, tWall = 0;
+  const timeOffset = parseFloat(params.get('t')) || 0;
+  function isActive(now) {
+    return ptr.inside || sculptMax > 0 || ghost.on || summitsAnimating(now);
+  }
+  function frame(now) {
+    raf = requestAnimationFrame(frame);
+    if (!running) return;
+    if (ghost.armed && !userTouched && now - ghost.armedAt > 1500) startGhost(now);
+    if (ghost.on) stepGhost(now);
+    if (!isActive(now) && now - lastRender < IDLE_MS) return;
+    const dt = clamp((now - lastUpdate) / 1000, 0.001, 0.1);
+    lastUpdate = now;
+    tSec = timeOffset + (now - tWall) / 1000;
+    update(now, dt);
+    render(now);
+    lastRender = now;
+  }
+  function setRunning() {
+    const want = onScreen && !document.hidden && !mq.matches;
+    if (want && !running) {
+      running = true; lastUpdate = lastRender = performance.now();
+      ghost.armedAt = lastUpdate;
+      if (!shown) { shown = true; for (const sm of summits) sm.born = lastUpdate; }    // the first summit rises as you arrive
+      if (!raf) raf = requestAnimationFrame(frame);
+    } else if (!want && running) {
+      running = false;
+      if (raf) cancelAnimationFrame(raf); raf = 0;
+    }
+  }
+  function drawOnce(now) {
+    tSec = mq.matches ? STILL_T + timeOffset : tSec;
+    update(now, 0.016, true); render(now);
+    lastRender = now;
+  }
+
+  // first-visit demonstration: a ghost cursor pushes up a range, once, before you touch anything
+  function startGhost(now) {
+    ghost.on = true; ghost.armed = false; ghost.start = now;
+  }
+  function stepGhost(now) {
+    if (userTouched) { ghost.on = false; ptr.inside = false; return; }
+    const u = (now - ghost.start) / ghost.dur;
+    if (u >= 1) { ghost.on = false; ptr.inside = false; return; }
+    const e = easeInOutCubic(u);
+    const p0 = [W * 0.2, H * 0.7], p1 = [W * 0.3, H * 0.28], p2 = [W * 0.5, H * 0.3];
+    const x = (1 - e) * (1 - e) * p0[0] + 2 * (1 - e) * e * p1[0] + e * e * p2[0];
+    const y = (1 - e) * (1 - e) * p0[1] + 2 * (1 - e) * e * p1[1] + e * e * p2[1];
+    ptr.x = x; ptr.y = y; ptr.inside = true;
+  }
+
+  // ---------------------------------------------------------------- input
+  let down = null;
+  function local(e) {
+    const r = cv.getBoundingClientRect();
+    return [e.clientX - r.left, e.clientY - r.top];
+  }
+  function pointerIn(e) {
+    if (mq.matches) return;
+    userTouched = true; ghost.on = false;
+    const [x, y] = local(e);
+    if (!ptr.inside) ptr.fresh = true;
+    ptr.inside = true; ptr.x = x; ptr.y = y;
+    wake();
+  }
+  cv.addEventListener('pointerenter', pointerIn);
+  cv.addEventListener('pointermove', pointerIn);
+  cv.addEventListener('pointerleave', () => { ptr.inside = false; });
+  cv.addEventListener('pointercancel', () => { ptr.inside = false; down = null; });
+  cv.addEventListener('pointerdown', (e) => {
+    if (mq.matches || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    pointerIn(e);
+    down = { x: e.clientX, y: e.clientY, t: performance.now() };
+  });
+  cv.addEventListener('pointerup', (e) => {
+    if (mq.matches || !down) return;
+    const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y), held = performance.now() - down.t;
+    down = null;
+    if (e.pointerType === 'touch') ptr.inside = false;
+    if (moved < 8 && held < 650) {
+      const [x, y] = local(e);
+      addSummit(x, y, null, performance.now());
+      wake();
+    }
+  });
+  function wake() { lastRender = 0; }
+  window.addEventListener('scroll', () => { if (ptr.inside && !down && !ghost.on) ptr.inside = false; }, { passive: true });
+
+  // ---------------------------------------------------------------- layout
+  function layout() {
+    const rect = cv.getBoundingClientRect();
+    W = Math.max(1, Math.round(rect.width)); H = Math.max(1, Math.round(rect.height));
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    buildFields(); buildAnchors();
+    summits.length = 0;
+    updateBase(mq.matches ? STILL_T + timeOffset : tSec);
+    placeInitialSummit(performance.now() - (mq.matches ? 5000 : 0));
+    if (!running) drawOnce(performance.now());
+  }
+
+  new IntersectionObserver((es) => { onScreen = es[es.length - 1].isIntersecting; setRunning(); }, { threshold: 0 }).observe(band);
+  document.addEventListener('visibilitychange', setRunning);
+  let rz = 0;
+  new ResizeObserver(() => { cancelAnimationFrame(rz); rz = requestAnimationFrame(layout); }).observe(cv);
+  const onMotionPref = () => {
+    ptr.inside = false; ghost.on = false;
+    layout();
+    setRunning();
+  };
+  (mq.addEventListener ? mq.addEventListener.bind(mq, 'change') : mq.addListener.bind(mq))(onMotionPref);
+
+  // ---------------------------------------------------------------- boot
+  tWall = performance.now();
+  layout();
+  if (document.fonts && document.fonts.load) {
+    document.fonts.load('500 10px "DM Mono"').then(() => { lastRender = 0; if (!running) drawOnce(performance.now()); });
+  }
+  // debug hooks for headless checks (not used by the page)
+  window.__lab = {
+    get summits() { return summits; }, get sculptMax() { return sculptMax; }, contour, update, render,
+    time(fn, n) { const t0 = performance.now(); for (let i = 0; i < n; i++) fn(); return (performance.now() - t0) / n; },
+    bench() { const n = 100, t0 = performance.now(); for (let i = 0; i < n; i++) { tSec += 0.05; update(performance.now(), 0.016); } const t1 = performance.now(); for (let i = 0; i < n; i++) render(performance.now()); return { update: (t1 - t0) / n, render: (performance.now() - t1) / n }; }
+  };
+})();
+</script>
+</body>
+</html>

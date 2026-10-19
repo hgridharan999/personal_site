@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0B0A0A">
+<title>Hari Gridharan — Cornell Dyson ’29</title>
+<meta name="description" content="Dyson Scholar and Loadstone Labs co-founder. Seeking Summer 2027 roles in strategy, investing, BA and PM.">
+<link rel="icon" href="data:,">
+<link rel="preload" as="image" href="../_shared/hiker-scene-strip.webp" type="image/webp" fetchpriority="high">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;700&family=Instrument+Serif:ital@1&display=swap">
+<style>
+:root{
+  --bg:#0B0A0A; --cream:#EDE7DA; --tan:#E8C089;
+  --cream-soft:#C9C4B8;                 /* one-liners, 10.9:1 on --bg */
+  --muted:#A39E94;                      /* dates, labels, 7.4:1 on --bg */
+  --rule:rgba(237,231,218,.10); --rule-head:rgba(237,231,218,.2);
+  --underline:rgba(237,231,218,.45); --outline:rgba(237,231,218,.55);
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --serif:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --gutter:16px; --datew:5.75rem;
+  --plate-ink:.66;                      /* the scene is atmosphere, not a hero photo */
+  --overlap:20px; --name:40px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg);color-scheme:dark;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--cream);font:400 16px/1.6 var(--sans);font-kerning:normal;-webkit-font-smoothing:antialiased;overflow-wrap:break-word}
+h1,h2,h3,p,ul{margin:0;padding:0}
+ul{list-style:none}
+a{color:inherit}
+::selection{background:var(--tan);color:var(--bg)}
+a:focus-visible{outline:2px solid var(--tan);outline-offset:3px;border-radius:2px}
+.page{max-width:640px;margin:0 auto;padding:0 var(--gutter)}
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+.defs{position:absolute;width:0;height:0;overflow:hidden}
+
+/* header: the scene plate, then the lockup ---------------------------------------- */
+.plate{position:relative;margin:0 calc(var(--gutter) * -1)}
+.scene{display:block;width:100%;height:auto;aspect-ratio:1536 / 530;overflow:hidden;opacity:var(--plate-ink)}
+.plate::after{content:"";position:absolute;inset:-1px 0;background:linear-gradient(to bottom,rgba(11,10,10,0) 52%,var(--bg) 98%)}
+.id{position:relative;margin-top:calc(var(--overlap) * -1)}
+.name{display:flex;flex-direction:column;align-items:flex-start;font:700 var(--name)/1 var(--sans);letter-spacing:-.03em}
+.hari{font:italic 400 1.3em/.9 var(--serif);letter-spacing:0;color:var(--tan)}
+.sur{text-transform:uppercase}
+.aff,.seek{text-wrap:balance}
+.aff{margin-top:14px;color:var(--cream-soft)}
+.seek{margin-top:2px;color:var(--tan);font-weight:500}
+.act{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border:1px solid transparent;border-radius:4px;font:500 15px/1 var(--sans);text-decoration:none}
+.btn-primary{background:var(--tan);border-color:var(--tan);color:var(--bg)}
+.btn-ghost{border-color:var(--outline);color:var(--cream)}
+.soc{display:flex;margin-left:-8px}
+.soc a{display:inline-flex;align-items:center;min-height:44px;padding:0 8px;color:var(--cream-soft);font-size:15px;text-decoration:underline;text-decoration-color:var(--underline);text-underline-offset:4px}
+
+/* contour dividers (decorative, ~8%) ------------------------------------------------ */
+.divider{height:44px;margin:12px calc(var(--gutter) * -1) 0;color:var(--cream);-webkit-mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent)}
+.contours{display:block;width:100%;height:44px;fill:none;stroke:currentColor}
+.ci,.cm{fill:none;stroke:currentColor;stroke-linecap:round}
+.ci{stroke-width:1.3;stroke-opacity:.1}
+.cm{stroke-width:.8;stroke-opacity:.07}
+
+/* sections + ledger rows ------------------------------------------------------------ */
+.wp{margin:6px 0 0;padding-bottom:8px;border-bottom:1px solid var(--rule-head);font:500 12px/1.6 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.wp .n{color:var(--tan)}
+.row{position:relative;padding:12px 0 13px}
+.row + .row{border-top:1px solid var(--rule)}
+.rh{display:grid;grid-template-columns:minmax(0,1fr) var(--datew);column-gap:12px;align-items:baseline}
+.role{display:inline;font:500 17px/1.35 var(--sans);text-wrap:balance}
+.meta{display:block;font:400 12px/1.6 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.when{justify-self:end;text-align:right;font:400 13px/1.4 var(--mono);color:var(--muted);font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.ln{margin-top:2px;color:var(--cream-soft);text-wrap:pretty}
+.lead{color:var(--tan);font-weight:500;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.lead a{text-decoration-color:rgba(232,192,137,.55);text-underline-offset:.2em}
+.lk{display:inline-block;white-space:nowrap;font:400 13px/1 var(--mono);color:var(--cream);text-decoration:underline;text-decoration-color:var(--underline);text-underline-offset:4px}
+.go{justify-self:end;display:inline-flex;align-items:center;justify-content:flex-end;min-height:44px;margin:-10px 0;font:500 15px/1.2 var(--sans);white-space:nowrap;color:var(--cream);text-decoration:underline;text-decoration-color:var(--underline);text-underline-offset:4px}
+
+/* ELSEWHERE: label / value rows ------------------------------------------------------ */
+.rl{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:baseline;column-gap:16px;min-height:44px;align-content:center;padding:8px 0 9px;text-decoration:none}
+.rl .lab{font:500 17px/1.35 var(--sans)}
+.rl .val{text-align:right;overflow-wrap:anywhere;font:400 13px/1.5 var(--mono);color:var(--muted)}
+.rl .val span:first-child{text-decoration:underline;text-decoration-color:var(--underline);text-underline-offset:4px}
+.row-flush{padding:0}
+
+/* footer ----------------------------------------------------------------------------- */
+.foot{padding-bottom:56px}
+.stamp{margin-top:8px;font:400 12px/1.6 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.stamp span{display:block}
+.stamp .dot{display:none}
+
+/* the scene's draw-in: masked pen strokes, ridge first (left to right), then the hiker.
+   Pure CSS. Fully drawn with no animation (JS off, reduced motion, print). ---------------- */
+.scene .ink{fill:none;stroke:#fff;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:0}
+@keyframes scene-ink{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+
+@media (min-width:560px){
+  :root{--datew:7.25rem;--overlap:30px;--name:44px}
+  .name{flex-direction:row;align-items:baseline;column-gap:.2em}
+  .meta{display:inline;margin-left:.7em}
+  .stamp span{display:inline}
+  .stamp .dot{display:inline;margin:0 .6em}
+}
+@media (min-width:672px){
+  .plate{margin-inline:0}
+  .divider{margin-inline:0}
+  .hd{padding-top:24px}
+}
+
+/* desktop pointers only: benchmark marker + company name -------------------------------- */
+@media (hover:hover) and (pointer:fine){
+  .row::before{content:"";position:absolute;left:-14px;top:19px;width:10px;height:9px;background:radial-gradient(circle at 50% 68%,var(--bg) 0 1.1px,transparent 1.3px),var(--tan);clip-path:polygon(50% 0,0 100%,100% 100%);opacity:0}
+  .row:hover::before,.row:focus-within::before{opacity:1}
+  .row:hover .co,.row:focus-within .co{color:var(--tan)}
+  a:hover{color:var(--tan);text-decoration-color:var(--tan)}
+  .lead a:hover{color:var(--cream);text-decoration-color:var(--cream)}
+  .btn-primary:hover{background:#F1CF9F;border-color:#F1CF9F;color:var(--bg)}
+  .btn-ghost:hover{border-color:var(--tan);color:var(--tan)}
+}
+
+/* all motion lives here ------------------------------------------------------------------ */
+@media (prefers-reduced-motion:no-preference){
+  .scene .ink{animation:scene-ink .55s cubic-bezier(.65,0,.35,1) both}
+  .scene .i1{animation-duration:.6s}
+  .scene .i2{animation-delay:.2s;animation-duration:.55s}
+  .scene .i3{animation-delay:.45s;animation-duration:.5s}
+  .scene .i4{animation-delay:.8s;animation-duration:.2s}
+  .scene .i5{animation-delay:.9s;animation-duration:.32s}
+  .scene .i6{animation-delay:1.08s;animation-duration:.32s}
+  .scene .i7{animation-delay:1.25s;animation-duration:.15s}
+  .btn,.co,.lk,.go,.soc a{transition:color .2s cubic-bezier(.16,1,.3,1),background-color .2s cubic-bezier(.16,1,.3,1),border-color .2s cubic-bezier(.16,1,.3,1),text-decoration-color .2s cubic-bezier(.16,1,.3,1)}
+  @media (hover:hover) and (pointer:fine){
+    .row::before{transform:translateX(-3px);transition:opacity .2s cubic-bezier(.16,1,.3,1),transform .2s cubic-bezier(.16,1,.3,1)}
+    .row:hover::before,.row:focus-within::before{transform:none}
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- Contour master: sums of fbm octaves, reused as the dividers with different x offsets. -->
+<svg class="defs" width="0" height="0" aria-hidden="true" focusable="false"><defs><g id="topo">
+  <path class="cm" d="M0 11.8q12 -0.7 18 -0.8q6 -0.1 12 0.3q6 0.5 12 0.5q6 0 12 -0.7q6 -0.7 12 -1q6 -0.4 12 -0.4q6 -0.1 12 -0.3q6 -0.2 12 0.1q6 0.3 12 1.2q6 0.9 12 1q6 0.2 12 -0.4q6 -0.6 12 -0.9q6 -0.4 12 -0.8q6 -0.4 12 -1.2q6 -0.7 12 -1q6 -0.2 12 -0.2q6 0.1 12 -0.6q6 -0.7 12 -1.7q6 -1 12 -1.4q6 -0.4 12 -0.5q6 -0.2 12 -0.2q6 0 12 0.8q6 0.8 12 1.8q6 1 12 1.3q6 0.2 12 0.2q6 0 12 0.3q6 0.4 12 0.5q6 0.2 12 0.3q6 0.1 12 0.7q6 0.6 12 1q6 0.4 12 -0.1q6 -0.5 12 -1q6 -0.5 12 -0.4q6 0.1 12 0.1q6 0 12 0.4q6 0.3 12 1.3q6 1 12 1.7q6 0.7 12 0.5q6 -0.2 12 -0.2q6 -0.1 12 0.1q6 0.2 12 0q6 -0.2 12 -0.3q6 -0.1 12 0.1q6 0.2 12 -0.3q6 -0.5 12 -1.8q6 -1.3 12 -2.2q6 -0.9 12 -1.4q6 -0.5 12 -1q6 -0.5 12 -0.5q6 0 12 0.6q6 0.6 12 0.5q6 0 12 -0.5q6 -0.5 12 -0.4q6 0.1 12 0.4q6 0.3 12 0.3q6 0.1 12 0.5q6 0.4 12 0.9q6 0.5 12 0q6 -0.4 12 -1.2q6 -0.8 12 -1q6 -0.2 12 -0.1q6 0 12 0.1q6 0.1 12 0.8q6 0.7 12 1.6q6 0.9 12 1q6 0.1 12 0.2q6 0.1 12 0.8q6 0.7 12 1.3q6 0.6 12 1.1q6 0.4 12 1.2q6 0.7 12 1q6 0.3 12 -0.5q6 -0.8 12 -1.6q6 -0.8 12 -1.1q6 -0.3 12 -0.7q6 -0.4 12 -0.7q6 -0.3 12 -0.1q6 0.2 12 0.2q6 -0.1 12 -0.8q6 -0.7 12 -1.1q6 -0.3 12 0q6 0.3 12 0.4q6 0.1 12 0.3q6 0.2 12 0.6q6 0.4 12 0q6 -0.4 12 -1.4q6 -1.1 12 -1.7q6 -0.6 12 -0.8q6 -0.2 12 -0.5q6 -0.3 12 -0.3q6 0 12 0.4q6 0.4 12 0.2q6 -0.2 12 -0.5q6 -0.4 12 0.1q6 0.5 12 1.3q6 0.9 12 1.6q6 0.7 12 1.6q6 0.9 12 1.8q6 0.9 12 0.8q6 -0.1 12 -0.6q6 -0.5 12 -0.4q6 0.1 12 0.3q6 0.2 12 0q6 -0.1 12 0.1q6 0.2 12 0.3q6 0.1 12 -0.5q6 -0.6 12 -1.1q6 -0.5 12 -0.1q6 0.4 12 0.8q6 0.5 12 0.7q6 0.3 12 0.8q6 0.5 12 0.6q6 0.1 12 -0.8q6 -0.9 12 -1.6q6 -0.7 12 -0.9q6 -0.2 12 -0.6q6 -0.4 12 -1q6 -0.5 12 -0.8q6 -0.2 12 -0.8L1440 5.6"/>
+  <path class="ci" d="M0 22.9q12 -0.8 18 -0.9q6 -0.1 12 0.4q6 0.6 12 0.6q6 0 12 -0.8q6 -0.8 12 -1.2q6 -0.4 12 -0.5q6 -0.1 12 -0.3q6 -0.2 12 0.2q6 0.4 12 1.4q6 1 12 1.2q6 0.2 12 -0.5q6 -0.7 12 -1.1q6 -0.4 12 -0.9q6 -0.5 12 -1.4q6 -0.9 12 -1.1q6 -0.3 12 -0.2q6 0.1 12 -0.7q6 -0.8 12 -1.9q6 -1.2 12 -1.6q6 -0.4 12 -0.6q6 -0.2 12 -0.2q6 0 12 0.9q6 1 12 2.2q6 1.2 12 1.5q6 0.3 12 0.2q6 0 12 0.4q6 0.4 12 0.6q6 0.2 12 0.3q6 0.1 12 0.8q6 0.7 12 1.2q6 0.5 12 -0.1q6 -0.6 12 -1.2q6 -0.6 12 -0.5q6 0.1 12 0.1q6 0.1 12 0.4q6 0.4 12 1.6q6 1.2 12 2q6 0.8 12 0.6q6 -0.2 12 -0.3q6 -0.1 12 0.1q6 0.2 12 0q6 -0.2 12 -0.3q6 -0.1 12 0.1q6 0.3 12 -0.3q6 -0.6 12 -2.1q6 -1.5 12 -2.6q6 -1.1 12 -1.6q6 -0.6 12 -1.2q6 -0.6 12 -0.6q6 0 12 0.7q6 0.7 12 0.6q6 0 12 -0.6q6 -0.5 12 -0.5q6 0.1 12 0.4q6 0.3 12 0.4q6 0.1 12 0.5q6 0.5 12 1q6 0.6 12 0q6 -0.5 12 -1.5q6 -0.9 12 -1.1q6 -0.2 12 -0.1q6 0.1 12 0.2q6 0.1 12 1q6 0.9 12 1.9q6 1 12 1.1q6 0.1 12 0.2q6 0.1 12 0.9q6 0.8 12 1.5q6 0.7 12 1.2q6 0.5 12 1.4q6 0.9 12 1.2q6 0.3 12 -0.6q6 -0.9 12 -1.9q6 -1 12 -1.3q6 -0.3 12 -0.8q6 -0.5 12 -0.8q6 -0.3 12 -0.1q6 0.3 12 0.2q6 -0.1 12 -1q6 -0.9 12 -1.2q6 -0.4 12 0q6 0.3 12 0.4q6 0.1 12 0.3q6 0.2 12 0.7q6 0.5 12 0.1q6 -0.4 12 -1.7q6 -1.3 12 -2q6 -0.7 12 -1q6 -0.2 12 -0.6q6 -0.4 12 -0.4q6 0 12 0.5q6 0.5 12 0.3q6 -0.2 12 -0.6q6 -0.4 12 0.1q6 0.5 12 1.6q6 1 12 1.8q6 0.8 12 1.9q6 1.1 12 2.1q6 1 12 0.9q6 -0.1 12 -0.7q6 -0.6 12 -0.4q6 0.1 12 0.3q6 0.2 12 0q6 -0.1 12 0.1q6 0.2 12 0.4q6 0.2 12 -0.6q6 -0.7 12 -1.3q6 -0.5 12 -0.1q6 0.5 12 1q6 0.5 12 0.9q6 0.3 12 0.9q6 0.6 12 0.7q6 0.1 12 -0.9q6 -1 12 -1.9q6 -0.9 12 -1.1q6 -0.2 12 -0.7q6 -0.5 12 -1.1q6 -0.6 12 -0.9q6 -0.2 12 -0.9L1440 15.6"/>
+  <path class="cm" d="M0 32.4q12 -1 18 -1.2q6 -0.2 12 0.4q6 0.6 12 0.5q6 0 12 -0.9q6 -0.9 12 -1.3q6 -0.5 12 -0.5q6 -0.1 12 -0.3q6 -0.2 12 0.2q6 0.5 12 1.6q6 1.1 12 1.3q6 0.2 12 -0.5q6 -0.7 12 -1.2q6 -0.5 12 -1.1q6 -0.6 12 -1.6q6 -1 12 -1.4q6 -0.4 12 -0.4q6 0 12 -1q6 -1 12 -2.3q6 -1.4 12 -2q6 -0.6 12 -0.9q6 -0.3 12 -0.4q6 -0.1 12 0.9q6 1 12 2.3q6 1.3 12 1.6q6 0.3 12 0.3q6 0 12 0.6q6 0.5 12 0.8q6 0.3 12 0.5q6 0.2 12 1.1q6 0.9 12 1.5q6 0.6 12 0q6 -0.6 12 -1.1q6 -0.6 12 -0.4q6 0.1 12 0.2q6 0.1 12 0.5q6 0.4 12 1.7q6 1.3 12 2.1q6 0.9 12 0.6q6 -0.2 12 -0.3q6 -0.1 12 0.2q6 0.3 12 0.1q6 -0.2 12 -0.3q6 -0.1 12 0.3q6 0.3 12 -0.2q6 -0.5 12 -2.1q6 -1.5 12 -2.6q6 -1.1 12 -1.6q6 -0.5 12 -1.1q6 -0.6 12 -0.5q6 0.1 12 0.8q6 0.7 12 0.7q6 -0.1 12 -0.7q6 -0.7 12 -0.6q6 0 12 0.3q6 0.2 12 0.2q6 -0.1 12 0.3q6 0.4 12 0.9q6 0.5 12 -0.2q6 -0.7 12 -1.8q6 -1.1 12 -1.4q6 -0.3 12 -0.3q6 0 12 0.1q6 0.1 12 1.1q6 1 12 2.1q6 1.1 12 1.3q6 0.2 12 0.3q6 0.1 12 1.1q6 0.9 12 1.7q6 0.8 12 1.4q6 0.6 12 1.5q6 0.9 12 1.3q6 0.3 12 -0.7q6 -1 12 -2.1q6 -1.1 12 -1.5q6 -0.4 12 -1q6 -0.5 12 -0.9q6 -0.4 12 -0.1q6 0.3 12 0.2q6 -0.1 12 -1q6 -0.9 12 -1.2q6 -0.3 12 0.1q6 0.4 12 0.7q6 0.2 12 0.6q6 0.3 12 1q6 0.6 12 0.3q6 -0.3 12 -1.6q6 -1.3 12 -2q6 -0.7 12 -0.9q6 -0.2 12 -0.6q6 -0.4 12 -0.4q6 0 12 0.5q6 0.5 12 0.2q6 -0.3 12 -0.8q6 -0.6 12 -0.1q6 0.5 12 1.5q6 1 12 1.8q6 0.8 12 1.9q6 1.1 12 2.2q6 1 12 0.9q6 -0.2 12 -0.8q6 -0.6 12 -0.5q6 0.1 12 0.3q6 0.2 12 0.1q6 -0.1 12 0.2q6 0.3 12 0.5q6 0.2 12 -0.6q6 -0.8 12 -1.4q6 -0.6 12 -0.1q6 0.5 12 1q6 0.5 12 0.8q6 0.3 12 0.9q6 0.6 12 0.6q6 0 12 -1.2q6 -1.2 12 -2.2q6 -1 12 -1.3q6 -0.3 12 -0.8q6 -0.5 12 -1.2q6 -0.7 12 -0.9q6 -0.2 12 -0.9L1440 23"/>
+  <path class="cm" d="M0 40.1q12 -1.1 18 -1.3q6 -0.2 12 0.3q6 0.6 12 0.5q6 0 12 -0.9q6 -0.9 12 -1.4q6 -0.5 12 -0.5q6 -0.1 12 -0.3q6 -0.2 12 0.3q6 0.5 12 1.7q6 1.2 12 1.4q6 0.2 12 -0.5q6 -0.7 12 -1.3q6 -0.5 12 -1.2q6 -0.7 12 -1.8q6 -1.1 12 -1.6q6 -0.5 12 -0.6q6 -0.1 12 -1.2q6 -1.1 12 -2.6q6 -1.5 12 -2.2q6 -0.7 12 -1.1q6 -0.4 12 -0.5q6 -0.1 12 0.9q6 1 12 2.4q6 1.4 12 1.7q6 0.3 12 0.4q6 0.1 12 0.7q6 0.6 12 1q6 0.4 12 0.7q6 0.3 12 1.3q6 1 12 1.7q6 0.7 12 0.2q6 -0.5 12 -1.1q6 -0.5 12 -0.4q6 0.1 12 0.2q6 0.1 12 0.5q6 0.4 12 1.7q6 1.3 12 2.2q6 0.9 12 0.6q6 -0.2 12 -0.3q6 -0.1 12 0.2q6 0.3 12 0.1q6 -0.2 12 -0.2q6 0 12 0.4q6 0.4 12 -0.1q6 -0.5 12 -2q6 -1.5 12 -2.6q6 -1 12 -1.5q6 -0.5 12 -1.1q6 -0.6 12 -0.5q6 0.1 12 0.9q6 0.7 12 0.7q6 -0.1 12 -0.8q6 -0.7 12 -0.8q6 -0.1 12 0.1q6 0.2 12 0q6 -0.2 12 0.2q6 0.3 12 0.7q6 0.4 12 -0.4q6 -0.8 12 -2q6 -1.2 12 -1.6q6 -0.3 12 -0.4q6 0 12 0.1q6 0.1 12 1.1q6 1 12 2.2q6 1.2 12 1.4q6 0.2 12 0.4q6 0.2 12 1.2q6 1 12 1.9q6 0.9 12 1.5q6 0.6 12 1.6q6 1 12 1.3q6 0.3 12 -0.8q6 -1.1 12 -2.2q6 -1.1 12 -1.6q6 -0.5 12 -1q6 -0.6 12 -1q6 -0.4 12 -0.1q6 0.3 12 0.2q6 -0.1 12 -1q6 -0.9 12 -1.2q6 -0.3 12 0.3q6 0.5 12 0.9q6 0.3 12 0.8q6 0.4 12 1.2q6 0.7 12 0.5q6 -0.3 12 -1.5q6 -1.3 12 -2q6 -0.7 12 -0.9q6 -0.2 12 -0.6q6 -0.4 12 -0.5q6 0 12 0.4q6 0.4 12 0.1q6 -0.3 12 -1q6 -0.6 12 -0.2q6 0.4 12 1.4q6 1 12 1.7q6 0.7 12 1.8q6 1.1 12 2.1q6 1 12 0.8q6 -0.2 12 -0.9q6 -0.7 12 -0.5q6 0.1 12 0.4q6 0.2 12 0.1q6 -0.1 12 0.2q6 0.3 12 0.5q6 0.2 12 -0.6q6 -0.8 12 -1.5q6 -0.6 12 -0.2q6 0.4 12 0.9q6 0.5 12 0.7q6 0.2 12 0.8q6 0.5 12 0.5q6 0 12 -1.3q6 -1.3 12 -2.4q6 -1.1 12 -1.4q6 -0.3 12 -0.9q6 -0.6 12 -1.2q6 -0.7 12 -0.9q6 -0.2 12 -0.8L1440 29.2"/>
+</g></defs></svg>
+
+<header class="page hd">
+  <div class="plate" aria-hidden="true">
+    <!-- Explicit width/height + aspect-ratio: no layout shift while the 1536 x 530 art loads. -->
+    <svg class="scene" width="1536" height="530" viewBox="0 0 1536 530" focusable="false">
+      <defs>
+        <filter id="scene-soft" filterUnits="userSpaceOnUse" x="-40" y="-40" width="1616" height="610"><feGaussianBlur stdDeviation="7"/></filter>
+        <mask id="scene-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1536" height="530">
+          <g filter="url(#scene-soft)">
+            <path class="ink i1" pathLength="1" stroke-width="170" d="M-20 300 L150 268 L300 235 L400 185 L470 130 L545 72 L600 100 L670 140 L770 180 L900 215 L1060 270"/>
+            <path class="ink i2" pathLength="1" stroke-width="190" d="M-20 330 L300 320 L420 270 L560 255 L700 265 L900 285 L1060 335"/>
+            <path class="ink i3" pathLength="1" stroke-width="170" d="M100 440 L500 430 L800 440 L1060 440"/>
+            <path class="ink i4" pathLength="1" stroke-width="90" d="M1075 100 L1205 100 L1090 145 L1205 145"/>
+            <path class="ink i5" pathLength="1" stroke-width="76" d="M1030 160 L1290 160 L1030 215 L1290 215 L1030 265 L1290 265 L1030 315 L1290 315"/>
+            <path class="ink i6" pathLength="1" stroke-width="76" d="M1020 360 L1300 360 L1020 415 L1300 415 L1020 470 L1300 470 L1020 515 L1300 515"/>
+            <path class="ink i7" pathLength="1" stroke-width="170" d="M1290 330 L1560 300 L1290 420 L1560 400"/>
+          </g>
+        </mask>
+      </defs>
+      <image href="../_shared/hiker-scene-strip.webp" width="1536" height="530" mask="url(#scene-mask)"/>
+    </svg>
+  </div>
+  <div class="id">
+    <h1 class="name"><span class="hari">Hari</span> <span class="sur">Gridharan</span></h1>
+    <p class="aff">Applied Economics + AI&nbsp;· Cornell&nbsp;Dyson&nbsp;’29&nbsp;· Dyson&nbsp;Scholar</p>
+    <p class="seek">Seeking Summer&nbsp;2027 roles in strategy, investing, BA&nbsp;&amp;&nbsp;PM — NYC&nbsp;/&nbsp;SF</p>
+    <div class="act">
+      <a class="btn btn-primary" href="/Hari_Gridharan_Resume.pdf">Resume&nbsp;<span aria-hidden="true">↓</span><span class="sr-only"> (PDF)</span></a>
+      <a class="btn btn-ghost" href="mailto:hg532@cornell.edu">Email</a>
+      <span class="soc"><a href="https://www.linkedin.com/in/harigridharan1/">LinkedIn&nbsp;<span aria-hidden="true">↗&#xFE0E;</span></a><a href="https://github.com/hgridharan999">GitHub&nbsp;<span aria-hidden="true">↗&#xFE0E;</span></a></span>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <section aria-labelledby="now">
+    <div class="divider" aria-hidden="true"><svg class="contours" viewBox="0 0 720 44" preserveAspectRatio="xMinYMid slice" focusable="false"><use href="#topo" x="0"/></svg></div>
+    <h2 class="wp" id="now"><span class="n">01</span> · Now</h2>
+    <ul role="list">
+      <li class="row">
+        <div class="rh"><h3 class="role">Co-Founder, <span class="co">Loadstone&nbsp;Labs</span></h3><span class="when">2026&nbsp;–&nbsp;now</span></div>
+        <p class="ln"><span class="lead">Venture-backed</span> data platform for Western water rights&nbsp;· grants from AWS and LvlUp&nbsp;Ventures&nbsp;· <a class="lk" href="https://loadstonelabs.com">loadstonelabs.com&nbsp;<span aria-hidden="true">↗&#xFE0E;</span></a></p>
+      </li>
+      <li class="row">
+        <div class="rh"><h3 class="role">President, <span class="co">Cornell Entrepreneurship&nbsp;Club</span></h3><span class="when">2025&nbsp;–&nbsp;now</span></div>
+        <p class="ln"><span class="lead">500,000+&nbsp;views</span> across Instagram and LinkedIn&nbsp;· YC speaker series for 150+&nbsp;attendees</p>
+      </li>
+      <li class="row">
+        <div class="rh"><h3 class="role">Builder, <span class="co">Cornell&nbsp;Armada</span></h3><span class="when">2026&nbsp;–&nbsp;now</span></div>
+        <p class="ln"><span class="lead"><a href="https://www.bigred.network/">Built bigred.network&nbsp;<span aria-hidden="true">↗&#xFE0E;</span></a></span>, Cornell’s founder directory</p>
+      </li>
+      <li class="row">
+        <div class="rh"><h3 class="role">Business Analyst, <span class="co">Cornell&nbsp;DTI</span></h3><span class="when">2025&nbsp;–&nbsp;now</span></div>
+        <p class="ln"><span class="lead">15,000+&nbsp;Cornell users</span> on the student tools I analyze&nbsp;· benchmarked 8&nbsp;peer platforms</p>
+      </li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="before">
+    <div class="divider" aria-hidden="true"><svg class="contours" viewBox="0 0 720 44" preserveAspectRatio="xMinYMid slice" focusable="false"><use href="#topo" x="-540"/></svg></div>
+    <h2 class="wp" id="before"><span class="n">02</span> · Before</h2>
+    <ul role="list">
+      <li class="row">
+        <div class="rh"><div><h3 class="role">Consulting Intern, <span class="co">EXL</span></h3> <span class="meta">New York</span></div><span class="when">Summer&nbsp;2026</span></div>
+        <p class="ln"><span class="lead">$70M+&nbsp;Fortune&nbsp;100 contract book</span> supported&nbsp;· built a CRM tool that replaced manual tracking</p>
+      </li>
+      <li class="row">
+        <div class="rh"><h3 class="role">Operations &amp; Strategy Intern, <span class="co">Midian&nbsp;Partners</span></h3><span class="when">Summer&nbsp;2026</span></div>
+        <p class="ln"><span class="lead"><span aria-hidden="true">6&nbsp;→&nbsp;25+</span><span class="sr-only">6 to 25+</span> signed lender partners</span> in five&nbsp;weeks</p>
+      </li>
+      <li class="row">
+        <div class="rh"><h3 class="role">AI/Strategy Consultant (Contract), <span class="co">Adobe</span></h3><span class="when">Jan&nbsp;–&nbsp;Apr 2026</span></div>
+        <p class="ln"><span class="lead">$1M+&nbsp;enterprise contracts</span> shaped by AI market sizing and positioning work</p>
+      </li>
+      <li class="row">
+        <div class="rh"><h3 class="role">Problem Design Engineer, <span class="co">Widget&nbsp;Factory</span></h3><span class="when">2026</span></div>
+        <p class="ln"><span class="lead">Problem sets</span> used to evaluate frontier AI models</p>
+      </li>
+      <li class="row">
+        <div class="rh"><h3 class="role">Co-Founder, <span class="co">Commit</span></h3><span class="when">2025&nbsp;–&nbsp;26</span></div>
+        <p class="ln"><span class="lead">Top&nbsp;10% of 20,000+&nbsp;YC applicants</span>&nbsp;· prediction-market MVP built in 3&nbsp;days</p>
+      </li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="built">
+    <div class="divider" aria-hidden="true"><svg class="contours" viewBox="0 0 720 44" preserveAspectRatio="xMinYMid slice" focusable="false"><use href="#topo" x="-180"/></svg></div>
+    <h2 class="wp" id="built"><span class="n">03</span> · Built</h2>
+    <ul role="list">
+      <li class="row">
+        <div class="rh"><h3 class="role"><span class="co">Climate startup search</span></h3><a class="go" href="/climate-search">Try it&nbsp;<span aria-hidden="true">→</span><span class="sr-only">: climate startup search</span></a></div>
+        <p class="ln"><span class="lead">212&nbsp;startups</span>, ~600ms hybrid BERT + BM25 queries</p>
+      </li>
+      <li class="row">
+        <div class="rh"><h3 class="role"><span class="co">LLM Cost Optimizer</span></h3><a class="go" href="https://github.com/hgridharan999/token_optimizer">Repo&nbsp;<span aria-hidden="true">↗&#xFE0E;</span><span class="sr-only">: LLM Cost Optimizer</span></a></div>
+        <p class="ln"><span class="lead">3&nbsp;model families</span> — routing and semantic caching across GPT-4, Claude and Gemini</p>
+      </li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="off-the-clock">
+    <div class="divider" aria-hidden="true"><svg class="contours" viewBox="0 0 720 44" preserveAspectRatio="xMinYMid slice" focusable="false"><use href="#topo" x="-360"/></svg></div>
+    <h2 class="wp" id="off-the-clock"><span class="n">04</span> · Off the clock</h2>
+    <ul role="list">
+      <li class="row">
+        <div class="rh"><h3 class="role"><span class="co">Hiking Colorado 14ers</span></h3><a class="go" href="/hiking">Trail log&nbsp;<span aria-hidden="true">→</span><span class="sr-only">: Colorado 14ers hiking log</span></a></div>
+        <p class="ln"><span class="lead">First: Mt.&nbsp;Bierstadt (2025)</span>&nbsp;· most recent: Quandary Peak, 14,265&nbsp;ft, under 4:30 round trip</p>
+      </li>
+      <li class="row">
+        <div class="rh"><h3 class="role"><span class="co">Carnatic &amp; indie singing</span></h3></div>
+        <p class="ln">Cooking regional Indian food</p>
+      </li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="elsewhere">
+    <div class="divider" aria-hidden="true"><svg class="contours" viewBox="0 0 720 44" preserveAspectRatio="xMinYMid slice" focusable="false"><use href="#topo" x="-90"/></svg></div>
+    <h2 class="wp" id="elsewhere"><span class="n">05</span> · Elsewhere</h2>
+    <ul role="list">
+      <li class="row row-flush"><a class="rl" href="https://www.linkedin.com/in/harigridharan1/"><span class="lab co">LinkedIn</span><span class="val"><span>linkedin.com/in/harigridharan1</span>&nbsp;<span aria-hidden="true">↗&#xFE0E;</span></span></a></li>
+      <li class="row row-flush"><a class="rl" href="https://github.com/hgridharan999"><span class="lab co">GitHub</span><span class="val"><span>github.com/hgridharan999</span>&nbsp;<span aria-hidden="true">↗&#xFE0E;</span></span></a></li>
+      <li class="row row-flush"><a class="rl" href="mailto:hg532@cornell.edu"><span class="lab co">Email</span><span class="val"><span>hg532@cornell.edu</span></span></a></li>
+      <li class="row row-flush"><a class="rl" href="/Hari_Gridharan_Resume.pdf"><span class="lab co">Resume</span><span class="val"><span>Hari_Gridharan_Resume.pdf</span>&nbsp;<span aria-hidden="true">↓</span><span class="sr-only"> (PDF)</span></span></a></li>
+    </ul>
+  </section>
+</main>
+
+<footer class="page foot">
+  <div class="divider" aria-hidden="true"><svg class="contours" viewBox="0 0 720 44" preserveAspectRatio="xMinYMid slice" focusable="false"><use href="#topo" x="-630"/></svg></div>
+  <p class="stamp"><span>Contour interval 1 year</span><span class="dot" aria-hidden="true">·</span><span>Last updated <time datetime="2026-10">Oct 2026</time></span></p>
+</footer>
+</body>
+</html>

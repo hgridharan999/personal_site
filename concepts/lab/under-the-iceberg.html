@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Lab: Under the iceberg</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ink: #111111;
+    --muted: #5C5C5C;
+    --blue: #0F7DAA;                 /* the blue at the bottom of icebergs */
+    --abyss: #0A1822;                /* where the water ends: shader floor colour = footer colour */
+    --mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --col: 1100px;                   /* the composition's column; the water itself runs full-bleed */
+    --gutter: 16px;
+    --band-h: 240px;
+  }
+  @media (min-width: 600px)  { :root { --band-h: 300px; } }
+  @media (min-width: 1000px) { :root { --band-h: 340px; } }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: #fff; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body {
+    margin: 0; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column;
+    background: #fff; color: var(--ink); -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+
+  /* lab label, above the band */
+  .tag {
+    width: 100%; max-width: calc(var(--col) + var(--gutter) * 2);
+    margin: auto auto 0; padding: 0 var(--gutter) 10px;
+    font: 400 12px/1.3 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+  }
+
+  /* the band: white page above the waterline, then water that deepens to the footer's colour.
+     The CSS gradient is the no-WebGL / no-JS base; the canvas paints over it. */
+  .band {
+    position: relative; height: var(--band-h); overflow: hidden; isolation: isolate;
+    background: linear-gradient(to bottom,
+      #fff 0, #fff 21.9%, #C9EAF4 22%, #8FD0E6 33%, #2F9CC4 51%, #0F7DAA 66%, #0A4D6E 83%, var(--abyss) 100%);
+  }
+  .band canvas, .band svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .band canvas { touch-action: pan-y; -webkit-tap-highlight-color: transparent; }
+  .band svg { pointer-events: none; }
+  .band[data-gl="on"] svg { display: none; }
+
+  /* caption inside the water, bottom-left of the column */
+  .cap {
+    position: absolute; z-index: 1; pointer-events: none;
+    left: calc(max(0px, (100% - var(--col)) / 2) + var(--gutter)); bottom: 16px;
+    display: flex; align-items: center; gap: 10px;
+    font: 400 12px/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: #BFE2EF;
+  }
+  .cap::before { content: ""; width: 22px; height: 1px; background: currentColor; opacity: 0.6; }
+
+  /* the footer line sits in the deepest water: same colour as the shader's floor, so there is no seam */
+  .foot { background: var(--abyss); }
+  .foot p {
+    width: 100%; max-width: calc(var(--col) + var(--gutter) * 2); margin: 0 auto;
+    padding: 6px var(--gutter) 26px;
+    font: 400 12px/1.4 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: #8FB2C3;
+  }
+  .foot .part { display: block; }
+  .foot .sep { display: none; }
+  @media (min-width: 560px) { .foot .part { display: inline; } .foot .sep { display: inline; } }
+</style>
+</head>
+<body>
+
+<p class="tag">Lab / Under the iceberg &middot; touch the water</p>
+
+<section class="band" id="band">
+  <svg id="fallback" viewBox="-3 0 6 1" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"></svg>
+  <canvas id="gl" aria-hidden="true"></canvas>
+  <span class="cap">90% below the surface</span>
+</section>
+
+<footer class="foot">
+  <p><span class="part">Contour interval 1 year</span><span class="sep" aria-hidden="true"> &middot; </span><span class="part">Last updated Oct 2026</span></p>
+</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ------------------------------------------------------------------------------------------
+     The iceberg. Vertices in band-height units: x from the centre line, y relative to the
+     waterline (negative = above the water). One polygon: the tip, then the submerged mass.
+     ------------------------------------------------------------------------------------------ */
+  const WL = 0.22;                                   // waterline, as a fraction of band height
+  const BERG = [
+    [-0.200,  0.000], [-0.170, -0.040], [-0.115, -0.060], [-0.085, -0.115], [-0.030, -0.150],
+    [ 0.005, -0.105], [ 0.045, -0.165], [ 0.095, -0.095], [ 0.150, -0.070], [ 0.205, -0.020],
+    [ 0.300,  0.040], [ 0.440,  0.075], [ 0.570,  0.150], [ 0.660,  0.235], [ 0.700,  0.310],
+    [ 0.580,  0.370], [ 0.570,  0.440], [ 0.440,  0.470], [ 0.400,  0.550], [ 0.280,  0.600],
+    [ 0.200,  0.520], [ 0.120,  0.640], [ 0.020,  0.585], [-0.080,  0.600], [-0.150,  0.500],
+    [-0.260,  0.550], [-0.360,  0.470], [-0.380,  0.400], [-0.520,  0.410], [-0.620,  0.330],
+    [-0.600,  0.240], [-0.700,  0.190], [-0.580,  0.110], [-0.420,  0.070], [-0.310,  0.045]
+  ];
+  const NV = BERG.length;
+  const STILL_T = 13.2;                              // the frame shown under reduced motion
+  const PIXEL_BUDGET = 0.72e6;                        // canvas pixels; the shader is per-pixel, keep it bounded
+
+  const band = document.getElementById('band');
+  const canvas = document.getElementById('gl');
+  const fallback = document.getElementById('fallback');
+  const reduceMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  /* ------------------------------------------------------------------------------------------
+     Static fallback: the same polygon as a low-poly SVG over the CSS gradient.
+     ------------------------------------------------------------------------------------------ */
+  function buildFallback() {
+    const NS = 'http://www.w3.org/2000/svg';
+    const pts = BERG.map(([x, y]) => [x, WL + y]);
+    const str = (a) => a.map((p) => p[0].toFixed(4) + ',' + p[1].toFixed(4)).join(' ');
+    const add = (parent, tag, attrs) => {
+      const el = document.createElementNS(NS, tag);
+      for (const k in attrs) el.setAttribute(k, attrs[k]);
+      parent.appendChild(el);
+      return el;
+    };
+    const defs = add(fallback, 'defs', {});
+    const grad = add(defs, 'linearGradient', { id: 'fb-ice', gradientUnits: 'userSpaceOnUse', x1: 0, y1: WL, x2: 0, y2: WL + 0.65 });
+    [['0', '#E6F8FD'], ['0.45', '#8FD3EA'], ['1', '#3C9DC0']].forEach(([o, c]) => add(grad, 'stop', { offset: o, 'stop-color': c }));
+    const clip = add(defs, 'clipPath', { id: 'fb-hull' });
+    add(clip, 'polygon', { points: str(pts.slice(9)) });
+    // the submerged hull, with irregular facets: random triangles and chords across it, clipped to its outline
+    add(fallback, 'polygon', { points: str(pts.slice(9)), fill: 'url(#fb-ice)', 'fill-opacity': '0.9' });
+    const g = add(fallback, 'g', { 'clip-path': 'url(#fb-hull)' });
+    let seed = 11;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const sub = pts.slice(9), n = sub.length;
+    for (let k = 0; k < 14; k++) {
+      const i = Math.floor(rnd() * n);
+      const tri = [sub[i], sub[(i + 3 + Math.floor(rnd() * 6)) % n], sub[(i + 10 + Math.floor(rnd() * 9)) % n]];
+      add(g, 'polygon', { points: str(tri), fill: '#fff', 'fill-opacity': (0.05 + rnd() * 0.16).toFixed(2) });
+    }
+    for (let k = 0; k < 16; k++) {
+      const i = Math.floor(rnd() * n), j = (i + 4 + Math.floor(rnd() * 12)) % n;
+      add(g, 'line', { x1: sub[i][0], y1: sub[i][1], x2: sub[j][0], y2: sub[j][1], stroke: '#fff', 'stroke-opacity': '0.42', 'stroke-width': '0.003' });
+    }
+    add(fallback, 'polygon', { points: str(sub), fill: 'none', stroke: '#fff', 'stroke-opacity': '0.7', 'stroke-width': '0.004', 'stroke-linejoin': 'round' });
+    // the tip, drawn like the rest of the site: pale facets and a blue line
+    const tip = pts.slice(0, 10).concat([[0.25, WL]]);
+    add(fallback, 'polygon', { points: str(tip), fill: '#F3FAFD', stroke: '#0F7DAA', 'stroke-width': '0.004', 'stroke-linejoin': 'round' });
+    add(fallback, 'polygon', { points: str([tip[2], tip[3], tip[4], tip[5]]), fill: '#BBDDEC', 'fill-opacity': '0.8' });
+    add(fallback, 'polygon', { points: str([tip[6], tip[7], tip[8], tip[9]]), fill: '#9CCBE0', 'fill-opacity': '0.5' });
+    // waterline
+    add(fallback, 'line', { x1: -3, x2: 3, y1: WL, y2: WL, stroke: '#0F7DAA', 'stroke-width': '0.004', 'stroke-opacity': '0.8' });
+  }
+  buildFallback();
+
+  /* ------------------------------------------------------------------------------------------
+     WebGL: one canvas, one full-screen triangle, one fragment shader.
+     ------------------------------------------------------------------------------------------ */
+  const f = (n) => (Math.round(n * 10000) / 10000).toFixed(4);
+  const vconst = BERG.map(([x, y], i) => `const vec2 V${i} = vec2(${f(x)}, ${f(WL + y)});`).join('\n');
+  const edges = BERG.map((_, i) => `edge(p, V${(i + NV - 1) % NV}, V${i}, d, s);`).join('\n  ');
+
+  const VS = 'attribute vec2 aPos; void main(){ gl_Position = vec4(aPos, 0.0, 1.0); }';
+
+  const FS = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+
+uniform vec2  uRes;      // canvas size, device px
+uniform float uT;        // seconds
+uniform vec4  uRip[5];   // ripple: x, y (band-height units from centre-top), start time, strength
+
+const float WL = ${f(WL)};
+
+${vconst}
+
+float hash12(vec2 p){ vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
+vec2  hash22(vec2 p){ vec3 q = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973)); q += dot(q, q.yzx + 33.33); return fract((q.xx + q.yz) * q.zy); }
+
+/* signed distance to the iceberg polygon (negative inside); the edges are unrolled at build time */
+void edge(vec2 p, vec2 pv, vec2 cv, inout float d, inout float s){
+  vec2 e = pv - cv; vec2 w = p - cv;
+  vec2 b = w - e * clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
+  d = min(d, dot(b, b));
+  bool c1 = p.y >= cv.y; bool c2 = p.y < pv.y; bool c3 = e.x * w.y > e.y * w.x;
+  if ((c1 && c2 && c3) || (!c1 && !c2 && !c3)) s = -s;
+}
+float sdBerg(vec2 p){
+  float d = dot(p - V0, p - V0);
+  float s = 1.0;
+  ${edges}
+  return s * sqrt(d);
+}
+
+/* static Voronoi: F1, F2, id of the nearest cell (the ice's facets) */
+vec4 voroS(vec2 x){
+  vec2 n = floor(x), f = x - n;
+  float d1 = 8.0, d2 = 8.0; vec2 id = vec2(0.0);
+  for (int j = -1; j <= 1; j++) {
+    for (int i = -1; i <= 1; i++) {
+      vec2 g = vec2(float(i), float(j));
+      vec2 o = hash22(n + g);
+      vec2 r = g + 0.5 + (o - 0.5) * 0.9 - f;
+      float d = dot(r, r);
+      if (d < d1) { d2 = d1; d1 = d; id = n + g; }
+      else if (d < d2) { d2 = d; }
+    }
+  }
+  return vec4(sqrt(d1), sqrt(d2), id);
+}
+
+/* animated Voronoi: F1, F2 (the caustic network lives on F2 - F1). The input is bent first so cell walls curve. */
+vec2 voroA(vec2 x, float t){
+  x += 0.20 * vec2(sin(x.y * 1.9 + t * 0.9), sin(x.x * 2.1 - t * 0.7));
+  vec2 n = floor(x), f = x - n;
+  float d1 = 8.0, d2 = 8.0;
+  for (int j = -1; j <= 1; j++) {
+    for (int i = -1; i <= 1; i++) {
+      vec2 g = vec2(float(i), float(j));
+      vec2 o = hash22(n + g);
+      vec2 r = g + 0.5 + 0.46 * sin(t * vec2(1.0, 0.83) + 6.2831 * o) - f;
+      float d = dot(r, r);
+      if (d < d1) { d2 = d1; d1 = d; }
+      else if (d < d2) { d2 = d; }
+    }
+  }
+  return vec2(sqrt(d1), sqrt(d2));
+}
+
+/* two warped Voronoi networks at different scales and headings, crossed: thin bright filaments, sparkle where they meet */
+float caustic(vec2 p, float t){
+  vec2 a = voroA(p * 4.4 + vec2(0.0, t * 0.030), t * 0.46);
+  vec2 b = voroA(mat2(0.8, -0.6, 0.6, 0.8) * p * 7.6 + vec2(t * 0.040, 3.7), t * 0.62 + 2.0);
+  float ea = a.y - a.x, eb = b.y - b.x;
+  float la = 1.0 - clamp(ea * 9.0, 0.0, 1.0); la *= la;
+  float lb = 1.0 - clamp(eb * 9.0, 0.0, 1.0); lb *= lb;
+  return 0.55 * la + 0.38 * lb + 1.1 * la * lb + 0.10 * exp(-ea * 7.0);
+}
+
+/* the open water only gets the first network (one Voronoi pass instead of two) */
+float causticLite(vec2 p, float t){
+  vec2 a = voroA(p * 4.4 + vec2(0.0, t * 0.030), t * 0.46);
+  float ea = a.y - a.x;
+  float la = 1.0 - clamp(ea * 9.0, 0.0, 1.0);
+  return 0.95 * la * la + 0.12 * exp(-ea * 7.0);
+}
+
+vec3 ramp(float d){
+  vec3 c0 = vec3(0.788, 0.918, 0.957);   // pale cyan  #C9EAF4
+  vec3 c1 = vec3(0.561, 0.816, 0.902);   //            #8FD0E6
+  vec3 c2 = vec3(0.184, 0.612, 0.769);   //            #2F9CC4
+  vec3 c3 = vec3(0.059, 0.490, 0.667);   // iceberg    #0F7DAA
+  vec3 c4 = vec3(0.039, 0.302, 0.431);   //            #0A4D6E
+  vec3 c5 = vec3(0.039, 0.094, 0.133);   // near-ink   #0A1822
+  vec3 c = mix(c0, c1, smoothstep(0.00, 0.14, d));
+  c = mix(c, c2, smoothstep(0.14, 0.34, d));
+  c = mix(c, c3, smoothstep(0.34, 0.54, d));
+  c = mix(c, c4, smoothstep(0.54, 0.76, d));
+  c = mix(c, c5, smoothstep(0.74, 0.97, d));
+  return c;
+}
+
+void main(){
+  vec2 fc = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
+  float H = uRes.y;
+  float px = 1.0 / H;                                  // one device pixel, in band-height units
+  vec2 p = (fc - vec2(uRes.x * 0.5, 0.0)) / H;
+  float t = uT;
+
+  /* ripples from touches: a travelling ring packet; it warps the light and lifts the surface */
+  vec2 disp = vec2(0.0); float rh = 0.0;
+  for (int i = 0; i < 5; i++) {
+    vec4 r = uRip[i];
+    float age = t - r.z;
+    if (age > 0.0 && age < 5.0) {
+      vec2 dv = p - r.xy; float d = length(dv);
+      float w = d - age * 0.34;
+      float h = sin(w * 44.0) * exp(-w * w * 70.0) * exp(-age * 0.85) * r.w / (1.0 + d * 3.5);
+      disp += dv / (d + 1e-4) * h; rh += h;
+    }
+  }
+
+  /* waterline: three slow sines, a little ripple */
+  float wl = WL + 0.0042 * sin(p.x * 9.0 + t * 0.8) + 0.0028 * sin(p.x * 17.0 - t * 1.15 + 1.7)
+                + 0.0016 * sin(p.x * 33.0 + t * 1.9 + 0.4) - 0.011 * rh;
+  float below = smoothstep(-px, px, p.y - wl);
+
+  /* water colour by depth (the edges sit a little deeper than the middle) */
+  float dep = clamp((p.y - WL) / (1.0 - WL) + 0.10 * smoothstep(0.5, 1.9, abs(p.x)), 0.0, 1.0);
+  vec3 water = ramp(dep);
+
+  /* god rays: diverge from a point above the surface, slow and soft, strongest just under it */
+  float ang = (p.x + 0.10) / (p.y + 0.60);
+  float rayA = sin(ang * 13.0 + t * 0.21 + 1.7 * sin(ang * 3.1 - t * 0.12));
+  float rayB = sin(ang * 27.0 - t * 0.16 + 2.0);
+  float ray = smoothstep(0.42, 1.0, 0.5 + 0.5 * (0.62 * rayA + 0.38 * rayB));
+  float rayFade = exp(-dep * 2.8) / (1.0 + 0.55 * p.x * p.x);
+  water += vec3(0.62, 0.92, 1.0) * ray * ray * 0.28 * rayFade;
+  /* a wash of light under the surface */
+  water += vec3(0.30, 0.55, 0.62) * 0.08 * exp(-(p.y - wl) * 7.0) / (1.0 + 0.3 * p.x * p.x);
+
+  /* the warp that bends all the light: slow swell plus the ripples */
+  vec2 warp = 0.045 * vec2(sin(p.y * 7.0 + t * 0.6) + 0.5 * sin(p.y * 13.0 - t * 0.9),
+                           sin(p.x * 6.0 - t * 0.5) + 0.5 * sin(p.x * 11.0 + t * 0.7)) + 0.075 * disp;
+
+  /* the iceberg's silhouette, seen through the moving water */
+  float uw = smoothstep(WL - 0.012, WL + 0.03, p.y);
+  vec2 shim = 0.0035 * vec2(sin(p.y * 29.0 + t * 1.3), sin(p.x * 23.0 - t * 1.1));
+  vec2 pb = p + (shim + 0.05 * disp) * uw;             // seen through moving water
+  float sd = 1.0;
+  if (abs(pb.x) < 0.78 && pb.y > 0.0 && pb.y < 0.95) sd = sdBerg(pb);
+  float sdpx = sd * H;
+
+  /* the water's own caustics: a faint net that fades with depth (skipped where it can't be seen: deep, or behind the ice) */
+  if (dep < 0.6 && sd > -0.02) {
+    water += vec3(0.80, 0.97, 1.0) * causticLite(p + warp, t) * 0.26 * exp(-dep * 4.0);
+  }
+
+  /* marine snow */
+  for (int k = 0; k < 2; k++) {
+    float sc = k == 0 ? 9.0 : 15.0;
+    vec2 q = p * sc + vec2(t * (k == 0 ? 0.02 : -0.03), -t * (k == 0 ? 0.045 : 0.07)) + float(k) * 17.0;
+    vec2 id = floor(q); vec2 fq = fract(q) - 0.5;
+    vec2 o = (hash22(id) - 0.5) * 0.7;
+    float rad = 0.035 + 0.07 * hash12(id + 7.0);
+    float on = step(0.5, hash12(id + 3.0));
+    float tw = 0.65 + 0.35 * sin(t * 1.4 + hash12(id) * 40.0);
+    water += vec3(0.8, 0.96, 1.0) * smoothstep(rad, rad * 0.25, length(fq - o)) * on * tw * (0.34 - 0.2 * dep);
+  }
+
+  vec3 col = mix(vec3(1.0), water, below);
+
+  /* ---------------- the iceberg ---------------- */
+  if (sd < 0.06) {
+    bool sub = p.y > wl;
+    vec3 bc;
+    float inA;
+    if (sub) {
+      float dd = clamp((pb.y - WL) / 0.65, 0.0, 1.0);
+      vec4 v = voroS(vec2(pb.x * 0.92 + pb.y * 0.30, pb.y * 1.12 - pb.x * 0.18) * 4.6 + 3.7);
+      float fh = hash12(v.zw);
+      float edgePx = (v.y - v.x) * 0.5 * H / 4.6;
+      /* lightness: bright near the surface, each facet its own plane, darker (and bluer) with depth */
+      float L = (1.0 - 0.80 * dd) * (0.74 + 0.40 * fh);
+      vec3 cA = vec3(0.10, 0.50, 0.68), cB = vec3(0.42, 0.80, 0.92), cC = vec3(0.90, 0.985, 1.0);
+      bc = mix(mix(cA, cB, smoothstep(0.0, 0.5, L)), cC, smoothstep(0.5, 1.05, L));
+      bc = mix(bc, water, 0.10 * dd + 0.30 * dd * dd);
+      /* strata: faint horizontal banding in the ice */
+      bc += vec3(0.03, 0.06, 0.07) * sin((pb.y + 0.03 * sin(pb.x * 9.0)) * 70.0 + fh * 6.0);
+      /* caustics land on the facets: each facet is a different plane, so the pattern breaks at its edges */
+      float cb = caustic(pb * 0.9 + hash22(v.zw) * 9.0 + warp * 0.6, t);
+      bc += vec3(0.80, 1.0, 1.0) * cb * (0.48 - 0.22 * dd);
+      /* refracted facet edges */
+      bc = mix(bc, vec3(0.93, 1.0, 1.0), (1.0 - smoothstep(0.3, 1.4, edgePx)) * 0.55);
+      /* edge glow inside the silhouette, and the crisp rim */
+      bc += vec3(0.30, 0.75, 0.88) * 0.30 * exp(min(sdpx, 0.0) / 6.0);
+      bc = mix(bc, vec3(0.96, 1.0, 1.0), (1.0 - smoothstep(0.3, 1.3, abs(sdpx))) * 0.85);
+      inA = 0.88;
+    } else {
+      vec4 v = voroS(vec2(pb.x * 0.9 + pb.y * 0.3, pb.y * 1.1 - pb.x * 0.2) * 10.0 + 1.3);
+      float fh = hash12(v.zw);
+      float edgePx = (v.y - v.x) * 0.5 * H / 10.0;
+      bc = mix(vec3(1.0), vec3(0.62, 0.82, 0.91), fh * fh * 0.85 + 0.05);
+      bc = mix(bc, vec3(0.059, 0.490, 0.667), (1.0 - smoothstep(0.3, 1.2, edgePx)) * 0.45);
+      bc = mix(bc, vec3(0.059, 0.490, 0.667), (1.0 - smoothstep(0.5, 1.4, abs(sdpx))) * 0.92);
+      inA = 1.0;
+    }
+    float inside = 1.0 - smoothstep(-0.7, 0.7, sdpx);
+    /* a cold halo just outside the hull */
+    if (sub) col += vec3(0.30, 0.70, 0.85) * 0.16 * exp(-max(sdpx, 0.0) / 8.0) * (1.0 - inside) * below;
+    col = mix(col, bc, inside * inA);
+  }
+
+  /* the rings themselves: light crests, dim troughs */
+  col += vec3(0.60, 0.90, 1.0) * rh * 0.30 * below;
+
+  /* the waterline itself: a thin blue hairline that breaks up a little as it moves */
+  float lineD = (p.y - wl) * H;
+  float lineA = 0.55 + 0.45 * sin(p.x * 21.0 + t * 0.7) * sin(p.x * 7.3 - t * 0.4);
+  col = mix(col, vec3(0.059, 0.490, 0.667), (1.0 - smoothstep(0.35, 1.15, abs(lineD))) * lineA * 0.9);
+
+  /* floor: slightly darker in the lower corners, dithered so the deep gradient never bands */
+  col *= 1.0 - 0.18 * smoothstep(0.9, 2.2, abs(p.x)) * smoothstep(0.4, 1.0, p.y);
+  col = mix(col, vec3(0.039, 0.094, 0.133), smoothstep(0.93, 1.0, p.y));   // exactly the footer's colour at the floor
+  col += (hash12(gl_FragCoord.xy + fract(t) * 91.7) - 0.5) / 255.0;
+  gl_FragColor = vec4(col, 1.0);
+}
+`;
+
+  let gl = null, prog = null, uRes, uT, uRip;
+  let cssW = 1, cssH = 1, quality = 1;
+  let visible = true, raf = 0, glOK = false;
+  const t0 = performance.now();
+  const clock = () => (performance.now() - t0) / 1000 + 3.0;
+  const rips = new Float32Array(20).fill(0);
+  for (let i = 0; i < 5; i++) rips[i * 4 + 2] = -100;
+  let ripI = 0;
+
+  function initGL() {
+    try {
+      gl = canvas.getContext('webgl', { antialias: false, alpha: false, depth: false, stencil: false, powerPreference: 'low-power' })
+        || canvas.getContext('experimental-webgl');
+    } catch (e) { gl = null; }
+    if (!gl) return false;
+    const sh = (type, src) => {
+      const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.warn(gl.getShaderInfoLog(s)); return null; }
+      return s;
+    };
+    const vs = sh(gl.VERTEX_SHADER, VS), fs = sh(gl.FRAGMENT_SHADER, FS);
+    if (!vs || !fs) return false;
+    prog = gl.createProgram(); gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { console.warn(gl.getProgramInfoLog(prog)); return false; }
+    gl.useProgram(prog);
+    const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog, 'aPos'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    uRes = gl.getUniformLocation(prog, 'uRes'); uT = gl.getUniformLocation(prog, 'uT'); uRip = gl.getUniformLocation(prog, 'uRip');
+    return true;
+  }
+
+  function resize() {
+    const r = band.getBoundingClientRect();
+    cssW = Math.max(1, r.width); cssH = Math.max(1, r.height);
+    let s = Math.min(window.devicePixelRatio || 1, 2) * quality;
+    const n = cssW * cssH * s * s;
+    if (n > PIXEL_BUDGET) s *= Math.sqrt(PIXEL_BUDGET / n);
+    const w = Math.max(1, Math.round(cssW * s)), h = Math.max(1, Math.round(cssH * s));
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    gl.viewport(0, 0, w, h);
+  }
+
+  function draw(t) {
+    gl.uniform2f(uRes, canvas.width, canvas.height);
+    gl.uniform1f(uT, t);
+    gl.uniform4fv(uRip, rips);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    if (band.dataset.gl !== 'on') band.dataset.gl = 'on';
+  }
+
+  /* ---- frame governor: if the GPU cannot hold ~40fps, shed resolution, then frame rate ---- */
+  let last = 0, ema = 16.7, slow = 0, halfRate = false, skip = false;
+  function frame(ts) {
+    raf = requestAnimationFrame(frame);
+    if (last) {
+      const dt = ts - last;
+      if (dt < 120) {
+        ema += (dt - ema) * 0.08;
+        slow = ema > (halfRate ? 50 : 27) ? slow + 1 : 0;
+        if (slow > 45) {
+          slow = 0;
+          if (quality > 0.55) { quality *= 0.8; resize(); } else { halfRate = true; }
+        }
+      }
+    }
+    last = ts;
+    if (halfRate) { skip = !skip; if (skip) return; }
+    draw(clock());
+  }
+
+  function still() { if (glOK) { resize(); draw(STILL_T); } }
+
+  function sync() {
+    const run = glOK && !reduceMQ.matches && visible && !document.hidden;
+    if (run && !raf) { last = 0; raf = requestAnimationFrame(frame); }
+    else if (!run && raf) { cancelAnimationFrame(raf); raf = 0; }
+    if (glOK && reduceMQ.matches) still();
+  }
+
+  /* ---- touch the water ---- */
+  let lastRip = { x: -1e3, y: -1e3, t: 0 };
+  function ripple(e, strength) {
+    if (!glOK || reduceMQ.matches) return;
+    const r = canvas.getBoundingClientRect();
+    const x = (e.clientX - r.left - r.width / 2) / r.height;
+    const y = (e.clientY - r.top) / r.height;
+    const i = ripI * 4; ripI = (ripI + 1) % 5;
+    rips[i] = x; rips[i + 1] = y; rips[i + 2] = clock(); rips[i + 3] = strength;
+    lastRip = { x: e.clientX, y: e.clientY, t: performance.now() };
+  }
+  canvas.addEventListener('pointerdown', (e) => ripple(e, 1.0));
+  canvas.addEventListener('pointermove', (e) => {
+    const dx = e.clientX - lastRip.x, dy = e.clientY - lastRip.y;
+    if (performance.now() - lastRip.t > 110 && dx * dx + dy * dy > 34 * 34) ripple(e, e.buttons ? 0.8 : 0.5);
+  });
+
+  /* ---- boot ---- */
+  glOK = initGL();
+  if (glOK) {
+    resize();
+    canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); glOK = false; delete band.dataset.gl; sync(); });
+    new ResizeObserver(() => { if (!glOK) return; resize(); if (!raf) draw(reduceMQ.matches ? STILL_T : clock()); }).observe(band);
+    new IntersectionObserver((en) => { visible = en[en.length - 1].isIntersecting; sync(); }, { threshold: 0 }).observe(band);
+    document.addEventListener('visibilitychange', sync);
+    (reduceMQ.addEventListener ? reduceMQ.addEventListener.bind(reduceMQ, 'change') : reduceMQ.addListener.bind(reduceMQ))(sync);
+    if (reduceMQ.matches) still(); else draw(clock());
+    sync();
+  }
+})();
+</script>
+</body>
+</html>

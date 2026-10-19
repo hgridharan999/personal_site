@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Lab: Prayer flags</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Hanken+Grotesk:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ink: #111111;
+    --muted: #5C5C5C;
+    --blue: #0F7DAA;
+    --rule: rgba(0, 0, 0, 0.10);
+    --sans: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --gutter: 16px;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; background: #FFFFFF; color: var(--ink); }
+  body {
+    min-height: 100vh; min-height: 100svh;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    font-family: var(--sans); overflow-x: hidden; font-variant-ligatures: none;
+  }
+  .wrap { width: 100%; max-width: calc(1100px + var(--gutter) * 2); margin-inline: auto; padding-inline: var(--gutter); }
+  .cap { margin: 0 0 8px; font: 400 12px/1.4 var(--mono); color: var(--muted); letter-spacing: 0.02em; }
+  .band { position: relative; width: 100%; height: 240px; }
+  .band canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
+  .foot {
+    margin: 0; padding: 14px 0 24px; border-top: 1px solid var(--rule);
+    font: 400 12px/1.7 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+    text-wrap: balance;
+  }
+  @media (min-width: 768px) { .band { height: 300px; } }
+  @media (min-width: 1100px) { .band { height: 340px; } }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <p class="cap">Lab / Prayer flags: sweep across to send a gust</p>
+  <div class="band" id="band"><canvas id="c" aria-hidden="true"></canvas></div>
+  <p class="foot">Contour interval 1 year · Last updated Oct 2026</p>
+</main>
+
+<script>
+/* Prayer flags.
+   Each flag is a small cloth: a (COLS+1) x (ROWS+1) grid of Verlet points with distance
+   constraints (structural, shear, bend), pinned along its top edge to a catenary rope.
+   The cloth lives in 3D (x, y, z, z pointing away from the viewer) and is drawn through a
+   shallow oblique projection, so wind that pushes it in depth reads as billow and ripple.
+   Wind is smooth noise (a slow "weather" envelope, gusts that travel down the strand, and
+   fine turbulence). The aerodynamic force on each point is along its surface normal.
+   Debug: append #t=600 to pre-step the simulation; #t=600,gust fires a gust first. */
+(() => {
+  'use strict';
+
+  const band = document.getElementById('band');
+  const cv = document.getElementById('c');
+  const ctx = cv.getContext('2d');
+  const reduceMQ = matchMedia('(prefers-reduced-motion: reduce)');
+
+  /* ---------------- constants ---------------- */
+  const INK = '#111111';
+  const BLUE = [15, 125, 170];
+  const PAPER = ['#EEEBE4', '#E3D6CD', '#D7DDD4', '#E6DFCB'];   /* stone white, clay, sage, ochre: barely tinted */
+  const COLS = 6, ROWS = 5, SLOT = 8;                        /* rope samples per flag slot: 6 cells + 2 gap */
+  const DT = 1 / 120;                                        /* fixed physics step */
+  const GRAV = 1500;                                         /* px / s^2 */
+  const DAMP = 0.9985;
+  const AERO = 5;                                            /* 1/s: acceleration per unit of normal wind speed */
+  const WIND_PX = 340;                                       /* px / s at gust level 1 */
+  const ITER = 4;
+  const PX = 0.5, PY = -0.3;                                 /* oblique projection of z */
+  const LIGHT = norm3(-0.4, -0.55, -0.75);
+  const LEVELS = 12;
+
+  /* ---------------- helpers ---------------- */
+  function norm3(x, y, z) { const l = Math.hypot(x, y, z); return [x / l, y / l, z / l]; }
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  function rng(seed) {
+    return () => {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  /* smooth value noise */
+  const PT = new Uint8Array(512), VAL = new Float32Array(256);
+  (() => {
+    const r = rng(1234), p = [];
+    for (let i = 0; i < 256; i++) p.push(i);
+    for (let i = 255; i > 0; i--) { const j = (r() * (i + 1)) | 0; const t = p[i]; p[i] = p[j]; p[j] = t; }
+    for (let i = 0; i < 512; i++) PT[i] = p[i & 255];
+    for (let i = 0; i < 256; i++) VAL[i] = r() * 2 - 1;
+  })();
+  const fade = (t) => t * t * t * (t * (t * 6 - 15) + 10);
+  function noise1(x) {
+    const xi = Math.floor(x), f = x - xi;
+    const a = VAL[PT[xi & 255]], b = VAL[PT[(xi + 1) & 255]];
+    return a + (b - a) * fade(f);
+  }
+  function noise2(x, y) {
+    const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+    const X = xi & 255, Y = yi & 255;
+    const a = VAL[PT[PT[X] + Y]], b = VAL[PT[PT[X + 1] + Y]];
+    const c = VAL[PT[PT[X] + Y + 1]], d = VAL[PT[PT[X + 1] + Y + 1]];
+    const u = fade(xf), v = fade(yf);
+    return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+  }
+
+  /* ---------------- state ---------------- */
+  let W = 0, H = 0, dpr = 1;
+  let reduced = reduceMQ.matches;
+  let still = reduced;               /* still = frozen light-breeze wind */
+  let simT = 0, intro = 1;
+  let flags = [], N = 0, M = 0;
+  let ropeX = null, ropeY = null, sway = null;
+  let staticCv = null;
+  let poles = null;
+  const packets = [];
+  const img = new Image();
+  let imgReady = false;
+
+  /* ---------------- wind ---------------- */
+  function gustLevel(x, t) {
+    if (still) return 0.34 + 0.17 * noise1(x * 0.011 + 3.1);
+    const env = 0.5 + 0.5 * noise1(t * 0.13 + 11.3);                     /* slow weather, 0..1 */
+    const g = noise2(x * 0.0045 - t * 0.55, t * 0.11 + 5.1);             /* travels to the right at ~120 px/s */
+    let s = 0.26 + 0.28 * env + Math.max(0, g + 0.15) * (0.35 + 0.65 * env) * 0.9;
+    for (let k = 0; k < packets.length; k++) {
+      const p = packets[k], d = (x - p.x) / p.w;
+      s += p.amp * Math.exp(-d * d);
+    }
+    return Math.min(1.6, s) * intro;
+  }
+  function packetPush(x) {            /* signed lateral push from pointer gusts */
+    let v = 0;
+    for (let k = 0; k < packets.length; k++) {
+      const p = packets[k], d = (x - p.x) / p.w;
+      v += p.dir * p.amp * Math.exp(-d * d);
+    }
+    return v;
+  }
+
+  /* ---------------- geometry ---------------- */
+  function build() {
+    const r = rng(42);
+    const xL = Math.round(W * 0.05), xR = Math.round(W * 0.95);
+    const groundY = H - 18;
+    const topY = Math.round(H * 0.44);
+    const sag = H * 0.14;
+    const w = (xR - xL) / 2, xm = (xL + xR) / 2;
+    const a = (w * w) / (2 * sag);
+    const K = 800, tx = new Float32Array(K + 1), ty = new Float32Array(K + 1), cum = new Float32Array(K + 1);
+    for (let i = 0; i <= K; i++) {
+      tx[i] = xL + ((xR - xL) * i) / K;
+      ty[i] = topY + a * (Math.cosh(w / a) - Math.cosh((tx[i] - xm) / a));
+      if (i) cum[i] = cum[i - 1] + Math.hypot(tx[i] - tx[i - 1], ty[i] - ty[i - 1]);
+    }
+    N = clamp(Math.round((xR - xL) / 58), 8, 15);
+    const h = cum[K] / (SLOT * N + 2);
+    M = SLOT * N + 3;
+    ropeX = new Float32Array(M); ropeY = new Float32Array(M); sway = new Float32Array(M);
+    let k = 0;
+    for (let m = 0; m < M; m++) {
+      const s = Math.min(m * h, cum[K]);
+      while (k < K - 1 && cum[k + 1] < s) k++;
+      const f = (s - cum[k]) / Math.max(1e-6, cum[k + 1] - cum[k]);
+      ropeX[m] = tx[k] + (tx[k + 1] - tx[k]) * f;
+      ropeY[m] = ty[k] + (ty[k + 1] - ty[k]) * f;
+    }
+    const flagW = COLS * h, flagH = flagW * 0.92, rowH = flagH / ROWS;
+    const blueIdx = Math.round(N * 0.6);
+    flags = [];
+    for (let n = 0; n < N; n++) {
+      flags.push(makeFlag(n, SLOT * n + 2, h, rowH, n === blueIdx, r));
+    }
+    poles = { xL, xR, topY, groundY, lean: Math.max(5, W * 0.006) };
+    // initial pose: cloth hangs straight down from the rope with a hair of depth noise
+    for (const f of flags) {
+      for (let j = 0; j <= ROWS; j++) for (let i = 0; i <= COLS; i++) {
+        const q = (j * (COLS + 1) + i) * 3, m = f.top + i;
+        f.P[q] = ropeX[m]; f.P[q + 1] = ropeY[m] + j * rowH; f.P[q + 2] = j ? (r() - 0.5) * 0.6 : 0;
+        f.O[q] = f.P[q]; f.O[q + 1] = f.P[q + 1]; f.O[q + 2] = f.P[q + 2];
+      }
+    }
+  }
+
+  function makeFlag(n, top, h, rowH, isBlue, r) {
+    const pts = (COLS + 1) * (ROWS + 1);
+    const f = {
+      n, top, isBlue, seed: r() * 100,
+      P: new Float32Array(pts * 3), O: new Float32Array(pts * 3), S: new Float32Array(pts * 2),
+      ca: [], cb: [], cr: [], cwa: [], cwb: [],
+      wz: 0, wx: 0, lvl: 0, xc: 0,
+      bk: [], bn: new Int16Array(LEVELS), fills: [], marks: [], blue: isBlue,
+    };
+    // constraints
+    const id = (i, j) => j * (COLS + 1) + i;
+    const add = (i0, j0, i1, j1, rest, stiff) => {
+      const pa = j0 === 0, pb = j1 === 0;
+      if (pa && pb) return;
+      f.ca.push(id(i0, j0)); f.cb.push(id(i1, j1)); f.cr.push(rest);
+      f.cwa.push(pa ? 0 : (pb ? stiff : stiff * 0.5)); f.cwb.push(pb ? 0 : (pa ? stiff : stiff * 0.5));
+    };
+    const dg = Math.hypot(h, rowH);
+    for (let j = 0; j <= ROWS; j++) for (let i = 0; i <= COLS; i++) {
+      if (i < COLS) add(i, j, i + 1, j, h, 1);
+      if (j < ROWS) add(i, j, i, j + 1, rowH, 1);
+      if (i < COLS && j < ROWS) { add(i, j, i + 1, j + 1, dg, 0.8); add(i + 1, j, i, j + 1, dg, 0.8); }
+      if (i + 2 <= COLS) add(i, j, i + 2, j, 2 * h, 0.35);
+      if (j + 2 <= ROWS) add(i, j, i, j + 2, 2 * rowH, 0.35);
+    }
+    f.ca = Int16Array.from(f.ca); f.cb = Int16Array.from(f.cb);
+    f.cr = Float32Array.from(f.cr); f.cwa = Float32Array.from(f.cwa); f.cwb = Float32Array.from(f.cwb);
+    for (let l = 0; l < LEVELS; l++) f.bk.push(new Int16Array(COLS * ROWS));
+    // colours per shade level
+    const base = isBlue ? null : hexToRgb(PAPER[n % PAPER.length]);
+    for (let l = 0; l < LEVELS; l++) {
+      const b = l / (LEVELS - 1);                              /* 0 dark .. 1 lit */
+      let c;
+      if (isBlue) {
+        const k = 0.5 + 0.5 * b;                                /* deep side toward ink, lit side toward white */
+        c = BLUE.map((v) => Math.round(v * (0.6 + 0.4 * k) + (b > 0.9 ? 22 : 0)));
+      } else {
+        const k = 0.78 + 0.22 * b;
+        c = base.map((v) => Math.round(v * k));
+      }
+      f.fills.push('rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')');
+    }
+    // "printed" lines of text on the cloth, in cloth coordinates
+    const lines = 4 + ((r() * 2) | 0);
+    for (let l = 0; l < lines; l++) {
+      const v = 0.3 + (0.52 * l) / (lines - 1) + (r() - 0.5) * 0.03;
+      let u = 0.16 + r() * 0.05;
+      while (u < 0.8) {
+        const len = 0.1 + r() * 0.22;
+        const u1 = Math.min(0.84, u + len);
+        if (u1 - u > 0.06) f.marks.push([v, u, u1]);
+        u = u1 + 0.05 + r() * 0.05;
+      }
+    }
+    return f;
+  }
+  function hexToRgb(hx) { const n = parseInt(hx.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+
+  /* ---------------- simulation ---------------- */
+  function stepSim() {
+    const t = simT;
+    // rope sways a touch where a gust passes
+    const span = poles.xR - poles.xL;
+    for (let m = 0; m < M; m++) {
+      const u = (ropeX[m] - poles.xL) / span;
+      const bell = Math.sin(Math.PI * clamp(u, 0, 1));
+      sway[m] = gustLevel(ropeX[m], t) * 3.2 * bell;
+    }
+    const dt2 = DT * DT;
+    for (let fi = 0; fi < flags.length; fi++) {
+      const f = flags[fi];
+      const P = f.P, O = f.O, W1 = COLS + 1;
+      // pin the top edge to the rope
+      for (let i = 0; i <= COLS; i++) {
+        const m = f.top + i, q = i * 3;
+        P[q] = O[q] = ropeX[m]; P[q + 1] = O[q + 1] = ropeY[m] + sway[m]; P[q + 2] = O[q + 2] = 0;
+      }
+      const xc = ropeX[f.top + COLS / 2];
+      const S = gustLevel(xc, t);
+      f.lvl = S;
+      const lat = still ? 0.1 + 0.22 * noise1(xc * 0.009 + 9.4) : 0.25 + 0.35 * noise1(t * 0.35 + xc * 0.004);
+      const wz = WIND_PX * S;
+      const wx = WIND_PX * (lat * S + packetPush(xc) * 0.8);
+      const turb = Math.min(1, S * 1.4);
+      const tt = still ? 1.3 : t;
+      for (let j = 1; j <= ROWS; j++) for (let i = 0; i <= COLS; i++) {
+        const k = (j * W1 + i) * 3;
+        const il = i > 0 ? i - 1 : i, ir = i < COLS ? i + 1 : i, jl = j - 1, jh = j < ROWS ? j + 1 : j;
+        const ka = (j * W1 + il) * 3, kb = (j * W1 + ir) * 3, kc = (jl * W1 + i) * 3, kd = (jh * W1 + i) * 3;
+        const ax = P[kb] - P[ka], ay = P[kb + 1] - P[ka + 1], az = P[kb + 2] - P[ka + 2];
+        const bx = P[kd] - P[kc], by = P[kd + 1] - P[kc + 1], bz = P[kd + 2] - P[kc + 2];
+        let nx = ay * bz - az * by, ny = az * bx - ax * bz, nz = ax * by - ay * bx;
+        const nl = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+        nx /= nl; ny /= nl; nz /= nl;
+        const px = P[k], py = P[k + 1], pz = P[k + 2];
+        const vx = (px - O[k]) / DT, vy = (py - O[k + 1]) / DT, vz = (pz - O[k + 2]) / DT;
+        const tn = noise2(px * 0.04 - tt * 1.4 + f.seed, py * 0.045 + tt * 3.1);
+        const tf = noise2(px * 0.11 - tt * 2.6 + f.seed * 3, py * 0.12 + tt * 6.2);
+        const tl = noise2(px * 0.03 + tt * 1.9 + f.seed * 2, py * 0.035 - tt * 2.4 + 7.7);
+        const rx = wx * (1 + 0.5 * tl * turb) - vx;
+        const ry = WIND_PX * 0.3 * S * turb * tl - vy;
+        const rz = wz * (1 + 1.1 * tn * turb + 0.35 * tf * turb) - vz;
+        const dn = (nx * rx + ny * ry + nz * rz) * AERO;
+        const axl = nx * dn, ayl = ny * dn + GRAV, azl = nz * dn;
+        P[k] = px + (px - O[k]) * DAMP + axl * dt2;
+        P[k + 1] = py + (py - O[k + 1]) * DAMP + ayl * dt2;
+        P[k + 2] = pz + (pz - O[k + 2]) * DAMP + azl * dt2;
+        O[k] = px; O[k + 1] = py; O[k + 2] = pz;
+      }
+      // constraints
+      const ca = f.ca, cb = f.cb, cr = f.cr, cwa = f.cwa, cwb = f.cwb, nc = ca.length;
+      for (let it = 0; it < ITER; it++) {
+        for (let c = 0; c < nc; c++) {
+          const a = ca[c] * 3, b = cb[c] * 3;
+          const dx = P[b] - P[a], dy = P[b + 1] - P[a + 1], dz = P[b + 2] - P[a + 2];
+          const d = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6;
+          const diff = (d - cr[c]) / d;
+          const wa = cwa[c] * diff, wb = cwb[c] * diff;
+          P[a] += dx * wa; P[a + 1] += dy * wa; P[a + 2] += dz * wa;
+          P[b] -= dx * wb; P[b + 1] -= dy * wb; P[b + 2] -= dz * wb;
+        }
+      }
+    }
+    simT += DT;
+  }
+
+  /* ---------------- rendering ---------------- */
+  function drawFlag(f) {
+    const P = f.P, S = f.S, W1 = COLS + 1, pts = (COLS + 1) * (ROWS + 1);
+    for (let q = 0; q < pts; q++) {
+      S[q * 2] = P[q * 3] + PX * P[q * 3 + 2];
+      S[q * 2 + 1] = P[q * 3 + 1] + PY * P[q * 3 + 2];
+    }
+    f.bn.fill(0);
+    for (let j = 0; j < ROWS; j++) for (let i = 0; i < COLS; i++) {
+      const a = (j * W1 + i) * 3, b = a + 3, c = a + W1 * 3, d = c + 3;
+      const d1x = P[d] - P[a], d1y = P[d + 1] - P[a + 1], d1z = P[d + 2] - P[a + 2];
+      const d2x = P[c] - P[b], d2y = P[c + 1] - P[b + 1], d2z = P[c + 2] - P[b + 2];
+      const nx = d1y * d2z - d1z * d2y, ny = d1z * d2x - d1x * d2z, nz = d1x * d2y - d1y * d2x;
+      const nl = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+      const dot = Math.abs(nx * LIGHT[0] + ny * LIGHT[1] + nz * LIGHT[2]) / nl;
+      const br = clamp(0.3 + 0.7 * dot / 0.74, 0, 1);
+      const lv = Math.min(LEVELS - 1, (br * LEVELS) | 0);
+      f.bk[lv][f.bn[lv]++] = j * COLS + i;
+    }
+    // a base fill under the facets closes the hairline seams between them
+    outline(f);
+    ctx.fillStyle = f.fills[LEVELS - 4]; ctx.fill();
+    for (let lv = 0; lv < LEVELS; lv++) {
+      const cnt = f.bn[lv];
+      if (!cnt) continue;
+      ctx.beginPath();
+      const arr = f.bk[lv];
+      for (let e = 0; e < cnt; e++) {
+        const cell = arr[e], j = (cell / COLS) | 0, i = cell - j * COLS;
+        const a = (j * W1 + i) * 2, b = a + 2, c = a + W1 * 2, d = c + 2;
+        ctx.moveTo(S[a], S[a + 1]); ctx.lineTo(S[b], S[b + 1]); ctx.lineTo(S[d], S[d + 1]); ctx.lineTo(S[c], S[c + 1]); ctx.closePath();
+      }
+      ctx.fillStyle = f.fills[lv];
+      ctx.fill();
+    }
+    // hatching on the shadowed folds
+    ctx.beginPath();
+    for (let lv = 0; lv < 2; lv++) {
+      const arr = f.bk[lv];
+      for (let e = 0; e < f.bn[lv]; e++) {
+        const cell = arr[e], j = (cell / COLS) | 0, i = cell - j * COLS;
+        const b = (j * W1 + i) * 2 + 2, c = (j * W1 + i) * 2 + W1 * 2;
+        ctx.moveTo(S[b], S[b + 1]); ctx.lineTo(S[c], S[c + 1]);
+      }
+    }
+    ctx.strokeStyle = f.blue ? 'rgba(17,17,17,0.30)' : 'rgba(17,17,17,0.2)';
+    ctx.lineWidth = 0.7; ctx.stroke();
+    // printed text lines, carried by the cloth surface
+    ctx.beginPath();
+    for (let m = 0; m < f.marks.length; m++) {
+      const mk = f.marks[m];
+      surf(f, mk[1], mk[0]); ctx.moveTo(SX, SY);
+      surf(f, (mk[1] + mk[2]) / 2, mk[0]); ctx.lineTo(SX, SY);
+      surf(f, mk[2], mk[0]); ctx.lineTo(SX, SY);
+    }
+    ctx.strokeStyle = f.blue ? 'rgba(255,255,255,0.55)' : 'rgba(17,17,17,0.34)';
+    ctx.lineWidth = 0.9; ctx.stroke();
+    // sewn hem just under the rope
+    ctx.beginPath();
+    for (let i = 0; i <= COLS; i++) { surf(f, i / COLS, 0.1); if (i) ctx.lineTo(SX, SY); else ctx.moveTo(SX, SY); }
+    ctx.strokeStyle = 'rgba(17,17,17,0.42)'; ctx.lineWidth = 0.7; ctx.stroke();
+    // ink outline
+    outline(f);
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.05; ctx.stroke();
+  }
+  function outline(f) {                          /* the cloth's border as the current path */
+    const S = f.S, W1 = COLS + 1;
+    ctx.beginPath();
+    ctx.moveTo(S[0], S[1]);
+    for (let i = 1; i <= COLS; i++) ctx.lineTo(S[i * 2], S[i * 2 + 1]);
+    for (let j = 1; j <= ROWS; j++) { const q = (j * W1 + COLS) * 2; ctx.lineTo(S[q], S[q + 1]); }
+    for (let i = COLS - 1; i >= 0; i--) { const q = (ROWS * W1 + i) * 2; ctx.lineTo(S[q], S[q + 1]); }
+    for (let j = ROWS - 1; j >= 1; j--) { const q = j * W1 * 2; ctx.lineTo(S[q], S[q + 1]); }
+    ctx.closePath();
+  }
+  let SX = 0, SY = 0;
+  function surf(f, u, v) {                       /* point on the cloth at (u, v) in 0..1 */
+    const S = f.S, W1 = COLS + 1;
+    let fi = u * COLS, fj = v * ROWS, i = fi | 0, j = fj | 0;
+    if (i >= COLS) i = COLS - 1;
+    if (j >= ROWS) j = ROWS - 1;
+    fi -= i; fj -= j;
+    const a = (j * W1 + i) * 2, b = a + 2, c = a + W1 * 2, d = c + 2;
+    const w00 = (1 - fi) * (1 - fj), w10 = fi * (1 - fj), w01 = (1 - fi) * fj, w11 = fi * fj;
+    SX = S[a] * w00 + S[b] * w10 + S[c] * w01 + S[d] * w11;
+    SY = S[a + 1] * w00 + S[b + 1] * w10 + S[c + 1] * w01 + S[d + 1] * w11;
+  }
+
+  function draw() {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    if (staticCv) ctx.drawImage(staticCv, 0, 0, W, H);
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    for (let m = 0; m < M; m++) { const y = ropeY[m] + sway[m]; if (m) ctx.lineTo(ropeX[m], y); else ctx.moveTo(ropeX[m], y); }
+    ctx.stroke();
+    for (let k = 0; k < flags.length; k++) drawFlag(flags[k]);
+    // knots where the rope meets the poles
+    ctx.fillStyle = INK;
+    ctx.beginPath(); ctx.arc(ropeX[0], ropeY[0], 2.2, 0, 6.2832); ctx.arc(ropeX[M - 1], ropeY[M - 1], 2.2, 0, 6.2832); ctx.fill();
+  }
+
+  /* the part that never moves: faint mountain, poles, cairns, ground ticks */
+  function buildStatic() {
+    staticCv = document.createElement('canvas');
+    staticCv.width = Math.round(W * dpr); staticCv.height = Math.round(H * dpr);
+    const s = staticCv.getContext('2d');
+    s.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (imgReady) {
+      const sc = Math.max((W * 0.8) / 1280, (H * 1.04) / 482);
+      const pw = 1280 * sc, ph = 482 * sc;
+      const tmp = document.createElement('canvas');
+      tmp.width = Math.round(pw * dpr); tmp.height = Math.round(ph * dpr);
+      const t = tmp.getContext('2d');
+      t.drawImage(img, 0, 0, tmp.width, tmp.height);
+      t.globalCompositeOperation = 'source-in';
+      t.fillStyle = INK; t.fillRect(0, 0, tmp.width, tmp.height);   /* cream lines -> black, alpha kept */
+      const x0 = pw <= W ? (W - pw) / 2 : W * 0.52 - 690 * sc;      /* wide plate: keep the summit in frame */
+      // lay the plate on its own layer so its left and right edges can dissolve into the page
+      const layer = document.createElement('canvas');
+      layer.width = staticCv.width; layer.height = staticCv.height;
+      const l = layer.getContext('2d');
+      l.setTransform(dpr, 0, 0, dpr, 0, 0);
+      l.drawImage(tmp, x0, H - ph + H * 0.03, pw, ph);
+      const g = l.createLinearGradient(0, 0, W, 0);
+      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.1, 'rgba(0,0,0,1)');
+      g.addColorStop(0.9, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      l.globalCompositeOperation = 'destination-in';
+      l.fillStyle = g; l.fillRect(0, 0, W, H);
+      s.globalAlpha = 0.5;
+      s.save(); s.setTransform(1, 0, 0, 1, 0, 0); s.drawImage(layer, 0, 0); s.restore();
+      s.globalAlpha = 1;
+    }
+    const r = rng(9);
+    s.lineCap = 'round'; s.lineJoin = 'round';
+    const { xL, xR, topY, groundY, lean } = poles;
+    for (const side of [-1, 1]) {
+      const tipX = side < 0 ? xL : xR, tipY = topY - 9;
+      const baseX = tipX + side * lean;                       /* base sits outside the tip: poles lean inward */
+      ground(s, baseX, groundY, r);
+      pole(s, baseX, groundY, tipX, tipY);
+      cairn(s, baseX, groundY, r);
+    }
+  }
+  function pole(s, bx, by, tx, ty) {
+    const dx = tx - bx, dy = ty - by, l = Math.hypot(dx, dy), nx = -dy / l, ny = dx / l;
+    const wb = 1.8, wt = 0.9;
+    s.fillStyle = INK; s.beginPath();
+    s.moveTo(bx + nx * wb, by + ny * wb); s.lineTo(tx + nx * wt, ty + ny * wt);
+    s.lineTo(tx - nx * wt, ty - ny * wt); s.lineTo(bx - nx * wb, by - ny * wb); s.closePath(); s.fill();
+    s.beginPath(); s.arc(tx, ty, 2.3, 0, 6.2832); s.fill();
+  }
+  function cairn(s, x, y, r) {
+    const stones = [[0, 0, 11, 4.6], [-1.5, -7.2, 8.2, 3.9], [1, -13.4, 5.2, 3.2]];
+    s.lineWidth = 1.1; s.strokeStyle = INK; s.fillStyle = '#FFFFFF';
+    for (const [dx, dy, rx, ry] of stones) {
+      s.beginPath(); s.ellipse(x + dx, y + dy - 1, rx, ry, (r() - 0.5) * 0.12, 0, 6.2832); s.fill(); s.stroke();
+    }
+  }
+  function ground(s, x, y, r) {
+    s.strokeStyle = INK; s.lineWidth = 1;
+    for (let k = 0; k < 9; k++) {
+      const o = (r() - 0.5) * 96, len = 8 + r() * 24, yy = y + 3 + (k % 3) * 4.2 + r() * 1.5;
+      s.globalAlpha = 0.18 + r() * 0.34;
+      s.beginPath(); s.moveTo(x + o - len / 2, yy); s.lineTo(x + o + len / 2, yy); s.stroke();
+    }
+    s.globalAlpha = 1;
+  }
+
+  /* ---------------- sizing ---------------- */
+  function resize() {
+    const rect = band.getBoundingClientRect();
+    const w = Math.max(1, Math.round(rect.width)), h = Math.max(1, Math.round(rect.height));
+    const d = Math.min(2, window.devicePixelRatio || 1);
+    if (w === W && h === H && d === dpr) return;
+    W = w; H = h; dpr = d;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    packets.length = 0;
+    build();
+    buildStatic();
+    warm();
+    draw();
+  }
+  function warm() {
+    // let the cloth settle into a breeze before the first frame
+    const prevStill = still, prevIntro = intro;
+    still = true; intro = 1;
+    const n = reduced ? 420 : 240;
+    for (let i = 0; i < n; i++) stepSim();
+    still = prevStill; intro = prevIntro;
+    if (!reduced) simT = 0;
+  }
+
+  /* ---------------- loop ---------------- */
+  let visible = false, running = false, raf = 0, last = 0, acc = 0, runTime = 0;
+  const perf = { n: 0, sum: 0, max: 0 };
+  function frame(now) {
+    raf = requestAnimationFrame(frame);
+    const t0 = performance.now();
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now; acc += dt; runTime += dt;
+    intro = reduced ? 1 : Math.min(1, 0.35 + 0.65 * ease(Math.min(1, runTime / 2.2)));
+    updatePackets(dt);
+    let steps = 0;
+    while (acc >= DT && steps < 5) { stepSim(); acc -= DT; steps++; }
+    if (steps === 5) acc = 0;
+    draw();
+    const ms = performance.now() - t0; perf.n++; perf.sum += ms; if (ms > perf.max) perf.max = ms;
+  }
+  const ease = (t) => 1 - Math.pow(1 - t, 3);
+  function updatePackets(dt) {
+    for (let k = packets.length - 1; k >= 0; k--) {
+      const p = packets[k];
+      p.x += p.dir * 460 * dt; p.age += dt; p.w += 70 * dt;
+      p.amp *= Math.exp(-1.9 * dt);
+      if (p.amp < 0.02 || p.x < -120 || p.x > W + 120) packets.splice(k, 1);
+    }
+  }
+  function sync() {
+    const go = visible && !document.hidden && !reduced;
+    if (go && !running) { running = true; last = performance.now(); raf = requestAnimationFrame(frame); }
+    else if (!go && running) { running = false; cancelAnimationFrame(raf); }
+  }
+  new IntersectionObserver((es) => { visible = es[0].isIntersecting; sync(); }, { threshold: 0 }).observe(band);
+  document.addEventListener('visibilitychange', sync);
+
+  /* ---------------- pointer = wind ---------------- */
+  let lpx = null, lpy = 0, lpt = 0, lastEmit = 0;
+  function emit(x, dir, amp) {
+    packets.push({ x, dir, amp, w: 60, age: 0 });
+    if (packets.length > 10) packets.shift();
+  }
+  function onMove(e) {
+    if (reduced) return;
+    const r = cv.getBoundingClientRect();
+    const x = e.clientX - r.left, y = e.clientY - r.top, now = performance.now();
+    if (lpx !== null) {
+      const dt = Math.max(8, now - lpt) / 1000;
+      const vx = (x - lpx) / dt, vy = (y - lpy) / dt, sp = Math.hypot(vx, vy);
+      if (sp > 150 && now - lastEmit > 40) {
+        lastEmit = now;
+        const horiz = Math.abs(vx) > 0.4 * Math.abs(vy);
+        emit(x, horiz ? Math.sign(vx) : 0, Math.min(1.1, sp / 1500) * (horiz ? 1 : 0.7));
+      }
+    }
+    lpx = x; lpy = y; lpt = now;
+  }
+  cv.addEventListener('pointermove', onMove);
+  cv.addEventListener('pointerdown', (e) => { lpx = null; onMove(e); });
+  cv.addEventListener('pointerleave', () => { lpx = null; });
+  cv.addEventListener('pointercancel', () => { lpx = null; });
+
+  /* ---------------- init ---------------- */
+  new ResizeObserver(resize).observe(band);
+  reduceMQ.addEventListener('change', () => {
+    reduced = reduceMQ.matches; still = reduced;
+    W = 0; resize(); sync();
+  });
+  img.onload = () => { imgReady = true; if (W) { buildStatic(); draw(); } };
+  img.src = '../_shared/mountain-plate.png';
+  resize();
+
+  window.__pf = { perf: () => ({ frames: perf.n, avgMs: +(perf.sum / Math.max(1, perf.n)).toFixed(2), maxMs: +perf.max.toFixed(2) }), stats() {
+    let lean = 0, mx = 0, lv = 0;
+    for (const f of flags) {
+      let z = 0; for (let i = 0; i <= COLS; i++) z += f.P[(ROWS * (COLS + 1) + i) * 3 + 2];
+      z /= COLS + 1; lean += z; mx = Math.max(mx, Math.abs(z)); lv += f.lvl;
+    }
+    return { running, meanLeanZ: +(lean / flags.length).toFixed(1), maxLeanZ: +mx.toFixed(1), S: +(lv / flags.length).toFixed(2), flagH: +(flags[0].P[(ROWS * (COLS + 1)) * 3 + 1] - flags[0].P[1]).toFixed(1) };
+  } };
+  // debug: #t=N steps the sim N frames (120 Hz steps), optional ",gust"
+  const dbg = /t=(\d+)(,gust)?/.exec(location.hash);
+  if (dbg) {
+    if (dbg[2]) emit(W * 0.3, 1, 1);
+    for (let i = 0; i < +dbg[1]; i++) { if (i % 2 === 0) updatePackets(1 / 60); stepSim(); }
+    draw();
+    let mx = 0, my = 0;
+    for (const f of flags) for (let q = 0; q < (COLS + 1) * (ROWS + 1); q++) { mx = Math.max(mx, Math.abs(f.P[q * 3 + 2])); if (!isFinite(f.P[q * 3])) my = 1; }
+    document.title = 'maxz=' + mx.toFixed(1) + ' nan=' + my + ' simT=' + simT.toFixed(2);
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,911 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0B0A0A">
+<title>Hari Gridharan — Cornell Dyson ’29</title>
+<meta name="description" content="Dyson Scholar and Loadstone Labs co-founder. Seeking Summer 2027 roles in strategy, investing, BA and PM.">
+<!-- Site icon: the live site's hiker on a dark tile (tab bars can be light). -->
+<link rel="icon" href="../_shared/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="../_shared/favicon-32.png">
+<link rel="apple-touch-icon" href="../_shared/apple-touch-icon.png">
+<!-- Link previews (absolute URLs in the real build). -->
+<meta property="og:title" content="Hari Gridharan — Cornell Dyson ’29">
+<meta property="og:description" content="Dyson Scholar and Loadstone Labs co-founder. Seeking Summer 2027 roles in strategy, investing, BA and PM.">
+<meta property="og:image" content="../_shared/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" as="image" href="../_shared/mountain-plate.webp" type="image/webp" fetchpriority="high">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Hanken+Grotesk:wght@400;500;600;800&family=Instrument+Serif:ital@1&display=swap">
+<style>
+  /* ---- the hiker mark (shared component, copied verbatim) ------------------------------
+     The live site's own hiker art (cut from public/hiker-scene.jpg), revealed by three
+     thick masked strokes in drawing order: hood, then torso + pack, then legs + poles.
+     Pure CSS: fully drawn with JS off and under reduced motion; draws once in 1.2s otherwise. */
+  .hiker { display: block; height: var(--hiker-h, 132px); width: auto; aspect-ratio: 294 / 480; overflow: visible; }
+  .hiker .ink { fill: none; stroke: #fff; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    .hiker .ink { animation: hiker-ink 0.45s cubic-bezier(0.65, 0, 0.35, 1) both; }
+    .hiker .ink-1 { animation-duration: 0.3s; }
+    .hiker .ink-2 { animation-delay: 0.3s; }
+    .hiker .ink-3 { animation-delay: 0.75s; }
+  }
+  @keyframes hiker-ink { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+  /* ---- end hiker mark ----------------------------------------------------------------- */
+
+  :root {
+    --bg: #0B0A0A;
+    --cream: #EDE7DA;
+    --tan: #E8C089;
+    --soft: #C9C4B8;                       /* one-liners, 10.9:1 on bg */
+    --muted: #A39E94;                      /* dates, labels, 7.4:1 on bg */
+    --rule: rgba(237, 231, 218, 0.10);     /* ledger hairline */
+    --rule-head: rgba(237, 231, 218, 0.24);
+    --rule-hover: rgba(237, 231, 218, 0.26);
+    --ul: rgba(237, 231, 218, 0.45);       /* link underline */
+    --ul-tan: rgba(232, 192, 137, 0.55);
+    --outline: rgba(237, 231, 218, 0.55);
+    --sans: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --serif: "Instrument Serif", "Times New Roman", serif;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --gutter: 16px;
+    --datew: 6.75rem;                      /* fixed date column: never squeezes the title */
+    --tri-off: 14px;                       /* benchmark marker distance left of the row */
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--bg); color-scheme: dark; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--cream);
+    font: 400 16px/1.6 var(--sans); font-kerning: normal;
+    -webkit-font-smoothing: antialiased; overflow-wrap: break-word;
+  }
+  h1, h2, h3, p, ul { margin: 0; padding: 0; }
+  ul { list-style: none; }
+  svg.defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+  ::selection { background: var(--tan); color: var(--bg); }
+  a { color: inherit; text-decoration: underline; text-decoration-color: var(--ul); text-decoration-thickness: 1px; text-underline-offset: 0.22em; }
+  a:focus-visible { outline: 2px solid var(--tan); outline-offset: 3px; border-radius: 2px; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+    overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+  }
+  .nw { white-space: nowrap; }
+
+  .wrap { width: 100%; max-width: calc(640px + var(--gutter) * 2); margin-inline: auto; padding-inline: var(--gutter); }
+
+  /* ---------- Header plate: the live site's background mountain, drawn in like a sketch ---------- */
+  .plate { position: relative; margin: 0 calc(var(--gutter) * -1); }
+  .scene { display: block; width: 100%; height: auto; overflow: hidden; opacity: 0.62; }
+  .scene--mtn { aspect-ratio: 1280 / 250; }
+  .scene--full { aspect-ratio: 1536 / 530; }
+  .scene[hidden] { display: none; }
+  .plate::after { content: ""; position: absolute; inset: -1px 0; background: linear-gradient(to bottom, rgba(11, 10, 10, 0) 50%, var(--bg) 97%); pointer-events: none; }
+  .scene .ink { fill: none; stroke: #fff; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
+  @keyframes scene-ink { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+
+  /* ---------- Header: hiker logo beside the lockup, tucked into the foot of the plate ---------- */
+  .top {
+    --hiker-h: 112px;
+    position: relative; z-index: 1;
+    display: grid; grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: "mark name" "aff aff" "seek seek" "act act";
+    column-gap: 16px; align-items: center; margin-top: -22px;
+  }
+  .top .hiker { grid-area: mark; }
+  .name {
+    grid-area: name;
+    display: flex; flex-direction: column; align-items: flex-start;
+    font: 800 clamp(34px, 9.4vw, 48px)/1 var(--sans); letter-spacing: -0.03em;
+  }
+  .hari { font: italic 400 1.2em/0.95 var(--serif); letter-spacing: 0; color: var(--tan); }
+  .sur { text-transform: uppercase; white-space: nowrap; }
+  .aff { grid-area: aff; margin-top: 16px; color: var(--soft); }
+  .aff-a { display: block; }
+  .aff-sep { display: none; }
+  .seek { grid-area: seek; margin-top: 8px; color: var(--tan); font-weight: 500; text-wrap: balance; }
+  .act { grid-area: act; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 12px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 44px; padding: 0 18px; border: 1px solid transparent; border-radius: 4px;
+    font: 600 15px/1 var(--sans); text-decoration: none;
+  }
+  .btn-fill { background: var(--tan); border-color: var(--tan); color: var(--bg); }
+  .btn-line { border-color: var(--outline); color: var(--cream); }
+  .soc { display: inline-flex; align-items: center; margin-left: -8px; }
+  .soc a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; font-size: 15px; color: var(--soft); }
+  .soc .dot { color: var(--muted); }
+
+  /* ---------- Contour dividers (decorative): two minor lines and one index line ---------- */
+  .contour { display: block; width: 100%; height: 34px; margin: 8px 0 10px; fill: none; stroke: var(--cream); }
+  .cm, .ci { fill: none; stroke: var(--cream); stroke-linecap: round; }
+  .cm { stroke-width: 0.9; stroke-opacity: 0.08; }
+  .ci { stroke-width: 1.4; stroke-opacity: 0.13; }
+
+  /* ---------- Sections: spacing and the label's hairline do the dividing ---------- */
+  main > section { padding-top: 40px; }
+  main > section:first-child { padding-top: 28px; }
+
+  /* ---------- Section labels: waypoints ---------- */
+  .head {
+    padding-bottom: 7px; border-bottom: 1px solid var(--rule-head);
+    font: 500 12px/1.7 var(--mono); letter-spacing: 0.14em; text-transform: uppercase;
+    scroll-margin-top: 16px;
+  }
+  .head .idx { color: var(--muted); }
+
+  /* ---------- Ledger rows ---------- */
+  .row {
+    position: relative; display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--datew);
+    grid-template-areas: "ttl when" "line line";
+    column-gap: 16px; align-items: baseline; padding: 12px 0 13px;
+  }
+  .row + .row { border-top: 1px solid var(--rule); }
+  .ttl { grid-area: ttl; font: 600 16px/1.4 var(--sans); text-wrap: balance; }
+  .ttl .role { font-weight: 500; }
+  .loc {
+    display: block; margin-top: 2px;
+    font: 400 12px/1.4 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+  }
+  .when {
+    grid-area: when; text-align: right; white-space: nowrap; color: var(--muted);
+    font: 400 12.5px/1.4 var(--mono); font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1;
+  }
+  .line { grid-area: line; margin-top: 1px; color: var(--soft); text-wrap: pretty; }
+  .lead { color: var(--tan); font-weight: 500; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+  a.lead { text-decoration-color: var(--ul-tan); }
+  .row--solo { grid-template-areas: "line line"; }
+  .row--solo .line { margin-top: 0; }
+
+  /* ---------- Expandable rows (Henrik-style <details>): summary stays scannable, the body opens below ---------- */
+  .row.xp { display: block; padding: 0; }
+  .xp summary {
+    display: grid; grid-template-columns: minmax(0, 1fr) var(--datew);
+    grid-template-areas: "ttl when" "line line";
+    column-gap: 16px; align-items: baseline; padding: 12px 0 13px;
+    list-style: none; cursor: pointer; border-radius: 2px;
+  }
+  .xp summary::-webkit-details-marker { display: none; }
+  .xp summary:focus-visible { outline: 2px solid var(--tan); outline-offset: 4px; }
+  .xp .ttl { display: block; }
+  .xp .when, .xp .line { display: block; }
+  /* the open/close mark: a small tan plus after the title that turns to a cross */
+  .xp summary .co::after {
+    content: ""; display: inline-block; width: 9px; height: 9px; margin-left: 9px; vertical-align: 0.06em;
+    background: linear-gradient(var(--tan), var(--tan)) center / 100% 1.5px no-repeat,
+                linear-gradient(var(--tan), var(--tan)) center / 1.5px 100% no-repeat;
+    opacity: 0.6;
+  }
+  .xp details[open] summary .co::after { opacity: 1; transform: rotate(45deg); }
+  .xp .body {
+    margin: -2px 0 16px; padding: 2px 0 2px 16px;
+    border-left: 1px solid rgba(232, 192, 137, 0.45);
+    color: var(--soft);
+  }
+  .xp .body p + p { margin-top: 8px; }
+  .xp .meta { font: 400 12.5px/1.7 var(--mono); color: var(--muted); }
+  .xp .meta a { color: var(--cream); }
+
+  /* theses */
+  .kicker { margin-top: 12px; font: 400 12.5px/1.6 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .beliefs { margin: 4px 0 0; padding: 0; list-style: none; }
+  .beliefs li { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr); align-items: baseline; padding: 11px 0 12px; }
+  .beliefs li + li { border-top: 1px solid var(--rule); }
+  .beliefs .n { font: 400 12.5px/1 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .beliefs p { color: var(--soft); text-wrap: pretty; }
+  .xp .body .beliefs li { padding: 7px 0 8px; }
+  .xp .body .beliefs li:first-child { padding-top: 2px; }
+  .theses-more { margin-top: 14px; border-top: 1px solid var(--rule); }
+  /* essays: title and its one-line description on the left, the date on the right */
+  .rl.rl--essay { align-items: flex-start; padding: 11px 0 12px; }
+  .rl.rl--essay .et { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .rl.rl--essay .ed { color: var(--muted); font-size: 15px; line-height: 1.5; text-wrap: pretty; }
+  .rl.rl--essay .val { text-decoration: none; white-space: nowrap; line-height: 22px; }
+
+  /* mockup-only: content still needed from Hari */
+  .tk {
+    display: inline-block; padding: 1px 8px; border: 1px dashed var(--tan); border-radius: 3px;
+    font: 400 12.5px/1.6 var(--mono); color: var(--tan);
+  }
+
+  /* rows with a standalone action link in the right column */
+  .row--act { grid-template-areas: "ttl act" "line line"; }
+  .go {
+    grid-area: act; align-self: center; justify-self: end; margin-block: -11px;
+    display: inline-flex; align-items: center; min-height: 44px;
+    font-weight: 500; font-size: 15px; white-space: nowrap;
+  }
+
+  /* ELSEWHERE: label / value rows */
+  .row--link { display: block; padding: 0; }
+  .rl {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    min-height: 44px; padding: 8px 0 9px; text-decoration: none;
+  }
+  .rl .lab { font-weight: 500; }
+  .rl .val {
+    text-align: right; overflow-wrap: anywhere; color: var(--muted);
+    font: 400 12.5px/1.5 var(--mono);
+    text-decoration: underline; text-decoration-color: var(--ul); text-decoration-thickness: 1px; text-underline-offset: 0.25em;
+  }
+
+  /* ---------- Footer ---------- */
+  .foot { padding-bottom: 48px; }
+  .foot .contour { margin-top: 4px; }
+  .foot-line {
+    display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 16px;
+    font: 400 12px/1.7 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+  }
+  .foot-line .part { display: block; }
+  .foot-line .sep { display: none; }
+  .scale { display: inline-flex; align-items: center; gap: 8px; }
+  .bar {
+    display: block; width: 64px; height: 6px; border: 1px solid var(--muted);
+    background: repeating-linear-gradient(90deg, var(--muted) 0 16px, transparent 16px 32px);
+  }
+
+  /* ---------- Wider viewports ---------- */
+  @media (min-width: 600px) {
+    :root { --datew: 7.5rem; }
+    .plate { margin-inline: 0; padding-top: 24px; }
+    .top {
+      --hiker-h: 140px;
+      grid-template-areas: "mark name" "mark aff" "seek seek" "act act";
+      column-gap: 24px; margin-top: -40px;
+    }
+    .name { flex-direction: row; align-items: baseline; column-gap: 0.2em; align-self: end; }
+    .aff { margin-top: 8px; align-self: start; text-wrap: balance; }
+    .aff-a { display: inline; }
+    .aff-sep { display: inline; }
+    .seek { margin-top: 22px; }
+    .act { margin-top: 14px; }
+    .loc { display: inline-block; margin: 0 0 0 0.7em; }
+    .foot-line .part { display: inline; }
+    .foot-line .sep { display: inline; }
+  }
+  @media (min-width: 768px) {
+    :root { --gutter: 32px; --tri-off: 26px; }
+  }
+
+  /* ---------- Desktop pointers only: benchmark marker, company name, hairline ---------- */
+  @media (hover: hover) and (pointer: fine) {
+    .row:hover::before, .row:focus-within::before {
+      content: ""; position: absolute; left: calc(var(--tri-off) * -1); top: 18px;
+      width: 10px; height: 9px; pointer-events: none;
+      background: radial-gradient(circle at 50% 68%, var(--bg) 0 1.1px, transparent 1.3px), var(--tan);
+      clip-path: polygon(50% 0, 0 100%, 100% 100%);
+    }
+    .row--solo:hover::before, .row--solo:focus-within::before { top: 20px; }
+    .row--link:hover::before, .row--link:focus-within::before { top: 17px; }
+    .row:hover, .row:focus-within { border-top-color: var(--rule-hover); }
+    .row:hover + .row, .row:focus-within + .row { border-top-color: var(--rule-hover); }
+    .row:hover .co, .row:focus-within .co { color: var(--tan); }
+    .xp summary:hover .co::after { opacity: 1; }
+    a:hover { color: var(--tan); text-decoration-color: var(--tan); }
+    .rl:hover { color: inherit; }
+    .rl:hover .val { color: var(--tan); text-decoration-color: var(--tan); }
+    .btn-fill:hover { background: #F1CF9F; border-color: #F1CF9F; color: var(--bg); }
+    .btn-line:hover { border-color: var(--tan); color: var(--tan); }
+  }
+
+  /* ---------- All motion lives here ---------- */
+  @media (prefers-reduced-motion: no-preference) {
+    /* Plate first (ridge left to right, then the slopes), then the hiker logo walks in. */
+    .scene .ink { animation: scene-ink 0.5s cubic-bezier(0.65, 0, 0.35, 1) both; }
+    .scene .i1 { animation-duration: 0.6s; }
+    .scene .i2 { animation-delay: 0.2s; }
+    .scene .i3 { animation-delay: 0.4s; }
+    .scene .i4 { animation-delay: 0.8s; animation-duration: 0.2s; }
+    .scene .i5 { animation-delay: 0.9s; animation-duration: 0.3s; }
+    .scene .i6 { animation-delay: 1.05s; animation-duration: 0.3s; }
+    .scene .i7 { animation-delay: 1.2s; animation-duration: 0.15s; }
+    .top .hiker .ink-1 { animation-delay: 0.45s; }
+    .top .hiker .ink-2 { animation-delay: 0.75s; }
+    .top .hiker .ink-3 { animation-delay: 1.2s; }
+    /* Opening a row: the plus turns, the trail line draws down and the text follows it. */
+    .xp summary .co::after { transition: transform 0.3s var(--ease), opacity 0.2s var(--ease); }
+    .xp details[open] .body { animation: trail-open 0.42s var(--ease) both; }
+    .xp details[open] .body > * { animation: trail-text 0.42s var(--ease) both; }
+    .xp details[open] .body > :nth-child(2) { animation-delay: 0.05s; }
+    .xp details[open] .body > :nth-child(3) { animation-delay: 0.1s; }
+    /* Where supported, the row's height also eases open and closed instead of jumping. */
+    @supports (interpolate-size: allow-keywords) {
+      :root { interpolate-size: allow-keywords; }
+      .xp details::details-content { height: 0; overflow: clip; transition: height 0.38s var(--ease), content-visibility 0.38s allow-discrete; }
+      .xp details[open]::details-content { height: auto; }
+    }
+    a, .btn, .co, .row, .rl .val { transition: color 0.2s var(--ease), background-color 0.2s var(--ease), border-color 0.2s var(--ease), text-decoration-color 0.2s var(--ease); }
+    @media (hover: hover) and (pointer: fine) {
+      .row:hover::before, .row:focus-within::before { animation: tri-in 0.25s var(--ease) both; }
+    }
+  }
+  @keyframes trail-open { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+  @keyframes trail-text { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  @keyframes tri-in { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; transform: none; } }
+
+  /* ---------- Ascent rail: reading the page = climbing Quandary (wide screens only) ----------
+     Not rendered below 1180px (display: none, and the script never starts). Pinned in the right
+     margin, 24px clear of the 640px column; narrows a little between 1180 and ~1260px. */
+  .rail { display: none; }
+  @media (min-width: 1180px) and (min-height: 460px) {
+    .rail.on {
+      display: flex; flex-direction: column; justify-content: center; position: fixed; z-index: 1; top: 0; height: 100vh;
+      left: calc(50% + 344px); width: min(260px, calc(50% - 358px)); pointer-events: none;
+    }
+    .rail.on > * { flex: none; }
+  }
+  @media print { .rail { display: none !important; } }
+  .rail canvas { display: block; width: 100%; height: auto; aspect-ratio: 13 / 10; }
+  .rail nav { display: block; margin-top: 6px; }
+  .rail svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .rail .pa { fill: rgba(237, 231, 218, 0.035); }
+  .rail .pl { fill: none; stroke: rgba(237, 231, 218, 0.34); stroke-width: 1.25; stroke-linejoin: round; }
+  .rail .pca { fill: rgba(232, 192, 137, 0.10); }
+  .rail .pc { fill: none; stroke: var(--tan); stroke-width: 1.75; stroke-linejoin: round; }
+  .rail .pb { fill: none; stroke: var(--rule-head); stroke-width: 1; }
+  .rail .pm { pointer-events: none; }
+  .rail .pm circle:first-child { fill: rgba(232, 192, 137, 0.28); }
+  .rail .pm circle:last-child { fill: var(--tan); }
+  .rail .wp { pointer-events: auto; outline: none; cursor: pointer; text-decoration: none; }
+  .rail .hit { fill: transparent; }
+  .rail .ring { fill: none; stroke: var(--tan); stroke-width: 1.5; opacity: 0; }
+  .rail .wp:focus-visible .ring { opacity: 1; }
+  .rail .tm { fill: none; stroke: rgba(237, 231, 218, 0.28); stroke-width: 1; }
+  .rail .td { fill: var(--bg); stroke: rgba(237, 231, 218, 0.62); stroke-width: 1.25; }
+  .rail .wp.on .tm { stroke: rgba(232, 192, 137, 0.6); }
+  .rail .wp.on .td { fill: var(--tan); stroke: var(--tan); }
+  .rail .tl { font: 500 12px var(--mono); letter-spacing: 0.1em; fill: var(--cream); opacity: 0; pointer-events: none; }
+  .rail .wp:hover .tl, .rail .wp:focus-visible .tl { opacity: 1; }
+  .rail .wp:hover .td, .rail .wp:focus-visible .td { stroke: var(--tan); }
+  .rail .read {
+    margin: 10px 0 0; font: 400 12px/1.5 var(--mono); letter-spacing: 0.08em; text-transform: uppercase;
+    white-space: nowrap; font-variant-numeric: tabular-nums; min-height: 3em;
+  }
+  .rail .r1, .rail .r2 { display: block; }
+  .rail .r1 { color: var(--cream); }
+  .rail .r2 { color: var(--muted); }
+  .rail .read.sum .r1 { color: var(--tan); }
+  @media (prefers-reduced-motion: no-preference) {
+    .rail.on { animation: rail-in 0.8s var(--ease) both; }
+    .rail .tm, .rail .td, .rail .tl, .rail .ring { transition: stroke 0.2s var(--ease), fill 0.2s var(--ease), opacity 0.2s var(--ease); }
+  }
+  @keyframes rail-in { from { opacity: 0; } to { opacity: 1; } }
+</style>
+</head>
+<body>
+
+<!-- Contour lines: fractal-noise terrain, two minor lines around one index line. Reused at different offsets as dividers. -->
+<svg class="defs" width="0" height="0" aria-hidden="true" focusable="false"><defs><g id="topo">
+  <path class="cm" d="M0 11.8q12 -0.7 18 -0.8q6 -0.1 12 0.3q6 0.5 12 0.5q6 0 12 -0.7q6 -0.7 12 -1q6 -0.4 12 -0.4q6 -0.1 12 -0.3q6 -0.2 12 0.1q6 0.3 12 1.2q6 0.9 12 1q6 0.2 12 -0.4q6 -0.6 12 -0.9q6 -0.4 12 -0.8q6 -0.4 12 -1.2q6 -0.7 12 -1q6 -0.2 12 -0.2q6 0.1 12 -0.6q6 -0.7 12 -1.7q6 -1 12 -1.4q6 -0.4 12 -0.5q6 -0.2 12 -0.2q6 0 12 0.8q6 0.8 12 1.8q6 1 12 1.3q6 0.2 12 0.2q6 0 12 0.3q6 0.4 12 0.5q6 0.2 12 0.3q6 0.1 12 0.7q6 0.6 12 1q6 0.4 12 -0.1q6 -0.5 12 -1q6 -0.5 12 -0.4q6 0.1 12 0.1q6 0 12 0.4q6 0.3 12 1.3q6 1 12 1.7q6 0.7 12 0.5q6 -0.2 12 -0.2q6 -0.1 12 0.1q6 0.2 12 0q6 -0.2 12 -0.3q6 -0.1 12 0.1q6 0.2 12 -0.3q6 -0.5 12 -1.8q6 -1.3 12 -2.2q6 -0.9 12 -1.4q6 -0.5 12 -1q6 -0.5 12 -0.5q6 0 12 0.6q6 0.6 12 0.5q6 0 12 -0.5q6 -0.5 12 -0.4q6 0.1 12 0.4q6 0.3 12 0.3q6 0.1 12 0.5q6 0.4 12 0.9q6 0.5 12 0q6 -0.4 12 -1.2q6 -0.8 12 -1q6 -0.2 12 -0.1q6 0 12 0.1q6 0.1 12 0.8q6 0.7 12 1.6q6 0.9 12 1q6 0.1 12 0.2q6 0.1 12 0.8q6 0.7 12 1.3q6 0.6 12 1.1q6 0.4 12 1.2q6 0.7 12 1q6 0.3 12 -0.5q6 -0.8 12 -1.6q6 -0.8 12 -1.1q6 -0.3 12 -0.7q6 -0.4 12 -0.7q6 -0.3 12 -0.1q6 0.2 12 0.2q6 -0.1 12 -0.8q6 -0.7 12 -1.1q6 -0.3 12 0q6 0.3 12 0.4q6 0.1 12 0.3q6 0.2 12 0.6q6 0.4 12 0q6 -0.4 12 -1.4q6 -1.1 12 -1.7q6 -0.6 12 -0.8q6 -0.2 12 -0.5q6 -0.3 12 -0.3q6 0 12 0.4q6 0.4 12 0.2q6 -0.2 12 -0.5q6 -0.4 12 0.1q6 0.5 12 1.3q6 0.9 12 1.6q6 0.7 12 1.6q6 0.9 12 1.8q6 0.9 12 0.8q6 -0.1 12 -0.6q6 -0.5 12 -0.4q6 0.1 12 0.3q6 0.2 12 0q6 -0.1 12 0.1q6 0.2 12 0.3q6 0.1 12 -0.5q6 -0.6 12 -1.1q6 -0.5 12 -0.1q6 0.4 12 0.8q6 0.5 12 0.7q6 0.3 12 0.8q6 0.5 12 0.6q6 0.1 12 -0.8q6 -0.9 12 -1.6q6 -0.7 12 -0.9q6 -0.2 12 -0.6q6 -0.4 12 -1q6 -0.5 12 -0.8q6 -0.2 12 -0.8L1440 5.6"/>
+  <path class="ci" d="M0 22.9q12 -0.8 18 -0.9q6 -0.1 12 0.4q6 0.6 12 0.6q6 0 12 -0.8q6 -0.8 12 -1.2q6 -0.4 12 -0.5q6 -0.1 12 -0.3q6 -0.2 12 0.2q6 0.4 12 1.4q6 1 12 1.2q6 0.2 12 -0.5q6 -0.7 12 -1.1q6 -0.4 12 -0.9q6 -0.5 12 -1.4q6 -0.9 12 -1.1q6 -0.3 12 -0.2q6 0.1 12 -0.7q6 -0.8 12 -1.9q6 -1.2 12 -1.6q6 -0.4 12 -0.6q6 -0.2 12 -0.2q6 0 12 0.9q6 1 12 2.2q6 1.2 12 1.5q6 0.3 12 0.2q6 0 12 0.4q6 0.4 12 0.6q6 0.2 12 0.3q6 0.1 12 0.8q6 0.7 12 1.2q6 0.5 12 -0.1q6 -0.6 12 -1.2q6 -0.6 12 -0.5q6 0.1 12 0.1q6 0.1 12 0.4q6 0.4 12 1.6q6 1.2 12 2q6 0.8 12 0.6q6 -0.2 12 -0.3q6 -0.1 12 0.1q6 0.2 12 0q6 -0.2 12 -0.3q6 -0.1 12 0.1q6 0.3 12 -0.3q6 -0.6 12 -2.1q6 -1.5 12 -2.6q6 -1.1 12 -1.6q6 -0.6 12 -1.2q6 -0.6 12 -0.6q6 0 12 0.7q6 0.7 12 0.6q6 0 12 -0.6q6 -0.5 12 -0.5q6 0.1 12 0.4q6 0.3 12 0.4q6 0.1 12 0.5q6 0.5 12 1q6 0.6 12 0q6 -0.5 12 -1.5q6 -0.9 12 -1.1q6 -0.2 12 -0.1q6 0.1 12 0.2q6 0.1 12 1q6 0.9 12 1.9q6 1 12 1.1q6 0.1 12 0.2q6 0.1 12 0.9q6 0.8 12 1.5q6 0.7 12 1.2q6 0.5 12 1.4q6 0.9 12 1.2q6 0.3 12 -0.6q6 -0.9 12 -1.9q6 -1 12 -1.3q6 -0.3 12 -0.8q6 -0.5 12 -0.8q6 -0.3 12 -0.1q6 0.3 12 0.2q6 -0.1 12 -1q6 -0.9 12 -1.2q6 -0.4 12 0q6 0.3 12 0.4q6 0.1 12 0.3q6 0.2 12 0.7q6 0.5 12 0.1q6 -0.4 12 -1.7q6 -1.3 12 -2q6 -0.7 12 -1q6 -0.2 12 -0.6q6 -0.4 12 -0.4q6 0 12 0.5q6 0.5 12 0.3q6 -0.2 12 -0.6q6 -0.4 12 0.1q6 0.5 12 1.6q6 1 12 1.8q6 0.8 12 1.9q6 1.1 12 2.1q6 1 12 0.9q6 -0.1 12 -0.7q6 -0.6 12 -0.4q6 0.1 12 0.3q6 0.2 12 0q6 -0.1 12 0.1q6 0.2 12 0.4q6 0.2 12 -0.6q6 -0.7 12 -1.3q6 -0.5 12 -0.1q6 0.5 12 1q6 0.5 12 0.9q6 0.3 12 0.9q6 0.6 12 0.7q6 0.1 12 -0.9q6 -1 12 -1.9q6 -0.9 12 -1.1q6 -0.2 12 -0.7q6 -0.5 12 -1.1q6 -0.6 12 -0.9q6 -0.2 12 -0.9L1440 15.6"/>
+  <path class="cm" d="M0 32.4q12 -1 18 -1.2q6 -0.2 12 0.4q6 0.6 12 0.5q6 0 12 -0.9q6 -0.9 12 -1.3q6 -0.5 12 -0.5q6 -0.1 12 -0.3q6 -0.2 12 0.2q6 0.5 12 1.6q6 1.1 12 1.3q6 0.2 12 -0.5q6 -0.7 12 -1.2q6 -0.5 12 -1.1q6 -0.6 12 -1.6q6 -1 12 -1.4q6 -0.4 12 -0.4q6 0 12 -1q6 -1 12 -2.3q6 -1.4 12 -2q6 -0.6 12 -0.9q6 -0.3 12 -0.4q6 -0.1 12 0.9q6 1 12 2.3q6 1.3 12 1.6q6 0.3 12 0.3q6 0 12 0.6q6 0.5 12 0.8q6 0.3 12 0.5q6 0.2 12 1.1q6 0.9 12 1.5q6 0.6 12 0q6 -0.6 12 -1.1q6 -0.6 12 -0.4q6 0.1 12 0.2q6 0.1 12 0.5q6 0.4 12 1.7q6 1.3 12 2.1q6 0.9 12 0.6q6 -0.2 12 -0.3q6 -0.1 12 0.2q6 0.3 12 0.1q6 -0.2 12 -0.3q6 -0.1 12 0.3q6 0.3 12 -0.2q6 -0.5 12 -2.1q6 -1.5 12 -2.6q6 -1.1 12 -1.6q6 -0.5 12 -1.1q6 -0.6 12 -0.5q6 0.1 12 0.8q6 0.7 12 0.7q6 -0.1 12 -0.7q6 -0.7 12 -0.6q6 0 12 0.3q6 0.2 12 0.2q6 -0.1 12 0.3q6 0.4 12 0.9q6 0.5 12 -0.2q6 -0.7 12 -1.8q6 -1.1 12 -1.4q6 -0.3 12 -0.3q6 0 12 0.1q6 0.1 12 1.1q6 1 12 2.1q6 1.1 12 1.3q6 0.2 12 0.3q6 0.1 12 1.1q6 0.9 12 1.7q6 0.8 12 1.4q6 0.6 12 1.5q6 0.9 12 1.3q6 0.3 12 -0.7q6 -1 12 -2.1q6 -1.1 12 -1.5q6 -0.4 12 -1q6 -0.5 12 -0.9q6 -0.4 12 -0.1q6 0.3 12 0.2q6 -0.1 12 -1q6 -0.9 12 -1.2q6 -0.3 12 0.1q6 0.4 12 0.7q6 0.2 12 0.6q6 0.3 12 1q6 0.6 12 0.3q6 -0.3 12 -1.6q6 -1.3 12 -2q6 -0.7 12 -0.9q6 -0.2 12 -0.6q6 -0.4 12 -0.4q6 0 12 0.5q6 0.5 12 0.2q6 -0.3 12 -0.8q6 -0.6 12 -0.1q6 0.5 12 1.5q6 1 12 1.8q6 0.8 12 1.9q6 1.1 12 2.2q6 1 12 0.9q6 -0.2 12 -0.8q6 -0.6 12 -0.5q6 0.1 12 0.3q6 0.2 12 0.1q6 -0.1 12 0.2q6 0.3 12 0.5q6 0.2 12 -0.6q6 -0.8 12 -1.4q6 -0.6 12 -0.1q6 0.5 12 1q6 0.5 12 0.8q6 0.3 12 0.9q6 0.6 12 0.6q6 0 12 -1.2q6 -1.2 12 -2.2q6 -1 12 -1.3q6 -0.3 12 -0.8q6 -0.5 12 -1.2q6 -0.7 12 -0.9q6 -0.2 12 -0.9L1440 23"/>
+</g></defs></svg>
+
+<header class="wrap">
+  <div class="plate" aria-hidden="true">
+    <!-- Default: the mountain alone, so the hiker appears once, as the logo. Explicit size: no layout shift. -->
+    <svg class="scene scene--mtn" width="1280" height="250" viewBox="0 18 1280 250" focusable="false">
+      <defs>
+        <filter id="mtn-soft" filterUnits="userSpaceOnUse" x="-40" y="-40" width="1360" height="562"><feGaussianBlur stdDeviation="7"/></filter>
+        <mask id="mtn-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1280" height="482">
+          <g filter="url(#mtn-soft)">
+            <path class="ink i1" pathLength="1" stroke-width="170" d="M-20 300 L200 250 L400 180 L560 110 L690 40 L800 105 L950 165 L1100 215 L1300 255"/>
+            <path class="ink i2" pathLength="1" stroke-width="190" d="M-20 345 L300 320 L500 270 L700 230 L900 260 L1300 320"/>
+            <path class="ink i3" pathLength="1" stroke-width="180" d="M-20 440 L400 425 L800 435 L1300 430"/>
+          </g>
+        </mask>
+      </defs>
+      <image href="../_shared/mountain-plate.webp" width="1280" height="482" mask="url(#mtn-mask)"/>
+    </svg>
+    <!-- ?plate=full: the original scene with its own hiker, as in concept I. -->
+    <svg class="scene scene--full" width="1536" height="530" viewBox="0 0 1536 530" focusable="false" hidden>
+      <defs>
+        <filter id="full-soft" filterUnits="userSpaceOnUse" x="-40" y="-40" width="1616" height="610"><feGaussianBlur stdDeviation="7"/></filter>
+        <mask id="full-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1536" height="530">
+          <g filter="url(#full-soft)">
+            <path class="ink i1" pathLength="1" stroke-width="170" d="M-20 300 L150 268 L300 235 L400 185 L470 130 L545 72 L600 100 L670 140 L770 180 L900 215 L1060 270"/>
+            <path class="ink i2" pathLength="1" stroke-width="190" d="M-20 330 L300 320 L420 270 L560 255 L700 265 L900 285 L1060 335"/>
+            <path class="ink i3" pathLength="1" stroke-width="170" d="M100 440 L500 430 L800 440 L1060 440"/>
+            <path class="ink i4" pathLength="1" stroke-width="90" d="M1075 100 L1205 100 L1090 145 L1205 145"/>
+            <path class="ink i5" pathLength="1" stroke-width="76" d="M1030 160 L1290 160 L1030 215 L1290 215 L1030 265 L1290 265 L1030 315 L1290 315"/>
+            <path class="ink i6" pathLength="1" stroke-width="76" d="M1020 360 L1300 360 L1020 415 L1300 415 L1020 470 L1300 470 L1020 515 L1300 515"/>
+            <path class="ink i7" pathLength="1" stroke-width="170" d="M1290 330 L1560 300 L1290 420 L1560 400"/>
+          </g>
+        </mask>
+      </defs>
+      <image href="../_shared/hiker-scene-strip.webp" width="1536" height="530" mask="url(#full-mask)"/>
+    </svg>
+  </div>
+  <div class="top">
+  <svg class="hiker" viewBox="0 0 294 480" aria-hidden="true" focusable="false">
+    <defs>
+      <filter id="hiker-soft" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="5"/></filter>
+      <mask id="hiker-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="294" height="480">
+        <g filter="url(#hiker-soft)">
+          <path class="ink ink-1" pathLength="1" stroke-width="64" d="M104 30 C 150 0, 196 30, 180 70 S 96 110, 100 70 S 160 40, 200 110"/>
+          <path class="ink ink-2" pathLength="1" stroke-width="72" d="M70 130 L 286 120 L 40 185 L 290 185 L 30 245 L 290 245 L 20 305 L 286 300"/>
+          <path class="ink ink-3" pathLength="1" stroke-width="72" d="M10 345 L 290 345 L 0 400 L 294 400 L 0 455 L 294 460"/>
+        </g>
+      </mask>
+    </defs>
+    <image href="../_shared/hiker.webp" width="294" height="480" mask="url(#hiker-mask)"/>
+  </svg>
+  <h1 class="name"><span class="hari">Hari</span> <span class="sur">GRIDHARAN</span></h1>
+  <p class="aff"><span class="aff-a">Applied Economics + AI</span><span class="aff-sep">&nbsp;· </span><span class="nw">Cornell&nbsp;Dyson&nbsp;’29&nbsp;· Dyson&nbsp;Scholar</span></p>
+  <p class="seek">Seeking Summer&nbsp;2027 roles in strategy, investing, BA&nbsp;&amp;&nbsp;PM — NYC&nbsp;/&nbsp;SF</p>
+  <div class="act">
+    <a class="btn btn-fill" href="/Hari_Gridharan_Resume.pdf">Resume<span aria-hidden="true">&nbsp;↓</span><span class="sr-only"> (PDF)</span></a>
+    <a class="btn btn-line" href="mailto:hg532@cornell.edu">Email</a>
+    <span class="soc"><a href="https://www.linkedin.com/in/harigridharan1/" target="_blank" rel="noopener">LinkedIn<span class="sr-only"> (opens in new tab)</span></a><span class="dot" aria-hidden="true">·</span><a href="https://github.com/hgridharan999" target="_blank" rel="noopener">GitHub<span class="sr-only"> (opens in new tab)</span></a></span>
+  </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section aria-labelledby="now">
+    <h2 class="head" id="now"><span class="idx">01</span> · NOW</h2>
+    <ul role="list">
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Co-Founder,</span> <span class="co">Loadstone&nbsp;Labs</span></span>
+          <span class="when">2026&nbsp;–&nbsp;now</span>
+          <span class="line"><span class="lead">Venture-backed</span>, with grants from AWS and LvlUp&nbsp;Ventures&nbsp;· data platform for Western water rights</span>
+        </summary>
+        <div class="body">
+          <p>Building the data and operating layer for Western water rights. County records are fragmented and inconsistent, so rights are hard to find and harder to value; Loadstone pulls workflow, basin intelligence and transaction infrastructure into one platform for the attorneys and engineers who work them.</p>
+          <p>Venture-backed, with grant funding from AWS and LvlUp&nbsp;Ventures. Our pipeline processes 132,000+ live water-rights records a day across 44 Colorado counties into a single schema.</p>
+          <p class="meta">2026 – present · Ithaca, NY · <a href="https://loadstonelabs.com" target="_blank" rel="noopener">loadstonelabs.com<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Co-President,</span> <span class="co">Cornell Entrepreneurship&nbsp;Club</span></span>
+          <span class="when">2025&nbsp;–&nbsp;now</span>
+          <span class="line"><span class="lead">Y&nbsp;Combinator speaker series</span> for 150+&nbsp;attendees&nbsp;· 500,000+ views across Instagram and LinkedIn</span>
+        </summary>
+        <div class="body">
+          <p>Co-lead Cornell’s entrepreneurship club. I run our Y Combinator speaker series, bringing founders and VC partners to campus for audiences of 150+, and coordinate directly with the firms behind them.</p>
+          <p>Grew the club’s reach to 500,000+ views across Instagram and LinkedIn, and scout student startups to sharpen the club’s investment theses.</p>
+          <p class="meta">Sep 2025 – present · Ithaca, NY</p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Analyst,</span> <span class="co">Cornell Venture&nbsp;Capital</span></span>
+          <span class="when">2026&nbsp;–&nbsp;now</span>
+          <span class="line"><span class="tk">TK: one line, number first</span></span>
+        </summary>
+        <div class="body">
+          <p><span class="tk">TK: 2–3 sentences: the firms or deals you’ve worked on, the sectors, and what you produced (memos, diligence, market maps)</span></p>
+          <p class="meta">2026 – present · Ithaca, NY</p>
+        </div>
+      </details></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="before">
+    <h2 class="head" id="before"><span class="idx">02</span> · BEFORE</h2>
+    <ul role="list">
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Consulting Intern,</span> <span class="co">EXL</span> <span class="loc">New York</span></span>
+          <span class="when">Summer&nbsp;2026</span>
+          <span class="line"><span class="lead">$70M+&nbsp;Fortune&nbsp;100 contract book</span> supported&nbsp;· built a CRM tool that replaced manual tracking</span>
+        </summary>
+        <div class="body">
+          <p>Supported a portfolio of client contracts worth $70M+ across Fortune 100 accounts, tracking scope, deliverables and renewal terms for each.</p>
+          <p>Built a custom CRM tool that replaced manual contract tracking, administered contract data in Salesforce, and produced executive-ready decks for global teams.</p>
+          <p class="meta">Summer 2026 · New York, NY</p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Operations &amp; Strategy Intern,</span> <span class="co">Midian&nbsp;Partners</span></span>
+          <span class="when">Summer&nbsp;2026</span>
+          <span class="line"><span class="lead">~300% revenue growth</span>&nbsp;· lender network scaled from 6<span class="sr-only"> to </span><span aria-hidden="true">&nbsp;→&nbsp;</span>25+ signed partners in five&nbsp;weeks</span>
+        </summary>
+        <div class="body">
+          <p>Scaled an early-stage mortgage fintech’s lender network from 6 to 25+ signed partnerships in under five weeks, roughly 4x, expanding revenue ~300%.</p>
+          <p>Negotiated terms with partner executives, ran user testing, and coordinated a source-verified technical audit across 12 subsystems.</p>
+          <p class="meta">Jun – Jul 2026 · Remote</p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">AI/Strategy Consultant (Contract),</span> <span class="co">Adobe</span></span>
+          <span class="when">Jan&nbsp;–&nbsp;Apr&nbsp;2026</span>
+          <span class="line"><span class="lead">$1M+ enterprise AI contracts</span>&nbsp;· advised Fortune&nbsp;500 IT leadership on product strategy</span>
+        </summary>
+        <div class="body">
+          <p>Advised IT leadership at Fortune 500 companies on AI product strategy tied to $1M+ enterprise contracts.</p>
+          <p>Built the market-sizing frameworks, UX benchmarks and positioning analyses behind those recommendations, and proposed business cases that are now in beta testing across the suite.</p>
+          <p class="meta">Jan – Apr 2026 · Remote</p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Problem Design Engineer,</span> <span class="co">IdlExperts</span> <span class="loc">fka Widget Factory</span></span>
+          <span class="when">2026</span>
+          <span class="line"><span class="lead">Frontier AI model evaluations</span>&nbsp;· designed the problem sets used to test them</span>
+        </summary>
+        <div class="body">
+          <p>Designed complex, real-world problem sets used to evaluate frontier AI models in training environments.</p>
+          <p>Benchmarked agent behavior against them and turned engineer feedback into improvements for production deployments.</p>
+          <p class="meta">2026 · Remote</p>
+        </div>
+      </details></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="built">
+    <h2 class="head" id="built"><span class="idx">03</span> · BUILT</h2>
+    <ul role="list">
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Co-Founder,</span> <span class="co">Commit</span></span>
+          <span class="when">2025&nbsp;–&nbsp;26</span>
+          <span class="line"><span class="lead">Top&nbsp;10% of 20,000+&nbsp;YC applicants</span>&nbsp;· social prediction market, MVP built in 3&nbsp;days</span>
+        </summary>
+        <div class="body">
+          <p>Co-founded a social prediction-market platform that ranked in the top 10% of 20,000+ Y Combinator applicants.</p>
+          <p>Took it from concept to a working MVP in three days, including the prediction logic and the unit-economics model.</p>
+          <p class="meta">Sep 2025 – Jan 2026 · <a href="https://commit-landing-tau.vercel.app" target="_blank" rel="noopener">Landing page<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+      <li class="row xp" id="vest-practices"><details>
+        <summary>
+          <span class="ttl"><span class="co">Vest Practices</span> <span class="loc">DNHacks 2026</span></span>
+          <span class="when">2026</span>
+          <span class="line"><span class="lead">AI glasses</span> that train tradespeople hands-free&nbsp;· identify the part in hand in under a second</span>
+        </summary>
+        <div class="body">
+          <p>A wearable training system for tradespeople, built on AI glasses with a team of five at DNHacks 2026 (Energy &amp; Industrialization track).</p>
+          <p>The glasses see what the trainee sees and talk back: a detector trained on our own footage, a vision model that reads part markings, voice activation and a synthesized voice in the ear. Every session is stored as structured data, so the trainer remembers what each person has learned.</p>
+          <p class="meta"><a href="https://vestpractices.vercel.app/" target="_blank" rel="noopener">Live demo<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a> · <a href="https://portal.dnhacks.org/e/2026/showcase/b-v-est-practices" target="_blank" rel="noopener">Showcase<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a> · <a href="https://github.com/8ddieHu0314/dnhacks" target="_blank" rel="noopener">Repo<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="co">OEIS A363004</span> <span class="loc">Number theory</span></span>
+          <span class="when">2026</span>
+          <span class="line"><span class="lead">Computed a&nbsp;previously unknown term</span>, a(12)&nbsp;=&nbsp;9,290,399,173&nbsp;· credited on OEIS</span>
+        </summary>
+        <div class="body">
+          <p>A363004 counts the sequences of n distinct positive integers whose Gilbreath transform is all ones. Nobody had computed the 12th term.</p>
+          <p>I wrote the search that found it, a(12) = 9,290,399,173. The value and my Python program are now part of the sequence’s entry in the On-Line Encyclopedia of Integer Sequences.</p>
+          <p class="meta">Jul 2026 · Python · <a href="https://oeis.org/A363004" target="_blank" rel="noopener">OEIS A363004<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="co">bigred.network</span> <span class="loc">Cornell Armada</span></span>
+          <span class="when">2026</span>
+          <span class="line"><span class="lead">Cornell’s founder directory</span>&nbsp;· a curated network of the university’s builders, founders and researchers</span>
+        </summary>
+        <div class="body">
+          <p>Built the directory platform that connects Cornell’s builders, founders and researchers, as part of Cornell Armada, a YC-backed founder community.</p>
+          <p>It has member filtering, a network visualization, and a manual review workflow so access stays controlled.</p>
+          <p class="meta">React · TypeScript · <a href="https://www.bigred.network/" target="_blank" rel="noopener">bigred.network<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="co">Project Dactyl</span></span>
+          <span class="when"></span>
+          <span class="line"><span class="lead">Custom AI-integrated ring</span>&nbsp;· <span class="tk">TK: what it does + one number</span></span>
+        </summary>
+        <div class="body">
+          <p><span class="tk">TK: 2–3 sentences: what the ring senses or does, how the AI is integrated, the hardware, and where it stands (prototype? demo?)</span></p>
+          <p class="meta"><span class="tk">TK: date · link</span></p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="co">Climate startup search</span></span>
+          <span class="when">2025&nbsp;–&nbsp;26</span>
+          <span class="line"><span class="lead">212 climate startups</span>, searchable in ~600ms&nbsp;· hybrid BERT&nbsp;+&nbsp;BM25 ranking</span>
+        </summary>
+        <div class="body">
+          <p>Semantic search over 212 indexed climate-tech startups. It blends BERT embeddings (FAISS) with BM25 keyword search through reciprocal rank fusion, expands queries with synonyms, and keeps results varied across 12 climate verticals.</p>
+          <p>Candidates are ranked with multi-factor scoring across founder backgrounds, patent data and market signals, and the ranking is measured with NDCG@10. It started as an internal sourcing tool for finding and valuing companies.</p>
+          <p class="meta">Python · FastAPI · FAISS · <a href="/climate-search">Try it<span aria-hidden="true">&nbsp;→</span><span class="sr-only">: climate startup search</span></a> · <a href="https://github.com/hgridharan999/climate_tech_discovery_backend" target="_blank" rel="noopener">Repo<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="theses">
+    <h2 class="head" id="theses"><span class="idx">04</span> · THESES</h2>
+    <p class="kicker">Select essays</p>
+    <ul role="list">
+      <li class="row row--link"><a class="rl rl--essay" href="/blog/tat-tvam-asi"><span class="et"><span class="lab co">Tat Tvam Asi and Conviction</span><span class="ed">Reading an Upanishad saying against its grain, and why conviction matters more in an age of algorithmic sameness.</span></span><span class="val"><time datetime="2026-10-06">Oct 2026</time></span></a></li>
+      <li class="row row--link"><a class="rl rl--essay" href="/blog/doing-it-all"><span class="et"><span class="lab co">Why Doing It All Is Simultaneously the Greatest and Worst Thing You Can Do</span><span class="ed">A reflection on momentum, overcommitment, and the cost of staying in motion all summer.</span></span><span class="val"><time datetime="2026-06-29">Jun 2026</time></span></a></li>
+      <li class="row row--link"><a class="rl rl--essay" href="/blog/solipsism-take-every-risk"><span class="et"><span class="lab co">Solipsism and Why You Should Take Every Risk in the World</span><span class="ed">What if no one around you is actually real? And why that might be the best reason to stop holding yourself back.</span></span><span class="val"><time datetime="2026-03-15">Mar 2026</time></span></a></li>
+      <li class="row row--link"><a class="rl rl--essay" href="/blog/neuroplasticity-and-change"><span class="et"><span class="lab co">Why Neuroplasticity Gives Me Reasons to Keep Growing and Proves Bojack Wrong</span><span class="ed">On the brain’s capacity for change, the science of growth, and why giving up is never actually the answer.</span></span><span class="val"><time datetime="2026-02-23">Feb 2026</time></span></a></li>
+    </ul>
+    <ul role="list" class="theses-more">
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="co">Me in 10 bullet points</span></span>
+        </summary>
+        <div class="body">
+          <ol class="beliefs">
+            <li><span class="n" aria-hidden="true">01</span><p>time being so limited means that you shouldn’t waste time doing stuff you don’t like.</p></li>
+            <li><span class="n" aria-hidden="true">02</span><p>your best experiences are memories shared with friends.</p></li>
+            <li><span class="n" aria-hidden="true">03</span><p>bias to action, choice paralysis kills 99% of solutions.</p></li>
+            <li><span class="n" aria-hidden="true">04</span><p>become someone who loves risk-taking.</p></li>
+            <li><span class="n" aria-hidden="true">05</span><p>health outweighs all other priorities.</p></li>
+            <li><span class="n" aria-hidden="true">06</span><p>potential is the worst thing you can have: it prevents you from maximizing effort.</p></li>
+            <li><span class="n" aria-hidden="true">07</span><p>derealization is a bottom 5 experience all time.</p></li>
+            <li><span class="n" aria-hidden="true">08</span><p>literally everyone around you is underappreciative of the things they have.</p></li>
+            <li><span class="n" aria-hidden="true">09</span><p>not knowing what comes after death should be the scariest thing you ever think about.</p></li>
+            <li><span class="n" aria-hidden="true">10</span><p>human connection is the single most undervalued experience of our time.</p></li>
+          </ol>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="co">Investment thesis</span></span>
+          <span class="line">What I’m betting on</span>
+        </summary>
+        <div class="body">
+          <ol class="beliefs">
+            <li><span class="n" aria-hidden="true">01</span><p>People &gt; ideas - great people can create great ideas, but great ideas can’t make up for not being a great founder.</p></li>
+            <li><span class="n" aria-hidden="true">02</span><p>physical infrastructure is the #1 most undervalued sector</p></li>
+            <li><span class="n" aria-hidden="true">03</span><p>Way too many building AI and not for AI</p></li>
+            <li><span class="n" aria-hidden="true">04</span><p>If you aren’t a good storyteller, you won’t have people buy your story or your product</p></li>
+          </ol>
+        </div>
+      </details></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="off-the-clock">
+    <h2 class="head" id="off-the-clock"><span class="idx">05</span> · OFF THE CLOCK</h2>
+    <ul role="list">
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="co">Mountaineering</span></span>
+        </summary>
+        <div class="body">
+          <p>Working through Colorado’s fourteeners. First was Mt. Bierstadt in 2025; most recent was Quandary Peak (14,265 ft) in under 4:30 round trip.</p>
+          <p class="meta"><a href="/hiking">Trail log<span aria-hidden="true">&nbsp;→</span><span class="sr-only">: mountaineering</span></a></p>
+        </div>
+      </details></li>
+      <li class="row row--solo">
+        <p class="line"><span class="lead co">Carnatic &amp; indie singing</span>&nbsp;· cooking regional Indian food</p>
+      </li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="elsewhere">
+    <h2 class="head" id="elsewhere"><span class="idx">06</span> · ELSEWHERE</h2>
+    <ul role="list">
+      <li class="row row--link"><a class="rl" href="https://www.linkedin.com/in/harigridharan1/" target="_blank" rel="noopener"><span class="lab co">LinkedIn</span><span class="val">linkedin.com/in/harigridharan1<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></span></a></li>
+      <li class="row row--link"><a class="rl" href="https://github.com/hgridharan999" target="_blank" rel="noopener"><span class="lab co">GitHub</span><span class="val">github.com/hgridharan999<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></span></a></li>
+      <li class="row row--link"><a class="rl" href="mailto:hg532@cornell.edu"><span class="lab co">Email</span><span class="val">hg532@cornell.edu</span></a></li>
+      <li class="row row--link"><a class="rl" href="/Hari_Gridharan_Resume.pdf"><span class="lab co">Resume</span><span class="val">Hari_Gridharan_Resume.pdf<span aria-hidden="true">&nbsp;↓</span><span class="sr-only"> (PDF)</span></span></a></li>
+    </ul>
+  </section>
+
+</main>
+
+<footer class="wrap foot">
+  <svg class="contour" viewBox="0 1.5 720 34" preserveAspectRatio="xMinYMid slice" aria-hidden="true" focusable="false"><use href="#topo" x="-630"/></svg>
+  <div class="foot-line">
+    <p><span class="part" aria-hidden="true">Contour interval 1 year<span class="sep">&nbsp;· </span></span><span class="part">Last updated <time datetime="2026-10">Oct 2026</time></span></p>
+    <span class="scale" aria-hidden="true"><span>0</span><i class="bar"></i><span>1 yr</span></span>
+  </div>
+</footer>
+
+<!-- Ascent rail: progressive enhancement for wide screens. Hidden until the script has the terrain. -->
+<aside class="rail" id="rail" aria-label="Ascent rail">
+  <canvas aria-hidden="true"></canvas>
+  <nav aria-label="Jump to a section">
+    <svg viewBox="0 0 260 56" role="group" aria-label="Elevation profile of the ascent">
+      <clipPath id="rc"><rect width="0" height="56"/></clipPath>
+      <path class="pa"/><path class="pl"/>
+      <g clip-path="url(#rc)"><path class="pca"/><path class="pc"/></g>
+      <path class="pb" d="M4 52H256"/>
+      <a class="wp" href="#now" aria-label="Jump to Now"><rect class="hit" x="-12" width="24" height="56"/><rect class="ring" x="-10" y="13" width="20" height="41" rx="3"/><path class="tm"/><circle class="td" r="2.3"/><text class="tl" y="10" text-anchor="middle">NOW</text></a>
+      <a class="wp" href="#before" aria-label="Jump to Before"><rect class="hit" x="-12" width="24" height="56"/><rect class="ring" x="-10" y="13" width="20" height="41" rx="3"/><path class="tm"/><circle class="td" r="2.3"/><text class="tl" y="10" text-anchor="middle">BEFORE</text></a>
+      <a class="wp" href="#built" aria-label="Jump to Built"><rect class="hit" x="-12" width="24" height="56"/><rect class="ring" x="-10" y="13" width="20" height="41" rx="3"/><path class="tm"/><circle class="td" r="2.3"/><text class="tl" y="10" text-anchor="middle">BUILT</text></a>
+      <a class="wp" href="#theses" aria-label="Jump to Theses"><rect class="hit" x="-12" width="24" height="56"/><rect class="ring" x="-10" y="13" width="20" height="41" rx="3"/><path class="tm"/><circle class="td" r="2.3"/><text class="tl" y="10" text-anchor="middle">THESES</text></a>
+      <a class="wp" href="#off-the-clock" aria-label="Jump to Off the clock"><rect class="hit" x="-12" width="24" height="56"/><rect class="ring" x="-10" y="13" width="20" height="41" rx="3"/><path class="tm"/><circle class="td" r="2.3"/><text class="tl" y="10" text-anchor="end">OFF THE CLOCK</text></a>
+      <a class="wp" href="#elsewhere" aria-label="Jump to Elsewhere"><rect class="hit" x="-12" width="24" height="56"/><rect class="ring" x="-10" y="13" width="20" height="41" rx="3"/><path class="tm"/><circle class="td" r="2.3"/><text class="tl" y="10" text-anchor="end">ELSEWHERE</text></a>
+      <g class="pm"><circle r="5.5"/><circle r="2.6"/></g>
+    </svg>
+  </nav>
+  <p class="read" aria-hidden="true"><span class="r1"></span><span class="r2"></span></p>
+</aside>
+
+<script>
+  // Mockup switch only: ?plate=full shows the original scene (with its own hiker) instead of the mountain alone.
+  if (new URLSearchParams(location.search).get('plate') === 'full') {
+    document.querySelector('.scene--mtn').hidden = true;
+    document.querySelector('.scene--full').hidden = false;
+  }
+</script>
+<script>
+// Ascent rail: scroll progress through the page = progress up Quandary Peak. Wide screens only.
+(() => {
+  const rail = document.getElementById('rail'), cv = rail.querySelector('canvas'), ctx = cv.getContext('2d'), nav = rail.querySelector('nav');
+  const wide = matchMedia('(min-width:1180px) and (min-height:460px)'), still = matchMedia('(prefers-reduced-motion:reduce)');
+  const read = rail.querySelector('.read'), [r1, r2] = read.children, heads = [...document.querySelectorAll('main h2.head[id]')];
+  // DY: track-to-terrain offset in grid rows. 0 since the terrain JSON's crop bug was fixed (track sits within ~5 m of the DEM).
+  const VE = 1.6, DY = 0, FT = 3.28084, MI = 1 / 1609.344, DPR = () => Math.min(devicePixelRatio || 1, 2.5);
+  const TONES = ['#14120f', '#1d1a15', '#2b2720', '#40382c'];
+  const [x0, x1, y0, y1] = [2, 110, 24, 98]; // grid window shown
+  const [PX0, PX1, PY0, PY1, PB] = [4, 256, 18, 46, 52]; // profile box (viewBox 260x56)
+  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v)), px = p => PX0 + p * (PX1 - PX0);
+  let D, G, W, CH, dpr, sc, ox, oy, off, trk, X, Y, U, E, dist, emin, emax, tick;
+  let T = [], cur = 0, target = 0, maxScroll = 1, raf = 0, last = 0, dirty = true, built = false, started = false;
+  const clip = nav.querySelector('clipPath rect'), mark = nav.querySelector('.pm');
+  const py = e => PY1 - (e - emin) / (emax - emin) * (PY1 - PY0);
+  const hAt = (x, y) => {
+    x = clamp(x, 0, G - 1.001); y = clamp(y, 0, G - 1.001);
+    const i = x | 0, j = y | 0, a = x - i, b = y - j, h = D.heights;
+    return (h[j][i] * (1 - a) + h[j][i + 1] * a) * (1 - b) + (h[j + 1][i] * (1 - a) + h[j + 1][i + 1] * a) * b;
+  };
+  // isometric camera from the south-east, heights exaggerated by VE
+  const pr = (x, y, z) => [ox + (x - y) * .866 * sc, oy + ((x + y) / 2 - (z - D.minEle) * VE / D.cellMetres) * sc];
+
+  function build() {
+    W = rail.clientWidth; if (!W) return;
+    CH = Math.round(W * 10 / 13); dpr = DPR();
+    cv.width = Math.round(W * dpr); cv.height = Math.round(CH * dpr);
+    off = new OffscreenCanvas(cv.width, cv.height);
+    const c = off.getContext('2d'), h = D.heights, zb = D.minEle - 160, n2 = G * G;
+    c.scale(dpr, dpr); sc = 1; ox = oy = 0;
+    let top = 1e9;
+    for (let j = y0; j <= y1; j++) for (let i = x0; i <= x1; i++) top = Math.min(top, pr(i, j, h[j][i])[1]);
+    const bot = pr(x1, y1, zb)[1];
+    sc = Math.min((W - 10) / ((x1 - x0 + y1 - y0) * .866), (CH - 10) / (bot - top));
+    ox = W / 2 - (x0 - y1 + x1 - y0) / 2 * .866 * sc; oy = (CH - (bot - top) * sc) / 2 - top * sc;
+
+    const vx = new Float32Array(n2), vy = new Float32Array(n2), sh = new Float32Array(n2), k = VE / (2 * D.cellMetres);
+    for (let j = y0; j <= y1; j++) for (let i = x0; i <= x1; i++) [vx[j * G + i], vy[j * G + i]] = pr(i, j, h[j][i]);
+    for (let j = 0; j < G - 1; j++) for (let i = 0; i < G - 1; i++) { // lit from the WSW, high ground lighter
+      const a = h[j][i], b = h[j][i + 1], d = h[j + 1][i], e = h[j + 1][i + 1], gx = (b - a + e - d) * k, gy = (d - a + e - b) * k;
+      sh[j * G + i] = (gx * .55 - gy * .45 + .7) / Math.hypot(gx, gy, 1) + .3 * ((a + b + d + e) / 4 - D.minEle) / (D.maxEle - D.minEle);
+    }
+    const blur = (a, m) => { // two box blurs: regions, not speckle
+      const o = new Float32Array(n2);
+      for (let j = y0 - m; j < y1 + m; j++) for (let i = x0 - m; i < x1 + m; i++) {
+        const q = j * G + i; o[q] = (a[q - G - 1] + a[q - G] + a[q - G + 1] + a[q - 1] + a[q] + a[q + 1] + a[q + G - 1] + a[q + G] + a[q + G + 1]) / 9;
+      }
+      return o;
+    };
+    const sm = blur(blur(sh, 1), 0), all = [...sm].filter(Boolean).sort((a, b) => a - b), cut = [.2, .5, .82].map(q => all[q * all.length | 0]);
+    const B = []; // contour segments by painter diagonal
+    D.contours.forEach(ct => ct.lines.forEach(l => {
+      for (let n = 1; n < l.length; n++) {
+        const [ax, ay] = l[n - 1], [bx, by] = l[n], ci = (ax + bx) / 2 | 0, cj = (ay + by) / 2 | 0;
+        if (ci >= x0 && ci < x1 && cj >= y0 && cj < y1) (B[ci + cj] ||= []).push([pr(ax, ay, hAt(ax, ay)), pr(bx, by, hAt(bx, by))]);
+      }
+    }));
+    const poly = ids => { c.beginPath(); ids.forEach((id, n) => c[n ? 'lineTo' : 'moveTo'](vx[id], vy[id])); };
+    c.lineJoin = c.lineCap = 'round'; c.lineWidth = .7;
+    for (let s = x0 + y0; s < x1 + y1; s++) {
+      for (let j = Math.max(y0, s - x1 + 1); j <= Math.min(y1 - 1, s - x0); j++) {
+        const q = j * G + s - j, v = sm[q];
+        c.fillStyle = c.strokeStyle = TONES[(v > cut[0]) + (v > cut[1]) + (v > cut[2])];
+        poly([q, q + 1, q + G + 1, q + G]); c.fill();
+        poly([q + 1, q + G + 1, q + G]); c.stroke(); // seal seams
+      }
+      if (B[s]) {
+        c.beginPath(); B[s].forEach(([a, b]) => { c.moveTo(...a); c.lineTo(...b); });
+        c.strokeStyle = 'rgba(237,231,218,.15)'; c.lineWidth = .6; c.stroke();
+      }
+    }
+    const wall = (pts, col) => { // the block's two cut faces
+      c.beginPath(); pts.forEach(([x, y], n) => c[n ? 'lineTo' : 'moveTo'](x, y));
+      pts.slice().reverse().forEach(([, , x, y]) => c.lineTo(x, y));
+      c.fillStyle = col; c.fill(); c.strokeStyle = 'rgba(237,231,218,.16)'; c.lineWidth = .8; c.stroke();
+    };
+    const S = [], E2 = [];
+    for (let i = x0; i <= x1; i++) S.push([...pr(i, y1, h[y1][i]), ...pr(i, y1, zb)]);
+    for (let j = y0; j <= y1; j++) E2.push([...pr(x1, j, h[j][x1]), ...pr(x1, j, zb)]);
+    wall(S, '#1a1712'); wall(E2, '#100e0c');
+
+    trk = new Path2D(); X = []; Y = [];
+    D.ascent.forEach(([x, y], n) => {
+      const [sx, sy] = pr(x, y + DY, hAt(x, y + DY) + 8); X.push(sx); Y.push(sy); trk[n ? 'lineTo' : 'moveTo'](sx, sy);
+    });
+    built = true;
+  }
+
+  const pos = p => { let i = 0; while (i < U.length - 2 && U[i + 1] < p) i++; return [i, clamp((p - U[i]) / (U[i + 1] - U[i] || 1))]; };
+  const elev = p => { const [i, f] = pos(p); return E[i] + (E[i + 1] - E[i]) * f; };
+
+  function draw(p) {
+    const [i, f] = pos(p), mx = X[i] + (X[i + 1] - X[i]) * f, my = Y[i] + (Y[i + 1] - Y[i]) * f, e = elev(p), g = ctx.createRadialGradient(mx, my, 0, mx, my, 13);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, CH); ctx.drawImage(off, 0, 0, W, CH);
+    ctx.lineCap = ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(232,192,137,.4)'; ctx.lineWidth = 1.3; ctx.stroke(trk);
+    if (p > 0) { // the part already climbed
+      ctx.beginPath(); ctx.moveTo(X[0], Y[0]); for (let k = 1; k <= i; k++) ctx.lineTo(X[k], Y[k]); ctx.lineTo(mx, my);
+      ctx.strokeStyle = '#E8C089'; ctx.lineWidth = 2; ctx.stroke();
+    }
+    g.addColorStop(0, 'rgba(232,192,137,.6)'); g.addColorStop(1, 'rgba(232,192,137,0)'); ctx.fillStyle = g; ctx.fillRect(mx - 13, my - 13, 26, 26);
+    ctx.beginPath(); ctx.arc(mx, my, 3, 0, 6.2832); ctx.fillStyle = '#E8C089'; ctx.fill(); ctx.strokeStyle = '#0B0A0A'; ctx.lineWidth = 1.2; ctx.stroke();
+
+    clip.setAttribute('width', px(p)); mark.setAttribute('transform', `translate(${px(p)} ${py(e)})`);
+    let k = -1; while (k + 1 < T.length && T[k + 1] <= p) k++;
+    tick.forEach((a, n) => a.classList.toggle('on', n <= k));
+    const top = p >= .999, mi = (p * dist * MI).toFixed(1), a = top ? 'Summit · 14,265 ft' : k < 0 ? '00 · Trailhead' : heads[k].textContent;
+    const b = top ? `${mi} mi · 100%` : `${Math.round(e * FT).toLocaleString('en-US')} ft · ${mi} mi · ${Math.round(p * 100)}%`;
+    read.classList.toggle('sum', top);
+    r1.textContent = a; r2.textContent = b;
+  }
+
+  const scrolled = () => { const t = clamp(scrollY / maxScroll); return t > .997 ? 1 : t; };
+  function measure() { // ticks sit where their sections sit
+    const vh = innerHeight;
+    maxScroll = Math.max(1, document.documentElement.scrollHeight - vh);
+    T = heads.map(h => clamp((h.getBoundingClientRect().top + scrollY - vh * .35) / maxScroll));
+    T[T.length - 1] = Math.min(T[T.length - 1], .93);
+    for (let n = T.length - 2; n >= 0; n--) T[n] = Math.min(T[n], T[n + 1] - .1); // 24px+ apart
+    tick.forEach((a, n) => {
+      const t = clamp(T[n]), y = py(elev(t)).toFixed(1);
+      a.setAttribute('transform', `translate(${px(t).toFixed(1)} 0)`); a.querySelector('.tm').setAttribute('d', `M0 ${y}V${PB}`); a.querySelector('.td').setAttribute('cy', y);
+    });
+    target = scrolled();
+  }
+
+  function frame(ts) {
+    raf = 0;
+    if (!wide.matches || document.hidden || !built) return;
+    if (dirty) { dirty = false; measure(); }
+    const dt = last ? Math.min(64, ts - last) : 16; last = ts;
+    if (still.matches) cur = target; // reduced motion: jump
+    else { cur += (target - cur) * (1 - Math.exp(-dt / 240)); if (Math.abs(target - cur) < 3e-4) cur = target; }
+    draw(cur);
+    if (cur !== target) kick(); else last = 0; // settled: stop
+  }
+  function kick() { if (!raf) raf = requestAnimationFrame(frame); }
+
+  function init(d) {
+    D = d; G = d.grid;
+    const tr = d.track, k = tr.reduce((m, p, i) => (p[2] > tr[m][2] ? i : m), 0), cum = [0], cs = d.cellMetres;
+    D.ascent = tr.slice(0, k + 1); // trailhead -> summit only
+    D.ascent.forEach((p, i, a) => { if (i) cum.push(cum[i - 1] + Math.hypot((p[0] - a[i - 1][0]) * cs, (p[1] - a[i - 1][1]) * cs, p[2] - a[i - 1][2])); });
+    dist = cum[k]; U = cum.map(v => v / dist);
+    E = D.ascent.map(p => p[2]);
+    emin = Math.min(...E); emax = Math.max(...E);
+    const dl = U.map((u, i) => `${i ? 'L' : 'M'}${px(u).toFixed(1)} ${py(E[i]).toFixed(1)}`).join('');
+    nav.querySelectorAll('.pl, .pc').forEach(e => e.setAttribute('d', dl));
+    nav.querySelectorAll('.pa, .pca').forEach(e => e.setAttribute('d', `${dl}L${PX1} ${PB}L${PX0} ${PB}Z`));
+    tick = [...nav.querySelectorAll('.wp')];
+
+    rail.classList.add('on'); build(); if (!built) return;
+    measure(); // starts at the trailhead, eases to the page
+    const relayout = () => { // rows, fonts, window size or zoom
+      if (rail.clientWidth && (rail.clientWidth !== W || DPR() !== dpr)) build();
+      dirty = true; kick();
+    };
+    new ResizeObserver(relayout).observe(document.body);
+    addEventListener('resize', relayout);
+    addEventListener('scroll', () => { if (wide.matches) { target = scrolled(); kick(); } }, { passive: true });
+    document.addEventListener('visibilitychange', () => { last = 0; dirty = true; kick(); });
+    kick();
+  }
+
+  function maybeStart() { // below 1180px: no fetch, no loop
+    if (!wide.matches) return;
+    if (built) { dirty = true; kick(); } else if (!started) {
+      started = true;
+      fetch('../_shared/quandary-terrain.json').then(r => r.json()).then(init).catch(() => {});
+    }
+  }
+  wide.addEventListener('change', maybeStart);
+  maybeStart();
+})();
+</script>
+</body>
+</html>

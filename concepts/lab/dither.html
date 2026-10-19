@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab: 1-bit dither dissolve</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #FFFFFF;
+    --ink: #111111;
+    --muted: #5C5C5C;
+    --tan: #0F7DAA;
+    --rule: rgba(0, 0, 0, 0.10);
+    --mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --gutter: 16px;
+    /* 240px on a 390 phone, 340px from ~900px up */
+    --band-h: clamp(240px, calc(240px + (100vw - 390px) * 0.196), 340px);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--bg); color-scheme: light; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 400 16px/1.6 var(--mono); -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  .lab { min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; }  /* the caption's auto margin pushes the band to the foot of the viewport without ever clipping it */
+  .cap {
+    margin: auto 0 0; padding: 0 var(--gutter) 6px; width: 100%; max-width: calc(1100px + var(--gutter) * 2); margin-inline: auto;
+    font: 400 12px/1.4 var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted);
+  }
+  .band { position: relative; width: 100%; height: var(--band-h); }
+  .stage { position: relative; width: 100%; max-width: 1100px; height: 100%; margin-inline: auto; touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+  .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  @media (min-width: 1180px) {
+    /* soft edges where the capped drawing area ends, so wind-blown dots never hit a hard clip */
+    .stage canvas { -webkit-mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
+  }
+  .foot { border-top: 1px solid var(--rule); }
+  .foot p {
+    margin: 0; width: 100%; max-width: calc(1100px + var(--gutter) * 2); margin-inline: auto; padding: 14px var(--gutter) 18px;
+    font: 400 12px/1.4 var(--mono); letter-spacing: 0.02em; text-transform: uppercase; color: var(--muted); text-wrap: balance;
+  }
+  .note { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font: 400 12px/1.4 var(--mono); color: var(--muted); text-align: center; padding: 0 var(--gutter); }
+</style>
+</head>
+<body>
+<main class="lab">
+  <p class="cap">Lab / 1-bit dither dissolve</p>
+  <section class="band" id="band" aria-hidden="true">
+    <div class="stage" id="stage"><canvas id="cv"></canvas></div>
+  </section>
+  <footer class="foot"><p>CONTOUR INTERVAL 1 YEAR · LAST UPDATED OCT 2026</p></footer>
+</main>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ------------------------------------------------------------------------------------------
+     1-bit dither dissolve.
+     The hiker + the sketched peak are area-averaged onto a coarse grid, Atkinson-dithered to
+     one bit, and every "on" cell becomes a square ink dot with its own spring. Dots start as
+     dust, settle in a staggered sweep, get blown about by the pointer, and drift back.
+     All state lives in typed arrays; the loop sleeps whenever nothing is moving.
+     ------------------------------------------------------------------------------------------ */
+
+  const INK = '#111111', BLUE = '#0F7DAA';
+  const HIKER = { w: 294, h: 480, src: '../_shared/hiker.png' };
+  const PLATE = { w: 1280, h: 482, src: '../_shared/mountain-plate.png', peakX: 690, peakY: 52 };
+
+  const band = document.getElementById('band');
+  const stage = document.getElementById('stage');
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const reduceMQ = matchMedia('(prefers-reduced-motion: reduce)');
+  let reduced = reduceMQ.matches;
+
+  /* ---- source art -> summed-area tables of alpha (alpha is the ink) ---------------------- */
+  const loadImg = (src) => new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => res(im); im.onerror = () => rej(new Error('missing ' + src));
+    im.src = src;
+  });
+
+  function integral(img) {
+    const w = img.naturalWidth, h = img.naturalHeight;
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.drawImage(img, 0, 0);
+    const d = g.getImageData(0, 0, w, h).data;
+    const I = new Float64Array((w + 1) * (h + 1));
+    for (let y = 0; y < h; y++) {
+      let row = 0;
+      for (let x = 0; x < w; x++) {
+        row += d[(y * w + x) * 4 + 3];
+        I[(y + 1) * (w + 1) + x + 1] = I[y * (w + 1) + x + 1] + row;
+      }
+    }
+    return { I, w, h };
+  }
+
+  // bilinear read of the integral image at fractional coordinates
+  function ii(S, x, y) {
+    x = x < 0 ? 0 : x > S.w ? S.w : x; y = y < 0 ? 0 : y > S.h ? S.h : y;
+    const x0 = x | 0, y0 = y | 0, x1 = Math.min(S.w, x0 + 1), y1 = Math.min(S.h, y0 + 1);
+    const fx = x - x0, fy = y - y0, s = S.w + 1;
+    const a = S.I[y0 * s + x0], b = S.I[y0 * s + x1], c = S.I[y1 * s + x0], d = S.I[y1 * s + x1];
+    return (a * (1 - fx) + b * fx) * (1 - fy) + (c * (1 - fx) + d * fx) * fy;
+  }
+
+  // mean alpha (0..1) over a source rect; area outside the image counts as empty
+  function areaAvg(S, x0, y0, x1, y1) {
+    const area = (x1 - x0) * (y1 - y0);
+    if (x1 <= 0 || y1 <= 0 || x0 >= S.w || y0 >= S.h || area <= 0) return 0;
+    const sum = ii(S, x1, y1) - ii(S, x0, y1) - ii(S, x1, y0) + ii(S, x0, y0);
+    return sum / (255 * area);
+  }
+
+  /* ---- particle store ----------------------------------------------------------------------- */
+  let N = 0, cap = 0;
+  let hx, hy, x, y, vx, vy, wA, wB, light, rc, rs, delay, phase, kind;
+  function alloc(n) {
+    cap = n + 48; N = 0;
+    hx = new Float32Array(cap); hy = new Float32Array(cap); x = new Float32Array(cap); y = new Float32Array(cap);
+    vx = new Float32Array(cap); vy = new Float32Array(cap);
+    wA = new Float32Array(cap); wB = new Float32Array(cap); light = new Float32Array(cap);
+    rc = new Float32Array(cap); rs = new Float32Array(cap); delay = new Float32Array(cap);
+    phase = new Uint8Array(cap); kind = new Uint8Array(cap);
+  }
+  function addDot(px, py, k) {
+    const i = N++;
+    hx[i] = px; hy[i] = py; kind[i] = k;
+    const r1 = Math.random(), r2 = Math.random();
+    wA[i] = 7.6 + r1 * 3.2;                // intro spring: stiff-ish, a little overshoot
+    wB[i] = 3.4 + r2 * 1.8;                // after the intro: slow drift home
+    light[i] = 0.6 + Math.random() * 0.9;  // lighter dots fly further
+    const a = (Math.random() - 0.5) * 1.3;
+    rc[i] = Math.cos(a); rs[i] = Math.sin(a);
+    return i;
+  }
+
+  /* ---- layout: dither the art, make the dots ----------------------------------------------- */
+  let W = 0, H = 0, dpr = 1, cell = 3, cellDev = 3, dotDev = 2, R = 70;
+  let art = null, ready = false;
+  let moving = 0;
+
+  const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) * 0.8165 * 1.2;
+  const smooth = (a, b, v) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+  function boxBlur(src, gw, gh, r) {
+    const tmp = new Float32Array(src.length), out = new Float32Array(src.length), n = 2 * r + 1;
+    for (let j = 0; j < gh; j++) {
+      let s = 0;
+      for (let i = -r; i <= r; i++) s += src[j * gw + Math.min(gw - 1, Math.max(0, i))];
+      for (let i = 0; i < gw; i++) {
+        tmp[j * gw + i] = s / n;
+        s += src[j * gw + Math.min(gw - 1, i + r + 1)] - src[j * gw + Math.max(0, i - r)];
+      }
+    }
+    for (let i = 0; i < gw; i++) {
+      let s = 0;
+      for (let j = -r; j <= r; j++) s += tmp[Math.min(gh - 1, Math.max(0, j)) * gw + i];
+      for (let j = 0; j < gh; j++) {
+        out[j * gw + i] = s / n;
+        s += tmp[Math.min(gh - 1, j + r + 1) * gw + i] - tmp[Math.max(0, j - r) * gw + i];
+      }
+    }
+    return out;
+  }
+
+  function build() {
+    const rect = stage.getBoundingClientRect();
+    W = Math.round(rect.width); H = Math.round(rect.height);
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    cellDev = Math.max(2, Math.round(3 * dpr));       // keep the dot grid on whole device pixels
+    cell = cellDev / dpr;
+    dotDev = Math.max(1, Math.round(cellDev * 0.8));   // a hairline gap between dots
+    R = Math.min(96, Math.max(58, H * 0.22));
+
+    const gw = Math.ceil(W / cell), gh = Math.ceil(H / cell);
+
+    // placement (css px): hiker big on the left, facing the peak; sketched mountain behind
+    const hh = H * 0.94, hw = hh * HIKER.w / HIKER.h;
+    const hx0 = Math.max(6, W * 0.29 - hw / 2), hy0 = H - hh - 3;
+    const mh = H * 1.0, mw = mh * PLATE.w / PLATE.h;
+    const mx0 = W * 0.565 - PLATE.peakX / PLATE.w * mw, my0 = H * 0.04;
+
+    const hik = new Float32Array(gw * gh), mtn = new Float32Array(gw * gh);
+    const gx0 = Math.max(0, Math.floor(hx0 / cell)), gx1 = Math.min(gw, Math.ceil((hx0 + hw) / cell));
+    for (let gy = 0; gy < gh; gy++) {
+      const cy0 = gy * cell, cy1 = cy0 + cell;
+      for (let gx = 0; gx < gw; gx++) {
+        const cx0 = gx * cell, cx1 = cx0 + cell, i = gy * gw + gx;
+        if (gx >= gx0 && gx < gx1) {
+          // flipped horizontally, as on the site
+          const u0 = (cx0 - hx0) / hw, u1 = (cx1 - hx0) / hw, v0 = (cy0 - hy0) / hh, v1 = (cy1 - hy0) / hh;
+          const a = areaAvg(art.hiker, (1 - u1) * HIKER.w, v0 * HIKER.h, (1 - u0) * HIKER.w, v1 * HIKER.h);
+          hik[i] = Math.pow(Math.min(1, Math.max(0, (a - 0.05) / 0.62)), 0.85);
+        }
+        const m = areaAvg(art.plate, (cx0 - mx0) / mw * PLATE.w, (cy0 - my0) / mh * PLATE.h, (cx1 - mx0) / mw * PLATE.w, (cy1 - my0) / mh * PLATE.h);
+        // faint, and dissolving toward the footer line
+        mtn[i] = Math.min(0.6, Math.max(0, m - 0.012) * 6.2) * (1 - 0.9 * smooth(0.62 * gh, 0.98 * gh, gy));
+      }
+    }
+
+    // the figure knocks the mountain out behind it, so he reads as the subject
+    const halo = boxBlur(hik, gw, gh, 3);
+    const body = boxBlur(hik, gw, gh, 2);
+    const tone = new Float32Array(gw * gh);
+    for (let gy = 0; gy < gh; gy++) {
+      for (let gx = 0; gx < gw; gx++) {
+        const i = gy * gw + gx;
+        const knock = 1 - 0.92 * smooth(0.04, 0.3, halo[i]);
+        // a mid-tone fill inside the figure (denser on the shaded left), so he is a field of dots, not just outlines
+        const u = Math.min(1, Math.max(0, (gx * cell - hx0) / hw));
+        const fill = smooth(0.05, 0.2, body[i]) * (0.14 + 0.2 * (1 - u));
+        tone[i] = Math.min(1, hik[i] + fill + mtn[i] * knock);
+      }
+    }
+
+    // Atkinson: diffuse 6/8 of the error to six neighbours, the rest is thrown away
+    const bits = new Uint8Array(gw * gh);
+    let on = 0;
+    for (let gy = 0; gy < gh; gy++) {
+      for (let gx = 0; gx < gw; gx++) {
+        const i = gy * gw + gx, old = tone[i], nw = old > 0.5 ? 1 : 0, e = (old - nw) / 8;
+        bits[i] = nw; on += nw;
+        if (gx + 1 < gw) tone[i + 1] += e;
+        if (gx + 2 < gw) tone[i + 2] += e;
+        if (gy + 1 < gh) {
+          if (gx > 0) tone[i + gw - 1] += e;
+          tone[i + gw] += e;
+          if (gx + 1 < gw) tone[i + gw + 1] += e;
+        }
+        if (gy + 2 < gh) tone[i + 2 * gw] += e;
+      }
+    }
+
+    alloc(on);
+    for (let gy = 0; gy < gh; gy++) {
+      for (let gx = 0; gx < gw; gx++) {
+        const i = gy * gw + gx;
+        if (bits[i]) addDot(gx * cell, gy * cell, hik[i] >= mtn[i] ? 0 : 1);
+      }
+    }
+
+    // iceberg blue, only where it means something: both pole tips, and a survey triangle on the summit
+    const toCss = (sx, sy) => [hx0 + (294 - sx) / HIKER.w * hw, hy0 + sy / HIKER.h * hh];
+    for (const tip of [toCss(13, 455), toCss(279, 470)]) {
+      const near = [];
+      for (let i = 0; i < N; i++) if (kind[i] === 0) near.push([(hx[i] - tip[0]) ** 2 + (hy[i] - tip[1]) ** 2, i]);
+      near.sort((a, b) => a[0] - b[0]);
+      for (let j = 0; j < Math.min(6, near.length); j++) kind[near[j][1]] = 2;
+    }
+    const sx = mx0 + PLATE.peakX / PLATE.w * mw, sy = my0 + PLATE.peakY / PLATE.h * mh;
+    const ax = Math.round(sx / cell), ay = Math.round(sy / cell);
+    for (let r = 0; r < 3; r++) for (let c = -r; c <= r; c++) addDot((ax + c) * cell, (ay + r - 3) * cell, 2);
+
+    scatter();
+    if (reduced || introDone) settle();
+    else if (introStarted) startIntro();
+    moving = 1;
+  }
+
+  /* ---- states ------------------------------------------------------------------------------- */
+  let introStarted = false, introDone = false, introT = 0;
+
+  function scatter() {
+    for (let i = 0; i < N; i++) {
+      let px, py;
+      if (Math.random() < 0.72) { px = W * 0.54 + gauss() * W * 0.26; py = H * 0.46 + gauss() * H * 0.34; }
+      else { px = Math.random() * W; py = Math.random() * H; }
+      x[i] = Math.min(W + 4, Math.max(-4, px)); y[i] = Math.min(H + 4, Math.max(-4, py));
+      vx[i] = -16 + gauss() * 14; vy[i] = -3 + gauss() * 9;
+      phase[i] = 0;
+    }
+  }
+
+  function settle() {
+    for (let i = 0; i < N; i++) { x[i] = hx[i]; y[i] = hy[i]; vx[i] = vy[i] = 0; phase[i] = 2; }
+    moving = 0;
+  }
+
+  function startIntro() {
+    introStarted = true; introDone = false; introT = 0;
+    // settle from the figure outward, with a lot of per-dot jitter; blue dots arrive last
+    const cx = W * 0.30, cy = H * 0.5, maxD = Math.hypot(W * 0.7, H * 0.5);
+    for (let i = 0; i < N; i++) {
+      const d = Math.min(1, Math.hypot(hx[i] - cx, hy[i] - cy) / maxD);
+      const base = 0.5 * Math.random() + 0.5 * Math.pow(d, 0.8);
+      delay[i] = 0.04 + 0.66 * base + (kind[i] === 2 ? 0.2 : 0);
+      phase[i] = 0;
+    }
+    moving = 1; wake();
+  }
+
+  /* ---- pointer: wind ----------------------------------------------------------------------- */
+  const ptr = { on: false, x: 0, y: 0, vx: 0, vy: 0, t: 0, last: 0, touch: false, down: false };
+  const PUSH = 4200, DRAG = 4.2;
+
+  function ptrAt(e) {
+    const r = stage.getBoundingClientRect();
+    const nx = e.clientX - r.left, ny = e.clientY - r.top, now = performance.now();
+    const dt = Math.max(8, now - ptr.t) / 1000;
+    if (ptr.on) {
+      ptr.vx = ptr.vx * 0.55 + ((nx - ptr.x) / dt) * 0.45;
+      ptr.vy = ptr.vy * 0.55 + ((ny - ptr.y) / dt) * 0.45;
+    } else { ptr.vx = ptr.vy = 0; }
+    ptr.x = nx; ptr.y = ny; ptr.t = now; ptr.last = now; ptr.on = true;
+  }
+  stage.addEventListener('pointermove', (e) => {
+    if (reduced) return;
+    if (e.pointerType !== 'mouse' && !ptr.down) return;
+    ptr.touch = e.pointerType !== 'mouse'; ptrAt(e); wake();
+  });
+  stage.addEventListener('pointerdown', (e) => {
+    if (reduced) return;
+    ptr.down = true; ptr.touch = e.pointerType !== 'mouse'; ptr.on = false; ptrAt(e); wake();
+  });
+  const release = () => { ptr.down = false; if (ptr.touch) ptr.on = false; };
+  stage.addEventListener('pointerup', release);
+  stage.addEventListener('pointercancel', () => { ptr.down = false; ptr.on = false; });
+  stage.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') ptr.on = false; });
+
+  /* ---- simulation --------------------------------------------------------------------------- */
+  const ZA = 0.62, ZB = 0.5, VMAX = 1000;
+
+  function step(dt) {
+    const now = performance.now();
+    if (ptr.on && !ptr.touch && now - ptr.last > 1300) ptr.on = false; // the wind dies down
+    const decay = Math.exp(-dt * 7); ptr.vx *= decay; ptr.vy *= decay;
+    const pOn = ptr.on, px = ptr.x, py = ptr.y, pvx = ptr.vx, pvy = ptr.vy;
+    const rad = ptr.touch ? R * 1.35 : R, R2 = rad * rad;
+    if (!introDone && introStarted) introT += dt;
+    let mv = 0, pending = 0;
+
+    for (let i = 0; i < N; i++) {
+      let ph = phase[i];
+      let ax = 0, ay = 0;
+      if (pOn) {
+        const dx = x[i] - px, dy = y[i] - py, d2 = dx * dx + dy * dy;
+        if (d2 < R2) {
+          const d = Math.sqrt(d2) + 0.001, f0 = 1 - d / rad, f = f0 * f0 * light[i];
+          const ux = dx / d, uy = dy / d;
+          ax = (PUSH * (ux * rc[i] - uy * rs[i]) + DRAG * pvx) * f;
+          ay = (PUSH * (ux * rs[i] + uy * rc[i]) + DRAG * pvy) * f;
+        }
+      }
+      if (ph === 0) {
+        if (introStarted && introT >= delay[i]) { ph = phase[i] = 1; }
+        else if (!introStarted) continue;   // dust waits, frozen, until the band scrolls in
+        else {
+          // dust: a slow drift on the wind
+          vx[i] += ax * dt; vy[i] += ay * dt;
+          x[i] += vx[i] * dt; y[i] += vy[i] * dt;
+          if (introStarted) pending++;
+          mv++;
+          continue;
+        }
+      }
+      const w = ph === 1 ? wA[i] : wB[i], z = ph === 1 ? ZA : ZB;
+      const ex = x[i] - hx[i], ey = y[i] - hy[i];
+      ax += -w * w * ex - 2 * z * w * vx[i];
+      ay += -w * w * ey - 2 * z * w * vy[i];
+      let nvx = vx[i] + ax * dt, nvy = vy[i] + ay * dt;
+      const sp = nvx * nvx + nvy * nvy;
+      if (sp > VMAX * VMAX) { const s = VMAX / Math.sqrt(sp); nvx *= s; nvy *= s; }
+      vx[i] = nvx; vy[i] = nvy;
+      x[i] += nvx * dt; y[i] += nvy * dt;
+      const rx = x[i] - hx[i], ry = y[i] - hy[i];
+      if (rx * rx + ry * ry < 0.012 && nvx * nvx + nvy * nvy < 0.16) {
+        x[i] = hx[i]; y[i] = hy[i]; vx[i] = vy[i] = 0; phase[i] = 2;
+      } else mv++;
+    }
+    if (introStarted && !introDone && pending === 0 && mv === 0) introDone = true;
+    moving = mv;
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.fillStyle = INK;
+    for (let i = 0; i < N; i++) {
+      if (kind[i] === 2) continue;
+      const k = kind[i];
+      ctx.globalAlpha = k === 1 ? 0.5 : 1;
+      ctx.fillRect(Math.round(x[i] * dpr), Math.round(y[i] * dpr), dotDev, dotDev);
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = BLUE;
+    for (let i = 0; i < N; i++) {
+      if (kind[i] !== 2) continue;
+      ctx.fillRect(Math.round(x[i] * dpr), Math.round(y[i] * dpr), dotDev, dotDev);
+    }
+  }
+
+  /* ---- loop: sleeps when offscreen, hidden, or nothing is moving ---------------------------- */
+  let visible = false, running = false, raf = 0, last = 0;
+  const canRun = () => ready && visible && !document.hidden && !reduced;
+
+  function frame(now) {
+    raf = 0;
+    if (!canRun()) { running = false; return; }
+    const dt = Math.min(1 / 30, Math.max(0.001, (now - last) / 1000)); last = now;
+    step(dt); draw();
+    if (moving > 0 || ptr.on || (introStarted && !introDone)) raf = requestAnimationFrame(frame);
+    else running = false;
+  }
+  function wake() {
+    if (running || !canRun()) return;
+    running = true; last = performance.now(); raf = requestAnimationFrame(frame);
+  }
+
+  // "scrolled into view" = a third of the band is showing (or half the viewport, on very short screens)
+  const enough = (shown) => shown >= Math.min(band.offsetHeight * 0.3, innerHeight * 0.5);
+  new IntersectionObserver((entries) => {
+    const e = entries[entries.length - 1];
+    visible = e.isIntersecting;
+    if (!ready) return;
+    if (visible && !introStarted && !reduced && enough(e.intersectionRect.height)) startIntro();
+    else if (visible) wake();
+  }, { threshold: Array.from({ length: 21 }, (_, i) => i / 20) }).observe(band);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) wake(); });
+
+  reduceMQ.addEventListener('change', (e) => {
+    reduced = e.matches;
+    if (reduced) { settle(); draw(); introDone = true; }
+    else if (visible && !introStarted) startIntro();
+  });
+
+  /* ---- boot --------------------------------------------------------------------------------- */
+  let rt = 0;
+  function relayout() { if (ready) { build(); draw(); if (!reduced) wake(); } }
+  const onResize = () => { clearTimeout(rt); rt = setTimeout(relayout, 90); };
+
+  Promise.all([loadImg(HIKER.src), loadImg(PLATE.src)]).then(([h, p]) => {
+    try { art = { hiker: integral(h), plate: integral(p) }; }
+    catch (err) {
+      band.insertAdjacentHTML('beforeend', '<p class="note">Serve this over http (localhost) so the canvas can read the art.</p>');
+      return;
+    }
+    ready = true;
+    build(); draw();
+    if (reduced) { introDone = true; }
+    else if (visible && stage.getBoundingClientRect().height) {
+      // IntersectionObserver already reported: start now if enough of the band is showing
+      const r = band.getBoundingClientRect(), vh = innerHeight;
+      if (enough(Math.min(r.bottom, vh) - Math.max(r.top, 0))) startIntro();
+    }
+    new ResizeObserver(onResize).observe(stage);
+  }).catch((err) => {
+    band.insertAdjacentHTML('beforeend', '<p class="note">' + err.message + '</p>');
+  });
+
+  // debug hook for screenshots and tests: advance the simulation by `sec` without real time
+  window.__sketch = {
+    advance(sec) { for (let t = 0; t < sec; t += 1 / 60) step(1 / 60); draw(); },
+    pointer(px, py, pvx, pvy) { ptr.on = true; ptr.touch = true; ptr.x = px; ptr.y = py; ptr.vx = pvx || 0; ptr.vy = pvy || 0; },
+    release() { ptr.on = false; ptr.touch = false; },
+    info: () => ({ N, W, H, dpr, moving, introStarted, introDone, introT, blue: Array.from(kind.subarray(0, N)).filter((k) => k === 2).length }),
+  };
+})();
+</script>
+</body>
+</html>

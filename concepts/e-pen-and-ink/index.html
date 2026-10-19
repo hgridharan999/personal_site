@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hari Gridharan — Applied Economics + AI · Cornell Dyson ’29</title>
+<meta name="description" content="Hari Gridharan studies Applied Economics + AI at Cornell Dyson. Seeking Summer 2027 roles in strategy, investing, BA &amp; PM.">
+<meta name="theme-color" content="#0B0A0A">
+<meta name="color-scheme" content="dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Fragment+Mono&amp;family=Instrument+Serif:ital@1&amp;display=swap">
+<script>if(!matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.className='js'</script>
+<style>
+:root{
+  --bg:#0B0A0A;--cream:#EDE7DA;--tan:#E8C089;--muted:#A39E94;
+  --contour-o:.08;
+  --sans:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:"Fragment Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --serif:"Instrument Serif",Georgia,serif;
+  --out:cubic-bezier(.16,1,.3,1);--pen:cubic-bezier(.65,0,.35,1);
+  --gut:16px;--col:640px
+}
+*,*::before,*::after{box-sizing:border-box}
+html{color-scheme:dark;background:var(--bg);font-family:var(--sans);-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--cream);font:400 16px/1.6 var(--sans);font-optical-sizing:auto;font-synthesis:none;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+::selection{background:var(--tan);color:var(--bg)}
+.col{width:min(var(--col),100% - 2*var(--gut));margin-inline:auto;padding:36px 0 56px}
+p,h1,h2,h3,ul{margin:0}
+ul{padding:0;list-style:none}
+
+/* links: calm underline at rest; on desktop a hand-drawn tan stroke draws in */
+a{position:relative;color:var(--cream);text-decoration:underline;text-decoration-color:rgba(237,231,218,.36);text-decoration-thickness:1px;text-underline-offset:.24em;white-space:nowrap}
+a:focus-visible{outline:2px solid var(--tan);outline-offset:4px;border-radius:2px}
+.ul{display:none}
+
+/* header */
+.hd{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:14px;align-items:end}
+.hk{width:104px;height:104px;color:var(--cream);flex:none;display:block}
+.nm{display:flex;flex-direction:column;align-items:flex-start;gap:0;line-height:1;text-wrap:balance}
+.hari{font:italic 400 clamp(40px,12.2vw,52px)/.82 var(--serif);color:var(--tan);letter-spacing:-.005em}
+.gr{font:800 clamp(28px,8.4vw,44px)/1 var(--sans);letter-spacing:-.03em}
+.sub{margin-top:10px;font-size:14.5px;line-height:1.45;color:var(--muted);text-wrap:balance}
+.sub span{white-space:nowrap}
+.seek{grid-column:1/-1;margin-top:26px;color:var(--tan);font-weight:500;text-wrap:balance}
+.acts{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:16px 18px;margin-top:20px}
+.acts .lk{color:var(--muted)}
+.btn{position:relative;display:inline-flex;align-items:center;min-height:44px;padding:0 22px;font:500 15px/1 var(--sans);color:var(--cream);text-decoration:none;isolation:isolate}
+.btn.pri{color:var(--tan)}
+.btn:focus-visible{outline:2px solid var(--tan);outline-offset:7px;border-radius:3px}
+.sk{position:absolute;inset:-3px;width:calc(100% + 6px);height:calc(100% + 6px);overflow:visible;fill:none;stroke:currentColor;pointer-events:none}
+.sk path{vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.5px;transition:transform .5s var(--out)}
+.sk path+path{stroke-width:1px;opacity:.6}
+
+/* contour dividers: 2-3 overlapping wobbly lines at ~8% */
+.dv{display:block;width:100%;height:auto;margin:22px 0 26px;fill:none;stroke:var(--cream);stroke-opacity:var(--contour-o);stroke-linecap:round;stroke-linejoin:round;-webkit-mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent);mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent)}
+.fx{transform:scaleX(-1)}.fxy{transform:scale(-1,-1)}
+
+/* sections */
+.lbl{text-wrap:balance;margin-bottom:22px;font:400 12.5px/1.3 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);scroll-margin-top:16px}
+.lbl .n{color:var(--tan)}
+.rows{display:grid;gap:22px}
+.row{position:relative}
+.top{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:16px;align-items:baseline}
+.t{text-wrap:balance}
+.role{display:inline;font-size:1em;font-weight:500;line-height:1.4}
+.co{transition:color .25s var(--out)}
+.yr,.rt{white-space:nowrap}
+.yr{font:400 13px/1.4 var(--mono);letter-spacing:.02em;font-variant-numeric:tabular-nums;color:var(--muted)}
+.mt{letter-spacing:.04em}
+.rt a{font-weight:500}
+.ln{margin-top:3px;color:var(--muted);text-wrap:pretty}
+.n{color:var(--cream);font-variant-numeric:tabular-nums}
+.sp{opacity:.7}
+.nw{white-space:nowrap}
+.tk{display:inline-block;margin-left:2px;padding:1px 6px;font:400 11.5px/1.35 var(--mono);letter-spacing:.02em;text-transform:none;color:var(--tan);border:1px dashed var(--tan);border-radius:3px;vertical-align:.08em}
+.ln .tk{margin-left:0}
+.lbl .tk{display:block;width:fit-content;margin:9px 0 0}
+.more{margin-top:20px}
+.off{display:grid;gap:12px}
+.off p{color:var(--muted)}
+.off b{font-weight:500;color:var(--cream)}
+.els .sp{color:var(--muted)}
+.ft{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-top:44px}
+.ft p{font:400 12px/1.4 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.ft .dv{width:140px;margin:0;stroke-opacity:.12;-webkit-mask-image:none;mask-image:none}
+
+@media (min-width:600px){
+  body{font-size:17px}
+  .col{padding-top:56px}
+  .hd{column-gap:22px}
+  .hk{width:112px;height:112px}
+  .nm{flex-direction:row;align-items:baseline;gap:.26em}
+  .hari{font-size:54px}
+  .gr{font-size:44px}
+  .sub{font-size:15px;margin-top:12px}
+  .seek{margin-top:30px}
+  .rows{gap:26px}
+  .lbl .tk{display:inline-block;margin:0 0 0 12px}
+  .dv{margin:28px 0 32px}
+  .ft .dv{margin:0}
+}
+
+/* desktop pointer only: hand-drawn triangle, tan company, ink underline, re-struck button border */
+@media (hover:hover) and (pointer:fine){
+  .row::before{content:"";position:absolute;left:calc(-1*min(27px,(100vw - 100%)/2));top:.3em;width:15px;height:15px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M1.7 12.2Q4.5 7.4 7 2.3 9.9 7.5 12.6 12.4 7.2 11.5 1.3 12' fill='%23E8C089' fill-opacity='.2' stroke='%23E8C089' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;opacity:0;transform:translateX(-8px);transition:opacity .25s var(--out),transform .5s var(--out)}
+  .row:hover::before,.row:focus-within::before{opacity:1;transform:none}
+  .row:hover .co,.row:focus-within .co{color:var(--tan)}
+  .ul{display:block;position:absolute;left:-1px;bottom:-.16em;width:calc(100% + 2px);height:.42em;overflow:visible;fill:none;stroke:var(--tan);stroke-width:1.7;stroke-linecap:round;stroke-dasharray:1 2;stroke-dashoffset:1.06;pointer-events:none;transition:stroke-dashoffset .42s var(--out)}
+  a:hover{color:var(--tan)}
+  a:hover .ul,a:focus-visible .ul{stroke-dashoffset:0}
+  .btn:hover{color:var(--tan)}
+  .btn:hover .sk path+path{transform:translate(1.6px,1.2px)}
+}
+
+/* signature: hiker draws in (~1.2s), then the first contour inks in. JS only; without it everything is already drawn. */
+.js .hk path,.js .dv0 path{stroke-dasharray:var(--l,999) 5000;stroke-dashoffset:var(--o,999)}
+.go .hk path{animation:ink var(--d,1s) var(--pen) var(--s,0s) both}
+.go .dv0 path{animation:ink var(--d,.5s) var(--pen) var(--s,0s) both}
+@keyframes ink{to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<path id="u1" pathLength="1" d="M1.2 3.7C16 2.3 33 4.5 52 3.1 69 2 85 3.9 98.8 2.7"/><path id="u2" pathLength="1" d="M1.4 3.2C22 4.5 50 2.6 74 3.8 83 4.2 92 3.3 98.6 3M10 5.3C38 4.4 62 5.4 88 4.6"/>
+<g id="cB"><path stroke-width="1.7" d="M0 27.1c3.3.2 13.3.4 20 .8 6.7.4 13.3 1.6 20 1.9 6.6.3 13.3.2 20 0 6.7-.1 13.3-.7 20-.9 6.7-.2 13.3-.1 20-.3 6.7-.1 13.4-.4 20-.6 6.7-.1 13.3.3 20-.3 6.6-.7 13.3-2.3 20-3.6 6.7-1.3 13.4-3.1 20.1-4.3 6.7-1.1 13.3-1.5 20-2.4 6.7-.8 13.2-2 19.9-2.6 6.6-.7 13.3-1 20-1.1 6.7-.2 13.4-.3 20 0 6.7.4 13.4 1.5 20 2.3 6.7.7 13.3 2.1 20 2 6.7 0 13.3-1.6 20-2.2 6.6-.5 13.3-1.1 20-1.2 6.7-.1 13.3.5 20 .7 6.6.3 13.3.6 20 .7 6.7.1 13.3 0 20-.2 6.7-.2 13.4-1.2 20-1.3 6.7-.1 13.3.7 20 .8 6.7 0 13.3-.2 20-.3 6.7-.2 13.4-1.3 20-.9 6.6.4 13.1 2.1 19.8 3.4 6.7 1.4 13.5 3.1 20.2 4.5 6.7 1.4 13.3 3 20 4.1 6.6 1.1 13.3 1.9 20 2.6 6.6.6 13.4 1 20 1.3 6.7.3 13.3.9 20 .6 6.6-.4 13.2-2.1 19.9-2.7 6.7-.5 16.8-.7 20.1-.8"/><path stroke-width="1.2" d="M0 23.4c3.3 0 13.4-.2 20.1.3 6.6.4 13.2 1.9 19.9 2.4 6.7.5 13.4.8 20 .6 6.7-.1 13.3-1.4 20-1.6 6.7-.2 13.3.4 20 .2 6.7-.1 13.3-.7 20-1.1 6.6-.4 13.3-.4 19.9-1.3 6.7-.9 13.5-2.5 20.1-3.9 6.7-1.5 13.3-3.8 19.9-4.7 6.7-1 13.5-.6 20.1-1.1 6.7-.5 13.3-1.7 20-2 6.6-.3 13.3-.3 20 .1 6.6.4 13.2 1.6 19.9 2 6.7.5 13.4.6 20.1.7 6.7.1 13.3.2 20-.3 6.6-.5 13.3-2.4 19.9-2.8 6.7-.4 13.4.2 20.1.7 6.7.4 13.3 1.9 20 2 6.6.2 13.3-1 20-1.1 6.7-.1 13.3.4 20 .5 6.7 0 13.3-.2 20-.4 6.7-.1 13.3-.5 20-.7 6.6-.2 13.3-.5 20-.5 6.7 0 13.5-.5 20.1.5 6.7 1 13.2 3.9 19.9 5.5 6.6 1.6 13.3 2.9 20 4.1 6.7 1.1 13.3 1.8 20 2.7 6.6.9 13.2 2.4 19.9 2.7 6.7.4 13.4-.2 20.1-.4 6.7-.1 13.3-.1 20-.6 6.6-.5 13.3-1.7 20-2.2 6.6-.5 16.7-.5 20-.6"/><path stroke-width="1.5" d="M0 27.8c3.3.3 13.4 1.1 20 1.5 6.7.5 13.4.7 20 1.4 6.7.7 13.3 2.5 19.9 2.9 6.7.4 13.4-.3 20.1-.5 6.7-.2 13.4-.5 20-.7 6.7-.3 13.3-.6 20-.9 6.7-.2 13.3-.2 20-.5 6.6-.3 13.4-.2 20-1.4 6.7-1.1 13.2-4 19.9-5.3 6.6-1.4 13.4-2.2 20.1-2.9 6.7-.7 13.3-.9 20-1.3 6.7-.4 13.4-1.3 20-1.3 6.7.1 13.3 1 19.9 1.4 6.7.4 13.4.6 20.1.9 6.7.2 13.3.8 20 .6 6.6-.2 13.3-1.1 19.9-1.7 6.7-.5 13.4-1.7 20.1-1.6 6.7.1 13.3 1.8 20 2.1 6.6.4 13.3.3 20 .2 6.7 0 13.3-.3 20-.3 6.7 0 13.3.3 20 .3 6.7-.1 13.3-.5 20-.6 6.7-.1 13.3.2 20-.1 6.7-.3 13.3-1.7 20-1.7 6.7-.1 13.4.3 20.1 1.4 6.7 1 13.2 3.5 19.8 4.9 6.7 1.4 13.4 2.4 20.1 3.6 6.7 1.1 13.2 2.7 19.9 3.4 6.7.7 13.4.6 20.1.9 6.7.2 13.4.4 20 .6 6.7.1 13.3.5 20 .1 6.7-.3 16.7-2 20-2.4"/></g><g id="cC"><path stroke-width="2.1" d="M0 16c3.3 0 13.3-.5 20 0 6.6.5 13.2 2.1 19.9 3 6.7.9 13.5 1.5 20.2 2.3 6.7.9 13.3 1.6 20 2.8 6.6 1.1 13.2 2.8 19.9 3.9 6.6 1 13.4 1.8 20.1 2.5 6.6.7 13.3 1.9 19.9 1.7 6.7-.1 13.3-1.6 20-2.6 6.7-.9 13.4-2.4 20.1-3 6.6-.7 13.3-.4 19.9-1 6.7-.5 13.3-1.5 20-2 6.6-.6 13.3-.8 20-1.3 6.6-.4 13.3-1.1 20-1.2 6.7-.2 13.3.2 20 .3 6.7.2 13.4 1.1 20.1.6 6.7-.4 13.3-2.6 19.9-3.3 6.7-.7 13.3-1 20-1 6.7.1 13.3 1 20 1.4 6.7.3 13.3.7 20 .8 6.7 0 13.4 0 20-.7 6.7-.7 13.3-2.4 19.9-3.3 6.7-.8 13.4-.9 20-1.7 6.7-.7 13.5-1.9 20.2-2.7 6.6-.9 13.3-2.6 19.9-2.6 6.6-.1 13.2 1.4 19.8 2.1 6.7.6 13.5 1.4 20.2 1.9 6.7.6 13.4 1.1 20 1.6 6.7.5 13.3.7 20 1.4 6.7.6 13.4 1.3 20.1 2.3 6.7 1.1 13.2 3.1 19.9 4 6.6.9 13.4.7 20 1.5 6.7.8 16.7 2.7 20 3.3"/><path stroke-width="1.3" d="M0 19.4c3.3.2 13.3.4 20 1.2 6.6.7 13.2 2.4 19.9 3.4 6.7 1 13.3 2 20 2.7 6.8.7 13.5.6 20.2 1.5 6.7.9 13.2 2.9 19.9 4 6.6 1.1 13.4 1.9 20 2.3 6.7.4 13.3.4 20-.1 6.7-.5 13.3-2 20-3 6.7-1 13.3-2.7 20-3.2 6.6-.4 13.3.6 20 .5 6.7-.1 13.4-.8 20-1.3 6.7-.5 13.3-1.3 20-1.6 6.7-.4 13.3-.2 20-.5 6.7-.3 13.3-.9 19.9-1.2 6.7-.3 13.4-.4 20.1-.8 6.7-.5 13.3-1.6 20-1.7 6.7-.2 13.3.5 20 1 6.6.5 13.3 1.9 20 1.9 6.7 0 13.3-1.3 20-1.8 6.6-.5 13.4-.6 20-1.2 6.7-.6 13.4-1.4 20-2.4 6.6-1 13.2-2.6 19.9-3.6 6.7-1 13.4-2 20.1-2.4 6.7-.4 13.4-.7 20.1 0 6.6.7 13.1 3.2 19.8 4.2 6.6 1.1 13.4 1.8 20.1 2.1 6.6.4 13.3-.2 20 .1 6.7.4 13.3 1.4 20 2.1 6.7.7 13.4 1.1 20.1 2 6.7.8 13.3 2.1 19.9 3 6.6.8 13.3 1.3 20 2.1 6.7.7 16.7 2 20 2.4"/><path stroke-width="1" d="M0 12.5c3.3.1 13.3.6 20 .8 6.7.1 13.3-.3 20 .1 6.6.4 13.3 1.4 20 2.3 6.7.9 13.3 2.5 20 3.3 6.7.8 13.4.6 20.1 1.5 6.7.8 13.4 2.4 20 3.5 6.6 1.1 13.3 2.6 19.9 3.1 6.7.6 13.3.5 20 .1 6.7-.4 13.5-1.4 20.2-2.3 6.7-1 13.2-2.7 19.8-3.4 6.6-.7 13.3-.4 20-.8 6.7-.4 13.3-1.1 20-1.5 6.6-.5 13.3-1.3 20-1.4 6.7-.1 13.3.9 20 .9 6.7-.1 13.3-.8 20-1.3 6.6-.4 13.4-1.2 20-1.5 6.7-.3 13.3-.5 20-.4 6.6.1 13.3.7 20 1.1 6.6.4 13.3 1.4 20 1.1 6.7-.2 13.3-1.8 19.9-2.6 6.7-.7 13.3-1.3 20-1.8 6.7-.5 13.4-.5 20.1-1 6.7-.6 13.3-1.9 20-2.6 6.7-.6 13.4-1.1 20.1-1.5 6.6-.3 13.2-.9 19.9-.6 6.6.2 13.3 1.5 20 2.2 6.6.8 13.3 2 20 2.4 6.7.4 13.3-.3 20 0 6.7.3 13.3 1 20 1.6 6.7.5 13.4 1.1 20.1 1.9 6.7.8 13.3 1.9 19.9 2.8 6.7 1 16.7 2.5 20 3"/></g><g id="cF"><path stroke-width="1.6" d="M0 15c2.3-.3 9.4-1 14.1-1.8 4.6-.9 9.2-2 13.8-3.5 4.6-1.5 9.3-4.9 14-5.5 4.7-.5 9.4 1.1 14.1 2.2 4.7 1.1 9.4 3.3 14 4.6 4.6 1.3 9.2 2.1 13.9 2.9 4.6.9 9.4 2.1 14.1 2 4.7-.1 9.2-2.4 13.9-2.4 4.6-.1 9.3 2.2 14 2.3 4.6 0 9.2-1.1 13.8-2.2 4.7-1 10.8-2.9 14.1-4.1 3.4-1.1 5.2-2.4 6.2-2.9"/><path stroke-width="1.1" d="M0 16.9c2.3-.3 9.4-1.1 14-1.9 4.6-.9 9.2-1.8 13.8-3 4.7-1.2 9.5-4 14.1-4.3 4.7-.3 9.1 1.6 13.8 2.7 4.7 1 9.7 2.3 14.4 3.4 4.7 1.1 9.2 2 13.9 2.9 4.7.9 9.5 2.7 14.3 2.5 4.7-.1 9.3-3.3 13.9-3.5 4.6-.3 9 2.3 13.7 2.1 4.6-.2 9.5-1.8 14.2-3.4 4.7-1.5 10.5-5 13.8-6.1 3.4-1.1 5.1-.2 6.1-.3"/></g>
+</defs></svg>
+<div class="col">
+  <header class="hd">
+    <svg class="hk" viewBox="0 0 104 104" width="104" height="104" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path stroke-width="1.65" d="M48.6 25.2c-.2-.9-.8-3.4-1-5.2-.1-1.7-.4-3.7.1-5.4.4-1.7 1.3-3.3 2.4-4.7 1-1.5 2.4-3.3 3.9-3.9 1.6-.5 3.9-.2 5.4.6 1.5.7 2.7 2.5 3.6 3.9.8 1.5 1.6 3 1.5 4.7-.1 1.6-1.3 3.5-2.1 5-.9 1.5-1.9 3.2-3.2 4-1.4.8-3.7.9-5 1.1-1.2.1-2.2-.3-2.6-.3"/><path stroke-width="1.4" d="M60.4 9.2c.3.7 1.6 2.6 1.9 3.9.4 1.4.4 2.8 0 4.2-.4 1.4-1.7 3.2-2.3 4-.5.9-.7.8-.8.9M57 6.6c-.3.7-1.3 3-1.8 4.3-.4 1.4-.7 2.6-.7 4 0 1.4.4 3.2.6 4.6.1 1.5.2 3.1.3 4.1.1.9.3 1.3.4 1.6"/><path stroke-width="1.65" d="M55.6 22.6c-.8-.1-3.2-.4-4.9-.4-1.7.1-3.7.1-5.4.6-1.6.5-3.5 1.4-4.7 2.4-1.3 1.1-1.8 2.7-2.7 4.1-.9 1.4-2.2 2.8-2.8 4.4-.7 1.7-.9 3.6-1.2 5.4-.3 1.7-.3 3.4-.5 5.2-.1 1.7-.4 3.5-.4 5.2 0 1.6.2 3.1.4 4.8.2 1.7.5 3.8.8 5.2.3 1.4.8 2.7 1 3.3 .8.2 2.9 1 4.6 1.3 1.6.3 3.6.5 5.3.6 1.7 0 3.1-.5 4.7-.6 1.6-.1 3.4.4 5-.1 1.5-.5 3.3-2 4.4-2.8 1.1-.7 1.7-1.5 2-1.8 0-.8 0-3 0-4.6 0-1.6 0-3.4 0-5.1-.1-1.6-.2-3-.3-4.7-.1-1.7.2-3.8-.1-5.4-.4-1.7-1.5-2.9-1.9-4.5-.5-1.6-.5-3.6-1-5.2-.4-1.6-1.2-3.4-1.7-4.6-.5-1.2-1.2-2.4-1.4-2.9"/><path stroke-width="1.45" d="M31.8 38c.7.4 2.8 1.5 4.4 2.1 1.7.6 3.6 1 5.4 1.3 1.8.4 3.7.8 5.5.8 1.8 0 3.3-.6 5-.9 1.8-.2 3.6-.4 5.3-.9 1.7-.4 3.8-1.3 4.8-1.6 1-.4.8-.3 1-.4M41.4 41c-.1.6-.3 2.8-.3 3.6-.1.8-.1 1-.1 1.2M54.8 41.2c.1.6.3 3 .4 3.8 0 .8 0 1 0 1.2M31.6 55.2c.8.3 3.1 1.2 4.7 1.6 1.6.4 3.2.6 4.9 1 1.7.3 3.6.9 5.3.9 1.8 0 3.5-.6 5.3-1 1.8-.3 3.8-.7 5.5-1.1 1.7-.4 3.8-1.1 4.7-1.4 1-.3.8-.3 1-.4M33.8 47.6c.5.1 2.5-.3 3.2.4.8.6 1.1 2.2 1.2 3.3.2 1.1-.2 2.1-.3 3.1-.2.9-.6 2-.7 2.4"/><path stroke-width="1.6" d="M59.4 25c.8.3 3.4.8 4.6 1.9 1.2 1 1.9 2.9 2.6 4.5.7 1.6 1 3.3 1.5 4.9.4 1.7 1 3.4 1.2 5.1.3 1.7-.5 4 .2 5.3.8 1.3 2.8 1.8 4.3 2.5 1.5.7 3.7 1.5 4.6 1.7 1 .2 1-.2 1.2-.3"/><path stroke-width="1.6" d="M40.6 25.6c-.7.4-3 1.6-4.4 2.6-1.4 1.1-2.8 2.2-3.8 3.5-1.1 1.4-1.9 3-2.4 4.7-.5 1.7-.5 3.6-.8 5.3-.3 1.8-1 3.5-1 5.2 0 1.7.7 3.2 1 4.8.3 1.7.6 3.5 1 4.9.4 1.4 1.2 2.8 1.4 3.4"/><path stroke-width="1.65" d="M57 63.6c.3.8 1.2 3.2 1.9 4.8.6 1.7 1.7 3.4 2.2 5.1.5 1.8.4 3.6.8 5.3.4 1.7 1.2 3.2 1.5 4.9.2 1.7 0 4 .1 5.3 0 1.4-.1 2.5-.1 3 .9.2 3.7.5 5.4 1.2 1.6.7 3.9 2 4.4 2.8.6.9 0 1.9-1 2.5-1.1.5-3.5.7-5.3.7-1.7.1-3.9.1-5-.5-1.1-.6-1.4-2.8-1.7-3.3 -.1-.9-.4-3.7-.7-5.4-.3-1.6-.6-2.9-1-4.5-.4-1.6-.9-3.5-1.5-5.2-.6-1.6-1.3-3.1-1.9-4.8-.7-1.6-1.4-3.4-2.1-5-.8-1.6-2.1-3.5-2.5-4.4-.3-1 .1-.9.1-1.1"/><path stroke-width="1.65" d="M42.6 64c-.2.9-.6 3.5-1.2 5.2-.6 1.7-1.4 3.4-2.2 5.1-.8 1.7-2 3.3-2.7 4.8-.8 1.6-1.1 2.9-1.9 4.4-.7 1.6-1.9 3.5-2.7 4.9-.7 1.5-1.4 3.2-1.7 3.8 -.5.7-3 3.2-3 4.3 0 1 1.6 1.9 3.1 2.3 1.4.3 4.3.4 5.7-.2 1.4-.6 2.2-2.8 2.6-3.5.5-.6 0-.4 0-.5 .1-.9.6-3.4.8-5.1.3-1.7.4-3.3.9-4.9.5-1.7 1.6-3.2 2.3-4.8.6-1.7 1.1-3.5 1.7-5.1.6-1.6 1.4-2.9 2.1-4.4.8-1.4 1.8-3.7 2.1-4.5.4-.8.1-.3.1-.4"/><path stroke-width="1.5" d="M78.4 42.2c.1.9.6 3.7.9 5.4.2 1.8.1 3.5.5 5.2.3 1.7 1.2 3.5 1.7 5.1.5 1.7.7 3.2 1.1 4.9.4 1.7.9 3.5 1.5 5.3.6 1.8 1.5 3.6 2 5.3.6 1.8.9 3.6 1.4 5.3.5 1.7 1.1 3.3 1.6 5 .5 1.8.8 3.5 1.2 5.3.4 1.7.8 3.5 1.2 5.1.3 1.7.7 4 .8 4.8.1.9-.1.4-.1.5 -.2-.9-.8-3.4-1.1-5.2-.4-1.7-.6-3.3-1-5-.5-1.7-1.4-3.3-1.9-5.1-.4-1.7-.5-3.6-.9-5.4-.4-1.8-1.1-3.7-1.6-5.5-.5-1.8-1-3.6-1.4-5.2-.4-1.6-.7-3.7-.9-4.4M87.2 90.6c.5.1 2.1.3 3.1.4 1 .2 2.6.3 3.1.4"/><path stroke-width="1.5" d="M34.4 52.2c-.3.8-1.1 3.2-1.7 4.8-.5 1.5-1.1 3-1.7 4.5-.7 1.6-1.4 3.3-2.2 4.8-.8 1.6-1.8 2.9-2.5 4.5-.8 1.7-1.3 3.6-2.1 5.2-.8 1.7-1.8 3.2-2.7 4.9-.9 1.6-1.8 3.3-2.6 5-.8 1.6-1.3 3.3-2.2 4.8-.9 1.6-2.1 3.1-3.1 4.6-.9 1.5-2.2 3.8-2.6 4.5M13.4 91.6c.6-.1 2.6-.4 3.7-.6 1-.2 2.2-.5 2.7-.6"/><path stroke-width="1.4" d="M36.6 29.6c-.2.8-.8 3.3-1.1 4.9-.3 1.7-.7 3.2-.9 5-.3 1.7-.3 3.5-.4 5.3 0 1.7-.2 3.6 0 5.3.1 1.8.5 3.6.8 5.2.3 1.7.2 3.4 1.1 4.7.9 1.3 2.6 2.3 4.1 3.2 1.5.9 3.4 1.7 5 2.1 1.7.4 3.9.2 5 .2 1.1-.1 1.5-.3 1.8-.3"/><path stroke-width="1.4" d="M53.2 46.4c.4-.3 1.8-1 2.6-1.6.9-.5 2.2-1.3 2.6-1.6 -.3.5-1.4 2.1-2.1 3-.7 1-1.7 2.2-2.1 2.9-.5.6-.5.7-.6.9 .4-.3 1.8-1 2.6-1.5.9-.6 2.2-1.4 2.6-1.7 -.4.5-1.4 2-2.1 3-.7 1-1.6 2.3-2.1 2.9-.4.6-.5.7-.6.9 .5-.4 2.4-1.6 3.3-2.1.8-.5 1.4-.9 1.7-1.1"/><path stroke-width="1.5" d="M4 100.2c1 0 3.9.2 5.7.3 1.8.1 3.4.4 5.1.3 1.7 0 3.7-.5 5.2-.6 1.6-.1 3.3 0 4 0M40 101.4c.9 0 3.7-.1 5.5-.2 1.8-.1 3.6-.4 5.3-.5 1.7-.1 3.2-.1 5 0 1.7.1 4.2.3 5.3.5 1 .1.7.2.9.2M72 100.8c.9 0 3.6.1 5.3.2 1.8.1 3.5.4 5.3.5 1.8 0 4-.2 5.8-.4 1.8-.1 3.6-.5 5-.6 1.5-.2 3-.3 3.6-.3"/></g></svg>
+    <div class="id">
+      <h1 class="nm"><span class="hari">Hari</span> <span class="gr">GRIDHARAN</span></h1>
+      <p class="sub"><span>Applied Economics + AI ·</span> <span>Cornell Dyson&nbsp;’29 ·</span> <span>Dyson Scholar</span></p>
+    </div>
+    <p class="seek">Seeking Summer&nbsp;2027 roles in strategy, investing, BA&nbsp;&amp;&nbsp;PM — NYC&nbsp;/&nbsp;SF</p>
+    <div class="acts">
+      <a class="btn pri" href="/Hari_Gridharan_Resume.pdf">Resume&nbsp;↓<svg class="sk" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path d="M1.8 4Q50.6 3.8 99.4 4.8M96.5 3.9Q95.9 21.2 95.5 38.5M96.5 35.4Q49.5 35.8 2.5 35.2M4.5 36.9Q5.1 19.5 3.5 2.3"/><path d="M4.6 5.2Q5 22.7 5.6 40.2M3.7 36.7Q51 37.4 98.2 35.8M95.4 37.7Q96.2 19.3 95.5 1M96.1 4.6Q49.7 5.6 3.3 5.9"/></svg></a>
+      <a class="btn" href="mailto:hg532@cornell.edu">Email<svg class="sk" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path d="M2 4.3Q50.3 3.6 98.7 4.8M95.3 3.2Q96.2 20.5 96.6 37.8M98.2 35.3Q51 36.4 3.8 35.5M4.9 37.1Q5 19.2 3.5 1.4"/><path d="M5.3 3.6Q3.7 22 4.3 40.6M2.8 36.9Q50.4 35.8 98 35.8M96.9 38.3Q94.7 19.8 95 1.2M96.3 4.6Q49 3.6 1.7 4.7"/></svg></a>
+      <span class="lk"><a href="https://www.linkedin.com/in/harigridharan1/" target="_blank" rel="noopener noreferrer">LinkedIn<svg class="ul" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><use href="#u2"/></svg></a><span class="sp"> · </span><a href="https://github.com/hgridharan999" target="_blank" rel="noopener noreferrer">GitHub<svg class="ul" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><use href="#u1"/></svg></a></span>
+    </div>
+  </header>
+
+  <main>
+  <svg class="dv dv0" viewBox="0 0 640 40" aria-hidden="true"><path stroke-width="1.9" d="M0 20.7c3.3.2 13.3.9 19.9 1.6 6.7.6 13.5 1.2 20.2 2.1 6.6.9 13.2 2.5 19.9 3.3 6.6.8 13.3 1 20 1.5 6.7.5 13.3 1.2 20 1.5 6.7.4 13.4 1 20 .5 6.6-.5 13.1-2.5 19.8-3.6 6.7-1.1 13.5-2.3 20.2-3.2 6.7-.9 13.3-1.8 20-2.4 6.7-.5 13.3-.4 20-.7 6.7-.4 13.4-.6 20.1-1.5 6.6-1 13.2-3.3 19.8-4.4 6.7-1.1 13.4-1.4 20.1-2 6.7-.6 13.3-.9 20-1.5 6.7-.6 13.3-1.6 20-2 6.6-.4 13.3-.6 20-.3 6.7.3 13.5.9 20.1 2.1 6.7 1.3 13.2 4.2 19.8 5.4 6.7 1.3 13.4 2 20.1 2.1 6.7.2 13.3-.8 20-1 6.7-.2 13.3.1 20-.1 6.7-.2 13.3-1.1 20-1.3 6.6-.3 13.3-.4 20-.2 6.7.3 13.3.9 20 1.6 6.6.7 13.3 1.8 20 2.5 6.7.7 13.3 1.7 20 1.8 6.7.1 13.3-1.4 20-1.4 6.7-.1 13.3.5 20 1.2 6.6.7 13.2 2.3 19.9 3 6.7.8 13.5.9 20.2 1.5 6.6.6 13.3 1.6 19.9 2.2 6.7.7 16.7 1.5 20 1.8"/><path stroke-width="1.4" d="M0 23.9c3.3.1 13.4.2 20.1.9 6.6.7 13.2 2.6 19.9 3.5 6.7.8 13.4.9 20.1 1.6 6.6.7 13.2 1.8 19.9 2.5 6.6.8 13.3 1.7 20 2 6.6.2 13.3-.1 20-.7 6.7-.6 13.4-1.6 20.1-2.9 6.6-1.3 13.1-4 19.8-5 6.6-1.1 13.4-1.2 20.1-1.5 6.7-.4 13.3 0 20-.6 6.7-.6 13.3-2.1 20-2.9 6.6-.9 13.4-1.5 20.1-2.2 6.6-.8 13.2-1.7 19.9-2.3 6.7-.6 13.4-.8 20-1.2 6.7-.4 13.3-1 20-1.1 6.7-.1 13.4-.3 20.1.6 6.7.9 13.3 3.5 19.9 4.6 6.7 1 13.4 1.5 20 1.9 6.7.4 13.3.3 20 .5 6.7.2 13.3.6 20 .6 6.7 0 13.3-.5 20-.7 6.7-.2 13.3-.2 20-.4 6.7-.2 13.3-.9 20-.6 6.7.3 13.4 1.5 20 2.3 6.7.8 13.3 2.3 20 2.5 6.6.2 13.3-.9 20-1 6.6-.1 13.3.1 20 .4 6.7.4 13.3 1.1 20 1.8 6.6.8 13.3 2 20 2.9 6.6.9 13.3 1.9 19.9 2.4 6.7.5 13.5.1 20.1.5 6.7.4 16.7 1.6 20 1.9"/><path stroke-width="1.1" d="M0 17.7c3.3-.2 13.3-1.4 20-1.4 6.7.1 13.3 1 20 1.8 6.6.7 13.3 2 20 2.9 6.6.8 13.3 1.3 20 2.1 6.6.8 13.3 1.9 19.9 2.4 6.7.5 13.4.7 20.1.6 6.7-.2 13.3-.5 19.9-1.4 6.7-.9 13.3-2.8 19.9-4.1 6.7-1.2 13.4-2.8 20.1-3.3 6.7-.6 13.4.4 20.1.2 6.7-.2 13.4-.9 20.1-1.6 6.6-.8 13.3-2.1 20-2.9 6.6-.9 13.3-1.7 19.9-2.5 6.7-.7 13.3-1.4 20-1.9 6.6-.5 13.3-.8 20-1.1 6.7-.3 13.4-1.1 20-.8 6.7.4 13.5 1.8 20.1 2.9 6.7 1.2 13.3 3.2 19.9 4 6.7.9 13.3 1 20 1.3 6.7.3 13.4.7 20 .7 6.7 0 13.3-.4 20-.7 6.7-.3 13.3-.7 20-1 6.7-.3 13.3-.7 20-.8 6.7-.2 13.4-.6 20.1 0 6.6.5 13.2 2.2 19.9 3 6.6.9 13.3 1.6 20 1.8 6.7.3 13.3-.1 20-.1 6.7 0 13.3-.1 20 .1 6.7.2 13.3.2 20 .8 6.6.6 13.3 2 20 2.7 6.6.6 13.4.8 20 1.1 6.7.4 16.7.8 20 1"/></svg>
+
+  <section aria-labelledby="now">
+    <h2 class="lbl" id="now"><span class="n">01</span> · NOW</h2>
+    <ul class="rows">
+      <li class="row">
+        <div class="top">
+          <div class="t"><h3 class="role">Co-Founder, <span class="co">Loadstone Labs</span></h3> <span class="tk">TK: 2025 or 2026</span></div>
+          <span class="yr">2026</span>
+        </div>
+        <p class="ln">Venture-backed data platform for Western water rights&nbsp;<span class="sp">·</span> <span class="nw"><span class="tk">TK: shared metric</span>&nbsp;<span class="sp">·</span></span> <a href="https://loadstonelabs.com" target="_blank" rel="noopener noreferrer">loadstonelabs.com&nbsp;↗<svg class="ul" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><use href="#u1"/></svg></a></p>
+      </li>
+      <li class="row">
+        <div class="top">
+          <div class="t"><h3 class="role">Co-Founder, <span class="co">Commit</span></h3></div>
+          <span class="yr">2025</span>
+        </div>
+        <p class="ln"><span class="n">Top 10% of 20,000+&nbsp;YC applicants</span>&nbsp;<span class="sp">·</span> prediction-market MVP built in 3&nbsp;days</p>
+      </li>
+      <li class="row">
+        <div class="top">
+          <div class="t"><h3 class="role">President, <span class="co">Cornell Entrepreneurship Club</span></h3></div>
+          <span class="yr">2025</span>
+        </div>
+        <p class="ln"><span class="n">150+&nbsp;attendees</span> at the YC speaker series I run&nbsp;<span class="sp">·</span> <span class="tk">TK: one verified reach number</span></p>
+      </li>
+      <li class="row">
+        <div class="top">
+          <div class="t"><h3 class="role">Builder, <span class="co">Cornell Armada</span></h3></div>
+          <span class="yr">2026</span>
+        </div>
+        <p class="ln">Built bigred.network, Cornell’s founder directory&nbsp;<span class="sp">·</span> <span class="nw"><span class="tk">TK: member count</span>&nbsp;<span class="sp">·</span></span> <a href="https://www.bigred.network/" target="_blank" rel="noopener noreferrer">bigred.network&nbsp;↗<svg class="ul" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><use href="#u2"/></svg></a></p>
+      </li>
+      <li class="row">
+        <div class="top">
+          <div class="t"><h3 class="role">Business Analyst, <span class="co">Cornell DTI</span></h3></div>
+          <span class="yr">2025</span>
+        </div>
+        <p class="ln"><span class="n">15,000+&nbsp;Cornell users</span> on the student tools I analyze&nbsp;<span class="sp">·</span> benchmarked 8&nbsp;peer platforms</p>
+      </li>
+    </ul>
+  </section>
+
+  <svg class="dv" viewBox="0 0 640 40" aria-hidden="true"><use href="#cB"/></svg>
+
+  <section aria-labelledby="before">
+    <h2 class="lbl" id="before"><span class="n">02</span> · BEFORE</h2>
+    <ul class="rows">
+      <li class="row">
+        <div class="top">
+          <div class="t"><h3 class="role">Consulting Intern, <span class="co">EXL</span></h3></div>
+          <span class="yr"><span class="mt">New York</span> · 2026</span>
+        </div>
+        <p class="ln"><span class="n">$70M+&nbsp;Fortune&nbsp;100 contract book</span> supported&nbsp;<span class="sp">·</span> built a CRM tool that replaced manual tracking</p>
+      </li>
+      <li class="row">
+        <div class="top">
+          <div class="t"><h3 class="role">Operations &amp; Strategy Intern, <span class="co">Midian Partners</span></h3></div>
+          <span class="yr">2026</span>
+        </div>
+        <p class="ln"><span class="n">6&nbsp;→&nbsp;25+&nbsp;signed lender partners</span> in five&nbsp;weeks</p>
+      </li>
+      <li class="row">
+        <div class="top">
+          <div class="t"><h3 class="role">AI/Strategy Consultant (Contract), <span class="co">Adobe</span></h3></div>
+          <span class="yr">2026</span>
+        </div>
+        <p class="ln"><span class="n">$1M+&nbsp;enterprise contracts</span> shaped by AI market sizing and positioning work</p>
+      </li>
+      <li class="row">
+        <div class="top">
+          <div class="t"><h3 class="role">Problem Design Engineer, <span class="co">Widget Factory</span></h3> <span class="tk">TK: or “IdlExperts (fka Widget Factory)”</span></div>
+          <span class="yr">2026</span>
+        </div>
+        <p class="ln">Problem sets used to evaluate frontier AI models</p>
+      </li>
+    </ul>
+  </section>
+
+  <svg class="dv" viewBox="0 0 640 40" aria-hidden="true"><use href="#cC"/></svg>
+
+  <section aria-labelledby="built">
+    <h2 class="lbl" id="built"><span class="n">03</span> · BUILT</h2>
+    <ul class="rows">
+      <li class="row">
+        <div class="top">
+          <div class="t"><h3 class="role"><span class="co">Climate startup search</span></h3></div>
+          <span class="rt"><a href="/climate-search">Try it&nbsp;→<svg class="ul" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><use href="#u1"/></svg></a></span>
+        </div>
+        <p class="ln"><span class="n">212&nbsp;startups</span>, ~600ms hybrid BERT + BM25 queries</p>
+      </li>
+      <li class="row">
+        <div class="top">
+          <div class="t"><h3 class="role"><span class="co">LLM Cost Optimizer</span></h3></div>
+          <span class="rt"><a href="https://github.com/hgridharan999/token_optimizer" target="_blank" rel="noopener noreferrer">Repo&nbsp;↗<svg class="ul" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><use href="#u2"/></svg></a></span>
+        </div>
+        <p class="ln">Model routing + semantic caching across GPT-4, Claude and Gemini&nbsp;<span class="sp">·</span> <span class="tk">TK: % cost cut</span></p>
+      </li>
+      <li class="row">
+        <div class="top">
+          <div class="t"><h3 class="role"><span class="co">TrailSense</span></h3> <span class="tk">TK: ships only if deployed or demoed</span></div>
+          <span class="rt"><a href="/trailsense">Open&nbsp;→<svg class="ul" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><use href="#u1"/></svg></a></span>
+        </div>
+        <p class="ln">XGBoost + SHAP trail-feasibility scoring on live NWS weather</p>
+      </li>
+    </ul>
+  </section>
+
+  <svg class="dv fx" viewBox="0 0 640 40" aria-hidden="true"><use href="#cB"/></svg>
+
+  <section aria-labelledby="writing">
+    <h2 class="lbl" id="writing"><span class="n">04</span> · WRITING <span class="tk">TK: hidden until 2 essays are live</span></h2>
+    <ul class="rows">
+      <li class="row">
+        <div class="top">
+          <div class="t"><h3 class="role"><span class="co">Water is the bottleneck nobody prices</span></h3></div>
+          <span class="yr">Draft</span>
+        </div>
+      </li>
+      <li class="row">
+        <div class="top">
+          <div class="t"><h3 class="role"><span class="co">What scaling a lender network taught me about mortgage pricing engines</span></h3></div>
+          <span class="yr">Draft</span>
+        </div>
+      </li>
+      <li class="row">
+        <div class="top">
+          <div class="t"><h3 class="role"><span class="co">Regression to the mean: what LLM homogenization means for consumer brands</span></h3></div>
+          <span class="yr">Draft</span>
+        </div>
+      </li>
+    </ul>
+    <p class="more"><a href="/writing">All writing&nbsp;→<svg class="ul" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><use href="#u2"/></svg></a></p>
+  </section>
+
+  <svg class="dv fx" viewBox="0 0 640 40" aria-hidden="true"><use href="#cC"/></svg>
+
+  <section aria-labelledby="off-the-clock">
+    <h2 class="lbl" id="off-the-clock"><span class="n">05</span> · OFF THE CLOCK</h2>
+    <div class="off">
+      <p><b>Hiking Colorado 14ers</b> — most recent: Quandary&nbsp;Peak, 14,265&nbsp;ft, under 4:30 round trip <a href="/hiking">→&nbsp;trail log<svg class="ul" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><use href="#u1"/></svg></a></p>
+      <p><b>Carnatic &amp; indie singing</b> · cooking regional Indian food</p>
+    </div>
+  </section>
+
+  <svg class="dv fxy" viewBox="0 0 640 40" aria-hidden="true"><use href="#cB"/></svg>
+
+  <section aria-labelledby="elsewhere">
+    <h2 class="lbl" id="elsewhere"><span class="n">06</span> · ELSEWHERE</h2>
+    <p class="els"><a href="https://www.linkedin.com/in/harigridharan1/" target="_blank" rel="noopener noreferrer">LinkedIn<svg class="ul" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><use href="#u2"/></svg></a>&nbsp;<span class="sp">·</span> <a href="https://github.com/hgridharan999" target="_blank" rel="noopener noreferrer">GitHub<svg class="ul" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><use href="#u1"/></svg></a>&nbsp;<span class="sp">·</span> <a href="mailto:hg532@cornell.edu">hg532@cornell.edu<svg class="ul" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><use href="#u2"/></svg></a>&nbsp;<span class="sp">·</span> <a href="/Hari_Gridharan_Resume.pdf">Resume<svg class="ul" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><use href="#u1"/></svg></a></p>
+  </section>
+  </main>
+
+  <footer class="ft">
+    <p>Last updated Oct&nbsp;2026</p>
+    <svg class="dv" viewBox="0 0 160 24" aria-hidden="true"><use href="#cF"/></svg>
+  </footer>
+</div>
+<script>
+(function(){
+  var d=document.documentElement;
+  if(!d.classList.contains('js'))return;
+  try{
+    var H=[].slice.call(document.querySelectorAll('.hk path')),
+        D=[].slice.call(document.querySelectorAll('.dv0 path')),
+        T=1200,min=50,L=H.map(function(p){return p.getTotalLength()}),
+        S=L.reduce(function(a,b){return a+b},0),
+        du=L.map(function(l){return Math.max(min,T*l/S)}),
+        k=T/du.reduce(function(a,b){return a+b},0),t=0;
+    H.forEach(function(p,i){
+      var x=du[i]*k;
+      p.style.setProperty('--l',L[i]);p.style.setProperty('--o',L[i]+4);
+      p.style.setProperty('--d',x+'ms');p.style.setProperty('--s',t+'ms');
+      t+=x;
+    });
+    D.forEach(function(p,i){
+      var l=p.getTotalLength();
+      p.style.setProperty('--l',l);p.style.setProperty('--o',l+4);
+      p.style.setProperty('--d',(500+i*20)+'ms');p.style.setProperty('--s',(T-60+i*70)+'ms');
+    });
+    var go=function(){requestAnimationFrame(function(){requestAnimationFrame(function(){d.classList.add('go')})})};
+    if(document.hidden){
+      document.addEventListener('visibilitychange',function f(){
+        if(!document.hidden){document.removeEventListener('visibilitychange',f);go()}
+      });
+    }else go();
+  }catch(e){d.classList.remove('js')}
+})();
+</script>
+</body>
+</html>

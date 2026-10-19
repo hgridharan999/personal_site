@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0B0A0A">
+<title>Hari Gridharan — Cornell Dyson ’29</title>
+<meta name="description" content="Dyson Scholar and Loadstone Labs co-founder. Seeking Summer 2027 roles in strategy, investing, BA and PM.">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;700&family=Instrument+Serif:ital@1&display=swap">
+<style>
+:root{
+  --bg:#0B0A0A; --cream:#EDE7DA; --tan:#E8C089;
+  --muted:#A39E94;            /* 7.4:1 on --bg */
+  --faint:#8A8A8A;            /* 5.7:1 on --bg: floor, collar text only */
+  --hair:rgba(237,231,218,.2); --hair-strong:rgba(237,231,218,.42); --tick:rgba(237,231,218,.34);
+  --contour-index:.1; --contour:.07;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --serif:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --ease-out:cubic-bezier(.16,1,.3,1); --ease-pen:cubic-bezier(.65,0,.35,1);
+  --col:640px; --gutter:16px; --mark:96px; --name:min(36px,calc((100vw - 142px) / 5.75));
+}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg);color-scheme:dark;-webkit-text-size-adjust:100%;text-size-adjust:100%;scroll-padding-top:16px}
+body{margin:0;background:var(--bg);color:var(--cream);font:400 16px/1.6 var(--sans);-webkit-font-smoothing:antialiased;overflow-wrap:break-word}
+::selection{background:var(--tan);color:var(--bg)}
+a{color:inherit;text-decoration:underline;text-decoration-color:var(--hair-strong);text-decoration-thickness:1px;text-underline-offset:.22em}
+a:focus-visible{outline:2px solid var(--tan);outline-offset:3px}
+.defs{position:absolute;width:0;height:0;overflow:hidden}
+
+/* sheet + collar ---------------------------------------------------- */
+.sheet{position:relative;padding:0 var(--gutter) 28px}
+.col{max-width:var(--col);margin-inline:auto}
+.collar{display:flex;justify-content:space-between;gap:12px;margin-inline:calc(var(--gutter) * -1);padding:10px var(--gutter);font:400 10px/12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--faint);white-space:nowrap}
+.collar--top{border-bottom:1px solid var(--hair)}
+.collar--bottom{border-top:1px solid var(--hair);margin-top:8px}
+.wide,.ticks{display:none}
+.scale{display:inline-flex;align-items:center;gap:7px}
+.bar{display:block;width:64px;height:5px;border:1px solid var(--faint);background:repeating-linear-gradient(90deg,var(--faint) 0 16px,transparent 16px 32px)}
+
+/* header ------------------------------------------------------------- */
+.hd{display:grid;grid-template-columns:var(--mark) minmax(0,1fr);grid-template-areas:"mark name" "meta meta" "seek seek" "act act";column-gap:14px;align-items:center;padding-top:28px;margin-bottom:10px}
+.mark{grid-area:mark;display:block;width:var(--mark);height:var(--mark);fill:none;stroke:var(--cream);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.mark .ridge{stroke:var(--tan)}
+.name{grid-area:name;margin:0;font:700 var(--name)/1 var(--sans);letter-spacing:-.03em;text-wrap:balance}
+.hari{font:italic 400 1.34em/1 var(--serif);letter-spacing:0;color:var(--tan);margin-right:.06em}
+.sur{display:inline-block;text-transform:uppercase}
+.meta{grid-area:meta;margin:20px 0 0;text-wrap:balance}
+.seek{grid-area:seek;margin:6px 0 0;color:var(--tan);text-wrap:balance}
+.act{grid-area:act;display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:18px}
+.tab{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border:1px solid var(--hair-strong);border-radius:0;font:500 13px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;text-decoration:none;color:var(--cream)}
+.tab--fill{background:var(--tan);border-color:var(--tan);color:var(--bg)}
+.tab:focus-visible{outline-offset:3px}
+.links{display:flex;flex-wrap:wrap;gap:4px 18px}
+
+/* contour dividers ---------------------------------------------------- */
+.divider{position:relative;height:44px;margin:0 calc(var(--gutter) * -1);color:var(--cream)}
+.contours{display:block;width:100%;height:44px;fill:none;stroke:currentColor}
+.ci,.cm{fill:none;stroke:currentColor;stroke-linecap:round}
+.ci{stroke-width:1.3;stroke-opacity:var(--contour-index)}
+.cm{stroke-width:.8;stroke-opacity:var(--contour)}
+.clabel{position:absolute;left:200px;top:var(--ly);transform:translateY(-50%);padding:0 6px;background:var(--bg);font:400 10px/12px var(--mono);letter-spacing:.14em;color:var(--faint);white-space:nowrap}
+
+/* sections + rows ---------------------------------------------------- */
+section{padding-bottom:20px}
+.wp{margin:10px 0 6px;font:500 12px/1.6 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.wp .n{color:var(--tan)}
+.rows{list-style:none;margin:0;padding:0}
+.row{position:relative;padding:12px 0}
+.row-h{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:16px;align-items:baseline}
+.role{margin:0;font:500 17px/1.4 var(--sans);text-wrap:balance}
+.mt{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:baseline;gap:2px 10px;text-align:right;font:400 13px/1.4 var(--mono);color:var(--muted)}
+.yr{font-variant-numeric:tabular-nums;color:var(--cream)}
+.mt .tk{flex:none}
+.ln{font:500 15px/1.4 var(--sans);white-space:nowrap}
+.one{margin:2px 0 0;color:var(--muted);text-wrap:pretty}
+.one--cream{color:var(--cream);margin:0}
+.k{color:var(--cream);font-weight:500}
+.nw{white-space:nowrap}
+.more{margin:4px 0 0;font-weight:500}
+.inline{display:flex;flex-wrap:wrap;gap:4px 22px;margin:6px 0 0;padding:0;list-style:none}
+
+/* [TK] annotation chips ---------------------------------------------- */
+.tk{display:inline-block;max-width:100%;padding:1px 5px;border:1px dashed var(--tan);color:var(--tan);font:400 11px/1.5 var(--mono);letter-spacing:0;text-transform:none;white-space:normal;vertical-align:baseline}
+.wp .tk{margin-left:6px}
+
+/* footer legend ------------------------------------------------------- */
+.legend{border:1px solid var(--hair);padding:12px 14px;font:400 11px/1.5 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.lg{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;margin:0;padding:0;list-style:none}
+.lg li{display:inline-flex;align-items:center;gap:7px}
+.lg-t{color:var(--faint)}
+.tri{display:block;width:10px;height:9px;background:radial-gradient(circle at 50% 68%,var(--bg) 0 1.1px,transparent 1.3px),var(--tan);clip-path:polygon(50% 0,0 100%,100% 100%)}
+.sw{display:block;fill:none;stroke:currentColor;stroke-opacity:.7;stroke-width:1}
+.sw .x{stroke-width:1.6}
+.stamp{margin:10px 0 0;padding-top:10px;border-top:1px solid var(--hair)}
+
+/* hiker draw-in is set up by JS; without JS the mark is simply drawn. */
+
+@media (min-width:768px){
+  :root{--gutter:40px;--mark:112px;--name:44px}
+  .sheet{width:calc(var(--col) + var(--gutter) * 2 + 2px);margin:64px auto;border:1px solid var(--hair);padding:44px var(--gutter) 40px}
+  .collar{position:absolute;left:0;right:0;margin:0;padding:0;border:0}
+  .collar--top{bottom:calc(100% + 10px)}
+  .collar--bottom{top:calc(100% + 10px);margin:0}
+  .wide{display:inline}
+  .ticks{display:block;position:absolute;inset:0;pointer-events:none;
+    background:
+      repeating-linear-gradient(90deg,var(--tick) 0 1px,transparent 1px 40px) 0 0/100% 5px no-repeat,
+      repeating-linear-gradient(90deg,var(--tick) 0 1px,transparent 1px 40px) 0 100%/100% 5px no-repeat,
+      repeating-linear-gradient(0deg,var(--tick) 0 1px,transparent 1px 40px) 0 0/5px 100% no-repeat,
+      repeating-linear-gradient(0deg,var(--tick) 0 1px,transparent 1px 40px) 100% 0/5px 100% no-repeat}
+  .ticks i{position:absolute;width:15px;height:15px;background:
+      linear-gradient(var(--hair-strong),var(--hair-strong)) 50% 50%/100% 1px no-repeat,
+      linear-gradient(var(--hair-strong),var(--hair-strong)) 50% 50%/1px 100% no-repeat}
+  .ticks i:nth-child(1){top:-8px;left:-8px}
+  .ticks i:nth-child(2){top:-8px;right:-8px}
+  .ticks i:nth-child(3){bottom:-8px;left:-8px}
+  .ticks i:nth-child(4){bottom:-8px;right:-8px}
+  .hd{grid-template-areas:"mark name" "mark meta" "seek seek" "act act";column-gap:20px;padding-top:0}
+  .name{align-self:end}
+  .meta{align-self:start;margin-top:10px}
+  .seek{margin-top:24px}
+  .act{margin-top:16px}
+  .links{margin-left:6px}
+}
+
+/* desktop pointers only: benchmark marker + company name ------------ */
+@media (hover:hover) and (pointer:fine){
+  .row::before{content:"";position:absolute;left:-26px;top:21px;width:10px;height:9px;background:radial-gradient(circle at 50% 68%,var(--bg) 0 1.1px,transparent 1.3px),var(--tan);clip-path:polygon(50% 0,0 100%,100% 100%);opacity:0;transform:translateY(3px)}
+  .row:hover::before,.row:focus-within::before{opacity:1;transform:none;transition:opacity .28s var(--ease-out),transform .28s var(--ease-out)}
+  .row:hover .co,.row:focus-within .co{color:var(--tan)}
+  a:hover{color:var(--tan);text-decoration-color:var(--tan)}
+  .tab:hover{color:var(--tan);border-color:var(--tan)}
+  .tab--fill:hover{color:var(--bg);background:var(--cream);border-color:var(--cream)}
+}
+@media (min-width:480px){.inline{column-gap:0}.inline li:not(:last-child)::after{content:"·";margin:0 .7em;color:var(--faint)}}
+@media (hover:none),(pointer:coarse){.lg-role{display:none}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<svg class="defs" width="0" height="0" aria-hidden="true" focusable="false"><defs><g id="topo">
+  <path class="cm" d="M0 11.8q12 -0.7 18 -0.8q6 -0.1 12 0.3q6 0.5 12 0.5q6 0 12 -0.7q6 -0.7 12 -1q6 -0.4 12 -0.4q6 -0.1 12 -0.3q6 -0.2 12 0.1q6 0.3 12 1.2q6 0.9 12 1q6 0.2 12 -0.4q6 -0.6 12 -0.9q6 -0.4 12 -0.8q6 -0.4 12 -1.2q6 -0.7 12 -1q6 -0.2 12 -0.2q6 0.1 12 -0.6q6 -0.7 12 -1.7q6 -1 12 -1.4q6 -0.4 12 -0.5q6 -0.2 12 -0.2q6 0 12 0.8q6 0.8 12 1.8q6 1 12 1.3q6 0.2 12 0.2q6 0 12 0.3q6 0.4 12 0.5q6 0.2 12 0.3q6 0.1 12 0.7q6 0.6 12 1q6 0.4 12 -0.1q6 -0.5 12 -1q6 -0.5 12 -0.4q6 0.1 12 0.1q6 0 12 0.4q6 0.3 12 1.3q6 1 12 1.7q6 0.7 12 0.5q6 -0.2 12 -0.2q6 -0.1 12 0.1q6 0.2 12 0q6 -0.2 12 -0.3q6 -0.1 12 0.1q6 0.2 12 -0.3q6 -0.5 12 -1.8q6 -1.3 12 -2.2q6 -0.9 12 -1.4q6 -0.5 12 -1q6 -0.5 12 -0.5q6 0 12 0.6q6 0.6 12 0.5q6 0 12 -0.5q6 -0.5 12 -0.4q6 0.1 12 0.4q6 0.3 12 0.3q6 0.1 12 0.5q6 0.4 12 0.9q6 0.5 12 0q6 -0.4 12 -1.2q6 -0.8 12 -1q6 -0.2 12 -0.1q6 0 12 0.1q6 0.1 12 0.8q6 0.7 12 1.6q6 0.9 12 1q6 0.1 12 0.2q6 0.1 12 0.8q6 0.7 12 1.3q6 0.6 12 1.1q6 0.4 12 1.2q6 0.7 12 1q6 0.3 12 -0.5q6 -0.8 12 -1.6q6 -0.8 12 -1.1q6 -0.3 12 -0.7q6 -0.4 12 -0.7q6 -0.3 12 -0.1q6 0.2 12 0.2q6 -0.1 12 -0.8q6 -0.7 12 -1.1q6 -0.3 12 0q6 0.3 12 0.4q6 0.1 12 0.3q6 0.2 12 0.6q6 0.4 12 0q6 -0.4 12 -1.4q6 -1.1 12 -1.7q6 -0.6 12 -0.8q6 -0.2 12 -0.5q6 -0.3 12 -0.3q6 0 12 0.4q6 0.4 12 0.2q6 -0.2 12 -0.5q6 -0.4 12 0.1q6 0.5 12 1.3q6 0.9 12 1.6q6 0.7 12 1.6q6 0.9 12 1.8q6 0.9 12 0.8q6 -0.1 12 -0.6q6 -0.5 12 -0.4q6 0.1 12 0.3q6 0.2 12 0q6 -0.1 12 0.1q6 0.2 12 0.3q6 0.1 12 -0.5q6 -0.6 12 -1.1q6 -0.5 12 -0.1q6 0.4 12 0.8q6 0.5 12 0.7q6 0.3 12 0.8q6 0.5 12 0.6q6 0.1 12 -0.8q6 -0.9 12 -1.6q6 -0.7 12 -0.9q6 -0.2 12 -0.6q6 -0.4 12 -1q6 -0.5 12 -0.8q6 -0.2 12 -0.8L1440 5.6"/>
+  <path class="ci" d="M0 22.9q12 -0.8 18 -0.9q6 -0.1 12 0.4q6 0.6 12 0.6q6 0 12 -0.8q6 -0.8 12 -1.2q6 -0.4 12 -0.5q6 -0.1 12 -0.3q6 -0.2 12 0.2q6 0.4 12 1.4q6 1 12 1.2q6 0.2 12 -0.5q6 -0.7 12 -1.1q6 -0.4 12 -0.9q6 -0.5 12 -1.4q6 -0.9 12 -1.1q6 -0.3 12 -0.2q6 0.1 12 -0.7q6 -0.8 12 -1.9q6 -1.2 12 -1.6q6 -0.4 12 -0.6q6 -0.2 12 -0.2q6 0 12 0.9q6 1 12 2.2q6 1.2 12 1.5q6 0.3 12 0.2q6 0 12 0.4q6 0.4 12 0.6q6 0.2 12 0.3q6 0.1 12 0.8q6 0.7 12 1.2q6 0.5 12 -0.1q6 -0.6 12 -1.2q6 -0.6 12 -0.5q6 0.1 12 0.1q6 0.1 12 0.4q6 0.4 12 1.6q6 1.2 12 2q6 0.8 12 0.6q6 -0.2 12 -0.3q6 -0.1 12 0.1q6 0.2 12 0q6 -0.2 12 -0.3q6 -0.1 12 0.1q6 0.3 12 -0.3q6 -0.6 12 -2.1q6 -1.5 12 -2.6q6 -1.1 12 -1.6q6 -0.6 12 -1.2q6 -0.6 12 -0.6q6 0 12 0.7q6 0.7 12 0.6q6 0 12 -0.6q6 -0.5 12 -0.5q6 0.1 12 0.4q6 0.3 12 0.4q6 0.1 12 0.5q6 0.5 12 1q6 0.6 12 0q6 -0.5 12 -1.5q6 -0.9 12 -1.1q6 -0.2 12 -0.1q6 0.1 12 0.2q6 0.1 12 1q6 0.9 12 1.9q6 1 12 1.1q6 0.1 12 0.2q6 0.1 12 0.9q6 0.8 12 1.5q6 0.7 12 1.2q6 0.5 12 1.4q6 0.9 12 1.2q6 0.3 12 -0.6q6 -0.9 12 -1.9q6 -1 12 -1.3q6 -0.3 12 -0.8q6 -0.5 12 -0.8q6 -0.3 12 -0.1q6 0.3 12 0.2q6 -0.1 12 -1q6 -0.9 12 -1.2q6 -0.4 12 0q6 0.3 12 0.4q6 0.1 12 0.3q6 0.2 12 0.7q6 0.5 12 0.1q6 -0.4 12 -1.7q6 -1.3 12 -2q6 -0.7 12 -1q6 -0.2 12 -0.6q6 -0.4 12 -0.4q6 0 12 0.5q6 0.5 12 0.3q6 -0.2 12 -0.6q6 -0.4 12 0.1q6 0.5 12 1.6q6 1 12 1.8q6 0.8 12 1.9q6 1.1 12 2.1q6 1 12 0.9q6 -0.1 12 -0.7q6 -0.6 12 -0.4q6 0.1 12 0.3q6 0.2 12 0q6 -0.1 12 0.1q6 0.2 12 0.4q6 0.2 12 -0.6q6 -0.7 12 -1.3q6 -0.5 12 -0.1q6 0.5 12 1q6 0.5 12 0.9q6 0.3 12 0.9q6 0.6 12 0.7q6 0.1 12 -0.9q6 -1 12 -1.9q6 -0.9 12 -1.1q6 -0.2 12 -0.7q6 -0.5 12 -1.1q6 -0.6 12 -0.9q6 -0.2 12 -0.9L1440 15.6"/>
+  <path class="cm" d="M0 32.4q12 -1 18 -1.2q6 -0.2 12 0.4q6 0.6 12 0.5q6 0 12 -0.9q6 -0.9 12 -1.3q6 -0.5 12 -0.5q6 -0.1 12 -0.3q6 -0.2 12 0.2q6 0.5 12 1.6q6 1.1 12 1.3q6 0.2 12 -0.5q6 -0.7 12 -1.2q6 -0.5 12 -1.1q6 -0.6 12 -1.6q6 -1 12 -1.4q6 -0.4 12 -0.4q6 0 12 -1q6 -1 12 -2.3q6 -1.4 12 -2q6 -0.6 12 -0.9q6 -0.3 12 -0.4q6 -0.1 12 0.9q6 1 12 2.3q6 1.3 12 1.6q6 0.3 12 0.3q6 0 12 0.6q6 0.5 12 0.8q6 0.3 12 0.5q6 0.2 12 1.1q6 0.9 12 1.5q6 0.6 12 0q6 -0.6 12 -1.1q6 -0.6 12 -0.4q6 0.1 12 0.2q6 0.1 12 0.5q6 0.4 12 1.7q6 1.3 12 2.1q6 0.9 12 0.6q6 -0.2 12 -0.3q6 -0.1 12 0.2q6 0.3 12 0.1q6 -0.2 12 -0.3q6 -0.1 12 0.3q6 0.3 12 -0.2q6 -0.5 12 -2.1q6 -1.5 12 -2.6q6 -1.1 12 -1.6q6 -0.5 12 -1.1q6 -0.6 12 -0.5q6 0.1 12 0.8q6 0.7 12 0.7q6 -0.1 12 -0.7q6 -0.7 12 -0.6q6 0 12 0.3q6 0.2 12 0.2q6 -0.1 12 0.3q6 0.4 12 0.9q6 0.5 12 -0.2q6 -0.7 12 -1.8q6 -1.1 12 -1.4q6 -0.3 12 -0.3q6 0 12 0.1q6 0.1 12 1.1q6 1 12 2.1q6 1.1 12 1.3q6 0.2 12 0.3q6 0.1 12 1.1q6 0.9 12 1.7q6 0.8 12 1.4q6 0.6 12 1.5q6 0.9 12 1.3q6 0.3 12 -0.7q6 -1 12 -2.1q6 -1.1 12 -1.5q6 -0.4 12 -1q6 -0.5 12 -0.9q6 -0.4 12 -0.1q6 0.3 12 0.2q6 -0.1 12 -1q6 -0.9 12 -1.2q6 -0.3 12 0.1q6 0.4 12 0.7q6 0.2 12 0.6q6 0.3 12 1q6 0.6 12 0.3q6 -0.3 12 -1.6q6 -1.3 12 -2q6 -0.7 12 -0.9q6 -0.2 12 -0.6q6 -0.4 12 -0.4q6 0 12 0.5q6 0.5 12 0.2q6 -0.3 12 -0.8q6 -0.6 12 -0.1q6 0.5 12 1.5q6 1 12 1.8q6 0.8 12 1.9q6 1.1 12 2.2q6 1 12 0.9q6 -0.2 12 -0.8q6 -0.6 12 -0.5q6 0.1 12 0.3q6 0.2 12 0.1q6 -0.1 12 0.2q6 0.3 12 0.5q6 0.2 12 -0.6q6 -0.8 12 -1.4q6 -0.6 12 -0.1q6 0.5 12 1q6 0.5 12 0.8q6 0.3 12 0.9q6 0.6 12 0.6q6 0 12 -1.2q6 -1.2 12 -2.2q6 -1 12 -1.3q6 -0.3 12 -0.8q6 -0.5 12 -1.2q6 -0.7 12 -0.9q6 -0.2 12 -0.9L1440 23"/>
+  <path class="cm" d="M0 40.1q12 -1.1 18 -1.3q6 -0.2 12 0.3q6 0.6 12 0.5q6 0 12 -0.9q6 -0.9 12 -1.4q6 -0.5 12 -0.5q6 -0.1 12 -0.3q6 -0.2 12 0.3q6 0.5 12 1.7q6 1.2 12 1.4q6 0.2 12 -0.5q6 -0.7 12 -1.3q6 -0.5 12 -1.2q6 -0.7 12 -1.8q6 -1.1 12 -1.6q6 -0.5 12 -0.6q6 -0.1 12 -1.2q6 -1.1 12 -2.6q6 -1.5 12 -2.2q6 -0.7 12 -1.1q6 -0.4 12 -0.5q6 -0.1 12 0.9q6 1 12 2.4q6 1.4 12 1.7q6 0.3 12 0.4q6 0.1 12 0.7q6 0.6 12 1q6 0.4 12 0.7q6 0.3 12 1.3q6 1 12 1.7q6 0.7 12 0.2q6 -0.5 12 -1.1q6 -0.5 12 -0.4q6 0.1 12 0.2q6 0.1 12 0.5q6 0.4 12 1.7q6 1.3 12 2.2q6 0.9 12 0.6q6 -0.2 12 -0.3q6 -0.1 12 0.2q6 0.3 12 0.1q6 -0.2 12 -0.2q6 0 12 0.4q6 0.4 12 -0.1q6 -0.5 12 -2q6 -1.5 12 -2.6q6 -1 12 -1.5q6 -0.5 12 -1.1q6 -0.6 12 -0.5q6 0.1 12 0.9q6 0.7 12 0.7q6 -0.1 12 -0.8q6 -0.7 12 -0.8q6 -0.1 12 0.1q6 0.2 12 0q6 -0.2 12 0.2q6 0.3 12 0.7q6 0.4 12 -0.4q6 -0.8 12 -2q6 -1.2 12 -1.6q6 -0.3 12 -0.4q6 0 12 0.1q6 0.1 12 1.1q6 1 12 2.2q6 1.2 12 1.4q6 0.2 12 0.4q6 0.2 12 1.2q6 1 12 1.9q6 0.9 12 1.5q6 0.6 12 1.6q6 1 12 1.3q6 0.3 12 -0.8q6 -1.1 12 -2.2q6 -1.1 12 -1.6q6 -0.5 12 -1q6 -0.6 12 -1q6 -0.4 12 -0.1q6 0.3 12 0.2q6 -0.1 12 -1q6 -0.9 12 -1.2q6 -0.3 12 0.3q6 0.5 12 0.9q6 0.3 12 0.8q6 0.4 12 1.2q6 0.7 12 0.5q6 -0.3 12 -1.5q6 -1.3 12 -2q6 -0.7 12 -0.9q6 -0.2 12 -0.6q6 -0.4 12 -0.5q6 0 12 0.4q6 0.4 12 0.1q6 -0.3 12 -1q6 -0.6 12 -0.2q6 0.4 12 1.4q6 1 12 1.7q6 0.7 12 1.8q6 1.1 12 2.1q6 1 12 0.8q6 -0.2 12 -0.9q6 -0.7 12 -0.5q6 0.1 12 0.4q6 0.2 12 0.1q6 -0.1 12 0.2q6 0.3 12 0.5q6 0.2 12 -0.6q6 -0.8 12 -1.5q6 -0.6 12 -0.2q6 0.4 12 0.9q6 0.5 12 0.7q6 0.2 12 0.8q6 0.5 12 0.5q6 0 12 -1.3q6 -1.3 12 -2.4q6 -1.1 12 -1.4q6 -0.3 12 -0.9q6 -0.6 12 -1.2q6 -0.7 12 -0.9q6 -0.2 12 -0.8L1440 29.2"/>
+</g></defs></svg>
+
+<div class="sheet">
+  <div class="ticks" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+  <div class="collar collar--top" aria-hidden="true"><span>Gridharan Quadrangle</span><span>42°26′N 76°29′W<span class="wide"> · Ithaca, NY</span></span></div>
+
+  <div class="col">
+  <header class="hd">
+    <svg class="mark" viewBox="0 0 112 112" width="112" height="112" aria-hidden="true" focusable="false">
+      <path d="M44 26C41.5 20.5 42 14 46 10.5C47.5 9.2 48 7.5 49.5 5.8C55.5 5.5 61 8.8 62 14.5C62.8 19 61 23 58 25.5C57 26.2 56 26.5 55 26.5"/>
+      <path d="M58.5 11.5C61 15.5 60.2 20 57 23"/>
+      <path d="M45 27L40 26C35 26 33 29 33 33L32 49C32 53 34 54.5 38 54.5H51C55 54.5 56 53 56 49L56.5 33C56.5 30 55 28 52 27.5"/>
+      <path d="M33 37C40 40.5 49 40.5 56.3 37M32.3 47C40 49.5 49 49.5 56 47"/>
+      <path d="M33 55H56Q58 55 58 57.5Q58 60 56 60H33Q31 60 31 57.5Q31 55 33 55Z"/>
+      <path d="M46.2 63.6L50 69.5Q53.7 75.5 55.3 81.4Q56.8 87.4 57 89.5M63 89.5L63.1 88Q63.2 86.6 62.7 79.6Q62.3 72.5 55.8 58.4"/>
+      <path d="M57.5 88V93.5Q57.5 96 60 96H67Q69.5 96 68.5 94Q67 92.5 64 91.5L62.5 89.5"/>
+      <path d="M36.7 59.5L35.2 66.5Q33.8 73.5 31.9 79.1Q30 84.8 29.5 88.5M35.5 89.5L35.7 88.3Q36 87.2 39.1 81.9Q42.2 76.5 47.3 62.5"/>
+      <path d="M29.5 88L29 92Q29 94.5 31.5 95.5L39 96.8Q41 96.8 40 95.3Q39 93.8 36 92.5L35.5 89"/>
+      <path d="M54.4 31.8L57.7 37.7Q60.9 43.6 66.4 52.5Q71.2 54.9 71.6 49.5L69.4 45Q67.1 40.4 61.6 28.2"/>
+      <path d="M27.2 29.6L25.4 35.7Q23.5 41.8 26.6 52.7Q30.6 56.4 32.4 51.3L31.5 46.8Q30.5 42.2 34.8 32.4"/>
+      <path d="M68.5 46L80.3 90M76 83.5L82.2 86"/>
+      <path d="M30 47L15 98M13.3 92L19.5 94.6"/>
+      <path class="ridge" d="M4 99C16 98.5 26 97.5 36 96.8C46 96.2 54 96.2 62 96C70 95.8 74 92 80 89.5C88 86 96 83 108 80"/>
+    </svg>
+    <script>
+    /* Pen-stroke draw-in, ~1.2s, once. Enhancement only: the SVG is fully drawn without JS or with reduced motion. */
+    (function(){
+      var s=document.querySelector('.mark');
+      if(!s||!s.animate||(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches))return;
+      var p=[].slice.call(s.querySelectorAll('path')),L=p.map(function(e){return e.getTotalLength()}),
+          W=L.map(function(l){return l+16}),T=W.reduce(function(a,b){return a+b},0),t=0,ms=1200;
+      p.forEach(function(e,i){
+        var l=Math.ceil(L[i]),d=ms*W[i]/T,da=l+' '+(l+2);
+        e.animate([{strokeDasharray:da,strokeDashoffset:l+1},{strokeDasharray:da,strokeDashoffset:0}],
+          {duration:d,delay:t,easing:'cubic-bezier(0.65, 0, 0.35, 1)',fill:'backwards'});
+        t+=d;
+      });
+    })();
+    </script>
+    <h1 class="name"><span class="hari">Hari</span> <span class="sur">Gridharan</span></h1>
+    <p class="meta">Applied Economics + AI&nbsp;· Cornell Dyson&nbsp;’29&nbsp;· Dyson Scholar</p>
+    <p class="seek">Seeking Summer&nbsp;2027 roles in strategy, investing, BA &amp; PM — NYC&nbsp;/&nbsp;SF</p>
+    <div class="act">
+      <a class="tab tab--fill" href="/Hari_Gridharan_Resume.pdf">Resume&nbsp;↓</a>
+      <a class="tab" href="mailto:hg532@cornell.edu">Email</a>
+      <span class="links"><a href="https://www.linkedin.com/in/harigridharan1/">LinkedIn&nbsp;<span aria-hidden="true">↗</span></a><a href="https://github.com/hgridharan999">GitHub&nbsp;<span aria-hidden="true">↗</span></a></span>
+    </div>
+  </header>
+
+  <main>
+    <section id="now" aria-labelledby="h-now">
+      <div class="divider" style="--ly:17.7px" aria-hidden="true"><svg class="contours" viewBox="0 0 720 44" preserveAspectRatio="xMinYMid slice" focusable="false"><use href="#topo" x="0"/></svg><span class="clabel">2025–26</span></div>
+      <h2 class="wp" id="h-now"><span class="n">01</span> · NOW</h2>
+      <ul class="rows">
+        <li class="row">
+          <div class="row-h"><h3 class="role">Co-Founder, <span class="co">Loadstone Labs</span></h3><div class="mt"><span class="yr">2026</span><span class="tk">[TK: 2025 or 2026]</span></div></div>
+          <p class="one"><span class="k">Venture-backed</span> data platform for Western water rights&nbsp;· <span class="nw"><span class="tk">[TK: shared metric]</span>&nbsp;·</span> <a href="https://loadstonelabs.com">loadstonelabs.com&nbsp;<span aria-hidden="true">↗</span></a></p>
+        </li>
+        <li class="row">
+          <div class="row-h"><h3 class="role">Co-Founder, <span class="co">Commit</span></h3><div class="mt"><span class="yr">2025</span></div></div>
+          <p class="one"><span class="k">Top&nbsp;10%</span> of 20,000+ YC applicants&nbsp;· <span class="nw">prediction-market</span> MVP built in 3&nbsp;days</p>
+        </li>
+        <li class="row">
+          <div class="row-h"><h3 class="role">President, <span class="co">Cornell Entrepreneurship Club</span></h3><div class="mt"><span class="yr">2025</span></div></div>
+          <p class="one"><span class="k">150+&nbsp;attendees</span> at the YC speaker series I run&nbsp;· <span class="tk">[TK: one verified reach number]</span></p>
+        </li>
+        <li class="row">
+          <div class="row-h"><h3 class="role">Builder, <span class="co">Cornell Armada</span></h3><div class="mt"><span class="yr">2026</span></div></div>
+          <p class="one">Built <a href="https://www.bigred.network/">bigred.network&nbsp;<span aria-hidden="true">↗</span></a>, Cornell’s founder directory&nbsp;· <span class="tk">[TK: member count]</span></p>
+        </li>
+        <li class="row">
+          <div class="row-h"><h3 class="role">Business Analyst, <span class="co">Cornell DTI</span></h3><div class="mt"><span class="yr">2025</span></div></div>
+          <p class="one"><span class="k">15,000+&nbsp;Cornell users</span> on the student tools I analyze&nbsp;· benchmarked 8&nbsp;peer platforms</p>
+        </li>
+      </ul>
+    </section>
+
+    <section id="before" aria-labelledby="h-before">
+      <div class="divider" style="--ly:15.2px" aria-hidden="true"><svg class="contours" viewBox="0 0 720 44" preserveAspectRatio="xMinYMid slice" focusable="false"><use href="#topo" x="-540"/></svg><span class="clabel">2026</span></div>
+      <h2 class="wp" id="h-before"><span class="n">02</span> · BEFORE</h2>
+      <ul class="rows">
+        <li class="row">
+          <div class="row-h"><h3 class="role">Consulting Intern, <span class="co">EXL</span></h3><div class="mt"><span class="loc">New York</span><span class="yr">2026</span></div></div>
+          <p class="one"><span class="k">$70M+&nbsp;Fortune&nbsp;100</span> contract book supported&nbsp;· built a CRM tool that replaced manual tracking</p>
+        </li>
+        <li class="row">
+          <div class="row-h"><h3 class="role">Operations &amp; Strategy Intern, <span class="co">Midian Partners</span></h3><div class="mt"><span class="yr">2026</span></div></div>
+          <p class="one"><span class="k">6&nbsp;→&nbsp;25+</span> signed lender partners in five weeks</p>
+        </li>
+        <li class="row">
+          <div class="row-h"><h3 class="role">AI/Strategy Consultant (Contract), <span class="co">Adobe</span></h3><div class="mt"><span class="yr">2026</span></div></div>
+          <p class="one"><span class="k">$1M+</span> enterprise contracts shaped by AI market sizing and positioning work</p>
+        </li>
+        <li class="row">
+          <div class="row-h"><h3 class="role">Problem Design Engineer, <span class="co">Widget Factory</span> <span class="tk">[TK: or “IdlExperts (fka Widget Factory)”]</span></h3><div class="mt"><span class="yr">2026</span></div></div>
+          <p class="one">Problem sets used to evaluate frontier AI models</p>
+        </li>
+      </ul>
+    </section>
+
+    <section id="built" aria-labelledby="h-built">
+      <div class="divider" aria-hidden="true"><svg class="contours" viewBox="0 0 720 44" preserveAspectRatio="xMinYMid slice" focusable="false"><use href="#topo" x="-180"/></svg></div>
+      <h2 class="wp" id="h-built"><span class="n">03</span> · BUILT</h2>
+      <ul class="rows">
+        <li class="row">
+          <div class="row-h"><h3 class="role"><span class="co">Climate startup search</span></h3><div class="mt"><a class="ln" href="/climate-search">Try it&nbsp;→</a></div></div>
+          <p class="one"><span class="k">212&nbsp;startups</span>, ~600ms hybrid BERT + BM25 queries</p>
+        </li>
+        <li class="row">
+          <div class="row-h"><h3 class="role"><span class="co">LLM Cost Optimizer</span></h3><div class="mt"><a class="ln" href="https://github.com/hgridharan999/token_optimizer">Repo&nbsp;<span aria-hidden="true">↗</span></a></div></div>
+          <p class="one">Model routing + semantic caching across GPT-4, Claude and Gemini&nbsp;· <span class="tk">[TK: % cost cut]</span></p>
+        </li>
+        <li class="row">
+          <div class="row-h"><h3 class="role"><span class="co">TrailSense</span> <span class="tk">[TK: ships only if deployed or demoed]</span></h3><div class="mt"><a class="ln" href="/trailsense">View&nbsp;→</a></div></div>
+          <p class="one">XGBoost + SHAP trail-feasibility scoring on live NWS weather</p>
+        </li>
+      </ul>
+    </section>
+
+    <section id="writing" aria-labelledby="h-writing">
+      <div class="divider" style="--ly:20px" aria-hidden="true"><svg class="contours" viewBox="0 0 720 44" preserveAspectRatio="xMinYMid slice" focusable="false"><use href="#topo" x="-720"/></svg><span class="clabel">Draft</span></div>
+      <h2 class="wp" id="h-writing"><span class="n">04</span> · WRITING <span class="tk">[TK: hidden until 2 essays are live]</span></h2>
+      <ul class="rows">
+        <li class="row"><div class="row-h"><h3 class="role"><span class="co">Water is the bottleneck nobody prices</span></h3><div class="mt"><span class="yr">Draft</span></div></div></li>
+        <li class="row"><div class="row-h"><h3 class="role"><span class="co">What scaling a lender network taught me about mortgage pricing engines</span></h3><div class="mt"><span class="yr">Draft</span></div></div></li>
+        <li class="row"><div class="row-h"><h3 class="role"><span class="co">Regression to the mean: what LLM homogenization means for consumer brands</span></h3><div class="mt"><span class="yr">Draft</span></div></div></li>
+      </ul>
+      <p class="more"><a href="/writing">All writing&nbsp;→</a></p>
+    </section>
+
+    <section id="off-the-clock" aria-labelledby="h-off">
+      <div class="divider" aria-hidden="true"><svg class="contours" viewBox="0 0 720 44" preserveAspectRatio="xMinYMid slice" focusable="false"><use href="#topo" x="-360"/></svg></div>
+      <h2 class="wp" id="h-off"><span class="n">05</span> · OFF THE CLOCK</h2>
+      <ul class="rows">
+        <li class="row"><p class="one one--cream">Hiking Colorado 14ers — most recent: Quandary Peak, <span class="k">14,265&nbsp;ft</span>, under&nbsp;4:30 round trip <span class="nw"><span aria-hidden="true">→</span>&nbsp;<a href="/hiking">trail log</a></span></p></li>
+        <li class="row"><p class="one one--cream">Carnatic &amp; indie singing&nbsp;· cooking regional Indian food</p></li>
+      </ul>
+    </section>
+
+    <section id="elsewhere" aria-labelledby="h-else">
+      <div class="divider" aria-hidden="true"><svg class="contours" viewBox="0 0 720 44" preserveAspectRatio="xMinYMid slice" focusable="false"><use href="#topo" x="-90"/></svg></div>
+      <h2 class="wp" id="h-else"><span class="n">06</span> · ELSEWHERE</h2>
+      <ul class="inline">
+        <li><a href="https://www.linkedin.com/in/harigridharan1/">LinkedIn&nbsp;<span aria-hidden="true">↗</span></a></li>
+        <li><a href="https://github.com/hgridharan999">GitHub&nbsp;<span aria-hidden="true">↗</span></a></li>
+        <li><a href="mailto:hg532@cornell.edu">hg532@cornell.edu</a></li>
+        <li><a href="/Hari_Gridharan_Resume.pdf">Resume&nbsp;↓</a></li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <div class="divider" aria-hidden="true"><svg class="contours" viewBox="0 0 720 44" preserveAspectRatio="xMinYMid slice" focusable="false"><use href="#topo" x="-630"/></svg></div>
+    <div class="legend">
+      <ul class="lg" aria-hidden="true">
+        <li class="lg-t">Legend</li>
+        <li class="lg-role"><i class="tri"></i>Role</li>
+        <li><span>↗</span>External link</li>
+        <li><svg class="sw" viewBox="0 0 28 14" width="28" height="14"><path d="M0 3C6 .5 10 5.5 15 4S24 1.5 28 3.500"/><path class="x" d="M0 7C6 4.500 10 9.5 15 8S24 5.500 28 7.500"/><path d="M0 11C6 8.500 10 13.5 15 12S24 9.500 28 11.500"/></svg>Section</li>
+      </ul>
+      <p class="stamp">Last updated <time datetime="2026-10">Oct 2026</time></p>
+    </div>
+  </footer>
+  </div>
+
+  <div class="collar collar--bottom" aria-hidden="true"><span>Contour interval 1 year</span><span class="scale"><span>0</span><i class="bar"></i><span>1 yr</span></span></div>
+</div>
+</body>
+</html>

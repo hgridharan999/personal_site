@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hiker mark component</title>
+<style>
+  /* ---- copy from here: the hiker mark ------------------------------------------------
+     The live site's own hiker art (cut from public/hiker-scene.jpg), revealed by three
+     thick masked strokes in drawing order: hood, then torso + pack, then legs + poles.
+     Pure CSS: fully drawn with JS off and under reduced motion; draws once in 1.2s otherwise. */
+  .hiker { display: block; height: var(--hiker-h, 132px); width: auto; aspect-ratio: 294 / 480; overflow: visible; }
+  .hiker .ink { fill: none; stroke: #fff; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    .hiker .ink { animation: hiker-ink 0.45s cubic-bezier(0.65, 0, 0.35, 1) both; }
+    .hiker .ink-1 { animation-duration: 0.3s; }
+    .hiker .ink-2 { animation-delay: 0.3s; }
+    .hiker .ink-3 { animation-delay: 0.75s; }
+  }
+  @keyframes hiker-ink { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+  /* ---- to here ---------------------------------------------------------------------- */
+
+  :root { --bg: #0B0A0A; --cream: #EDE7DA; --muted: #A39E94; --tan: #E8C089; }
+  body { margin: 0; background: var(--bg); color: var(--cream); font: 16px/1.6 system-ui, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 48px 16px; }
+  .row { display: flex; align-items: flex-end; gap: 32px; margin: 32px 0; }
+  code { color: var(--muted); font-size: 13px; }
+  button { font: inherit; color: var(--cream); background: none; border: 1px solid var(--muted); border-radius: 4px; padding: 6px 12px; cursor: pointer; }
+  button:focus-visible { outline: 2px solid var(--tan); outline-offset: 3px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Hiker mark</h1>
+  <p>The live site’s background hiker, cut out and revealed by masked pen strokes. Paste the CSS block and the SVG below. Change <code>href</code> to the path of <code>hiker.webp</code> relative to your page, and give each copy on a page its own mask id.</p>
+  <button type="button" id="replay">Replay</button>
+  <div class="row" id="specimens">
+    <!-- ---- copy from here: the hiker mark SVG ---- -->
+    <svg class="hiker" viewBox="0 0 294 480" aria-hidden="true" focusable="false" style="--hiker-h: 240px">
+      <defs>
+        <filter id="hiker-soft" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="5"/></filter>
+        <mask id="hiker-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="294" height="480">
+          <g filter="url(#hiker-soft)">
+            <path class="ink ink-1" pathLength="1" stroke-width="64" d="M104 30 C 150 0, 196 30, 180 70 S 96 110, 100 70 S 160 40, 200 110"/>
+            <path class="ink ink-2" pathLength="1" stroke-width="72" d="M70 130 L 286 120 L 40 185 L 290 185 L 30 245 L 290 245 L 20 305 L 286 300"/>
+            <path class="ink ink-3" pathLength="1" stroke-width="72" d="M10 345 L 290 345 L 0 400 L 294 400 L 0 455 L 294 460"/>
+          </g>
+        </mask>
+      </defs>
+      <image href="hiker.webp" width="294" height="480" mask="url(#hiker-mask)"/>
+    </svg>
+    <!-- ---- to here ---- -->
+  </div>
+</main>
+<script>
+  // Demo only: clone at smaller sizes (with unique mask ids) and replay.
+  const src = document.querySelector('#specimens svg');
+  [132, 96].forEach((h, i) => {
+    const c = src.cloneNode(true);
+    c.style.setProperty('--hiker-h', h + 'px');
+    c.querySelector('filter').id = 'hiker-soft-' + i;
+    c.querySelector('g').setAttribute('filter', `url(#hiker-soft-${i})`);
+    c.querySelector('mask').id = 'hiker-mask-' + i;
+    c.querySelector('image').setAttribute('mask', `url(#hiker-mask-${i})`);
+    src.parentNode.appendChild(c);
+  });
+  document.getElementById('replay').addEventListener('click', () => {
+    document.querySelectorAll('.hiker .ink').forEach((p) => {
+      p.style.animation = 'none';
+      void p.getBoundingClientRect();
+      p.style.animation = '';
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Site v2 concepts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;800&family=Instrument+Serif:ital@1&family=Space+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B0A0A;
+    --bg-2: #131211;
+    --cream: #EDE7DA;
+    --muted: #A39E94;
+    --line: rgba(237, 231, 218, 0.14);
+    --tan: #E8C089;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--bg); }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--cream);
+    font: 400 16px/1.6 Archivo, sans-serif;
+  }
+  ::selection { background: var(--tan); color: var(--bg); }
+  a { color: inherit; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--tan); outline-offset: 3px; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 48px 16px 96px; }
+  .mono {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  h1 { margin: 8px 0 4px; font-weight: 800; font-size: 36px; letter-spacing: -0.03em; line-height: 1.05; }
+  h1 em { font-family: 'Instrument Serif', serif; font-weight: 400; color: var(--tan); letter-spacing: 0; }
+  .lede { color: var(--muted); max-width: 62ch; margin: 8px 0 0; text-wrap: balance; }
+  .extras { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 20px; }
+  .extras a { color: var(--tan); text-underline-offset: 3px; }
+
+  .round { margin: 72px 0 0; color: var(--tan); font-size: 12px; }
+  .concept { border-top: 1px solid var(--line); padding: 40px 0 8px; margin-top: 40px; }
+  .head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; }
+  .head h2 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+  .head h2 span { color: var(--tan); font-family: 'Space Mono', monospace; font-weight: 400; font-size: 13px; letter-spacing: 0.1em; margin-right: 10px; }
+  .thesis { color: var(--muted); margin: 6px 0 0; max-width: 70ch; }
+  .actions { display: flex; gap: 16px; align-items: center; }
+  .actions a, .actions button {
+    font: inherit; font-size: 14px; color: var(--cream); background: none; border: 0; padding: 0; cursor: pointer;
+    text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line);
+  }
+  .actions a:hover, .actions button:hover { color: var(--tan); text-decoration-color: var(--tan); }
+
+  .verdicts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .chip { border: 1px solid var(--line); border-radius: 4px; padding: 3px 8px; color: var(--cream); }
+  .take { margin: 10px 0 0; max-width: 70ch; font-size: 15px; }
+  .notes { margin-top: 12px; max-width: 70ch; }
+  .notes summary { cursor: pointer; font-size: 14px; color: var(--cream); width: fit-content; }
+  .notes summary:hover { color: var(--tan); }
+  .notes pre {
+    white-space: pre-wrap; margin: 10px 0 0; padding: 14px 16px; border: 1px solid var(--line); border-radius: 8px;
+    font: 400 13px/1.6 'Space Mono', monospace; color: var(--muted); background: var(--bg-2);
+  }
+  .frames { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 24px; align-items: flex-start; }
+  .frame { flex: none; }
+  .frame .mono { display: block; margin-bottom: 8px; }
+  .viewport {
+    position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-2);
+  }
+  .viewport iframe { position: absolute; top: 0; left: 0; border: 0; transform-origin: 0 0; background: var(--bg); }
+  /* phone: 390 x 844 at 0.8 */
+  .phone .viewport { width: 312px; height: 675px; }
+  .phone iframe { width: 390px; height: 844px; transform: scale(0.8); }
+  /* desktop: 1440 x 900 at 0.5 */
+  .desk .viewport { width: 720px; height: 450px; }
+  .desk iframe { width: 1440px; height: 900px; transform: scale(0.5); }
+  .missing { padding: 24px; color: var(--muted); }
+
+  @media (max-width: 1100px) {
+    .desk .viewport { width: 576px; height: 360px; }
+    .desk iframe { transform: scale(0.4); }
+  }
+  @media (max-width: 760px) {
+    .desk { display: none; }
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <p class="mono">feat/site-v2 · concepts · Oct 2026</p>
+  <h1><em>Trail log</em> — concepts</h1>
+  <p class="lede">Round 2 is the B + D direction on a dial from most identity (F) to most professional (H), all using the real hiker from the live site’s background. Round 1 is below for reference. Each is shown at 390 × 844 (phone) and 1440 × 900 (desktop).</p>
+  <div class="extras">
+    <a href="_shared/hiker-mark.html">The hiker mark →</a>
+    <a href="_shared/og-image.png">Link-preview image →</a>
+    <a href="lab/">Animation lab (8 bottom-of-page sketches) →</a>
+    <a href="marks/">Round 1 mark studio →</a>
+    <a href="#" id="replay-all">Replay every draw-in</a>
+  </div>
+  <h2 class="round mono">Rounds 3–6 · light version (O); the pack in the margin (M) or as a finale (N); graphics tests (K, L); your base (J)</h2>
+  <div id="list-3"></div>
+  <h2 class="round mono">Round 2 · B + D, identity ↔ professional</h2>
+  <div id="list-2"></div>
+  <h2 class="round mono">Round 1 · five interpretations</h2>
+  <div id="list"></div>
+</main>
+
+<script>
+  const CONCEPTS = [
+    { slug: 'a-field-journal', name: 'Field Journal', thesis: 'The PRD, executed precisely. Quiet and airy, with the live site’s fonts (Archivo, Space Mono, Instrument Serif), so it’s the cheapest migration.',
+      verdicts: ['Design 46/70', 'Recruiter: ok', 'A11y: pass'], take: 'Safest and cheapest, but reads closest to a template; weakest mark.' },
+    { slug: 'b-topo-sheet', name: 'Topo Sheet', thesis: 'The page as a USGS quadrangle map sheet: collar, coordinates, index contours and a legend footer. The cartography stays in the margins. IBM Plex.',
+      verdicts: ['Design 55/70 · top', 'Recruiter: ok', 'A11y: fixable'], take: 'Most distinctive and best crafted; the map apparatus is the most likely to read as “themed” to a conservative screener.' },
+    { slug: 'c-trail-route', name: 'Trail Route', thesis: 'A trail line runs from the hiker down through every section label like waypoints, and inks as you scroll (CSS-only, progressive). Geist.',
+      verdicts: ['Design 45/70', 'Recruiter: weak', 'A11y: fixable'], take: 'Best idea, most expensive; the 2025/2026 strip reads as a stock chart and no numbers lead.' },
+    { slug: 'd-summit-register', name: 'Summit Register', thesis: 'The densest one: ruled ledger rows, and every leading number set in tan so a recruiter can scan the numbers as a column. Hanken Grotesk + DM Mono.',
+      verdicts: ['Design 50/70', 'Recruiter: strong · top', 'A11y: fixable'], take: 'Fastest scan on phone and desktop, and the only one with a finance number above the fold; least personal.' },
+    { slug: 'e-pen-and-ink', name: 'Pen & Ink', thesis: 'The hiker’s pen line becomes the whole ornament system: hand-inked contours, markers, underlines and button borders. Bricolage Grotesque.',
+      verdicts: ['Design 47/70', 'Recruiter: ok', 'A11y: 1 contrast fail'], take: 'Warmest and closest to the live art’s hand; wobbly Resume button demotes the main CTA.' },
+  ];
+
+  const ROUND_2 = [
+    { slug: 'f-quadrangle', letter: 'F', name: 'Quadrangle', thesis: 'Most identity. Round 1’s map-sheet frame (collar, coordinates, labeled index contours, legend footer) rebuilt with D’s tan leads and ledger rows. IBM Plex.' },
+    { slug: 'i-basecamp', letter: 'I', name: 'Basecamp', thesis: 'Identity through the art itself: the live site’s mountain-and-hiker background returns as a contained plate that sketches itself in, with a quiet B + D ledger below. IBM Plex.' },
+    { slug: 'g-field-ledger', letter: 'G', name: 'Field Ledger', thesis: 'The middle. D’s ledger as the structure; B survives only as labeled contour dividers, the benchmark ▲ and a “contour interval 1 year” footer. Hanken Grotesk + DM Mono.' },
+    { slug: 'h-clean-register', letter: 'H', name: 'Clean Register', thesis: 'Most professional. Internships lead (01 · Experience), contour dividers are the only map nod, the hiker is the only ornament. Hanken Grotesk + DM Mono.' },
+  ];
+
+  const list = document.getElementById('list');
+  const list2 = document.getElementById('list-2');
+
+  function frame(kind, label, slug) {
+    return `
+      <div class="frame ${kind}">
+        <span class="mono">${label}</span>
+        <div class="viewport">
+          <iframe src="${slug}/" title="${slug} at ${label}" loading="lazy"></iframe>
+        </div>
+      </div>`;
+  }
+
+  CONCEPTS.forEach((c, i) => {
+    const section = document.createElement('section');
+    section.className = 'concept';
+    section.id = c.slug;
+    section.innerHTML = `
+      <div class="head">
+        <h2><span>${String.fromCharCode(65 + i)}</span>${c.name}</h2>
+        <div class="actions">
+          <button type="button" data-replay>Replay</button>
+          <a href="${c.slug}/" target="_blank" rel="noopener">Open full page ↗</a>
+        </div>
+      </div>
+      <p class="thesis">${c.thesis}</p>
+      <div class="verdicts">${c.verdicts.map((v) => `<span class="mono chip">${v}</span>`).join('')}</div>
+      <p class="take">${c.take}</p>
+      <details class="notes" data-notes="${c.slug}/NOTES.md">
+        <summary>Designer notes</summary>
+        <pre>Loading…</pre>
+      </details>
+      <div class="frames">
+        ${frame('phone', '390 × 844', c.slug)}
+        ${frame('desk', '1440 × 900', c.slug)}
+      </div>`;
+    list.appendChild(section);
+  });
+
+  const ROUND_3 = [
+    { slug: 'v-refined', letter: 'V', name: 'Refined copy', thesis: 'u-finale with recruiter-audited copy · Panel vs Hari’s wording · font picker' },
+    { slug: 'u-finale', letter: 'U', name: 'Professional + one finale', thesis: 'Round 10 · the clean professional page (P) with exactly one animation: the page ends by dipping under the surface — the iceberg in live caustic light, ripples where you touch, and the contact line in the deep water. Runs only while visible; pause button; still under reduced motion.' },
+    { slug: 't-iceberg', letter: 'T', name: 'Iceberg · final merge', thesis: 'Round 9 · R (picked by both audits) plus Q’s caustic arrival and S’s Quandary terrain plate, a display-size waterline, a denser underwater half, the pack on a white plate, a new iceberg favicon, and the accessibility/performance rules (zero idle work, a pause control).' },
+    { slug: 'q-cross-section', letter: 'Q', name: 'Iceberg · Cross-section', thesis: 'Round 8 · the page as a vertical section through your iceberg: the tip is the professional profile, the waterline is the signature moment, and the personal 90% lives below with its own underwater graphics. Depth gauge in the margin.' },
+    { slug: 'r-editorial-depth', letter: 'R', name: 'Iceberg · Editorial depth', thesis: 'Round 8 · restrained and typographic: one continuous ink line (the iceberg’s outline) runs through the page; at the waterline it floods blue and each personal row gets a small precise specimen animation.' },
+    { slug: 's-sounding', letter: 'S', name: 'Iceberg · Sounding', thesis: 'Round 8 · the brand as a depth-sounding instrument: the waterline sends a sonar ping, and each personal section resolves as a sonar return.' },
+    { slug: 'p-reorg', letter: 'P', name: 'Glacier, reorganized', thesis: 'Round 7 · O restructured by the three hiring audits: 01 Experience (internships + founding roles, on the first screen) · 02 On campus · 03 Projects & research · 04 Writing (investment thesis visible; essays and the 10 bullets one click away) · 05 Off the clock; contact folded into the footer; verifiable claims; one date format.' },
+    { slug: 'o-glacier', letter: 'O', name: 'Glacier (light)', thesis: 'Round 6 · the current direction. White page, black ink, iceberg blue (#0F7DAA). The hiker faces the mountain. The exploded 14er pack (light build) sits in the margin beside Mountaineering; open with ?pack=finale to see it at the end of the page instead. Content refined against the audit.' },
+    { slug: 'm-pack-margin', letter: 'M', name: 'Pack in the margin', thesis: 'Round 5 · J with the slim banner and no section dividers, plus an Anatomy-style exploded 14er pack in the right margin beside Mountaineering (wide screens), or inside that row when you open it (phones).' },
+    { slug: 'n-pack-finale', letter: 'N', name: 'Pack as the finale', thesis: 'Round 5 · the same exploded 14er pack as a single interactive figure at the very end of the page, after Elsewhere — content first, the reward last.' },
+    { slug: 'k-topo-block', letter: 'K', name: 'Topo block', thesis: 'Round 4 · graphics at the top. Your real Quandary Peak (USGS elevation) as an isometric terrain block in the header, with your GPS track climbing it. Hover to turn it; the readout shows the elevation under the pointer. Anatomy-style.' },
+    { slug: 'l-ascent-rail', letter: 'L', name: 'Ascent rail', thesis: 'Round 4 · graphics off to the side. On wide screens, a small relief of Quandary sits in the right margin and your marker climbs your real route as you scroll; each section is a waypoint you can jump to. Reaching the bottom of the page = the summit.' },
+    { slug: 'j-trailhead', letter: 'J', name: 'Trailhead', thesis: 'G’s field ledger with I’s background mountain sketching itself in at the top, and your hiker as the logo standing at its foot. Every row opens Henrik-style for the longer story (click the title); Theses are back as section 04. Favicon is the hiker. Open with ?plate=full to see the scene with its own hiker.' },
+  ];
+  const list3 = document.getElementById('list-3');
+  ROUND_3.forEach((c) => {
+    const section = document.createElement('section');
+    section.className = 'concept';
+    section.id = c.slug;
+    section.innerHTML = `
+      <div class="head">
+        <h2><span>${c.letter}</span>${c.name}</h2>
+        <div class="actions">
+          <button type="button" data-replay>Replay</button>
+          <a href="${c.slug}/" target="_blank" rel="noopener">Open full page ↗</a>
+          ${c.slug === 'j-trailhead' ? `<a href="${c.slug}/?plate=full" target="_blank" rel="noopener">With the scene’s hiker ↗</a>` : ''}
+        </div>
+      </div>
+      <p class="thesis">${c.thesis}</p>
+      <div class="frames">
+        ${frame('phone', '390 × 844', c.slug)}
+        ${frame('desk', '1440 × 900', c.slug)}
+      </div>`;
+    list3.appendChild(section);
+  });
+  list3.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-replay]');
+    if (btn) replay(btn.closest('.concept'));
+  });
+
+  ROUND_2.forEach((c) => {
+    const section = document.createElement('section');
+    section.className = 'concept';
+    section.id = c.slug;
+    section.innerHTML = `
+      <div class="head">
+        <h2><span>${c.letter}</span>${c.name}</h2>
+        <div class="actions">
+          <button type="button" data-replay>Replay</button>
+          <a href="${c.slug}/" target="_blank" rel="noopener">Open full page ↗</a>
+        </div>
+      </div>
+      <p class="thesis">${c.thesis}</p>
+      <details class="notes" data-notes="${c.slug}/NOTES.md">
+        <summary>Designer notes</summary>
+        <pre>Loading…</pre>
+      </details>
+      <div class="frames">
+        ${frame('phone', '390 × 844', c.slug)}
+        ${frame('desk', '1440 × 900', c.slug)}
+      </div>`;
+    list2.appendChild(section);
+  });
+
+  function replay(scope) {
+    scope.querySelectorAll('iframe').forEach((f) => { f.src = f.getAttribute('src'); });
+  }
+  list2.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-replay]');
+    if (btn) replay(btn.closest('.concept'));
+  });
+  list.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-replay]');
+    if (btn) replay(btn.closest('.concept'));
+  });
+  document.querySelectorAll('details[data-notes]').forEach((d) => {
+    d.addEventListener('toggle', async () => {
+      const pre = d.querySelector('pre');
+      if (!d.open || pre.dataset.loaded) return;
+      try {
+        const res = await fetch(d.dataset.notes);
+        if (!res.ok) throw new Error(res.status);
+        pre.textContent = await res.text();
+        pre.dataset.loaded = '1';
+      } catch {
+        pre.textContent = 'Notes not found.';
+      }
+    });
+  });
+  document.getElementById('replay-all').addEventListener('click', (e) => {
+    e.preventDefault();
+    replay(document);
+  });
+</script>
+</body>
+</html>

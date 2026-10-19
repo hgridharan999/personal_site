@@ -1,0 +1,1459 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#FFFFFF">
+<title>Hari Gridharan — Cornell Dyson ’29</title>
+<meta name="description" content="Dyson Scholar and Loadstone Labs co-founder. Seeking Summer 2027 internships in strategy, investing, business analysis and product.">
+<!-- Site icon: the sounding glyph (hiker on a waterline, sonar arcs below), drawn for 16 px. PNG fallbacks are the live site's tile. -->
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../_shared/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="../_shared/apple-touch-icon.png">
+<meta property="og:title" content="Hari Gridharan — Cornell Dyson ’29">
+<meta property="og:description" content="Dyson Scholar and Loadstone Labs co-founder. Seeking Summer 2027 internships in strategy, investing, business analysis and product.">
+<meta property="og:image" content="../_shared/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" as="image" href="../_shared/mountain-plate.webp" type="image/webp" fetchpriority="high">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Hanken+Grotesk:wght@400;500;600;800&family=Instrument+Serif:ital@1&display=swap">
+<style>
+  /* ---- the hiker mark (shared component, copied verbatim) ------------------------------
+     The live site's own hiker art (cut from public/hiker-scene.jpg), revealed by three
+     thick masked strokes in drawing order: hood, then torso + pack, then legs + poles.
+     Pure CSS: fully drawn with JS off and under reduced motion; draws once in 1.2s otherwise. */
+  .hiker { display: block; height: var(--hiker-h, 132px); width: auto; aspect-ratio: 294 / 480; overflow: visible; }
+  .hiker .ink { fill: none; stroke: #fff; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    .hiker .ink { animation: hiker-ink 0.45s cubic-bezier(0.65, 0, 0.35, 1) both; }
+    .hiker .ink-1 { animation-duration: 0.3s; }
+    .hiker .ink-2 { animation-delay: 0.3s; }
+    .hiker .ink-3 { animation-delay: 0.75s; }
+  }
+  @keyframes hiker-ink { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+  /* ---- end hiker mark ----------------------------------------------------------------- */
+
+  :root {
+    --bg: #FFFFFF;
+    --cream: #111111;                      /* ink: every former cream/white is now near-black */
+    --tan: #0F7DAA;                        /* iceberg blue, 4.6:1 on white */
+    --soft: #3D3D3D;                       /* one-liners, 10.9:1 on white */
+    --muted: #5C5C5C;                      /* dates, labels, 6.7:1 on white */
+    --rule: rgba(0, 0, 0, 0.10);           /* ledger hairline */
+    --rule-head: rgba(0, 0, 0, 0.22);
+    --rule-hover: rgba(0, 0, 0, 0.28);
+    --ul: rgba(0, 0, 0, 0.40);             /* link underline */
+    --ul-tan: rgba(15, 125, 170, 0.55);
+    --outline: rgba(0, 0, 0, 0.55);
+    --sans: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --serif: "Instrument Serif", "Times New Roman", serif;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --gutter: 16px;
+    --datew: 6.75rem;                      /* fixed date column: never squeezes the title */
+    --tri-off: 14px;                       /* benchmark marker distance left of the row */
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--bg); color-scheme: light; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--cream);
+    font: 400 16px/1.6 var(--sans); font-kerning: normal;
+    -webkit-font-smoothing: antialiased; overflow-wrap: break-word;
+  }
+  h1, h2, h3, p, ul { margin: 0; padding: 0; }
+  ul { list-style: none; }
+  svg.defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+  ::selection { background: var(--tan); color: var(--bg); }
+  a { color: inherit; text-decoration: underline; text-decoration-color: var(--ul); text-decoration-thickness: 1px; text-underline-offset: 0.22em; }
+  a:focus-visible { outline: 2px solid var(--tan); outline-offset: 3px; border-radius: 2px; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+    overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+  }
+  .nw { white-space: nowrap; }
+
+  .wrap { width: 100%; max-width: calc(640px + var(--gutter) * 2); margin-inline: auto; padding-inline: var(--gutter); }
+
+  /* ---------- Header plate: the live site's background mountain, drawn in like a sketch ---------- */
+  .plate { position: relative; margin: 0 calc(var(--gutter) * -1); }
+  .scene { display: block; width: 100%; height: auto; overflow: hidden; opacity: 0.5; }
+  /* the line art was drawn cream-on-black: render it as black ink on white */
+  .scene image, .hiker image { filter: brightness(0); }
+  .scene--mtn { aspect-ratio: 1280 / 250; }
+  .scene--full { aspect-ratio: 1536 / 530; }
+  .scene[hidden] { display: none; }
+  .plate::after { content: ""; position: absolute; inset: -1px 0; background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 50%, var(--bg) 97%); pointer-events: none; }
+  .scene .ink { fill: none; stroke: #fff; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
+  @keyframes scene-ink { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+
+  /* ---------- Header: hiker logo beside the lockup, tucked into the foot of the plate ---------- */
+  .top {
+    --hiker-h: 112px;
+    position: relative; z-index: 1;
+    display: grid; grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: "mark name" "aff aff" "seek seek" "act act";
+    column-gap: 16px; align-items: center; margin-top: -22px;
+  }
+  .name {
+    grid-area: name;
+    display: flex; flex-direction: column; align-items: flex-start;
+    font: 800 clamp(34px, 9.4vw, 48px)/1 var(--sans); letter-spacing: -0.03em;
+  }
+  .hari { font: italic 400 1.2em/0.95 var(--serif); letter-spacing: 0; color: var(--tan); }
+  .sur { text-transform: uppercase; white-space: nowrap; }
+  .aff { grid-area: aff; margin-top: 16px; color: var(--soft); }
+  .aff-a { display: block; }
+  .aff-sep { display: none; }
+  .seek { grid-area: seek; margin-top: 8px; color: var(--tan); font-weight: 500; text-wrap: balance; }
+  .act { grid-area: act; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 12px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 44px; padding: 0 18px; border: 1px solid transparent; border-radius: 4px;
+    font: 600 15px/1 var(--sans); text-decoration: none;
+  }
+  .btn-fill { background: var(--tan); border-color: var(--tan); color: var(--bg); }
+  .btn-line { border-color: var(--outline); color: var(--cream); }
+  .soc { display: inline-flex; align-items: center; margin-left: -8px; }
+  .soc a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; font-size: 15px; color: var(--soft); }
+  .soc .dot { color: var(--muted); }
+
+  /* ---------- Contour dividers (decorative): two minor lines and one index line ---------- */
+  .contour { display: block; width: 100%; height: 34px; margin: 8px 0 10px; fill: none; stroke: var(--cream); }
+  .cm, .ci { fill: none; stroke: var(--cream); stroke-linecap: round; }
+  .cm { stroke-width: 0.9; stroke-opacity: 0.08; }
+  .ci { stroke-width: 1.4; stroke-opacity: 0.13; }
+
+  /* ---------- Sections: spacing and the label's hairline do the dividing ---------- */
+  .tip-in .wrap > section { padding-top: 40px; }
+  .tip-in .wrap > section:first-child { padding-top: 28px; }
+
+  /* ---------- Section labels: waypoints ---------- */
+  .head {
+    padding-bottom: 7px; border-bottom: 1px solid var(--rule-head);
+    font: 500 12px/1.7 var(--mono); letter-spacing: 0.14em; text-transform: uppercase;
+    scroll-margin-top: 16px;
+  }
+  .head .idx { color: var(--muted); }
+
+  /* ---------- Ledger rows ---------- */
+  .row {
+    position: relative; display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--datew);
+    grid-template-areas: "ttl when" "line line";
+    column-gap: 16px; align-items: baseline; padding: 12px 0 13px;
+  }
+  .row + .row { border-top: 1px solid var(--rule); }
+  .ttl { grid-area: ttl; font: 600 16px/1.4 var(--sans); text-wrap: balance; }
+  .ttl .role { font-weight: 500; }
+  .loc {
+    display: block; margin-top: 2px;
+    font: 400 12px/1.4 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+  }
+  .when {
+    grid-area: when; text-align: right; white-space: nowrap; color: var(--muted);
+    font: 400 12.5px/1.4 var(--mono); font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1;
+  }
+  .line { grid-area: line; margin-top: 1px; color: var(--soft); text-wrap: pretty; }
+  .lead { color: var(--tan); font-weight: 500; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+  a.lead { text-decoration-color: var(--ul-tan); }
+  .row--solo { grid-template-areas: "line line"; }
+  .row--solo .line { margin-top: 0; }
+
+  /* ---------- Expandable rows (Henrik-style <details>): summary stays scannable, the body opens below ---------- */
+  .row.xp { display: block; padding: 0; }
+  .xp summary {
+    display: grid; grid-template-columns: minmax(0, 1fr) var(--datew);
+    grid-template-areas: "ttl when" "line line";
+    column-gap: 16px; align-items: baseline; padding: 12px 0 13px;
+    list-style: none; cursor: pointer; border-radius: 2px;
+  }
+  .xp summary::-webkit-details-marker { display: none; }
+  .xp summary:focus-visible { outline: 2px solid var(--tan); outline-offset: 4px; }
+  .xp .ttl { display: block; }
+  .xp .when, .xp .line { display: block; }
+  /* the open/close mark: a small tan plus after the title that turns to a cross */
+  .xp summary .co::after {
+    content: ""; display: inline-block; width: 9px; height: 9px; margin-left: 9px; vertical-align: 0.06em;
+    background: linear-gradient(var(--tan), var(--tan)) center / 100% 1.5px no-repeat,
+                linear-gradient(var(--tan), var(--tan)) center / 1.5px 100% no-repeat;
+    opacity: 0.6;
+  }
+  .xp details[open] summary .co::after { opacity: 1; transform: rotate(45deg); }
+  .xp .body {
+    margin: -2px 0 16px; padding: 2px 0 2px 16px;
+    border-left: 1px solid rgba(15, 125, 170, 0.45);
+    color: var(--soft);
+  }
+  .xp .body p + p { margin-top: 8px; }
+  .xp .meta { font: 400 12.5px/1.7 var(--mono); color: var(--muted); }
+  .xp .meta a { color: var(--cream); }
+
+  /* theses */
+  .kicker { margin-top: 12px; font: 400 12.5px/1.6 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .beliefs { margin: 4px 0 0; padding: 0; list-style: none; }
+  .beliefs li { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr); align-items: baseline; padding: 11px 0 12px; }
+  .beliefs li + li { border-top: 1px solid var(--rule); }
+  .beliefs .n { font: 400 12.5px/1 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .beliefs p { color: var(--soft); text-wrap: pretty; }
+  .xp .body .beliefs li { padding: 7px 0 8px; }
+  .xp .body .beliefs li:first-child { padding-top: 2px; }
+  .theses-more { margin-top: 14px; border-top: 1px solid var(--rule); }
+  /* essays: title and its one-line description on the left, the date on the right */
+  .rl.rl--essay { align-items: flex-start; padding: 11px 0 12px; }
+  .rl.rl--essay .et { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .rl.rl--essay .ed { color: var(--muted); font-size: 15px; line-height: 1.5; text-wrap: pretty; }
+  .rl.rl--essay .val { text-decoration: none; white-space: nowrap; line-height: 22px; }
+
+  /* mockup-only: content still needed from Hari */
+  .tk {
+    display: inline-block; padding: 1px 8px; border: 1px dashed var(--tan); border-radius: 3px;
+    font: 400 12.5px/1.6 var(--mono); color: var(--tan);
+  }
+
+  /* ---------- P: audit fixes ---------- */
+  @media (max-width: 599px) {
+    /* phones: the date moves under the title so titles stop wrapping */
+    .xp summary { grid-template-columns: minmax(0, 1fr); grid-template-areas: "ttl" "when" "line"; }
+    .xp .when { text-align: left; margin-top: 1px; }
+    .xp summary .co::after { width: 12px; height: 12px; opacity: 0.85; }
+  }
+
+  /* rows with a standalone action link in the right column */
+  .row--act { grid-template-areas: "ttl act" "line line"; }
+  .go {
+    grid-area: act; align-self: center; justify-self: end; margin-block: -11px;
+    display: inline-flex; align-items: center; min-height: 44px;
+    font-weight: 500; font-size: 15px; white-space: nowrap;
+  }
+
+  /* ELSEWHERE: label / value rows */
+  .row--link { display: block; padding: 0; }
+  .rl {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    min-height: 44px; padding: 8px 0 9px; text-decoration: none;
+  }
+  .rl .lab { font-weight: 500; }
+  .rl .val {
+    text-align: right; overflow-wrap: anywhere; color: var(--muted);
+    font: 400 12.5px/1.5 var(--mono);
+    text-decoration: underline; text-decoration-color: var(--ul); text-decoration-thickness: 1px; text-underline-offset: 0.25em;
+  }
+
+  /* ---------- Footer ---------- */
+  .foot { padding-bottom: 48px; }
+  .foot .contour { margin-top: 4px; }
+  .foot-line {
+    display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 16px;
+    font: 400 12px/1.7 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+  }
+  .foot-line .part { display: block; }
+  .foot-line .sep { display: none; }
+  .scale { display: inline-flex; align-items: center; gap: 8px; }
+  .bar {
+    display: block; width: 64px; height: 6px; border: 1px solid var(--muted);
+    background: repeating-linear-gradient(90deg, var(--muted) 0 16px, transparent 16px 32px);
+  }
+
+  /* ---------- Wider viewports ---------- */
+  @media (min-width: 600px) {
+    :root { --datew: 11.25rem; } /* fits "Sep 2025 – Jan 2026" */
+    .plate { margin-inline: 0; padding-top: 24px; }
+    .top {
+      --hiker-h: 140px;
+      grid-template-areas: "mark name" "mark aff" "seek seek" "act act";
+      column-gap: 24px; margin-top: -40px;
+    }
+    .name { flex-direction: row; align-items: baseline; column-gap: 0.2em; align-self: end; }
+    .aff { margin-top: 8px; align-self: start; text-wrap: balance; }
+    .aff-a { display: inline; }
+    .aff-sep { display: inline; }
+    .seek { margin-top: 22px; }
+    .act { margin-top: 14px; }
+    .loc { display: inline-block; margin: 0 0 0 0.7em; }
+    .foot-line .part { display: inline; }
+    .foot-line .sep { display: inline; }
+  }
+  @media (min-width: 768px) {
+    :root { --gutter: 32px; --tri-off: 26px; }
+  }
+
+  /* ---------- Desktop pointers only: benchmark marker, company name, hairline ---------- */
+  @media (hover: hover) and (pointer: fine) {
+    .row:hover::before, .row:focus-within::before {
+      content: ""; position: absolute; left: calc(var(--tri-off) * -1); top: 18px;
+      width: 10px; height: 9px; pointer-events: none;
+      background: radial-gradient(circle at 50% 68%, var(--bg) 0 1.1px, transparent 1.3px), var(--tan);
+      clip-path: polygon(50% 0, 0 100%, 100% 100%);
+    }
+    .row--solo:hover::before, .row--solo:focus-within::before { top: 20px; }
+    .row--link:hover::before, .row--link:focus-within::before { top: 17px; }
+    .row:hover, .row:focus-within { border-top-color: var(--rule-hover); }
+    .row:hover + .row, .row:focus-within + .row { border-top-color: var(--rule-hover); }
+    .row:hover .co, .row:focus-within .co { color: var(--tan); }
+    .xp summary:hover .co::after { opacity: 1; }
+    a:hover { color: var(--tan); text-decoration-color: var(--tan); }
+    .rl:hover { color: inherit; }
+    .rl:hover .val { color: var(--tan); text-decoration-color: var(--tan); }
+    .btn-fill:hover { background: #0B6A93; border-color: #0B6A93; color: var(--bg); }
+    .btn-line:hover { border-color: var(--tan); color: var(--tan); }
+  }
+
+  /* ---------- All motion lives here ---------- */
+  @media (prefers-reduced-motion: no-preference) {
+    /* Plate first (ridge left to right, then the slopes), then the hiker logo walks in. */
+    .scene .ink { animation: scene-ink 0.5s cubic-bezier(0.65, 0, 0.35, 1) both; }
+    .scene .i1 { animation-duration: 0.6s; }
+    .scene .i2 { animation-delay: 0.2s; }
+    .scene .i3 { animation-delay: 0.4s; }
+    .scene .i4 { animation-delay: 0.8s; animation-duration: 0.2s; }
+    .scene .i5 { animation-delay: 0.9s; animation-duration: 0.3s; }
+    .scene .i6 { animation-delay: 1.05s; animation-duration: 0.3s; }
+    .scene .i7 { animation-delay: 1.2s; animation-duration: 0.15s; }
+    .top .hiker .ink-1 { animation-delay: 0.45s; }
+    .top .hiker .ink-2 { animation-delay: 0.75s; }
+    .top .hiker .ink-3 { animation-delay: 1.2s; }
+    /* Opening a row: the plus turns, the trail line draws down and the text follows it. */
+    .xp summary .co::after { transition: transform 0.3s var(--ease), opacity 0.2s var(--ease); }
+    .xp details[open] .body { animation: trail-open 0.42s var(--ease) both; }
+    .xp details[open] .body > * { animation: trail-text 0.42s var(--ease) both; }
+    .xp details[open] .body > :nth-child(2) { animation-delay: 0.05s; }
+    .xp details[open] .body > :nth-child(3) { animation-delay: 0.1s; }
+    /* Where supported, the row's height also eases open and closed instead of jumping. */
+    @supports (interpolate-size: allow-keywords) {
+      :root { interpolate-size: allow-keywords; }
+      .xp details::details-content { height: 0; overflow: clip; transition: height 0.38s var(--ease), content-visibility 0.38s allow-discrete; }
+      .xp details[open]::details-content { height: auto; }
+    }
+    a, .btn, .co, .row, .rl .val { transition: color 0.2s var(--ease), background-color 0.2s var(--ease), border-color 0.2s var(--ease), text-decoration-color 0.2s var(--ease); }
+    @media (hover: hover) and (pointer: fine) {
+      .row:hover::before, .row:focus-within::before { animation: tri-in 0.25s var(--ease) both; }
+    }
+  }
+  @keyframes trail-open { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+  @keyframes trail-text { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  @keyframes tri-in { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; transform: none; } }
+
+  /* =====================================================================================
+     SOUNDING: the instrument layer. Everything below is new; the rules above are the
+     shared ledger styles. One idea carried everywhere: a depth reading beside every label,
+     thin cyan line on deep water, mono for anything that is a measurement.
+     ===================================================================================== */
+  :root {
+    --blue: #0F7DAA;
+    --ice: #F2FBFE;                        /* primary text under water   */
+    --ice2: #CDEBF6;                       /* secondary text             */
+    --ice3: #A9D9EB;                       /* mono labels (>= 5.3:1 on the shallowest water) */
+    --line: #7FD3EE;                       /* instrument lines           */
+    --w0: #0A5578;                         /* just under the surface     */
+    --w1: #08425F;
+    --w2: #062D45;
+    --w3: #041E30;
+    --w4: #031420;                         /* seabed                     */
+  }
+
+  /* ---------- the two worlds ---------- */
+  body { background: transparent; }                 /* html carries the white; the fixed water sits between the two */
+  .tip { position: relative; z-index: 2; background: var(--bg); }
+  .deep, .seabed { position: relative; color: var(--ice); }
+  .deep .dive { position: relative; }
+  .deep, .seabed {
+    --bg: var(--w3); --cream: var(--ice); --soft: var(--ice2); --muted: var(--ice3); --tan: #8FE0F5;
+    --rule: rgba(143, 208, 230, 0.18); --rule-head: rgba(143, 208, 230, 0.38); --rule-hover: rgba(143, 208, 230, 0.5);
+    --ul: rgba(205, 235, 246, 0.5); --ul-tan: rgba(143, 224, 245, 0.6); --outline: rgba(205, 235, 246, 0.6);
+  }
+  .deep ::selection, .seabed ::selection { background: var(--tan); color: var(--w4); }
+  /* no JS: a plain page-long gradient. With JS the fixed #water layer takes over. */
+  .deep { background: linear-gradient(to bottom, var(--w0), var(--w3) 92%); }
+  html.js .deep { background: none; }
+  .seabed-in { background: var(--w4); }
+
+  #water { position: fixed; inset: 0; z-index: -2; pointer-events: none; display: none; background-color: var(--w0); }
+  html.js #water { display: block; clip-path: circle(0 at 50% 50%); }
+  html.js #water.on { clip-path: none; }
+  #ping { position: fixed; inset: 0; z-index: 3; width: 100%; height: 100%; pointer-events: none; }
+
+  /* ---------- the above-water instrument face ---------- */
+  .head { position: relative; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .head::after {                                         /* a ruler segment riding the hairline */
+    content: ""; position: absolute; right: 0; bottom: 0; width: 84px; height: 5px; pointer-events: none;
+    background: repeating-linear-gradient(90deg, rgba(17, 17, 17, 0.4) 0 1px, transparent 1px 6px);
+  }
+  .deep .head::after, .seabed .head::after { background: repeating-linear-gradient(90deg, rgba(143, 224, 245, 0.55) 0 1px, transparent 1px 6px); }
+  .rd {
+    display: inline-flex; align-items: baseline; gap: 7px; margin-bottom: 5px;
+    font: 500 12px/1.7 var(--mono); letter-spacing: 0.08em; color: var(--blue);
+    font-variant-numeric: tabular-nums; white-space: nowrap; background: var(--bg); padding-left: 8px; position: relative; z-index: 1;
+  }
+  .rd .u { color: var(--muted); font-weight: 400; }
+  .rd::before {                                          /* above water: a benchmark triangle */
+    content: ""; align-self: center; width: 8px; height: 7px; background: currentColor; clip-path: polygon(50% 0, 0 100%, 100% 100%);
+  }
+  .deep .rd, .seabed .rd { color: var(--tan); background: none; }
+  .deep .rd::before, .seabed .rd::before {              /* under water: a returning ping */
+    width: 9px; height: 9px; background: none; clip-path: none; border: 1px solid currentColor; border-radius: 50%;
+    box-shadow: 0 0 0 3px rgba(143, 224, 245, 0.18);
+  }
+
+  /* header: plate instrument overlay + the mark */
+  .plate .inst { position: absolute; left: 0; right: 0; bottom: 0; aspect-ratio: 1280 / 250; z-index: 1; pointer-events: none; color: var(--cream); font: 500 11px/1 var(--mono); letter-spacing: 0.08em; }
+  .inst .pk { position: absolute; left: 40.6%; top: 14.8%; }
+  .inst .pk::before { content: ""; position: absolute; left: -5px; top: -4px; width: 10px; height: 9px; background: var(--cream); clip-path: polygon(50% 0, 0 100%, 100% 100%); }
+    .inst .pk::after { content: ""; position: absolute; left: 82px; top: 0; width: 120px; height: 0; border-top: 1px dashed rgba(17, 17, 17, 0.35); }
+  .inst .pk b { position: absolute; left: 12px; top: -6px; font-weight: 500; color: var(--cream); white-space: nowrap; }
+  .inst .stn { position: absolute; right: 0; top: 34px; color: var(--muted); white-space: nowrap; display: none; }
+  @media (min-width: 600px) { .inst .stn { display: block; } .inst .pk::after { width: 220px; } }
+
+  .mark { grid-area: mark; position: relative; display: flex; flex-direction: column; align-items: center; align-self: center; }
+  .top .mark .hiker { --hiker-h: var(--mk-h); transform: scaleX(-1); }
+  .sonar { display: block; width: calc(var(--mk-h) * 0.62 + 28px); margin: -1px 0 0 0; height: var(--mk-s); overflow: visible; }
+  .sonar .wl { stroke: var(--blue); stroke-width: 1.2; }
+  .sonar .arc { fill: none; stroke: var(--blue); stroke-width: 1.5; stroke-linecap: round; }
+  .top { --mk-h: 90px; --mk-s: 22px; }
+  @media (min-width: 600px) { .top { --mk-h: 118px; --mk-s: 22px; } }
+  .sonar .a1 { opacity: 1; } .sonar .a2 { opacity: 0.72; } .sonar .a3 { opacity: 0.42; }
+  @media (prefers-reduced-motion: no-preference) {
+    .sonar .arc { animation: arc-ping 7s ease-in-out 2.2s infinite both; }
+    .sonar .a2 { animation-delay: 2.45s; } .sonar .a3 { animation-delay: 2.7s; }
+    html.under .sonar .arc { animation-play-state: paused; }
+  }
+  @keyframes arc-ping { 0%, 14%, 100% { stroke-opacity: 1; } 5% { stroke-opacity: 0.1; } }
+
+  /* the cue at the end of the tip */
+  .row--cue .val { text-decoration: none; }
+
+  /* ---------- the waterline ---------- */
+  .surface { position: relative; margin-top: 64px; padding-bottom: 0; }
+  .surface .wrap { padding-bottom: 12px; }
+  .surface-rd {
+    display: flex; justify-content: space-between; gap: 12px; margin: 0;
+    font: 500 12px/1.7 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+  }
+  .surface-rd b { font-weight: 500; color: var(--blue); }
+  .surface-line { position: relative; height: 0; border-bottom: 1px solid var(--blue); }
+  .xducer { position: absolute; left: 50%; top: -22px; width: 38px; height: 44px; margin-left: -19px; overflow: visible; }
+  .xducer .tri { fill: var(--cream); }
+  .xducer .arc { fill: none; stroke: var(--blue); stroke-width: 1.2; stroke-linecap: round; }
+  .xducer .a2 { opacity: 0.6; } .xducer .a3 { opacity: 0.3; }
+  html.pinged .xducer .arc { stroke: #BFEFFF; }
+
+  /* the water just below it: faint range rings centred on the transducer */
+  .deep::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 0; height: 640px; pointer-events: none; z-index: -1;
+    background:
+      repeating-radial-gradient(circle at 50% 0, transparent 0 119px, rgba(127, 211, 238, 0.13) 119px 120px),
+      linear-gradient(rgba(150, 225, 250, 0.2), transparent);
+    -webkit-mask-image: linear-gradient(#000 30%, transparent); mask-image: linear-gradient(#000 30%, transparent);
+  }
+
+  html.js:not(.pinged) .deep::before { opacity: 0; }
+  html.js .deep::before { transition: opacity 1.4s var(--ease) 0.2s; }
+
+  /* ---------- below water: the dive ---------- */
+  .dive { padding-top: 88px; }
+  .dive:first-child { padding-top: 76px; }
+  .dive .head { scroll-margin-top: 24px; }
+  html.js:not(.pinged) [data-r] { opacity: 0; }
+  html.js [data-r] { transition: opacity 0.7s var(--ease) var(--dl, 0s); }
+  .dive .row { padding: 13px 0 14px; }
+  .dive .body {
+    margin: 2px 0 6px; padding: 2px 0 2px 16px; border-left: 1px solid rgba(143, 224, 245, 0.5); color: var(--soft);
+  }
+  .dive .body p + p { margin-top: 8px; }
+  .dive .meta { font: 400 12.5px/1.7 var(--mono); color: var(--muted); }
+  .dive .meta a { color: var(--cream); }
+  .cap {
+    margin: 10px 0 0; font: 400 12px/1.7 var(--mono); letter-spacing: 0.08em; color: var(--muted); text-wrap: pretty;
+  }
+  .cap b { font-weight: 500; color: var(--cream); }
+
+  /* ---------- instrument plates ---------- */
+  .plate-w {
+    position: relative; left: 50%; transform: translateX(-50%);
+    width: min(940px, calc(100vw - var(--gutter) * 2)); margin: 28px 0 24px;
+    background: rgba(2, 16, 26, 0.38); border: 1px solid rgba(127, 211, 238, 0.24);
+    contain: layout paint; --ph: 300px;
+  }
+  .plate-w canvas { display: block; width: 100%; height: var(--ph); }
+  .plate-w.t-terrain canvas {
+    -webkit-mask-image: radial-gradient(ellipse 78% 86% at 50% 50%, #000 62%, transparent 100%);
+    mask-image: radial-gradient(ellipse 78% 86% at 50% 50%, #000 62%, transparent 100%);
+  }
+  .k { position: absolute; width: 11px; height: 11px; border: 0 solid var(--line); pointer-events: none; opacity: 0.9; }
+  .k1 { left: -1px; top: -1px; border-width: 2px 0 0 2px; } .k2 { right: -1px; top: -1px; border-width: 2px 2px 0 0; }
+  .k3 { left: -1px; bottom: -1px; border-width: 0 0 2px 2px; } .k4 { right: -1px; bottom: -1px; border-width: 0 2px 2px 0; }
+  .pc {
+    position: absolute; z-index: 1; pointer-events: none; font: 400 11.5px/1.35 var(--mono); letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ice3); white-space: nowrap;
+    padding: 2px 7px; background: rgba(2, 16, 26, 0.78); border-radius: 2px;   /* keeps contrast whatever the scan is doing behind it */
+  }
+  .pc.tl { left: 10px; top: 9px; } .pc.tr { right: 10px; top: 9px; }
+  .pc.bl { left: 10px; bottom: 9px; } .pc.br { right: 10px; bottom: 9px; }
+  .pc b { font-weight: 500; color: var(--ice); }
+  .t-terrain { --ph: 440px; } .t-spectro { --ph: 330px; } .t-spice { --ph: 460px; }
+  @media (max-width: 599px) {
+    .t-terrain { --ph: 330px; } .t-spectro { --ph: 280px; } .t-spice { --ph: 400px; }
+    .pc.tr { display: none; } .pc { font-size: 11px; letter-spacing: 0.06em; }
+    .pc.tl { left: 8px; top: 8px; } .pc.bl { left: 8px; bottom: 8px; } .pc.br { right: 8px; bottom: 8px; }
+    .t-terrain .pc.br, .t-spectro .pc.bl { display: none; }
+  }
+
+  /* the pack, as a plate: dark pack tinted to the water, with one sonar sweep as it resolves */
+  .plate-w.t-pack { contain: none; left: 0; transform: none; width: 100%; margin-top: 30px; background: none; border-color: rgba(127, 211, 238, 0.2); }
+  .t-pack iframe {
+    display: block; width: 100%; height: min(112vw, 440px); border: 0; background: transparent; color-scheme: dark;
+    mix-blend-mode: screen; filter: grayscale(1) sepia(1) hue-rotate(170deg) saturate(4) brightness(1.4) contrast(1.1);
+  }
+  html.js .t-pack:not(.hit) iframe { clip-path: inset(0 100% 0 0); }
+  .t-pack::after {
+    content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 2px; opacity: 0; pointer-events: none;
+    background: linear-gradient(transparent, #BFEFFF 20%, #BFEFFF 80%, transparent); box-shadow: 0 0 18px 4px rgba(127, 211, 238, 0.55);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .t-pack.hit iframe { animation: pk-reveal 1.5s cubic-bezier(0.65, 0, 0.35, 1) both; }
+    .t-pack.hit::after { animation: pk-scan 1.5s cubic-bezier(0.65, 0, 0.35, 1) both; }
+  }
+  @keyframes pk-reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+  @keyframes pk-scan { 0% { left: 0; opacity: 1; } 92% { opacity: 1; } 100% { left: calc(100% - 2px); opacity: 0; } }
+
+  /* ---------- essays: logged contacts ---------- */
+  .contacts { margin-top: 6px; }
+  .contacts .row--link + .row--link { border-top: 1px solid var(--rule); }
+  .contacts .rl.rl--essay { align-items: flex-start; gap: 14px; padding: 13px 0 14px; }
+  .contacts .rl.rl--essay .et { flex: 1 1 auto; }
+  .contacts .lab { font-weight: 600; }
+  .contacts .val { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; color: var(--muted); }
+  .contacts .val time { font: 400 12.5px/22px var(--mono); }
+  .contacts .dp { font: 500 12px/1 var(--mono); letter-spacing: 0.06em; color: var(--tan); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .blip { position: relative; flex: none; width: 18px; height: 22px; }
+  .blip::before { content: ""; position: absolute; left: 6px; top: 7px; width: 6px; height: 6px; border-radius: 50%; background: var(--tan); box-shadow: 0 0 8px 1px rgba(143, 224, 245, 0.6); }
+  .blip::after { content: ""; position: absolute; left: 1px; top: 2px; width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--tan); opacity: 0.45; }
+  @media (prefers-reduced-motion: no-preference) {
+    .hit .blip::after, .rl:hover .blip::after, .rl:focus-visible .blip::after { animation: blip-ping 2.4s var(--ease) both; }
+    .hit .row:nth-child(2) .blip::after { animation-delay: 0.35s; } .hit .row:nth-child(3) .blip::after { animation-delay: 0.7s; }
+    .hit .row:nth-child(4) .blip::after { animation-delay: 1.05s; }
+    .rl:hover .blip::after, .rl:focus-visible .blip::after { animation-delay: 0s; }
+  }
+  @keyframes blip-ping { 0% { transform: scale(0.3); opacity: 0.9; } 100% { transform: scale(2.1); opacity: 0; } }
+
+  /* ---------- ten bullets: the deepest log ---------- */
+  .log { margin: 6px 0 0; padding: 0; list-style: none; position: relative; }
+  .log::before {                                         /* depth rail */
+    content: ""; position: absolute; left: 3.2rem; top: 4px; bottom: 4px; width: 1px;
+    background: linear-gradient(rgba(143, 224, 245, 0.5), rgba(143, 224, 245, 0.12));
+  }
+  .log li { position: relative; display: grid; grid-template-columns: 3.2rem minmax(0, 1fr); column-gap: 22px; align-items: baseline; padding: 12px 0 13px; }
+  .log li + li { border-top: 1px solid var(--rule); }
+  .log li::before {                                      /* tick on the rail */
+    content: ""; position: absolute; left: calc(3.2rem - 3px); top: 21px; width: 7px; height: 1px; background: var(--tan);
+  }
+  .log .n { display: flex; flex-direction: column; gap: 3px; font: 400 12px/1 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .log .n i { font-style: normal; font-weight: 500; color: var(--tan); letter-spacing: 0.02em; }
+  .log p { color: var(--ice); text-wrap: pretty; padding-left: 8px; }
+  @media (max-width: 599px) { .log li { grid-template-columns: 3.1rem minmax(0, 1fr); column-gap: 18px; } .log::before { left: 3.1rem; } .log li::before { left: calc(3.1rem - 3px); } }
+
+  /* ---------- the seabed ---------- */
+  .seabed { margin-top: 56px; padding-top: 0; overflow: hidden; }
+  .bed { display: block; width: 100%; height: 96px; margin-top: -1px; }
+  .bed .fill { fill: var(--w4); }
+  .bed .tr { fill: none; stroke: var(--tan); stroke-width: 1.3; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+  .bed .tr2 { fill: none; stroke: var(--tan); stroke-width: 1; opacity: 0.28; vector-effect: non-scaling-stroke; }
+  .seabed .wrap { padding-top: 22px; padding-bottom: 48px; }
+  .seabed .foot-line { margin-top: 22px; }
+  .seabed .scale { color: var(--muted); }
+  .seabed .bar { border-color: var(--muted); background: repeating-linear-gradient(90deg, var(--muted) 0 16px, transparent 16px 32px); }
+  .seabed .row--link + .row--link { border-top: 1px solid var(--rule); }
+  .snow { position: absolute; left: 0; right: 0; bottom: 0; height: 100%; pointer-events: none; opacity: 0.5; }
+
+  /* ---------- the depth gauge: a tape that scrolls with you ---------- */
+  #gauge {
+    position: fixed; z-index: 20; pointer-events: none; color: #111;
+    font: 500 12px/1 var(--mono); font-variant-numeric: tabular-nums;
+  }
+  html.under #gauge { color: var(--ice); }
+  #gauge .g-tape, #gauge .g-ptr, #gauge .g-mid { display: none; }
+  #gauge .g-read {
+    position: fixed; right: 10px; bottom: 10px; padding: 6px 9px; border-radius: 3px; letter-spacing: 0.06em;
+    background: rgba(255, 255, 255, 0.92); border: 1px solid rgba(0, 0, 0, 0.18);
+    opacity: 0; transition: opacity 0.25s var(--ease);
+  }
+  html.scrolling.scrolled #gauge .g-read { opacity: 1; }
+  html.under #gauge .g-read { background: rgba(3, 20, 32, 0.86); border-color: rgba(127, 211, 238, 0.35); }
+  #gauge .g-read { white-space: nowrap; }
+  #gauge .g-read em { font-style: normal; font-weight: 400; opacity: 0.7; }
+  @media (min-width: 1140px) {
+    #gauge { right: 26px; top: 50%; height: min(44vh, 380px); width: 118px; transform: translateY(-50%); }
+    #gauge .g-tape { display: block; position: absolute; right: 0; top: 0; bottom: 0; width: 46px; overflow: hidden;
+      -webkit-mask-image: linear-gradient(transparent, #000 24%, #000 76%, transparent); mask-image: linear-gradient(transparent, #000 24%, #000 76%, transparent); }
+    #gauge .g-tape svg { position: absolute; left: 0; top: 0; width: 46px; overflow: visible; will-change: transform; }
+    #gauge .g-tape line { stroke: currentColor; }
+    #gauge .g-tape text { fill: currentColor; font: 400 10px var(--mono); opacity: 0.8; }
+    #gauge .g-read { position: absolute; right: 56px; top: 50%; bottom: auto; transform: translateY(-50%); padding: 0; background: none; border: 0; opacity: 1 !important; text-align: right; font-size: 13px; }
+    html.under #gauge .g-read { background: none; }
+    #gauge .g-ptr { display: block; position: absolute; right: 46px; top: 50%; width: 7px; height: 9px; margin-top: -4.5px; background: currentColor; clip-path: polygon(0 0, 100% 50%, 0 100%); transform: translateX(8px); }
+    #gauge .g-ptr::after { content: ""; }
+    #gauge .g-mid { display: block; position: absolute; right: 0; top: 50%; width: 46px; height: 1px; background: currentColor; opacity: 0.35; }
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .contacts .rl:hover .lab { color: var(--tan); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html.js [data-r] { transition: none; }
+    #gauge .g-read { transition: none; }
+  }
+
+  html:not(.js) .t-terrain, html:not(.js) .t-spectro, html:not(.js) .t-spice { display: none; }
+
+</style>
+</head>
+<body>
+
+<!-- Decorative layers: the water (fixed, revealed by the ping), the ping itself, and the depth gauge. -->
+<div id="water" aria-hidden="true"></div>
+<canvas id="ping" aria-hidden="true"></canvas>
+<aside id="gauge" aria-hidden="true">
+  <div class="g-tape"><svg height="1" viewBox="0 0 46 1" focusable="false"></svg></div>
+  <span class="g-mid"></span><span class="g-ptr"></span>
+  <div class="g-read"><span id="g-num">+0.50</span> <em>KM</em></div>
+</aside>
+
+<div class="tip">
+<header class="wrap" data-d="0.5">
+  <div class="plate" aria-hidden="true">
+    <svg class="scene scene--mtn" width="1280" height="250" viewBox="170 18 1280 250" focusable="false">
+      <defs>
+        <filter id="mtn-soft" filterUnits="userSpaceOnUse" x="-40" y="-40" width="1360" height="562"><feGaussianBlur stdDeviation="7"/></filter>
+        <mask id="mtn-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1280" height="482">
+          <g filter="url(#mtn-soft)">
+            <path class="ink i1" pathLength="1" stroke-width="170" d="M-20 300 L200 250 L400 180 L560 110 L690 40 L800 105 L950 165 L1100 215 L1300 255"/>
+            <path class="ink i2" pathLength="1" stroke-width="190" d="M-20 345 L300 320 L500 270 L700 230 L900 260 L1300 320"/>
+            <path class="ink i3" pathLength="1" stroke-width="180" d="M-20 440 L400 425 L800 435 L1300 430"/>
+          </g>
+        </mask>
+      </defs>
+      <image href="../_shared/mountain-plate.webp" width="1280" height="482" mask="url(#mtn-mask)"/>
+    </svg>
+    <!-- survey callout: the summit reading, a dimension line, the station -->
+    <div class="inst"><span class="pk"><b>+0.50 KM</b></span><span class="stn">ITHACA, NY · 42.444° N 76.502° W</span></div>
+  </div>
+  <div class="top">
+  <div class="mark">
+  <svg class="hiker" viewBox="0 0 294 480" aria-hidden="true" focusable="false">
+    <defs>
+      <filter id="hiker-soft" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="5"/></filter>
+      <mask id="hiker-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="294" height="480">
+        <g filter="url(#hiker-soft)">
+          <path class="ink ink-1" pathLength="1" stroke-width="64" d="M104 30 C 150 0, 196 30, 180 70 S 96 110, 100 70 S 160 40, 200 110"/>
+          <path class="ink ink-2" pathLength="1" stroke-width="72" d="M70 130 L 286 120 L 40 185 L 290 185 L 30 245 L 290 245 L 20 305 L 286 300"/>
+          <path class="ink ink-3" pathLength="1" stroke-width="72" d="M10 345 L 290 345 L 0 400 L 294 400 L 0 455 L 294 460"/>
+        </g>
+      </mask>
+    </defs>
+    <image href="../_shared/hiker.webp" width="294" height="480" mask="url(#hiker-mask)"/>
+  </svg>
+  <svg class="sonar" viewBox="0 0 100 23" preserveAspectRatio="xMidYMin meet" aria-hidden="true" focusable="false"><line class="wl" x1="0" x2="100" y1="0.6" y2="0.6"/><path class="arc a1" d="M43 0.6 A7 7 0 0 0 57 0.6"/><path class="arc a2" d="M35.5 0.6 A14.5 14.5 0 0 0 64.5 0.6"/><path class="arc a3" d="M28 0.6 A22 22 0 0 0 72 0.6"/></svg>
+  </div>
+  <h1 class="name"><span class="hari">Hari</span> <span class="sur">GRIDHARAN</span></h1>
+  <p class="aff"><span class="aff-a">Applied Economics, AI&nbsp;minor</span><span class="aff-sep">&nbsp;· </span><span class="nw">Cornell&nbsp;Dyson&nbsp;’29&nbsp;· Dyson&nbsp;Scholar</span></p>
+  <p class="seek">Seeking Summer&nbsp;2027 internships in strategy, investing, business analysis and product — NYC&nbsp;/&nbsp;SF</p>
+  <div class="act">
+    <a class="btn btn-fill" href="/Hari_Gridharan_Resume.pdf">Resume<span aria-hidden="true">&nbsp;↓</span><span class="sr-only"> (PDF)</span></a>
+    <a class="btn btn-line" href="mailto:hg532@cornell.edu">Email</a>
+    <span class="soc"><a href="https://www.linkedin.com/in/harigridharan1/" target="_blank" rel="noopener">LinkedIn<span class="sr-only"> (opens in new tab)</span></a><span class="dot" aria-hidden="true">·</span><a href="https://github.com/hgridharan999" target="_blank" rel="noopener">GitHub<span class="sr-only"> (opens in new tab)</span></a></span>
+  </div>
+  </div>
+</header>
+</div><!-- /tip: header -->
+
+<main>
+<div class="tip tip-in">
+<div class="wrap">
+  <section aria-labelledby="experience">
+    <h2 class="head" id="experience" data-d="0.40"><span class="lbl"><span class="idx">01</span> · EXPERIENCE</span><span class="rd" aria-hidden="true">+0.40<span class="u">KM</span></span></h2>
+    <ul role="list">
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Co-Founder,</span> <span class="co">Loadstone&nbsp;Labs</span></span>
+          <span class="when">Feb&nbsp;2026&nbsp;–&nbsp;now</span>
+          <span class="line"><span class="lead">132,000+ water-rights records a day</span> from 44 Colorado counties&nbsp;· grant-funded by AWS and LvlUp&nbsp;Ventures</span>
+        </summary>
+        <div class="body">
+          <p>Co-founded a data platform for Western water rights. County records are fragmented and inconsistent, so rights are hard to find and harder to value; Loadstone pulls workflow, basin intelligence and transaction infrastructure into one place for the attorneys and engineers who work them.</p>
+          <p>Our pipeline ingests 132,000+ live water-rights records a day from 44 Colorado counties into a single schema. Supported by grants from AWS and LvlUp&nbsp;Ventures.</p>
+          <p class="meta">Ithaca, NY · <a href="https://loadstonelabs.com" target="_blank" rel="noopener">loadstonelabs.com<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Consulting Intern,</span> <span class="co">EXL</span></span>
+          <span class="when">Summer&nbsp;2026</span>
+          <span class="line"><span class="lead">Built a CRM tool</span> to replace manual contract tracking across a $70M+ Fortune&nbsp;100 client portfolio</span>
+        </summary>
+        <div class="body">
+          <p>Supported a portfolio of client contracts worth $70M+ across Fortune 100 accounts, tracking scope, deliverables and renewal terms.</p>
+          <p>Built a custom CRM tool to replace manual contract tracking, administered contract data in Salesforce, and produced executive-ready decks for global teams.</p>
+          <p class="meta">New York, NY</p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Operations &amp; Strategy Intern,</span> <span class="co">Midian&nbsp;Partners</span></span>
+          <span class="when">Jun&nbsp;–&nbsp;Jul&nbsp;2026</span>
+          <span class="line"><span class="lead">6<span class="sr-only"> to </span><span aria-hidden="true">&nbsp;→&nbsp;</span>25+ signed lender partners</span> in under five&nbsp;weeks&nbsp;· mortgage fintech</span>
+        </summary>
+        <div class="body">
+          <p>Scaled an early-stage mortgage fintech’s lender network from 6 to 25+ signed partnerships in under five weeks.</p>
+          <p>Negotiated terms with partner executives, ran user testing, and coordinated a source-verified technical audit across 12 subsystems.</p>
+          <p class="meta">Remote</p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">AI Strategy Consultant,</span> <span class="co">Adobe</span></span>
+          <span class="when">Jan&nbsp;–&nbsp;Apr&nbsp;2026</span>
+          <span class="line"><span class="lead">$1M+ enterprise AI deals</span>&nbsp;· market sizing and positioning for AI products</span>
+        </summary>
+        <div class="body">
+          <p>Contract role on AI product strategy tied to $1M+ enterprise contracts, supporting work with IT leadership at Fortune 500 customers.</p>
+          <p>Built market-sizing frameworks, UX benchmarks and positioning analyses, and proposed business cases for the product suite.</p>
+          <p class="meta">Remote · Contract</p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Problem Design Engineer,</span> <span class="co">IdlExperts</span></span>
+          <span class="when">Jan&nbsp;–&nbsp;Apr&nbsp;2026</span>
+          <span class="line"><span class="lead">Frontier AI model evaluations</span>&nbsp;· designed the problem sets used to test them</span>
+        </summary>
+        <div class="body">
+          <p>Designed complex, real-world problem sets used to evaluate frontier AI models in training environments.</p>
+          <p>Benchmarked agent behavior against them and turned engineer feedback into improvements for production deployments.</p>
+          <p class="meta">Remote · formerly Widget Factory</p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Co-Founder,</span> <span class="co">Commit</span></span>
+          <span class="when">Sep&nbsp;2025&nbsp;–&nbsp;Jan&nbsp;2026</span>
+          <span class="line"><span class="lead">Top&nbsp;10% of 20,000+&nbsp;YC applicants</span>&nbsp;· social prediction-market MVP built in 3&nbsp;days</span>
+        </summary>
+        <div class="body">
+          <p>Co-founded a social prediction-market platform that ranked in the top 10% of 20,000+ Y Combinator applicants.</p>
+          <p>Took it from concept to a working MVP in three days, including the prediction logic and the unit-economics model.</p>
+          <p class="meta"><a href="https://commit-landing-tau.vercel.app" target="_blank" rel="noopener">Site<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="on-campus">
+    <h2 class="head" id="on-campus" data-d="0.30"><span class="lbl"><span class="idx">02</span> · ON CAMPUS</span><span class="rd" aria-hidden="true">+0.30<span class="u">KM</span></span></h2>
+    <ul role="list">
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Analyst,</span> <span class="co">Cornell Venture&nbsp;Capital</span></span>
+          <span class="when">2026&nbsp;–&nbsp;now</span>
+          <span class="line"><span class="tk">TK: what you diligence or produce, number first</span></span>
+        </summary>
+        <div class="body">
+          <p><span class="tk">TK: 2–3 sentences on the firms or deals, the sectors, and what you produced (memos, diligence, market maps)</span></p>
+          <p class="meta">Ithaca, NY</p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="role">Co-President,</span> <span class="co">Cornell Entrepreneurship&nbsp;Club</span></span>
+          <span class="when">Sep&nbsp;2025&nbsp;–&nbsp;now</span>
+          <span class="line"><span class="lead">Y&nbsp;Combinator speaker series</span> for 150+&nbsp;attendees&nbsp;· founder and VC programming</span>
+        </summary>
+        <div class="body">
+          <p>Co-lead Cornell’s entrepreneurship club. I run our Y Combinator speaker series, bringing founders and VC partners to campus for audiences of 150+, and coordinate directly with the firms behind them.</p>
+          <p>Grew the club’s reach to 500,000+ views across Instagram and LinkedIn, and scout student startups to sharpen the club’s investment theses.</p>
+          <p class="meta">Ithaca, NY</p>
+        </div>
+      </details></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="projects">
+    <h2 class="head" id="projects" data-d="0.20"><span class="lbl"><span class="idx">03</span> · PROJECTS &amp; RESEARCH</span><span class="rd" aria-hidden="true">+0.20<span class="u">KM</span></span></h2>
+    <ul role="list">
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="co">Vest Practices</span> <span class="loc">DNHacks 2026</span></span>
+          <span class="when">2026</span>
+          <span class="line"><span class="lead">AI glasses</span> that train tradespeople hands-free&nbsp;· identify the part in hand in under a second</span>
+        </summary>
+        <div class="body">
+          <p>A wearable training system for tradespeople, built on AI glasses with a team of five at DNHacks 2026 (Energy &amp; Industrialization track).</p>
+          <p>The glasses see what the trainee sees and talk back: a detector trained on our own footage, a vision model that reads part markings, voice activation and a synthesized voice in the ear. Every session is stored as structured data, so the trainer remembers what each person has learned.</p>
+          <p class="meta"><a href="https://vestpractices.vercel.app/" target="_blank" rel="noopener">Demo<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a> · <a href="https://portal.dnhacks.org/e/2026/showcase/b-v-est-practices" target="_blank" rel="noopener">Entry<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a> · <a href="https://github.com/8ddieHu0314/dnhacks" target="_blank" rel="noopener">Repo<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="co">Climate startup search</span> <span class="loc">Venture sourcing</span></span>
+          <span class="when">Dec&nbsp;2025&nbsp;–&nbsp;Jan&nbsp;2026</span>
+          <span class="line"><span class="lead">212 climate startups</span> ranked on founder, patent and market signals&nbsp;· live search in ~600ms</span>
+        </summary>
+        <div class="body">
+          <p>An investor sourcing tool over 212 indexed climate-tech startups across 12 verticals. Candidates are ranked with multi-factor scoring across founder backgrounds, patent data and market signals.</p>
+          <p>Search blends BERT embeddings (FAISS) with BM25 keyword ranking through reciprocal rank fusion, expands queries with synonyms, and is measured with NDCG@10.</p>
+          <p class="meta">Python · FastAPI · FAISS · <a href="/climate-search">Demo<span aria-hidden="true">&nbsp;→</span><span class="sr-only">: climate startup search</span></a> · <a href="https://github.com/hgridharan999/climate_tech_discovery_backend" target="_blank" rel="noopener">Repo<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="co">OEIS A363004</span> <span class="loc">Number theory</span></span>
+          <span class="when">Jul&nbsp;2026</span>
+          <span class="line"><span class="lead">Computed a term nobody had found</span>&nbsp;· now credited in the On-Line Encyclopedia of Integer Sequences</span>
+        </summary>
+        <div class="body">
+          <p>A363004 counts the sequences of n distinct positive integers whose Gilbreath transform is all ones. Nobody had computed the 12th term.</p>
+          <p>I wrote the search that found it, a(12) = 9,290,399,173. The value and my Python program are now part of the sequence’s entry.</p>
+          <p class="meta">Python · <a href="https://oeis.org/A363004" target="_blank" rel="noopener">Entry<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+      <li class="row xp"><details>
+        <summary>
+          <span class="ttl"><span class="co">bigred.network</span> <span class="loc">Cornell Armada</span></span>
+          <span class="when">Jan&nbsp;2026</span>
+          <span class="line"><span class="lead">65 Cornell builders</span> in a directory of the university’s founders, builders and operators</span>
+        </summary>
+        <div class="body">
+          <p>Built bigred.network, the directory of Cornell’s founders, builders and operators, as part of Cornell Armada, a YC-backed founder community. 65 builders are listed so far.</p>
+          <p>It has member filtering, a network visualization, and a manual review workflow so access stays controlled.</p>
+          <p class="meta">React · TypeScript · <a href="https://www.bigred.network/" target="_blank" rel="noopener">Site<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+        </div>
+      </details></li>
+      <!-- Project Dactyl (AI-integrated ring) returns here, by date, once it has a sentence, a date and a link. -->
+    </ul>
+  </section>
+  <section aria-labelledby="thesis">
+    <h2 class="head" id="thesis" data-d="0.10"><span class="lbl"><span class="idx">04</span> · INVESTMENT THESIS</span><span class="rd" aria-hidden="true">+0.10<span class="u">KM</span></span></h2>
+    <p class="kicker">Investment thesis · what I’m betting on</p>
+    <ol class="beliefs">
+      <li><span class="n" aria-hidden="true">01</span><p>People &gt; ideas — great people can create great ideas, but great ideas can’t make up for not being a great founder.</p></li>
+      <li><span class="n" aria-hidden="true">02</span><p>Physical infrastructure is the #1 most undervalued sector.</p></li>
+      <li><span class="n" aria-hidden="true">03</span><p>Way too many people are building AI, and not enough are building for AI.</p></li>
+      <li><span class="n" aria-hidden="true">04</span><p>If you aren’t a good storyteller, you won’t have people buy your story or your product.</p></li>
+    </ol>
+    <ul role="list" class="theses-more">
+      <li class="row row--link row--cue"><a class="rl" href="#waterline"><span class="lab co">Below the waterline</span><span class="val">mountaineering · singing · cooking · essays<span aria-hidden="true">&nbsp;↓</span></span></a></li>
+    </ul>
+  </section>
+</div>
+
+<!-- The waterline. The signature moment: crossing it sends a sonar ping down the page. -->
+<div class="surface" id="waterline" role="separator" aria-label="Waterline. Everything below is the other 90 percent.">
+  <div class="wrap"><p class="surface-rd" aria-hidden="true"><span>0.00 KM · <b>SURFACE</b></span><span>SOUNDING BEGINS</span></p></div>
+  <div class="surface-line" data-d="0" aria-hidden="true">
+    <svg class="xducer" viewBox="0 0 38 44" focusable="false"><path class="tri" d="M19 3.5 L25.5 15 L12.5 15 Z"/><path class="arc a1" d="M13 20 A6 6 0 0 0 25 20"/><path class="arc a2" d="M8.5 22 A10.5 10.5 0 0 0 29.5 22"/><path class="arc a3" d="M4 24 A15 15 0 0 0 34 24"/></svg>
+  </div>
+</div>
+</div><!-- /tip-in -->
+
+<div class="deep" id="deep">
+
+  <section class="dive wrap" id="mountaineering" aria-labelledby="mtn">
+    <h2 class="head" id="mtn" data-d="-0.90" data-r><span class="lbl"><span class="idx">05</span> · MOUNTAINEERING</span><span class="rd" aria-hidden="true">−0.90<span class="u">KM</span></span></h2>
+    <div class="plate-w t-terrain" data-plate="terrain" data-r role="img" aria-label="A sonar-style scan of Quandary Peak’s terrain, with Hari’s GPS route to the summit drawn over it.">
+      <i class="k k1"></i><i class="k k2"></i><i class="k k3"></i><i class="k k4"></i>
+      <canvas aria-hidden="true"></canvas>
+      <span class="pc tl" aria-hidden="true"><b>PLATE A</b> · BATHYMETRIC SCAN</span>
+      <span class="pc tr" aria-hidden="true">QUANDARY PEAK · 5.65 KM SQUARE</span>
+      <span class="pc bl" aria-hidden="true">BRG <b class="brg">000</b>° · CONTOUR 25 M</span>
+      <span class="pc br" aria-hidden="true">TRACK 11.1 KM · GAIN 1,074 M</span>
+    </div>
+    <ul role="list" data-r>
+      <li class="row">
+        <span class="ttl"><span class="co">Mountaineering</span> <span class="loc">Colorado fourteeners</span></span>
+        <span class="when">2025&nbsp;–&nbsp;now</span>
+        <span class="line"><span class="lead">Quandary Peak, 14,265&nbsp;ft</span> most recent&nbsp;· first was Mt.&nbsp;Bierstadt</span>
+      </li>
+    </ul>
+    <div class="body" data-r>
+      <p>Working through Colorado’s fourteeners. First was Mt. Bierstadt in 2025; most recent was Quandary Peak (14,265 ft) in under 4:30 round trip.</p>
+      <p class="meta"><a href="/hiking">Trail log<span aria-hidden="true">&nbsp;→</span><span class="sr-only">: mountaineering</span></a></p>
+    </div>
+    <div class="plate-w t-pack" id="pack-plate" data-r>
+      <i class="k k1"></i><i class="k k2"></i><i class="k k3"></i><i class="k k4"></i>
+      <iframe src="../_shared/pack/index.html" title="Fourteener pack: an interactive figure of the Ten Essentials" loading="lazy"></iframe>
+    </div>
+    <p class="cap" data-r><b>PLATE B</b> · What goes up a fourteener: the Ten Essentials, all in one day pack.</p>
+  </section>
+
+  <section class="dive wrap" id="singing" aria-labelledby="sing">
+    <h2 class="head" id="sing" data-d="-1.60" data-r><span class="lbl"><span class="idx">06</span> · SINGING</span><span class="rd" aria-hidden="true">−1.60<span class="u">KM</span></span></h2>
+    <div class="plate-w t-spectro" data-plate="spectro" data-r role="img" aria-label="A spectrogram of a sustained drone note, its harmonics wavering slowly as the note breathes.">
+      <i class="k k1"></i><i class="k k2"></i><i class="k k3"></i><i class="k k4"></i>
+      <canvas aria-hidden="true"></canvas>
+      <span class="pc tl" aria-hidden="true"><b>PLATE C</b> · SPECTROGRAM</span>
+      <span class="pc tr" aria-hidden="true">SUSTAINED DRONE · SA</span>
+      <span class="pc bl" aria-hidden="true">HARMONICS 1–16</span>
+      <span class="pc br" aria-hidden="true">TIME →</span>
+    </div>
+    <ul role="list" data-r>
+      <li class="row row--solo"><p class="line"><span class="lead co">Carnatic &amp; indie singing</span></p></li>
+    </ul>
+  </section>
+
+  <section class="dive wrap" id="cooking" aria-labelledby="cook">
+    <h2 class="head" id="cook" data-d="-2.30" data-r><span class="lbl"><span class="idx">07</span> · COOKING</span><span class="rd" aria-hidden="true">−2.30<span class="u">KM</span></span></h2>
+    <div class="plate-w t-spice" data-plate="spice" data-r role="img" aria-label="A slowly turning radial chart with twelve spokes, one for each spice: cumin, mustard seed, curry leaf, asafoetida and more.">
+      <i class="k k1"></i><i class="k k2"></i><i class="k k3"></i><i class="k k4"></i>
+      <canvas aria-hidden="true"></canvas>
+      <span class="pc tl" aria-hidden="true"><b>PLATE D</b> · RADIAL</span>
+      <span class="pc tr" aria-hidden="true">READINGS · UNSCALED</span>
+      <span class="pc br" aria-hidden="true">12 SPOKES</span>
+    </div>
+    <ul role="list" data-r>
+      <li class="row row--solo"><p class="line"><span class="lead co">Cooking regional Indian food</span></p></li>
+    </ul>
+    <p class="cap" data-r>cumin · mustard seed · curry leaf · asafoetida · turmeric · coriander · fenugreek · cardamom · black pepper · red chilli · tamarind · cinnamon</p>
+  </section>
+
+  <section class="dive wrap" id="essays" aria-labelledby="ess">
+    <h2 class="head" id="ess" data-d="-3.00" data-r><span class="lbl"><span class="idx">08</span> · ESSAYS</span><span class="rd" aria-hidden="true">−3.00<span class="u">KM</span></span></h2>
+    <p class="kicker" data-r>Select essays</p>
+    <ul role="list" class="contacts" data-contacts data-r>
+      <li class="row row--link"><a class="rl rl--essay" href="/blog/tat-tvam-asi"><span class="blip" aria-hidden="true"></span><span class="et"><span class="lab co">Tat Tvam Asi and Conviction</span><span class="ed">Reading an Upanishad saying against its grain, and why conviction matters more in an age of algorithmic sameness.</span></span><span class="val"><time datetime="2026-10-06">Oct 2026</time><span class="dp" aria-hidden="true">C-04 · −3.10 KM</span></span></a></li>
+      <li class="row row--link"><a class="rl rl--essay" href="/blog/doing-it-all"><span class="blip" aria-hidden="true"></span><span class="et"><span class="lab co">Why Doing It All Is Simultaneously the Greatest and Worst Thing You Can Do</span><span class="ed">A reflection on momentum, overcommitment, and the cost of staying in motion all summer.</span></span><span class="val"><time datetime="2026-06-29">Jun 2026</time><span class="dp" aria-hidden="true">C-03 · −3.27 KM</span></span></a></li>
+      <li class="row row--link"><a class="rl rl--essay" href="/blog/solipsism-take-every-risk"><span class="blip" aria-hidden="true"></span><span class="et"><span class="lab co">Solipsism and Why You Should Take Every Risk in the World</span><span class="ed">What if no one around you is actually real? And why that might be the best reason to stop holding yourself back.</span></span><span class="val"><time datetime="2026-03-15">Mar 2026</time><span class="dp" aria-hidden="true">C-02 · −3.44 KM</span></span></a></li>
+      <li class="row row--link"><a class="rl rl--essay" href="/blog/neuroplasticity-and-change"><span class="blip" aria-hidden="true"></span><span class="et"><span class="lab co">Why Neuroplasticity Gives Me Reasons to Keep Growing and Proves Bojack Wrong</span><span class="ed">On the brain’s capacity for change, the science of growth, and why giving up is never actually the answer.</span></span><span class="val"><time datetime="2026-02-23">Feb 2026</time><span class="dp" aria-hidden="true">C-01 · −3.47 KM</span></span></a></li>
+    </ul>
+  </section>
+
+  <section class="dive wrap" id="bullets" aria-labelledby="ten">
+    <h2 class="head" id="ten" data-d="-3.80" data-r><span class="lbl"><span class="idx">09</span> · ME IN 10 BULLET POINTS</span><span class="rd" aria-hidden="true">−3.80<span class="u">KM</span></span></h2>
+    <ol class="log" data-r>
+      <li><span class="n" aria-hidden="true">01<i>−3.85</i></span><p>time being so limited means that you shouldn’t waste time doing stuff you don’t like.</p></li>
+      <li><span class="n" aria-hidden="true">02<i>−3.90</i></span><p>your best experiences are memories shared with friends.</p></li>
+      <li><span class="n" aria-hidden="true">03<i>−3.95</i></span><p>bias to action, choice paralysis kills 99% of solutions.</p></li>
+      <li><span class="n" aria-hidden="true">04<i>−4.00</i></span><p>become someone who loves risk-taking.</p></li>
+      <li><span class="n" aria-hidden="true">05<i>−4.05</i></span><p>health outweighs all other priorities.</p></li>
+      <li><span class="n" aria-hidden="true">06<i>−4.10</i></span><p>potential is the worst thing you can have: it prevents you from maximizing effort.</p></li>
+      <li><span class="n" aria-hidden="true">07<i>−4.15</i></span><p>derealization is a bottom 5 experience all time.</p></li>
+      <li><span class="n" aria-hidden="true">08<i>−4.20</i></span><p>literally everyone around you is underappreciative of the things they have.</p></li>
+      <li><span class="n" aria-hidden="true">09<i>−4.25</i></span><p>not knowing what comes after death should be the scariest thing you ever think about.</p></li>
+      <li><span class="n" aria-hidden="true">10<i>−4.30</i></span><p>human connection is the single most undervalued experience of our time.</p></li>
+    </ol>
+  </section>
+
+</div><!-- /deep -->
+</main>
+
+<footer class="seabed" id="seabed">
+  <svg class="bed" viewBox="0 0 1440 96" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    <path class="fill" d="M0,48.2 Q0,48.2 6.0,48.6 Q12,48.9 18.0,49.9 Q24,50.8 30.0,50.9 Q36,51.0 42.0,48.5 Q48,46.0 54.0,45.0 Q60,43.9 66.0,43.9 Q72,44.0 78.0,42.8 Q84,41.6 90.0,42.3 Q96,43.1 102.0,44.8 Q108,46.5 114.0,45.9 Q120,45.3 126.0,45.1 Q132,44.9 138.0,45.3 Q144,45.8 150.0,44.3 Q156,42.7 162.0,42.4 Q168,42.1 174.0,44.0 Q180,45.9 186.0,46.6 Q192,47.3 198.0,48.5 Q204,49.8 210.0,52.3 Q216,54.7 222.0,54.3 Q228,54.0 234.0,52.5 Q240,51.1 246.0,50.5 Q252,50.0 258.0,47.5 Q264,45.1 270.0,42.6 Q276,40.2 282.0,40.3 Q288,40.3 294.0,39.5 Q300,38.7 306.0,37.4 Q312,36.0 318.0,36.4 Q324,36.7 330.0,35.3 Q336,33.9 342.0,31.1 Q348,28.3 354.0,27.6 Q360,26.9 366.0,26.0 Q372,25.0 378.0,23.9 Q384,22.9 390.0,24.9 Q396,27.0 402.0,29.1 Q408,31.2 414.0,31.9 Q420,32.6 426.0,34.7 Q432,36.7 438.0,37.6 Q444,38.5 450.0,37.0 Q456,35.6 462.0,35.6 Q468,35.7 474.0,36.1 Q480,36.5 486.0,35.6 Q492,34.7 498.0,35.9 Q504,37.1 510.0,38.8 Q516,40.4 522.0,39.6 Q528,38.8 534.0,38.6 Q540,38.5 546.0,38.3 Q552,38.1 558.0,35.7 Q564,33.3 570.0,32.5 Q576,31.7 582.0,32.8 Q588,33.9 594.0,34.1 Q600,34.3 606.0,36.2 Q612,38.0 618.0,41.3 Q624,44.7 630.0,45.6 Q636,46.5 642.0,47.2 Q648,47.9 654.0,49.4 Q660,50.9 666.0,50.3 Q672,49.6 678.0,49.3 Q684,49.0 690.0,50.9 Q696,52.8 702.0,53.3 Q708,53.8 714.0,54.1 Q720,54.5 726.0,56.0 Q732,57.5 738.0,56.4 Q744,55.3 750.0,52.8 Q756,50.2 762.0,48.9 Q768,47.7 774.0,45.2 Q780,42.7 786.0,40.1 Q792,37.5 798.0,37.8 Q804,38.2 810.0,38.4 Q816,38.5 822.0,37.9 Q828,37.4 834.0,38.6 Q840,39.8 846.0,39.8 Q852,39.7 858.0,37.9 Q864,36.0 870.0,36.0 Q876,36.0 882.0,36.0 Q888,36.0 894.0,35.1 Q900,34.3 906.0,36.0 Q912,37.6 918.0,39.4 Q924,41.2 930.0,40.8 Q936,40.5 942.0,40.9 Q948,41.3 954.0,40.9 Q960,40.5 966.0,37.4 Q972,34.4 978.0,32.7 Q984,31.0 990.0,30.3 Q996,29.7 1002.0,27.9 Q1008,26.1 1014.0,26.4 Q1020,26.8 1026.0,28.3 Q1032,29.9 1038.0,29.3 Q1044,28.8 1050.0,28.8 Q1056,28.8 1062.0,29.6 Q1068,30.4 1074.0,29.2 Q1080,28.0 1086.0,28.0 Q1092,28.0 1098.0,30.3 Q1104,32.7 1110.0,34.0 Q1116,35.4 1122.0,37.6 Q1128,39.8 1134.0,43.4 Q1140,47.1 1146.0,48.1 Q1152,49.1 1158.0,49.1 Q1164,49.1 1170.0,49.9 Q1176,50.8 1182.0,49.5 Q1188,48.2 1194.0,46.8 Q1200,45.4 1206.0,46.5 Q1212,47.5 1218.0,47.6 Q1224,47.7 1230.0,47.3 Q1236,46.9 1242.0,48.2 Q1248,49.4 1254.0,48.8 Q1260,48.2 1266.0,46.0 Q1272,43.9 1278.0,43.5 Q1284,43.1 1290.0,42.2 Q1296,41.3 1302.0,40.1 Q1308,38.8 1314.0,40.6 Q1320,42.4 1326.0,44.3 Q1332,46.2 1338.0,46.7 Q1344,47.3 1350.0,49.2 Q1356,51.0 1362.0,51.7 Q1368,52.4 1374.0,50.5 Q1380,48.6 1386.0,48.1 Q1392,47.5 1398.0,47.0 Q1404,46.6 1410.0,44.7 Q1416,42.9 1422.0,43.1 Q1428,43.3 1434.0,44.0 L1440,96 L0,96 Z"/><path class="tr2" d="M0,55.2 Q0,55.2 6.0,55.6 Q12,55.9 18.0,56.9 Q24,57.8 30.0,57.9 Q36,58.0 42.0,55.5 Q48,53.0 54.0,52.0 Q60,50.9 66.0,50.9 Q72,51.0 78.0,49.8 Q84,48.6 90.0,49.3 Q96,50.1 102.0,51.8 Q108,53.5 114.0,52.9 Q120,52.3 126.0,52.1 Q132,51.9 138.0,52.3 Q144,52.8 150.0,51.3 Q156,49.7 162.0,49.4 Q168,49.1 174.0,51.0 Q180,52.9 186.0,53.6 Q192,54.3 198.0,55.5 Q204,56.8 210.0,59.3 Q216,61.7 222.0,61.3 Q228,61.0 234.0,59.5 Q240,58.1 246.0,57.5 Q252,57.0 258.0,54.5 Q264,52.1 270.0,49.6 Q276,47.2 282.0,47.3 Q288,47.3 294.0,46.5 Q300,45.7 306.0,44.4 Q312,43.0 318.0,43.4 Q324,43.7 330.0,42.3 Q336,40.9 342.0,38.1 Q348,35.3 354.0,34.6 Q360,33.9 366.0,33.0 Q372,32.0 378.0,30.9 Q384,29.9 390.0,31.9 Q396,34.0 402.0,36.1 Q408,38.2 414.0,38.9 Q420,39.6 426.0,41.7 Q432,43.7 438.0,44.6 Q444,45.5 450.0,44.0 Q456,42.6 462.0,42.6 Q468,42.7 474.0,43.1 Q480,43.5 486.0,42.6 Q492,41.7 498.0,42.9 Q504,44.1 510.0,45.8 Q516,47.4 522.0,46.6 Q528,45.8 534.0,45.6 Q540,45.5 546.0,45.3 Q552,45.1 558.0,42.7 Q564,40.3 570.0,39.5 Q576,38.7 582.0,39.8 Q588,40.9 594.0,41.1 Q600,41.3 606.0,43.2 Q612,45.0 618.0,48.3 Q624,51.7 630.0,52.6 Q636,53.5 642.0,54.2 Q648,54.9 654.0,56.4 Q660,57.9 666.0,57.3 Q672,56.6 678.0,56.3 Q684,56.0 690.0,57.9 Q696,59.8 702.0,60.3 Q708,60.8 714.0,61.1 Q720,61.5 726.0,63.0 Q732,64.5 738.0,63.4 Q744,62.3 750.0,59.8 Q756,57.2 762.0,55.9 Q768,54.7 774.0,52.2 Q780,49.7 786.0,47.1 Q792,44.5 798.0,44.8 Q804,45.2 810.0,45.4 Q816,45.5 822.0,44.9 Q828,44.4 834.0,45.6 Q840,46.8 846.0,46.8 Q852,46.7 858.0,44.9 Q864,43.0 870.0,43.0 Q876,43.0 882.0,43.0 Q888,43.0 894.0,42.1 Q900,41.3 906.0,43.0 Q912,44.6 918.0,46.4 Q924,48.2 930.0,47.8 Q936,47.5 942.0,47.9 Q948,48.3 954.0,47.9 Q960,47.5 966.0,44.4 Q972,41.4 978.0,39.7 Q984,38.0 990.0,37.3 Q996,36.7 1002.0,34.9 Q1008,33.1 1014.0,33.4 Q1020,33.8 1026.0,35.3 Q1032,36.9 1038.0,36.3 Q1044,35.8 1050.0,35.8 Q1056,35.8 1062.0,36.6 Q1068,37.4 1074.0,36.2 Q1080,35.0 1086.0,35.0 Q1092,35.0 1098.0,37.3 Q1104,39.7 1110.0,41.0 Q1116,42.4 1122.0,44.6 Q1128,46.8 1134.0,50.4 Q1140,54.1 1146.0,55.1 Q1152,56.1 1158.0,56.1 Q1164,56.1 1170.0,56.9 Q1176,57.8 1182.0,56.5 Q1188,55.2 1194.0,53.8 Q1200,52.4 1206.0,53.5 Q1212,54.5 1218.0,54.6 Q1224,54.7 1230.0,54.3 Q1236,53.9 1242.0,55.2 Q1248,56.4 1254.0,55.8 Q1260,55.2 1266.0,53.0 Q1272,50.9 1278.0,50.5 Q1284,50.1 1290.0,49.2 Q1296,48.3 1302.0,47.1 Q1308,45.8 1314.0,47.6 Q1320,49.4 1326.0,51.3 Q1332,53.2 1338.0,53.7 Q1344,54.3 1350.0,56.2 Q1356,58.0 1362.0,58.7 Q1368,59.4 1374.0,57.5 Q1380,55.6 1386.0,55.1 Q1392,54.5 1398.0,54.0 Q1404,53.6 1410.0,51.7 Q1416,49.9 1422.0,50.1 Q1428,50.3 1434.0,51.0"/><path class="tr" d="M0,48.2 Q0,48.2 6.0,48.6 Q12,48.9 18.0,49.9 Q24,50.8 30.0,50.9 Q36,51.0 42.0,48.5 Q48,46.0 54.0,45.0 Q60,43.9 66.0,43.9 Q72,44.0 78.0,42.8 Q84,41.6 90.0,42.3 Q96,43.1 102.0,44.8 Q108,46.5 114.0,45.9 Q120,45.3 126.0,45.1 Q132,44.9 138.0,45.3 Q144,45.8 150.0,44.3 Q156,42.7 162.0,42.4 Q168,42.1 174.0,44.0 Q180,45.9 186.0,46.6 Q192,47.3 198.0,48.5 Q204,49.8 210.0,52.3 Q216,54.7 222.0,54.3 Q228,54.0 234.0,52.5 Q240,51.1 246.0,50.5 Q252,50.0 258.0,47.5 Q264,45.1 270.0,42.6 Q276,40.2 282.0,40.3 Q288,40.3 294.0,39.5 Q300,38.7 306.0,37.4 Q312,36.0 318.0,36.4 Q324,36.7 330.0,35.3 Q336,33.9 342.0,31.1 Q348,28.3 354.0,27.6 Q360,26.9 366.0,26.0 Q372,25.0 378.0,23.9 Q384,22.9 390.0,24.9 Q396,27.0 402.0,29.1 Q408,31.2 414.0,31.9 Q420,32.6 426.0,34.7 Q432,36.7 438.0,37.6 Q444,38.5 450.0,37.0 Q456,35.6 462.0,35.6 Q468,35.7 474.0,36.1 Q480,36.5 486.0,35.6 Q492,34.7 498.0,35.9 Q504,37.1 510.0,38.8 Q516,40.4 522.0,39.6 Q528,38.8 534.0,38.6 Q540,38.5 546.0,38.3 Q552,38.1 558.0,35.7 Q564,33.3 570.0,32.5 Q576,31.7 582.0,32.8 Q588,33.9 594.0,34.1 Q600,34.3 606.0,36.2 Q612,38.0 618.0,41.3 Q624,44.7 630.0,45.6 Q636,46.5 642.0,47.2 Q648,47.9 654.0,49.4 Q660,50.9 666.0,50.3 Q672,49.6 678.0,49.3 Q684,49.0 690.0,50.9 Q696,52.8 702.0,53.3 Q708,53.8 714.0,54.1 Q720,54.5 726.0,56.0 Q732,57.5 738.0,56.4 Q744,55.3 750.0,52.8 Q756,50.2 762.0,48.9 Q768,47.7 774.0,45.2 Q780,42.7 786.0,40.1 Q792,37.5 798.0,37.8 Q804,38.2 810.0,38.4 Q816,38.5 822.0,37.9 Q828,37.4 834.0,38.6 Q840,39.8 846.0,39.8 Q852,39.7 858.0,37.9 Q864,36.0 870.0,36.0 Q876,36.0 882.0,36.0 Q888,36.0 894.0,35.1 Q900,34.3 906.0,36.0 Q912,37.6 918.0,39.4 Q924,41.2 930.0,40.8 Q936,40.5 942.0,40.9 Q948,41.3 954.0,40.9 Q960,40.5 966.0,37.4 Q972,34.4 978.0,32.7 Q984,31.0 990.0,30.3 Q996,29.7 1002.0,27.9 Q1008,26.1 1014.0,26.4 Q1020,26.8 1026.0,28.3 Q1032,29.9 1038.0,29.3 Q1044,28.8 1050.0,28.8 Q1056,28.8 1062.0,29.6 Q1068,30.4 1074.0,29.2 Q1080,28.0 1086.0,28.0 Q1092,28.0 1098.0,30.3 Q1104,32.7 1110.0,34.0 Q1116,35.4 1122.0,37.6 Q1128,39.8 1134.0,43.4 Q1140,47.1 1146.0,48.1 Q1152,49.1 1158.0,49.1 Q1164,49.1 1170.0,49.9 Q1176,50.8 1182.0,49.5 Q1188,48.2 1194.0,46.8 Q1200,45.4 1206.0,46.5 Q1212,47.5 1218.0,47.6 Q1224,47.7 1230.0,47.3 Q1236,46.9 1242.0,48.2 Q1248,49.4 1254.0,48.8 Q1260,48.2 1266.0,46.0 Q1272,43.9 1278.0,43.5 Q1284,43.1 1290.0,42.2 Q1296,41.3 1302.0,40.1 Q1308,38.8 1314.0,40.6 Q1320,42.4 1326.0,44.3 Q1332,46.2 1338.0,46.7 Q1344,47.3 1350.0,49.2 Q1356,51.0 1362.0,51.7 Q1368,52.4 1374.0,50.5 Q1380,48.6 1386.0,48.1 Q1392,47.5 1398.0,47.0 Q1404,46.6 1410.0,44.7 Q1416,42.9 1422.0,43.1 Q1428,43.3 1434.0,44.0"/>
+  </svg>
+  <div class="seabed-in"><div class="wrap">
+    <h2 class="head" data-d="-4.50" data-r><span class="lbl">SEABED · CONTACT</span><span class="rd" aria-hidden="true">−4.50<span class="u">KM</span></span></h2>
+    <ul role="list" data-r>
+      <li class="row row--link"><a class="rl" href="/Hari_Gridharan_Resume.pdf"><span class="lab co">Resume</span><span class="val">Hari_Gridharan_Resume.pdf<span aria-hidden="true">&nbsp;↓</span><span class="sr-only"> (PDF)</span></span></a></li>
+      <li class="row row--link"><a class="rl" href="mailto:hg532@cornell.edu"><span class="lab co">Email</span><span class="val">hg532@cornell.edu</span></a></li>
+      <li class="row row--link"><a class="rl" href="https://www.linkedin.com/in/harigridharan1/" target="_blank" rel="noopener"><span class="lab co">LinkedIn</span><span class="val">linkedin.com/in/harigridharan1<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></span></a></li>
+      <li class="row row--link"><a class="rl" href="https://github.com/hgridharan999" target="_blank" rel="noopener"><span class="lab co">GitHub</span><span class="val">github.com/hgridharan999<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></span></a></li>
+    </ul>
+    <div class="foot-line" data-r>
+      <p><span class="part" aria-hidden="true">Sounding interval 0.1 km<span class="sep">&nbsp;· </span></span><span class="part">Last updated <time datetime="2026-10">Oct 2026</time></span></p>
+      <span class="scale" aria-hidden="true"><span>0</span><i class="bar"></i><span>4.5 km</span></span>
+    </div>
+  </div></div>
+</footer>
+
+<script>
+(() => {
+  'use strict';
+  /* SOUNDING. One scroll-linked depth model, one ping, four instrument plates.
+     Rules: nothing here captures scroll; at most one plate animates at a time; plates start lazily,
+     pause off-screen and when the tab is hidden; reduced motion gets finished stills. */
+  const doc = document, root = doc.documentElement;
+  root.classList.add('js');
+  addEventListener('error', () => { root.classList.remove('js'); root.classList.add('pinged'); });   // fail open: plain gradient, text visible
+
+  const $ = (s, r = doc) => r.querySelector(s), $$ = (s, r = doc) => Array.from(r.querySelectorAll(s));
+  const RM = matchMedia('(prefers-reduced-motion: reduce)');
+  const TAU = Math.PI * 2, A0 = -Math.PI / 2, MINUS = '−';
+  const MONO = '"DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const eo3 = (t) => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+  const eio = (t) => { t = clamp(t, 0, 1); return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
+  const lite = () => innerWidth < 600;
+  const dprCap = () => Math.min(devicePixelRatio || 1, lite() ? 1.5 : 2);
+  const fmt = (v) => (v > 0.004 ? '+' : v < -0.004 ? MINUS : '') + Math.abs(v).toFixed(2);
+  const mk = (w, h) => { const c = doc.createElement('canvas'); c.width = w; c.height = h; return c; };
+  let vw = innerWidth, vh = innerHeight;
+
+  /* ------------------------------------------------------------------ depth model + gauge */
+  const water = $('#water'), pingC = $('#ping'), gauge = $('#gauge'), gNum = $('#g-num'), wline = $('.surface-line');
+  const tape = $('.g-tape svg', gauge), tapeBox = $('.g-tape', gauge);
+  const K = 360, TOP = 1.0, BOT = -4.8;                      // tape: px per km, range shown
+  (function buildTape() {
+    let s = '';
+    for (let i = 0, n = Math.round((TOP - BOT) / 0.05); i <= n; i++) {
+      const v = TOP - i * 0.05, y = (i * 0.05 * K).toFixed(1), maj = i % 10 === 0;
+      s += '<line x1="0" x2="' + (maj ? 12 : 6) + '" y1="' + y + '" y2="' + y + '" stroke-width="1" opacity="' + (maj ? 1 : 0.5) + '"/>';
+      if (i % 20 === 0) s += '<text x="19" y="' + (+y + 3.5) + '">' + (v > 0.01 ? '+' + v.toFixed(0) : v < -0.01 ? MINUS + Math.abs(v).toFixed(0) : '0') + '</text>';
+    }
+    tape.setAttribute('height', (TOP - BOT) * K);
+    tape.setAttribute('viewBox', '0 0 46 ' + (TOP - BOT) * K);
+    tape.innerHTML = s;
+  })();
+
+  let anchors = [], wlY = 0, seaY = 1, gaugeH = 0;
+  function measure() {
+    vw = innerWidth; vh = innerHeight;
+    const sy = scrollY;
+    anchors = $$('[data-d]').map((el) => ({ y: el.getBoundingClientRect().top + sy, v: parseFloat(el.dataset.d) })).sort((a, b) => a.y - b.y);
+    wlY = wline.getBoundingClientRect().top + sy;
+    seaY = anchors[anchors.length - 1].y;
+    gaugeH = tapeBox.clientHeight;
+  }
+  function reading(y) {
+    const a = anchors, n = a.length;
+    if (y <= a[0].y) return a[0].v;
+    for (let i = 1; i < n; i++) if (y < a[i].y) return lerp(a[i - 1].v, a[i].v, (y - a[i - 1].y) / (a[i].y - a[i - 1].y));
+    return a[n - 1].v;
+  }
+  const RAMP = [[10, 85, 120], [8, 66, 95], [6, 45, 69], [4, 30, 48], [3, 20, 32]];
+  function waterColor(t) {
+    const x = clamp(t, 0, 1) * (RAMP.length - 1), i = Math.min(Math.floor(x), RAMP.length - 2), f = x - i, a = RAMP[i], b = RAMP[i + 1];
+    return 'rgb(' + Math.round(lerp(a[0], b[0], f)) + ',' + Math.round(lerp(a[1], b[1], f)) + ',' + Math.round(lerp(a[2], b[2], f)) + ')';
+  }
+
+  let pinged = false, pinging = false, frameReq = 0, idle = 0;
+  function update() {
+    frameReq = 0;
+    const sy = scrollY, ref = sy + vh * 0.4, r = reading(ref);
+    gNum.textContent = fmt(r);
+    if (gaugeH) tape.style.transform = 'translateY(' + (gaugeH / 2 - (TOP - r) * K).toFixed(1) + 'px)';
+    root.classList.toggle('under', ref > wlY);
+    root.classList.toggle('scrolled', sy > 160);
+    root.classList.add('scrolling'); clearTimeout(idle); idle = setTimeout(() => root.classList.remove('scrolling'), 1100);
+    if (pinged) water.style.backgroundColor = waterColor((ref - wlY) / (root.scrollHeight - vh * 0.6 - wlY));
+    else if (!pinging && wlY - sy < vh * 0.66) startPing();
+    choose();
+  }
+  const req = () => { if (!frameReq) frameReq = requestAnimationFrame(update); };
+
+  /* ------------------------------------------------------------------ the ping */
+  function setPinged() {
+    pinged = true; pinging = false;
+    root.classList.add('pinged');
+    water.style.clipPath = '';
+    water.classList.add('on');
+    pingC.width = pingC.height = 1;
+    $$('[data-contacts], .t-pack').forEach((el) => { hitIO.unobserve(el); hitIO.observe(el); });
+    req(); sync();
+  }
+  function drawRings(c, cx, cy, t, Rmax, DUR) {
+    const f = clamp(1 - t / 0.55, 0, 1);
+    if (f > 0) {                                              // the flash at the transducer
+      const g = c.createRadialGradient(cx, cy, 0, cx, cy, 130);
+      g.addColorStop(0, 'rgba(210,248,255,' + 0.6 * f + ')'); g.addColorStop(1, 'rgba(210,248,255,0)');
+      c.fillStyle = g; c.fillRect(cx - 130, cy, 260, 130);
+    }
+    [[0, 1, 1.7], [0.2, 0.5, 1.2], [0.42, 0.28, 1]].forEach(([d, a, w]) => {
+      const u = clamp((t - d) / DUR, 0, 1);
+      if (u <= 0 || u >= 1) return;
+      const r = Rmax * eo3(u) * (d ? 0.94 : 1) - (d ? 0 : 2), al = a * Math.pow(1 - u, 1.3);
+      c.beginPath(); c.arc(cx, cy, r, 0, Math.PI);
+      c.strokeStyle = 'rgba(127,211,238,' + al * 0.16 + ')'; c.lineWidth = w * 11; c.stroke();
+      c.strokeStyle = 'rgba(190,240,255,' + al + ')'; c.lineWidth = w; c.stroke();
+      if (d) return;
+      c.beginPath();                                          // bearing ticks on the lead ring
+      for (let k = 0; k <= 36; k++) {
+        const th = (k * Math.PI) / 36, ln = k % 6 === 0 ? 11 : 6, co = Math.cos(th), si = Math.sin(th);
+        c.moveTo(cx + co * (r - 1), cy + si * (r - 1)); c.lineTo(cx + co * (r - ln), cy + si * (r - ln));
+      }
+      c.strokeStyle = 'rgba(190,240,255,' + al * 0.7 + ')'; c.lineWidth = 1; c.stroke();
+    });
+  }
+  function startPing() {
+    if (RM.matches || wlY - scrollY < -4 || !pingC.getContext) { setPinged(); return; }
+    pinging = true; sync();
+    const dpr = dprCap(), W = vw, H = vh;
+    pingC.width = Math.round(W * dpr); pingC.height = Math.round(H * dpr);
+    const c = pingC.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const y0 = wline.getBoundingClientRect().top;
+    $$('[data-r]').forEach((el) => el.style.setProperty('--dl', Math.min(1.3, 0.3 + Math.max(0, el.getBoundingClientRect().top - y0) / 1000).toFixed(2) + 's'));
+    root.classList.add('pinged');                              // text fades in behind the ring front
+    water.style.backgroundColor = waterColor(0);
+    const Rmax = Math.hypot(W / 2, H) * 1.05, DUR = 2.2, t0 = performance.now();
+    (function step(now) {
+      const t = (now - t0) / 1000, u = clamp(t / DUR, 0, 1), cx = W / 2, cy = wline.getBoundingClientRect().top;
+      water.style.clipPath = 'circle(' + (Rmax * eo3(u)).toFixed(1) + 'px at ' + cx + 'px ' + cy.toFixed(1) + 'px)';
+      c.clearRect(0, 0, W, H);
+      c.save(); c.beginPath(); c.rect(0, cy, W, H); c.clip();
+      drawRings(c, cx, cy, t, Rmax, DUR);
+      c.restore();
+      if (u < 1) requestAnimationFrame(step); else setPinged();
+    })(t0);
+  }
+
+  /* ------------------------------------------------------------------ plates: shared plumbing */
+  const plates = [];
+  let active = null, raf = 0, last = 0;
+  function base(el) {
+    const P = { el, cv: $('canvas', el), ready: false, revealed: false, rev: 1, vis: false, t0: 0, dur: 2400, w: 1, h: 1, dpr: 1 };
+    P.ctx = P.cv.getContext('2d');
+    P.size = () => {
+      const r = P.cv.getBoundingClientRect();
+      P.w = Math.max(1, Math.round(r.width)); P.h = Math.max(1, Math.round(r.height)); P.dpr = dprCap();
+      P.cv.width = Math.round(P.w * P.dpr); P.cv.height = Math.round(P.h * P.dpr);
+      P.ctx.setTransform(P.dpr, 0, 0, P.dpr, 0, 0);
+    };
+    let rz = 0;
+    new ResizeObserver(() => {
+      cancelAnimationFrame(rz);
+      rz = requestAnimationFrame(() => { if (P.ready) { P.layout(); P.still(); } });
+    }).observe(P.cv);
+    plates.push(P); el.__p = P;
+    return P;
+  }
+  function choose() {
+    if (!pinged) return;
+    let best = null, bs = -1;
+    for (const P of plates) {
+      if (!P.ready) continue;
+      const r = P.el.getBoundingClientRect(), vis = Math.min(r.bottom, vh) - Math.max(r.top, 0);
+      P.vis = vis > 4;
+      if (!P.vis) continue;
+      const s = vis / r.height - (Math.abs((r.top + r.bottom) / 2 - vh / 2) / vh) * 0.6;
+      if (s > bs) { bs = s; best = P; }
+    }
+    if (active && active !== best && active.rev < 1) { active.rev = 1; active.still(); }
+    active = best;
+    for (const P of plates) {
+      if (!P.ready || !P.vis || P.revealed) continue;
+      P.revealed = true;
+      if (P === active && !RM.matches) { P.rev = 0; P.t0 = performance.now(); } else { P.rev = 1; P.still(); }
+    }
+    sync();
+  }
+  function sync() {
+    const want = !!active && !RM.matches && !doc.hidden && pinged && !pinging;
+    if (want && !raf) { last = 0; raf = requestAnimationFrame(loop); }
+    else if (!want && raf) { cancelAnimationFrame(raf); raf = 0; }
+  }
+  function loop(now) {
+    raf = requestAnimationFrame(loop);
+    if (now - last < (lite() ? 41 : 32)) return;
+    last = now;
+    const P = active;
+    if (!P) return;
+    if (P.rev < 1) P.rev = clamp((now - P.t0) / P.dur, 0, 1);
+    P.draw(now);
+  }
+  const io = new IntersectionObserver((es) => { es.forEach((e) => { const P = e.target.__p; if (e.isIntersecting && !P.started) { P.started = true; P.init(); } }); }, { rootMargin: '45% 0px' });
+  const hitIO = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting && pinged) { e.target.classList.add('hit'); hitIO.unobserve(e.target); } }), { threshold: 0.25 });
+
+  /* ------------------------------------------------------------------ plate A: bathymetric scan of Quandary */
+  function terrainPlate(el) {
+    const P = base(el), brg = $('.brg', el), TAIL = 1.7;
+    let T = null, HS = null, A = null, B = null, TMP = null, hx = 0, hy = 0, route = null, rpts = [], cum = [], lastBrg = -1, dotBase = 0;
+    const SRC = '../_shared/quandary-terrain.json';
+
+    function prep(d) {
+      const n = d.grid, g = d.heights, m = 2 * n - 1, H0 = new Float32Array(m * m), H = new Float32Array(m * m);
+      for (let j = 0; j < m; j++) for (let i = 0; i < m; i++) {
+        const x = i / 2, y = j / 2, x0 = Math.floor(x), y0 = Math.floor(y), x1 = Math.min(x0 + 1, n - 1), y1 = Math.min(y0 + 1, n - 1), fx = x - x0, fy = y - y0;
+        H0[j * m + i] = lerp(lerp(g[y0][x0], g[y0][x1], fx), lerp(g[y1][x0], g[y1][x1], fx), fy);
+      }
+      H.set(H0);
+      for (let j = 1; j < m - 1; j++) for (let i = 1; i < m - 1; i++) {      // one box blur: the source is 1 m quantised
+        let s = 0;
+        for (let b = -1; b <= 1; b++) for (let a = -1; a <= 1; a++) s += H0[(j + b) * m + i + a];
+        H[j * m + i] = s / 9;
+      }
+      let mn = 1e9, mx = -1e9;
+      for (let k = 0; k < H.length; k++) { if (H[k] < mn) mn = H[k]; if (H[k] > mx) mx = H[k]; }
+      // hillshade, tinted by elevation: deep teal low, ice high
+      const hs = mk(m, m), hc = hs.getContext('2d'), img = hc.createImageData(m, m), px = img.data, cs = d.cellMetres / 2;
+      const lo = [5, 38, 60], mid = [16, 110, 150], hi = [190, 238, 250];
+      for (let j = 0; j < m; j++) for (let i = 0; i < m; i++) {
+        const i0 = Math.max(i - 1, 0), i1 = Math.min(i + 1, m - 1), j0 = Math.max(j - 1, 0), j1 = Math.min(j + 1, m - 1);
+        const zx = ((H[j * m + i1] - H[j * m + i0]) / ((i1 - i0) * cs)) * 1.7, zy = ((H[j1 * m + i] - H[j0 * m + i]) / ((j1 - j0) * cs)) * 1.7;
+        const s = clamp(((zx * 0.55 + zy * 0.55 + 0.63) / Math.sqrt(zx * zx + zy * zy + 1) - 0.15) / 0.75, 0, 1.15);
+        const e = (H[j * m + i] - mn) / (mx - mn), k = (j * m + i) * 4, f = 0.25 + 0.95 * s;
+        const c0 = e < 0.5 ? lo : mid, c1 = e < 0.5 ? mid : hi, q = e < 0.5 ? e * 2 : (e - 0.5) * 2;
+        px[k] = Math.min(255, lerp(c0[0], c1[0], q) * f); px[k + 1] = Math.min(255, lerp(c0[1], c1[1], q) * f); px[k + 2] = Math.min(255, lerp(c0[2], c1[2], q) * f); px[k + 3] = 255;
+      }
+      hc.putImageData(img, 0, 0);
+      // marching squares at 25 m; every 100 m is an index line. Segments are in grid units.
+      const thin = [], idx = [], step = 25;
+      for (let j = 0; j < m - 1; j++) for (let i = 0; i < m - 1; i++) {
+        const a = H[j * m + i], b = H[j * m + i + 1], c = H[(j + 1) * m + i + 1], dd = H[(j + 1) * m + i];
+        const lo2 = Math.min(a, b, c, dd), hi2 = Math.max(a, b, c, dd);
+        for (let Lv = Math.floor(lo2 / step) * step + step; Lv <= hi2; Lv += step) {
+          const p = [];
+          if ((a < Lv) !== (b < Lv)) p.push(i + (Lv - a) / (b - a), j);
+          if ((b < Lv) !== (c < Lv)) p.push(i + 1, j + (Lv - b) / (c - b));
+          if ((dd < Lv) !== (c < Lv)) p.push(i + (Lv - dd) / (c - dd), j + 1);
+          if ((a < Lv) !== (dd < Lv)) p.push(i, j + (Lv - a) / (dd - a));
+          const out = Lv % 100 === 0 ? idx : thin;
+          if (p.length === 4) out.push(p[0] / 2, p[1] / 2, p[2] / 2, p[3] / 2);
+          else if (p.length === 8) {
+            const lowC = (a + b + c + dd) / 4 < Lv === a < Lv;
+            const q = lowC ? [0, 1, 2, 3, 4, 5, 6, 7] : [0, 1, 6, 7, 2, 3, 4, 5];
+            for (let z = 0; z < 8; z += 4) out.push(p[q[z]] / 2, p[q[z + 1]] / 2, p[q[z + 2]] / 2, p[q[z + 3]] / 2);
+          }
+        }
+      }
+      return { HS: hs, thin, idx, track: d.track, summit: d.summit, cellM: d.cellMetres };
+    }
+
+    P.layout = () => {
+      P.size();
+      const w = P.w, h = P.h, dpr = P.dpr;
+      let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+      T.track.concat([T.summit]).forEach((p) => { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); });
+      const pad = 13;
+      let gw = x1 - x0 + 2 * pad, gh = (gw * h) / w;
+      if (gh < y1 - y0 + 2 * pad) { gh = y1 - y0 + 2 * pad; gw = (gh * w) / h; }
+      gw = Math.min(gw, 111); gh = Math.min(gh, 111);
+      const vx = clamp((x0 + x1) / 2 - gw / 2, 0, 111 - gw), vy = clamp((y0 + y1) / 2 - gh / 2, 0, 111 - gh), s = w / gw;
+      const X = (x) => (x - vx) * s, Y = (y) => (y - vy) * s;
+      const segs = (arr) => { const p = new Path2D(); for (let i = 0; i < arr.length; i += 4) p.moveTo(X(arr[i]), Y(arr[i + 1])), p.lineTo(X(arr[i + 2]), Y(arr[i + 3])); return p; };
+      const thin = segs(T.thin), idx = segs(T.idx);
+      rpts = T.track.map((p) => [X(p[0]), Y(p[1])]);
+      route = new Path2D(); rpts.forEach((p, i) => (i ? route.lineTo(p[0], p[1]) : route.moveTo(p[0], p[1])));
+      cum = [0]; for (let i = 1; i < rpts.length; i++) cum.push(cum[i - 1] + Math.hypot(rpts[i][0] - rpts[i - 1][0], rpts[i][1] - rpts[i - 1][1]));
+      hx = rpts[0][0]; hy = rpts[0][1];
+      const sx = X(T.summit[0]), sy = Y(T.summit[1]), kmPx = (1000 / T.cellM) * s;
+      A = mk(P.cv.width, P.cv.height); B = mk(P.cv.width, P.cv.height); TMP = mk(P.cv.width, P.cv.height);
+      const layer = (cv, shade, tl, il, tw, iw) => {
+        const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+        c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+        c.globalAlpha = shade; c.drawImage(T.HS, vx * 2, vy * 2, gw * 2, gh * 2, 0, 0, w, h); c.globalAlpha = 1;
+        c.lineJoin = 'round'; c.lineWidth = tw; c.strokeStyle = tl; c.stroke(thin);
+        c.lineWidth = iw; c.strokeStyle = il; c.stroke(idx);
+        return c;
+      };
+      const a = layer(A, 0.34, 'rgba(127,211,238,0.2)', 'rgba(160,226,244,0.42)', 0.6, 0.9);
+      layer(B, 1, 'rgba(190,240,255,0.5)', 'rgba(245,253,255,0.95)', 0.7, 1.15);
+      // range rings centred on the trailhead, the instrument's origin
+      a.font = '500 10.5px ' + MONO; a.textAlign = 'center'; a.textBaseline = 'middle'; a.lineWidth = 1;
+      for (let k = 1; k <= 4; k++) {
+        a.beginPath(); a.arc(hx, hy, kmPx * k, 0, TAU); a.setLineDash([2, 5]); a.strokeStyle = 'rgba(190,240,255,0.3)'; a.stroke(); a.setLineDash([]);
+        const ang = 2.2, lx = hx + Math.cos(ang) * kmPx * k, ly = hy + Math.sin(ang) * kmPx * k;
+        if (lx > 20 && lx < w - 20 && ly > 24 && ly < h - 24) {
+          a.lineWidth = 4; a.strokeStyle = 'rgba(3,22,34,0.9)'; a.strokeText(k + ' KM', lx, ly);
+          a.lineWidth = 1; a.fillStyle = '#A9D9EB'; a.fillText(k + ' KM', lx, ly);
+        }
+      }
+      // trailhead and summit
+      a.beginPath(); a.arc(hx, hy, 4.5, 0, TAU); a.strokeStyle = '#F2FBFE'; a.lineWidth = 1.4; a.stroke();
+      a.beginPath(); a.moveTo(hx - 8, hy); a.lineTo(hx + 8, hy); a.moveTo(hx, hy - 8); a.lineTo(hx, hy + 8); a.lineWidth = 1; a.stroke();
+      const flip = hx + 11 + a.measureText('TRAILHEAD').width > w - 8;
+      a.textAlign = flip ? 'right' : 'left'; a.fillStyle = '#F2FBFE'; a.strokeStyle = 'rgba(3,22,34,0.9)'; a.lineWidth = 4;
+      a.strokeText('TRAILHEAD', hx + (flip ? -11 : 11), hy + 15); a.fillText('TRAILHEAD', hx + (flip ? -11 : 11), hy + 15);
+      a.beginPath(); a.moveTo(sx, sy - 7); a.lineTo(sx + 6.5, sy + 4.5); a.lineTo(sx - 6.5, sy + 4.5); a.closePath();
+      a.fillStyle = '#fff'; a.strokeStyle = 'rgba(3,22,34,0.9)'; a.lineWidth = 3; a.stroke(); a.fill();
+      const lx2 = sx + 12, ly2 = sy - 32;
+      a.textAlign = 'left'; a.font = '500 11.5px ' + MONO; a.lineWidth = 4; a.strokeStyle = 'rgba(3,22,34,0.9)';
+      a.strokeText('QUANDARY PEAK', lx2, ly2); a.fillStyle = '#F2FBFE'; a.fillText('QUANDARY PEAK', lx2, ly2);
+      a.font = '400 11px ' + MONO; a.strokeText('14,265 FT', lx2, ly2 + 15); a.fillStyle = '#A9D9EB'; a.fillText('14,265 FT', lx2, ly2 + 15);
+      // north arrow
+      const nx = w - 28, ny = 66;
+      a.beginPath(); a.moveTo(nx, ny + 14); a.lineTo(nx, ny - 6); a.moveTo(nx - 4, ny - 1); a.lineTo(nx, ny - 7); a.lineTo(nx + 4, ny - 1);
+      a.strokeStyle = '#A9D9EB'; a.lineWidth = 1.2; a.stroke(); a.textAlign = 'center'; a.fillStyle = '#A9D9EB'; a.font = '500 10.5px ' + MONO; a.fillText('N', nx, ny + 25);
+    };
+
+    function beam(th, c) {
+      const t = TMP.getContext('2d');
+      if (!t.createConicGradient) { c.globalAlpha = 0.5; c.drawImage(B, 0, 0, P.w, P.h); c.globalAlpha = 1; return; }
+      t.setTransform(1, 0, 0, 1, 0, 0); t.globalCompositeOperation = 'source-over'; t.clearRect(0, 0, TMP.width, TMP.height);
+      t.drawImage(B, 0, 0); t.globalCompositeOperation = 'destination-in';
+      const g = t.createConicGradient(th - TAIL, hx * P.dpr, hy * P.dpr), f = TAIL / TAU;
+      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(f * 0.45, 'rgba(0,0,0,0.1)'); g.addColorStop(f * 0.8, 'rgba(0,0,0,0.42)');
+      g.addColorStop(f, 'rgba(0,0,0,1)'); g.addColorStop(Math.min(1, f + 0.004), 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      t.fillStyle = g; t.fillRect(0, 0, TMP.width, TMP.height);
+      c.drawImage(TMP, 0, 0, P.w, P.h);
+    }
+    function frame(now, still) {
+      const c = P.ctx, w = P.w, h = P.h, reveal = P.rev < 1 && !still;
+      c.clearRect(0, 0, w, h);
+      const th = still ? A0 + 1.0 * Math.PI : reveal ? A0 + TAU * eio(P.rev) : A0 + TAU + ((now - P.t0 - P.dur) / 1000) * 0.72;
+      c.save();
+      if (reveal) { c.beginPath(); c.moveTo(hx, hy); c.arc(hx, hy, w + h, A0, th); c.closePath(); c.clip(); }
+      c.drawImage(A, 0, 0, w, h);
+      beam(th, c);
+      c.lineJoin = 'round'; c.lineCap = 'round';
+      c.shadowColor = 'rgba(127,211,238,0.9)'; c.shadowBlur = 7; c.strokeStyle = 'rgba(240,252,255,0.96)'; c.lineWidth = 1.9; c.stroke(route);
+      c.shadowBlur = 0;
+      if (!reveal && !still) {                                        // a blip walks the route, up and back, every 11 s
+        const f = (((now - P.t0) / 1000) % 11) / 8;
+        if (f < 1) {
+          const L0 = cum[cum.length - 1] * f; let i = 1; while (i < cum.length - 1 && cum[i] < L0) i++;
+          const q = (L0 - cum[i - 1]) / ((cum[i] - cum[i - 1]) || 1), px = lerp(rpts[i - 1][0], rpts[i][0], q), py = lerp(rpts[i - 1][1], rpts[i][1], q);
+          c.beginPath(); c.arc(px, py, 3, 0, TAU); c.fillStyle = '#fff'; c.fill();
+          c.beginPath(); c.arc(px, py, 7 + 3 * Math.sin(now / 260), 0, TAU); c.strokeStyle = 'rgba(190,240,255,0.55)'; c.lineWidth = 1; c.stroke();
+        }
+      }
+      c.restore();
+      c.beginPath(); c.moveTo(hx, hy); c.lineTo(hx + Math.cos(th) * (w + h), hy + Math.sin(th) * (w + h));
+      c.strokeStyle = 'rgba(225,250,255,0.75)'; c.lineWidth = 1; c.stroke();
+      const deg = Math.round((((th - A0) * 180) / Math.PI) % 360);
+      if (brg && deg !== lastBrg) { lastBrg = deg; brg.textContent = String(deg).padStart(3, '0'); }
+    }
+    P.draw = (now) => frame(now, false);
+    P.still = () => frame(performance.now(), true);
+    P.init = () => {
+      fetch(SRC).then((r) => r.json()).then((d) => {
+        T = prep(d); P.layout(); P.ready = true; P.still(); req();
+      }).catch(() => el.classList.add('fail'));
+    };
+    return P;
+  }
+
+  /* ------------------------------------------------------------------ plate C: a drone, as a spectrogram */
+  function spectroPlate(el) {
+    const P = base(el), N = 16, SPEED = 48, GX = 52;
+    let S = null, sc = null, gw = 1, sh = 1, sy = 0, wy = 0, wh = 0, drawn = 0;
+    const breath = (t) => 0.62 + 0.38 * Math.sin(t * 0.9 - 0.8);
+    function col(x, t) {                                              // one column of the spectrum at time t
+      const b = breath(t), H = S.height;
+      for (let n = 1; n <= N; n++) {
+        const sw = 0.5 + 0.5 * Math.cos(t * 2.0 - n * 0.46);          // overtones swell in sequence, like a tanpura
+        const a = clamp(Math.pow(1 / n, 0.55) * (0.3 + 0.7 * sw * sw) * b * 1.55, 0, 1);
+        const y = H - (n / (N + 0.6)) * H + Math.sin(t * 4.2 + n * 0.7) * (0.35 + n * 0.12);
+        sc.fillStyle = 'rgba(150,228,250,' + (a * 0.16).toFixed(3) + ')'; sc.fillRect(x, y - 3, 1, 7);
+        sc.fillStyle = 'rgba(215,248,255,' + a.toFixed(3) + ')'; sc.fillRect(x, y - 0.8, 1, 1.8);
+      }
+    }
+    function prefill(t) { sc.clearRect(0, 0, S.width, S.height); for (let x = 0; x < S.width; x++) col(x, t - (S.width - 1 - x) / SPEED); drawn = t; }
+    P.layout = () => {
+      P.size();
+      gw = Math.max(1, P.w - GX - 16); wy = 46; wh = 62; sy = wy + wh + 18; sh = Math.max(40, P.h - sy - 42);
+      S = mk(Math.round(gw), Math.round(sh)); sc = S.getContext('2d');
+      prefill(P.tau || 47.3);
+    };
+    function render(t, rev, still) {
+      const c = P.ctx, w = P.w, h = P.h, reveal = rev < 1 && !still, sx = reveal ? GX + gw * eio(rev) : w + 2;
+      c.clearRect(0, 0, w, h);
+      c.save(); c.beginPath(); c.rect(0, 0, sx, h); c.clip();
+      c.strokeStyle = 'rgba(127,211,238,0.2)'; c.lineWidth = 1;
+      c.beginPath(); c.moveTo(GX, wy + wh / 2 + 0.5); c.lineTo(GX + gw, wy + wh / 2 + 0.5);
+      c.moveTo(GX, sy - 9.5); c.lineTo(GX + gw, sy - 9.5); c.moveTo(GX, sy + sh + 0.5); c.lineTo(GX + gw, sy + sh + 0.5);
+      c.moveTo(GX + 0.5, wy - 2); c.lineTo(GX + 0.5, sy + sh + 5); c.stroke();
+      // harmonics axis
+      c.font = '400 10.5px ' + MONO; c.textAlign = 'right'; c.textBaseline = 'middle'; c.fillStyle = '#A9D9EB';
+      for (let n = 1; n <= N; n++) {
+        const y = sy + sh - (n / (N + 0.6)) * sh;
+        c.beginPath(); c.moveTo(GX - (n % 4 === 0 || n === 1 ? 7 : 4), y); c.lineTo(GX, y); c.strokeStyle = 'rgba(190,240,255,0.5)'; c.stroke();
+        if (n === 1 || n % 4 === 0) c.fillText('×' + n, GX - 11, y);
+      }
+      // the waveform of the held note; three phosphor traces
+      const mid = wy + wh / 2, amp = wh * 0.42 * breath(t);
+      for (let g = 0; g < 3; g++) {
+        c.beginPath();
+        for (let x = 0; x <= gw; x += 2) {
+          const ph = x * 0.085 - t * 6.5 - g * 0.33; let v = 0;
+          for (let k = 1; k <= 5; k++) v += Math.sin(k * ph + k * k * 0.2) / Math.pow(k, 1.1);
+          x ? c.lineTo(GX + x, mid - v * amp * 0.62) : c.moveTo(GX + x, mid - v * amp * 0.62);
+        }
+        c.strokeStyle = 'rgba(190,240,255,' + [0.95, 0.28, 0.12][g] + ')'; c.lineWidth = g ? 1 : 1.4; c.stroke();
+      }
+      c.imageSmoothingEnabled = true; c.drawImage(S, GX, sy, gw, sh);
+      c.restore();
+      if (reveal) {                                                   // the sweep that resolves it
+        const g = c.createLinearGradient(sx - 90, 0, sx, 0); g.addColorStop(0, 'rgba(127,211,238,0)'); g.addColorStop(1, 'rgba(127,211,238,0.28)');
+        c.fillStyle = g; c.fillRect(sx - 90, wy - 6, 90, sy + sh - wy + 10);
+        c.fillStyle = 'rgba(225,250,255,0.9)'; c.fillRect(sx - 1, wy - 6, 1.5, sy + sh - wy + 10);
+      }
+    }
+    P.draw = (now) => {
+      const t = now / 1000 + 40;
+      if (P.rev >= 1) {
+        if (t - drawn > gw / SPEED) prefill(t);
+        const adv = Math.floor((t - drawn) * SPEED);
+        if (adv >= 1) {
+          sc.globalCompositeOperation = 'copy'; sc.drawImage(S, -adv, 0); sc.globalCompositeOperation = 'source-over';
+          for (let k = 0; k < adv; k++) col(gw - adv + k, t - (adv - 1 - k) / SPEED);
+          drawn += adv / SPEED;
+        }
+      }
+      P.tau = t; render(t, P.rev, false);
+    };
+    P.still = () => render(P.tau || 47.3, 1, true);
+    P.init = () => { P.layout(); P.ready = true; P.still(); req(); };
+    return P;
+  }
+
+  /* ------------------------------------------------------------------ plate D: a turning chart of spices */
+  function spicePlate(el) {
+    const P = base(el);
+    const NAMES = ['cumin', 'mustard seed', 'curry leaf', 'asafoetida', 'turmeric', 'coriander', 'fenugreek', 'cardamom', 'black pepper', 'red chilli', 'tamarind', 'cinnamon'];
+    const PROF = [0.74, 0.9, 0.62, 0.34, 0.82, 0.7, 0.48, 0.6, 0.86, 0.66, 0.44, 0.56];     // a shape, not a measurement
+    P.layout = () => P.size();
+    function render(now, rev, still) {
+      const c = P.ctx, w = P.w, h = P.h, reveal = rev < 1 && !still, T = now / 1000;
+      const cx = w / 2, cy = h / 2 + 6, R = Math.max(56, Math.min(w / 2 - (w < 600 ? 92 : 118), h / 2 - 48));
+      const sw = still ? A0 + 1.25 * Math.PI : reveal ? A0 + TAU * eio(rev) : A0 + TAU + ((now - P.t0 - P.dur) / 1000) * 0.9;
+      const rot = still ? 0.35 : T * 0.05, step = TAU / NAMES.length;
+      c.clearRect(0, 0, w, h);
+      c.save();
+      if (reveal) { c.beginPath(); c.moveTo(cx, cy); c.arc(cx, cy, w + h, A0, sw); c.closePath(); c.clip(); }
+      for (let k = 1; k <= 4; k++) {                                   // range rings, unlabelled: the chart is unscaled
+        c.beginPath(); c.arc(cx, cy, (R * k) / 4, 0, TAU);
+        c.setLineDash(k === 4 ? [] : [2, 5]); c.strokeStyle = k === 4 ? 'rgba(160,226,244,0.5)' : 'rgba(127,211,238,0.22)'; c.lineWidth = 1; c.stroke();
+      }
+      c.setLineDash([]);
+      c.beginPath();                                                    // bezel: a tick every 5 degrees
+      for (let k = 0; k < 72; k++) { const a = (k * TAU) / 72, l = k % 6 === 0 ? 9 : 4; c.moveTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); c.lineTo(cx + Math.cos(a) * (R + l), cy + Math.sin(a) * (R + l)); }
+      c.strokeStyle = 'rgba(160,226,244,0.4)'; c.stroke();
+      c.font = '500 ' + (w < 600 ? 10.5 : 11.5) + 'px ' + MONO;
+      const pts = [];
+      NAMES.forEach((nm, i) => {
+        const a = A0 + rot + i * step, co = Math.cos(a), si = Math.sin(a);
+        c.beginPath(); c.moveTo(cx + co * R * 0.06, cy + si * R * 0.06); c.lineTo(cx + co * R, cy + si * R);
+        c.strokeStyle = 'rgba(127,211,238,0.24)'; c.lineWidth = 1; c.stroke();
+        const r = R * (0.12 + 0.82 * PROF[i] * (1 + 0.05 * Math.sin(T * 0.6 + i * 1.3)));
+        pts.push([cx + co * r, cy + si * r]);
+        c.textAlign = co > 0.3 ? 'left' : co < -0.3 ? 'right' : 'center'; c.textBaseline = si > 0.5 ? 'top' : si < -0.5 ? 'bottom' : 'middle';
+        c.fillStyle = '#E2F5FC'; c.fillText(nm, cx + co * (R + 17), cy + si * (R + 17));
+      });
+      c.beginPath(); pts.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]))); c.closePath();
+      c.fillStyle = 'rgba(127,211,238,0.12)'; c.fill(); c.strokeStyle = 'rgba(210,246,255,0.92)'; c.lineWidth = 1.4; c.lineJoin = 'round'; c.stroke();
+      pts.forEach((p) => { c.beginPath(); c.arc(p[0], p[1], 2.6, 0, TAU); c.fillStyle = '#F2FBFE'; c.fill(); });
+      if (c.createConicGradient) {                                      // the sweep arm and its afterglow
+        const g = c.createConicGradient(sw - 1.5, cx, cy), f = 1.5 / TAU;
+        g.addColorStop(0, 'rgba(127,211,238,0)'); g.addColorStop(f * 0.7, 'rgba(127,211,238,0.07)'); g.addColorStop(f, 'rgba(160,226,244,0.36)');
+        g.addColorStop(Math.min(1, f + 0.003), 'rgba(127,211,238,0)'); g.addColorStop(1, 'rgba(127,211,238,0)');
+        c.fillStyle = g; c.beginPath(); c.arc(cx, cy, R, 0, TAU); c.fill();
+      }
+      c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Math.cos(sw) * R, cy + Math.sin(sw) * R); c.strokeStyle = 'rgba(225,250,255,0.8)'; c.lineWidth = 1; c.stroke();
+      c.beginPath(); c.arc(cx, cy, 3, 0, TAU); c.fillStyle = '#F2FBFE'; c.fill();
+      c.restore();
+    }
+    P.draw = (now) => render(now, P.rev, false);
+    P.still = () => render(performance.now(), 1, true);
+    P.init = () => { P.layout(); P.ready = true; P.still(); req(); };
+    return P;
+  }
+
+  /* ------------------------------------------------------------------ boot */
+  const makers = { terrain: terrainPlate, spectro: spectroPlate, spice: spicePlate };
+  $$('[data-plate]').forEach((el) => { makers[el.dataset.plate](el); io.observe(el); });
+  $$('[data-contacts], .t-pack').forEach((el) => hitIO.observe(el));
+  const onMotion = () => { if (RM.matches) { if (raf) cancelAnimationFrame(raf); raf = 0; plates.forEach((P) => { if (P.ready) { P.rev = 1; P.still(); } }); } else sync(); };
+  (RM.addEventListener ? RM.addEventListener.bind(RM, 'change') : RM.addListener.bind(RM))(onMotion);
+  doc.addEventListener('visibilitychange', sync);
+  addEventListener('scroll', req, { passive: true });
+  addEventListener('resize', () => { measure(); req(); });
+  doc.addEventListener('toggle', () => setTimeout(() => { measure(); req(); }, 460), true);
+  const boot = () => { measure(); update(); };
+  measure(); update();
+  addEventListener('load', boot);
+  if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(() => { boot(); plates.forEach((P) => { if (P.ready) { P.layout(); P.still(); } }); });
+})();
+
+</script>
+</body>
+</html>

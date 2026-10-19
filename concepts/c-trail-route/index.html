@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hari Gridharan — Applied Economics + AI, Cornell Dyson ’29</title>
+<meta name="description" content="Hari Gridharan. Applied Economics + AI at Cornell Dyson ’29. Seeking Summer 2027 roles in strategy, investing, BA &amp; PM — NYC / SF.">
+<meta name="theme-color" content="#0B0A0A">
+<meta name="color-scheme" content="dark">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;800&amp;family=Geist+Mono:wght@400;500&amp;family=Instrument+Serif:ital@1&amp;display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0B0A0A;
+  --cream:#EDE7DA;
+  --tan:#E8C089;
+  --mute:#A39E94;                      /* secondary text, about 7:1 on --bg */
+  --trail:rgba(237,231,218,.25);       /* the route itself (not text) */
+  --ring:rgba(237,231,218,.6);
+  --hair:rgba(237,231,218,.08);
+  --sans:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --serif:"Instrument Serif","Iowan Old Style",Georgia,serif;
+  --out:cubic-bezier(.16,1,.3,1);
+  --pen:cubic-bezier(.65,0,.35,1);
+  --gutter:16px;
+  --ox:9px;                            /* trail centre, measured left of the text edge */
+  --p:32px;                            /* page top padding */
+  --hk:96px;                           /* hiker box */
+  --ty:calc(var(--p) + var(--hk));     /* where the trail starts: under the hiker's feet */
+  --fb:104px;                          /* footer height */
+}
+@media (min-width:600px){:root{--hk:112px;--p:48px}}
+@media (min-width:720px){:root{--ox:24px}}
+
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg);color-scheme:dark;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--cream);font:400 16px/1.6 var(--sans);-webkit-font-smoothing:antialiased;font-synthesis:none;overflow-x:clip}
+@media (min-width:600px){body{font-size:17px}}
+::selection{background:var(--tan);color:var(--bg)}
+a{color:inherit;text-decoration:underline;text-decoration-color:rgba(237,231,218,.4);text-decoration-thickness:1px;text-underline-offset:.22em;transition:color .25s var(--out),text-decoration-color .25s var(--out)}
+a:hover{color:var(--tan);text-decoration-color:currentColor}
+:focus-visible{outline:2px solid var(--tan);outline-offset:3px;border-radius:3px}
+h1,h2,h3,p,ul{margin:0}
+ul{padding:0;list-style:none}
+
+.page{position:relative;box-sizing:content-box;max-width:640px;margin:0 auto;padding:var(--p) var(--gutter) 0}
+
+/* ---------- The route ---------- */
+.trail,.spur{position:absolute;z-index:0;pointer-events:none}
+.trail{left:calc(var(--gutter) - var(--ox));top:var(--ty);bottom:calc(var(--fb) - 22px);width:1px;overflow:hidden}
+.trail::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(to bottom,var(--trail) 0 5px,transparent 5px 9px)}
+.cv{position:absolute;inset:0;background:var(--bg);transform:translateY(100%)}   /* ink covers: parked off the line by default = fully drawn */
+.spur{left:calc(var(--gutter) - var(--ox));top:calc(var(--ty) - 1px);width:calc(var(--ox) + var(--hk) * .56);height:1px;background:repeating-linear-gradient(to right,var(--trail) 0 5px,transparent 5px 9px);transform-origin:100% 50%}
+
+/* ---------- Header ---------- */
+.hd{display:grid;grid-template-columns:var(--hk) minmax(0,1fr);column-gap:14px;align-items:start}
+.mark{display:block;width:var(--hk);height:var(--hk);overflow:visible;fill:none;stroke:var(--cream);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+@media (min-width:600px){.hd{column-gap:22px}}
+.id{min-width:0;padding-top:4px}
+h1{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:.2em;row-gap:.06em;font-size:clamp(1.6rem,9.2vw,3rem);font-weight:400;line-height:1}
+.hari{font:italic 400 1.22em/1 var(--serif);color:var(--tan);letter-spacing:-.01em}
+.gr{font-weight:800;text-transform:uppercase;letter-spacing:-.03em}
+.tag{margin-top:12px;text-wrap:balance}
+.elev{display:block;margin-top:12px;width:132px;height:36px;overflow:visible}
+.elev .ln{fill:none;stroke:rgba(237,231,218,.6);stroke-width:1;stroke-linejoin:round;stroke-linecap:round}
+.elev .dr{fill:none;stroke:var(--trail);stroke-width:1;stroke-dasharray:2 2}
+.elev .tk2{stroke:var(--trail);stroke-width:1}
+.elev text{font:400 10px/1 var(--mono);fill:var(--mute);letter-spacing:.04em}
+.rest{grid-column:1 / -1;margin-top:20px}
+.seek{color:var(--tan);font-weight:500;text-wrap:balance}
+.actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px 10px;margin-top:16px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4em;min-height:44px;padding:0 18px;border:1px solid var(--tan);border-radius:6px;font:500 16px/1 var(--sans);text-decoration:none;transition:background-color .25s var(--out),color .25s var(--out),border-color .25s var(--out)}
+.btn-fill{background:var(--tan);color:var(--bg)}
+.btn-fill:hover{background:var(--cream);border-color:var(--cream);color:var(--bg)}
+.btn-line{background:transparent;color:var(--cream);border-color:rgba(237,231,218,.45)}
+.btn-line:hover{border-color:var(--tan);color:var(--tan)}
+.ext{margin-left:6px;color:var(--mute)}
+.ext a{color:var(--cream)}
+.ext a:hover{color:var(--tan)}
+
+/* ---------- Waypoints (section labels) ---------- */
+.sec{position:relative;padding-top:34px;scroll-margin-top:16px}
+.wp{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;min-height:24px}
+.wp h2{font:500 13px/24px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--cream)}
+.wp .n{color:var(--tan)}
+.wp .dot{color:var(--mute)}
+.wp::before{content:"";position:absolute;z-index:1;left:calc(-1 * (var(--ox) + 4px));top:8px;width:9px;height:9px;border:1px solid var(--ring);border-radius:50%;background:var(--bg)}
+#now .wp::before{height:8px;border:0;border-radius:0;background:var(--tan);clip-path:polygon(50% 0,100% 100%,0 100%)}   /* you are here */
+@media (min-width:720px){
+  .wp::after{content:"";position:absolute;left:calc(5px - var(--ox));top:12px;width:calc(var(--ox) - 13px);height:1px;background:var(--trail)}
+  #now .wp::after{left:calc(5px - var(--ox))}
+}
+
+/* ---------- Rows ---------- */
+.rows{margin-top:8px}
+.row{position:relative;padding:13px 0}
+.row+.row{border-top:1px solid var(--hair)}
+.l1{display:flex;justify-content:space-between;align-items:baseline;gap:2px 14px}
+.t{flex:1 1 auto;min-width:0;font-size:1.0625rem;font-weight:500;line-height:1.4;text-wrap:balance}
+.co{transition:color .25s var(--out)}
+.yr{flex:0 0 auto;max-width:48%;font:400 13px/1.4 var(--mono);letter-spacing:.04em;font-variant-numeric:tabular-nums;color:var(--mute);text-align:right;white-space:nowrap}
+.t .tk{display:block;width:fit-content;margin:3px 0 0}
+@media (min-width:600px){.t .tk{display:inline-block;margin:0 .1em}}
+.act{flex:0 0 auto;line-height:1.4;white-space:nowrap}
+.l2{margin-top:2px;color:var(--mute);text-wrap:pretty}
+.l2 a{color:var(--cream)}
+.l2 a:hover{color:var(--tan)}
+.free{color:var(--cream)}
+.nw{white-space:nowrap}
+.free .tail{color:var(--mute)}
+.more{margin-top:10px;padding-top:12px;border-top:1px solid var(--hair)}
+.elsewhere{margin-top:12px}
+.elsewhere .sep{color:var(--mute);margin:0 .3em 0 .1em}
+
+/* mockup annotation chip for [TK: ...] */
+.tk{display:inline-block;max-width:100%;font:400 11px/1.4 var(--mono);letter-spacing:.02em;color:var(--tan);border:1px dashed var(--tan);border-radius:3px;padding:1px 6px;margin:0 .1em;vertical-align:.08em;white-space:normal;overflow-wrap:anywhere;text-align:left}
+
+/* Row hover: desktop only. Mobile rows are static. */
+@media (hover:hover) and (pointer:fine){
+  .row::before{content:"";position:absolute;z-index:1;left:calc(-1 * (var(--ox) + 4px));top:21px;width:9px;height:8px;background:var(--tan);clip-path:polygon(50% 0,100% 100%,0 100%);opacity:0;transform:translateY(4px);transition:opacity .2s var(--out),transform .35s var(--out)}
+  .row.f::before{top:22px}
+  .row:hover::before,.row:focus-within::before{opacity:1;transform:none}
+  .row:hover .co,.row:focus-within .co{color:var(--tan)}
+}
+
+/* ---------- Contours + footer ---------- */
+.contour{display:block;width:100%;height:44px;margin-top:26px;color:var(--cream);opacity:.08;transform-origin:50% 50%;fill:none;stroke:currentColor;stroke-width:1.1}
+.contour.flip{transform:scaleX(-1)}
+.contour path{vector-effect:non-scaling-stroke}
+.ft{position:relative;height:var(--fb);padding-top:12px}
+.ft::before{content:"";position:absolute;left:calc(-1 * (var(--ox) + 2px));top:20px;width:5px;height:5px;background:var(--ring);border-radius:50%}
+.upd{font:400 12px/20px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.ft .contour{height:28px;margin-top:16px}
+
+/* ---------- Motion: progressive enhancement only ---------- */
+@keyframes pen{to{stroke-dashoffset:0}}
+@keyframes spur{from{transform:scaleX(0)}}
+@keyframes ink-a{
+  0%{transform:translateY(0);animation-timing-function:cubic-bezier(.16,1,.3,1)}
+  60%{transform:translateY(calc(100vh - var(--ty)));animation-timing-function:linear}
+  100%{transform:translateY(100%)}
+}
+@keyframes ink-b{
+  from{transform:translateY(calc(88vh - var(--ty)))}
+  to{transform:translateY(100%)}
+}
+@media (prefers-reduced-motion:no-preference){
+  /* JS sets --len/--dur/--del per stroke, then adds .draw. Without JS the hiker is simply drawn. */
+  html.draw .mark path{stroke-dasharray:var(--len);stroke-dashoffset:var(--off);animation:pen var(--dur) var(--pen) var(--del) forwards}
+  html.draw .spur{animation:spur .45s var(--out) .95s backwards}
+  html.draw .cv.a{animation:ink-a 1.9s 1.2s both}
+}
+/* Scroll-driven: the route inks as you scroll. Everywhere else it is fully drawn. */
+@supports (animation-timeline:scroll()){
+  @media (prefers-reduced-motion:no-preference){
+    @media not print{
+      .cv.b{animation:ink-b linear both;animation-timeline:scroll(root block)}
+    }
+  }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="topo-a" viewBox="0 -1 640 44" preserveAspectRatio="none"><path d="M0 4.8L10 7.1L20 8.3L30 9.2L40 10.7L50 12.2L60 13.1L70 14.1L80 14.9L90 14.2L100 12.7L110 11.9L120 12.1L130 12.1L140 11.8L150 11.9L160 11.8L170 11.1L180 11.1L190 12.3L200 13.1L210 12.7L220 12.1L230 11.8L240 11.1L250 10.6L260 11.2L270 11.9L280 11.4L290 10.4L300 10.2L310 10.4L320 10.1L330 9.8L340 9.5L350 8.1L360 5.6L370 3.9L380 3.3L390 2.6L400 1.6L410 1.2L420 1.1L430 0.8L440 1.4L450 3.6L460 5.1L470 5.5L480 6.4L490 7.5L500 8.3L510 8.1L520 7.6L530 7.8L540 8.5L550 8.7L560 8.1L570 7.1L580 7.0L590 7.0L600 6.5L610 5.6L620 5.9L630 7.4L640 8.6"/><path d="M0 14.6L10 16.9L20 18.2L30 19.2L40 20.9L50 22.5L60 23.6L70 24.7L80 25.5L90 24.9L100 23.1L110 22.1L120 22.3L130 22.2L140 21.8L150 21.8L160 21.7L170 20.9L180 20.7L190 22.1L200 23.0L210 22.5L220 21.8L230 21.4L240 20.6L250 20.0L260 20.7L270 21.5L280 20.9L290 19.7L300 19.4L310 19.6L320 19.3L330 18.9L340 18.5L350 17.0L360 14.0L370 12.1L380 11.3L390 10.5L400 9.3L410 8.8L420 8.7L430 8.3L440 9.0L450 11.5L460 13.2L470 13.6L480 14.6L490 15.9L500 16.8L510 16.6L520 16.0L530 16.2L540 17.0L550 17.3L560 16.5L570 15.4L580 15.2L590 15.2L600 14.6L610 13.7L620 14.0L630 15.7L640 17.0"/><path d="M0 24.6L10 27.1L20 28.5L30 29.7L40 31.5L50 33.4L60 34.6L70 35.9L80 36.8L90 36.1L100 34.1L110 32.9L120 33.1L130 33.0L140 32.5L150 32.5L160 32.4L170 31.4L180 31.2L190 32.8L200 33.9L210 33.3L220 32.5L230 32.0L240 31.0L250 30.2L260 31.1L270 32.0L280 31.3L290 29.9L300 29.5L310 29.8L320 29.4L330 28.9L340 28.4L350 26.4L360 22.8L370 20.5L380 19.6L390 18.5L400 17.0L410 16.5L420 16.3L430 15.8L440 16.7L450 19.7L460 21.7L470 22.1L480 23.4L490 25.0L500 26.1L510 25.9L520 25.1L530 25.3L540 26.3L550 26.6L560 25.7L570 24.3L580 24.1L590 24.1L600 23.3L610 22.0L620 22.5L630 24.6L640 26.2"/></symbol>
+    <symbol id="topo-b" viewBox="0 -1 640 44" preserveAspectRatio="none"><path d="M0 12.5L10 11.1L20 9.5L30 8.9L40 9.1L50 10.0L60 11.3L70 12.0L80 11.9L90 11.6L100 11.4L110 11.8L120 12.5L130 13.0L140 12.7L150 12.0L160 11.5L170 11.7L180 12.5L190 13.4L200 13.9L210 13.7L220 12.7L230 11.4L240 10.0L250 8.9L260 8.5L270 8.9L280 9.5L290 10.0L300 10.6L310 11.5L320 12.6L330 13.4L340 13.7L350 13.3L360 12.6L370 12.2L380 12.4L390 12.9L400 13.4L410 13.6L420 13.4L430 12.7L440 11.7L450 10.9L460 10.4L470 10.6L480 11.4L490 12.4L500 13.0L510 12.9L520 12.1L530 11.0L540 10.1L550 9.8L560 10.1L570 10.9L580 11.8L590 12.5L600 12.6L610 12.1L620 11.5L630 11.2L640 11.5"/><path d="M0 22.9L10 21.2L20 19.2L30 18.4L40 18.7L50 19.8L60 21.4L70 22.4L80 22.2L90 21.9L100 21.7L110 22.2L120 23.1L130 23.8L140 23.5L150 22.7L160 22.0L170 22.3L180 23.3L190 24.5L200 25.1L210 24.9L220 23.6L230 22.0L240 20.2L250 18.8L260 18.3L270 18.8L280 19.6L290 20.3L300 21.1L310 22.3L320 23.6L330 24.7L340 25.0L350 24.6L360 23.7L370 23.3L380 23.5L390 24.1L400 24.8L410 25.1L420 24.8L430 23.9L440 22.6L450 21.6L460 21.0L470 21.2L480 22.2L490 23.5L500 24.3L510 24.2L520 23.2L530 21.8L540 20.7L550 20.3L560 20.7L570 21.8L580 22.9L590 23.8L600 24.0L610 23.4L620 22.6L630 22.3L640 22.7"/><path d="M0 33.6L10 31.7L20 29.5L30 28.5L40 28.9L50 30.1L60 32.0L70 33.2L80 33.0L90 32.6L100 32.4L110 33.0L120 34.0L130 34.9L140 34.6L150 33.6L160 32.8L170 33.1L180 34.4L190 35.8L200 36.6L210 36.4L220 34.8L230 32.9L240 30.8L250 29.0L260 28.4L270 28.9L280 29.9L290 30.7L300 31.7L310 33.1L320 34.7L330 36.0L340 36.4L350 35.9L360 34.8L370 34.3L380 34.5L390 35.3L400 36.2L410 36.6L420 36.2L430 35.1L440 33.5L450 32.3L460 31.5L470 31.8L480 33.0L490 34.6L500 35.6L510 35.5L520 34.2L530 32.5L540 31.1L550 30.7L560 31.1L570 32.4L580 33.8L590 34.9L600 35.2L610 34.5L620 33.5L630 33.1L640 33.6"/></symbol>
+    <symbol id="topo-c" viewBox="0 -1 640 44" preserveAspectRatio="none"><path d="M0 8.4L10 7.0L20 6.3L30 6.8L40 8.0L50 9.4L60 10.2L70 10.2L80 9.6L90 9.2L100 9.5L110 10.6L120 12.0L130 13.0L140 13.0L150 12.1L160 10.8L170 9.8L180 9.4L190 9.8L200 10.7L210 11.4L220 11.4L230 10.7L240 9.7L250 9.0L260 9.0L270 9.6L280 10.2L290 10.5L300 10.2L310 9.4L320 8.5L330 7.7L340 7.4L350 7.6L360 8.2L370 8.9L380 9.5L390 9.9L400 10.0L410 9.8L420 9.3L430 8.6L440 8.0L450 7.8L460 8.1L470 8.9L480 9.8L490 10.5L500 10.6L510 10.0L520 9.1L530 8.2L540 7.8L550 8.0L560 8.8L570 9.8L580 10.5L590 10.7L600 10.2L610 9.3L620 8.4L630 7.8L640 7.8"/><path d="M0 18.5L10 16.9L20 16.1L30 16.7L40 18.2L50 19.8L60 20.8L70 20.8L80 20.1L90 19.6L100 20.0L110 21.2L120 22.8L130 24.0L140 24.0L150 22.9L160 21.4L170 20.3L180 19.8L190 20.3L200 21.4L210 22.2L220 22.2L230 21.3L240 20.2L250 19.4L260 19.4L270 20.1L280 20.8L290 21.1L300 20.8L310 19.8L320 18.8L330 17.8L340 17.5L350 17.7L360 18.4L370 19.2L380 19.9L390 20.4L400 20.5L410 20.2L420 19.6L430 18.8L440 18.1L450 17.8L460 18.2L470 19.1L480 20.2L490 21.0L500 21.1L510 20.4L520 19.4L530 18.3L540 17.9L550 18.2L560 19.1L570 20.2L580 21.0L590 21.2L600 20.6L610 19.5L620 18.6L630 17.9L640 17.9"/><path d="M0 28.7L10 26.9L20 26.0L30 26.7L40 28.4L50 30.2L60 31.4L70 31.4L80 30.6L90 30.0L100 30.5L110 31.9L120 33.7L130 35.0L140 35.0L150 33.7L160 31.9L170 30.6L180 30.1L190 30.6L200 31.9L210 32.9L220 32.9L230 31.8L240 30.6L250 29.7L260 29.7L270 30.5L280 31.3L290 31.7L300 31.3L310 30.2L320 29.0L330 27.9L340 27.6L350 27.8L360 28.6L370 29.6L380 30.4L390 31.0L400 31.1L410 30.7L420 30.0L430 29.0L440 28.2L450 27.8L460 28.3L470 29.4L480 30.6L490 31.5L500 31.7L510 30.8L520 29.6L530 28.4L540 27.9L550 28.2L560 29.3L570 30.6L580 31.5L590 31.7L600 31.0L610 29.7L620 28.7L630 27.9L640 27.9"/></symbol>
+  </defs>
+</svg>
+
+<div class="page" id="top">
+  <!-- The route: spur under the hiker's feet, then one dashed line down the margin. -->
+  <div class="spur" aria-hidden="true"></div>
+  <div class="trail" aria-hidden="true"><span class="cv a"></span><span class="cv b"></span></div>
+
+  <header class="hd">
+    <svg class="mark" viewBox="0 0 120 120" aria-hidden="true" focusable="false"><g transform="rotate(-3 60 116)">
+      <path d="M41 27C39 18 44 11 51 11C58 11 63 16 62 24C66 27 68 31 68 35"/>
+      <path d="M43.5 17C40.5 22 41.5 28 45.5 32M53 11.5C55 18 54 26 52 34"/>
+      <path d="M45 35C50 38.5 58 38.5 66 36"/>
+      <path d="M47 38C43 41 43 47 43 54L44 80C44 86 48 89 53 89L68 89C73 89 76 86 76 80L77 55C77 46 75 41 70 38"/>
+      <path d="M44.5 47C53 51 68 51 76.5 46M44 76C54 80 68 80 76.5 75"/>
+      <path d="M66 57L71 63M63 62L71 72M66 68L71 74"/>
+      <path d="M46 38C39 41 34 47 33 55C32 60 33 65 36 68"/>
+      <path d="M71 38C78 40 83 46 84 54C85 59 84 64 82 68"/>
+      <path d="M36.5 61L22 113M20 104.5L26.5 106.5"/>
+      <path d="M83 62L100 111M97 103L102.5 101"/>
+      <path d="M52 89C48 94 45 99 44 104C43 108 41 110 40 112M61 90C57 95 54 99 53 103C52 107 50 109 49 112"/>
+      <path d="M40 112L34 113C31 114 30 115 31 116L50 116L49 112"/>
+      <path d="M68 89C73 95 78 102 83 108M60 90C66 96 71 102 76 108"/>
+      <path d="M76 108L76 113L87 113C89 112 88 110 85 109"/>
+      <path d="M42 28C40.5 20 45 13 50 12.5M43 54L43.5 78"/>
+    </g></svg>
+    <script>
+    /* Enhancement only: measure each stroke, then let CSS play the pen draw-in (~1.2s). No JS = fully drawn. */
+    (function(){
+      if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+      var ps=document.querySelectorAll('.mark path');
+      if(!ps.length||!ps[0].getTotalLength)return;
+      var L=[],sum=0,i,t=0;
+      for(i=0;i<ps.length;i++){L[i]=ps[i].getTotalLength();sum+=L[i];}
+      for(i=0;i<ps.length;i++){
+        var d=L[i]/sum*1.2,s=ps[i].style;
+        s.setProperty('--len',L[i].toFixed(1));
+        s.setProperty('--off',(L[i]+3).toFixed(1));
+        s.setProperty('--dur',d.toFixed(3)+'s');
+        s.setProperty('--del',t.toFixed(3)+'s');
+        t+=d;
+      }
+      document.documentElement.classList.add('draw');
+    })();
+    </script>
+
+    <div class="id">
+      <h1><span class="hari">Hari</span> <span class="gr">Gridharan</span></h1>
+      <p class="tag">Applied Economics + AI · Cornell&nbsp;Dyson&nbsp;’29 · Dyson&nbsp;Scholar</p>
+      <svg class="elev" viewBox="0 0 132 36" aria-hidden="true" focusable="false">
+        <path class="dr" d="M30 8V26M96 3V26"/>
+        <path class="ln" d="M0 22L8 21L14 17L19 18L24 12L30 6L34 10L38 9L44 16L50 15L56 19L62 18L68 20L74 16L80 12L85 13L90 7L96 2L101 8L106 6L112 13L118 12L124 18L132 17"/>
+        <path class="tk2" d="M30 24V28M96 24V28"/>
+        <text x="30" y="35" text-anchor="middle">2025</text>
+        <text x="96" y="35" text-anchor="middle">2026</text>
+      </svg>
+    </div>
+
+    <div class="rest">
+      <p class="seek">Seeking Summer&nbsp;2027 roles in strategy, investing, BA&nbsp;&amp;&nbsp;PM — NYC&nbsp;/&nbsp;SF</p>
+      <div class="actions">
+        <a class="btn btn-fill" href="/Hari_Gridharan_Resume.pdf">Resume <span aria-hidden="true">↓</span></a>
+        <a class="btn btn-line" href="mailto:hg532@cornell.edu">Email</a>
+        <span class="ext"><a href="https://www.linkedin.com/in/harigridharan1/">LinkedIn</a> · <a href="https://github.com/hgridharan999">GitHub</a></span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+  <section class="sec" id="now" aria-labelledby="h-now">
+    <div class="wp"><h2 id="h-now"><span class="n">01</span> <span class="dot">·</span> Now</h2></div>
+    <ul class="rows">
+      <li class="row">
+        <div class="l1"><h3 class="t">Co-Founder, <span class="co">Loadstone Labs</span> <span class="tk">TK: 2025 or 2026</span></h3><span class="yr">2026</span></div>
+        <p class="l2">Venture-backed data platform for Western water rights&nbsp;· <span class="nw"><span class="tk">TK: shared metric</span>&nbsp;·</span> <a href="https://loadstonelabs.com">loadstonelabs.com&nbsp;<span aria-hidden="true">↗</span></a></p>
+      </li>
+      <li class="row">
+        <div class="l1"><h3 class="t">Co-Founder, <span class="co">Commit</span></h3><span class="yr">2025</span></div>
+        <p class="l2">Top&nbsp;10% of 20,000+ YC applicants&nbsp;· <span class="nw">prediction-market</span> MVP built in 3&nbsp;days</p>
+      </li>
+      <li class="row">
+        <div class="l1"><h3 class="t">President, <span class="co">Cornell Entrepreneurship Club</span></h3><span class="yr">2025</span></div>
+        <p class="l2">150+ attendees at the YC speaker series I run&nbsp;· <span class="tk">TK: one verified reach number</span></p>
+      </li>
+      <li class="row">
+        <div class="l1"><h3 class="t">Builder, <span class="co">Cornell Armada</span></h3><span class="yr">2026</span></div>
+        <p class="l2">Built <a href="https://www.bigred.network/">bigred.network&nbsp;<span aria-hidden="true">↗</span></a>, Cornell’s founder directory&nbsp;· <span class="tk">TK: member count</span></p>
+      </li>
+      <li class="row">
+        <div class="l1"><h3 class="t">Business Analyst, <span class="co">Cornell DTI</span></h3><span class="yr">2025</span></div>
+        <p class="l2">15,000+ Cornell users on the student tools I analyze&nbsp;· benchmarked 8&nbsp;peer platforms</p>
+      </li>
+    </ul>
+    <svg class="contour" viewBox="0 -1 640 44" preserveAspectRatio="none" aria-hidden="true" focusable="false"><use href="#topo-a"/></svg>
+  </section>
+
+  <section class="sec" id="before" aria-labelledby="h-before">
+    <div class="wp"><h2 id="h-before"><span class="n">02</span> <span class="dot">·</span> Before</h2></div>
+    <ul class="rows">
+      <li class="row">
+        <div class="l1"><h3 class="t">Consulting Intern, <span class="co">EXL</span></h3><span class="yr">New&nbsp;York · 2026</span></div>
+        <p class="l2">$70M+ Fortune&nbsp;100 contract book supported&nbsp;· built a CRM tool that replaced manual tracking</p>
+      </li>
+      <li class="row">
+        <div class="l1"><h3 class="t">Operations &amp; Strategy Intern, <span class="co">Midian Partners</span></h3><span class="yr">2026</span></div>
+        <p class="l2">6&nbsp;→&nbsp;25+ signed lender partners in five weeks</p>
+      </li>
+      <li class="row">
+        <div class="l1"><h3 class="t">AI/Strategy Consultant (Contract), <span class="co">Adobe</span></h3><span class="yr">2026</span></div>
+        <p class="l2">$1M+ enterprise contracts shaped by AI market sizing and positioning work</p>
+      </li>
+      <li class="row">
+        <div class="l1"><h3 class="t">Problem Design Engineer, <span class="co">Widget Factory</span> <span class="tk">TK: or “IdlExperts (fka Widget Factory)”</span></h3><span class="yr">2026</span></div>
+        <p class="l2">Problem sets used to evaluate frontier AI models</p>
+      </li>
+    </ul>
+    <svg class="contour flip" viewBox="0 -1 640 44" preserveAspectRatio="none" aria-hidden="true" focusable="false"><use href="#topo-b"/></svg>
+  </section>
+
+  <section class="sec" id="built" aria-labelledby="h-built">
+    <div class="wp"><h2 id="h-built"><span class="n">03</span> <span class="dot">·</span> Built</h2></div>
+    <ul class="rows">
+      <li class="row">
+        <div class="l1"><h3 class="t"><span class="co">Climate startup search</span></h3><a class="act" href="/climate-search">Try&nbsp;it&nbsp;→</a></div>
+        <p class="l2">212 startups, ~600ms hybrid BERT + BM25 queries</p>
+      </li>
+      <li class="row">
+        <div class="l1"><h3 class="t"><span class="co">LLM Cost Optimizer</span></h3><a class="act" href="https://github.com/hgridharan999/token_optimizer">Repo&nbsp;<span aria-hidden="true">↗</span></a></div>
+        <p class="l2">Model routing + semantic caching across GPT-4, Claude and Gemini&nbsp;· <span class="tk">TK: % cost cut</span></p>
+      </li>
+      <li class="row">
+        <div class="l1"><h3 class="t"><span class="co">TrailSense</span> <span class="tk">TK: ships only if deployed or demoed</span></h3><a class="act" href="/trailsense">Open&nbsp;→</a></div>
+        <p class="l2">XGBoost + SHAP trail-feasibility scoring on live NWS weather</p>
+      </li>
+    </ul>
+    <svg class="contour" viewBox="0 -1 640 44" preserveAspectRatio="none" aria-hidden="true" focusable="false"><use href="#topo-c"/></svg>
+  </section>
+
+  <section class="sec" id="writing" aria-labelledby="h-writing">
+    <div class="wp"><h2 id="h-writing"><span class="n">04</span> <span class="dot">·</span> Writing</h2><span class="tk">TK: hidden until 2 essays are live</span></div>
+    <ul class="rows">
+      <li class="row">
+        <div class="l1"><h3 class="t"><span class="co">Water is the bottleneck nobody prices</span></h3><span class="yr">Draft</span></div>
+      </li>
+      <li class="row">
+        <div class="l1"><h3 class="t"><span class="co">What scaling a lender network taught me about mortgage pricing engines</span></h3><span class="yr">Draft</span></div>
+      </li>
+      <li class="row">
+        <div class="l1"><h3 class="t"><span class="co">Regression to the mean: what LLM homogenization means for consumer brands</span></h3><span class="yr">Draft</span></div>
+      </li>
+    </ul>
+    <p class="more"><a href="/writing">All writing&nbsp;→</a></p>
+    <svg class="contour flip" viewBox="0 -1 640 44" preserveAspectRatio="none" aria-hidden="true" focusable="false"><use href="#topo-a"/></svg>
+  </section>
+
+  <section class="sec" id="off-the-clock" aria-labelledby="h-off">
+    <div class="wp"><h2 id="h-off"><span class="n">05</span> <span class="dot">·</span> Off the clock</h2></div>
+    <ul class="rows">
+      <li class="row f">
+        <p class="free"><span class="co">Hiking Colorado 14ers</span> <span class="tail">— most recent: Quandary Peak, 14,265&nbsp;ft, under&nbsp;4:30 round trip&nbsp;·</span> <a href="/hiking">trail log&nbsp;→</a></p>
+      </li>
+      <li class="row f">
+        <p class="free"><span class="co">Carnatic &amp; indie singing</span> <span class="tail">·&nbsp;cooking regional Indian food</span></p>
+      </li>
+    </ul>
+    <svg class="contour" viewBox="0 -1 640 44" preserveAspectRatio="none" aria-hidden="true" focusable="false"><use href="#topo-b"/></svg>
+  </section>
+
+  <section class="sec" id="elsewhere" aria-labelledby="h-else">
+    <div class="wp"><h2 id="h-else"><span class="n">06</span> <span class="dot">·</span> Elsewhere</h2></div>
+    <p class="elsewhere">
+      <a href="https://www.linkedin.com/in/harigridharan1/">LinkedIn</a>&nbsp;<span class="sep" aria-hidden="true">·</span>
+      <a href="https://github.com/hgridharan999">GitHub</a>&nbsp;<span class="sep" aria-hidden="true">·</span>
+      <a href="mailto:hg532@cornell.edu">hg532@cornell.edu</a>&nbsp;<span class="sep" aria-hidden="true">·</span>
+      <a href="/Hari_Gridharan_Resume.pdf">Resume</a>
+    </p>
+  </section>
+  </main>
+
+  <footer class="ft">
+    <p class="upd">Last updated <time datetime="2026-10">Oct&nbsp;2026</time></p>
+    <svg class="contour flip" viewBox="0 -1 640 44" preserveAspectRatio="none" aria-hidden="true" focusable="false"><use href="#topo-c"/></svg>
+  </footer>
+</div>
+
+</body>
+</html>
