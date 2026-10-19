@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-font="manrope">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -73,7 +73,7 @@
 <link rel="preload" as="image" href="../_shared/mountain-plate.webp" type="image/webp" fetchpriority="high">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Hanken+Grotesk:wght@400;500;600;800&family=Instrument+Serif:ital@1&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:ital,wght@1,400&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Inter+Tight:wght@400;500;600;700;800&family=Schibsted+Grotesk:wght@400;500;600;700;800&family=Fragment+Mono&family=Manrope:wght@400;500;600;700;800&family=Spline+Sans+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Instrument+Serif:ital@1&display=swap">
 <style>
   /* ---- the hiker mark (shared component, copied verbatim) ------------------------------
      The live site's own hiker art (cut from public/hiker-scene.jpg), revealed by three
@@ -92,22 +92,23 @@
 
   :root {
     --bg: #FFFFFF;
-    --cream: #111111;                      /* ink: every former cream/white is now near-black */
+    --cream: #1A1A18;                      /* ink: headings and names */
     --tan: #0F7DAA;                        /* iceberg blue, 4.6:1 on white */
-    --soft: #3D3D3D;                       /* one-liners, 10.9:1 on white */
-    --muted: #5C5C5C;                      /* dates, labels, 6.7:1 on white */
+    --soft: #6E6D68;                       /* body copy, warm grey, 5.2:1 on white */
+    --muted: #75746F;                      /* dates, labels, 4.7:1 on white */
     --rule: rgba(0, 0, 0, 0.10);           /* ledger hairline */
     --rule-head: rgba(0, 0, 0, 0.22);
     --rule-hover: rgba(0, 0, 0, 0.28);
     --ul: rgba(0, 0, 0, 0.40);             /* link underline */
     --ul-tan: rgba(15, 125, 170, 0.55);
     --outline: rgba(0, 0, 0, 0.55);
-    --sans: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    --mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: var(--sans);                   /* labels and dates use the same family as the text */
+    --name-weight: 600; --name-case: none;
     --serif: "Instrument Serif", "Times New Roman", serif;
     --ease: cubic-bezier(0.16, 1, 0.3, 1);
     --gutter: 16px;
-    --datew: 6.75rem;                      /* fixed date column: never squeezes the title */
+    --datew: 6.25rem;                      /* fixed date column: never squeezes the title */
     --tri-off: 14px;                       /* benchmark marker distance left of the row */
   }
 
@@ -115,7 +116,7 @@
   html { background: var(--bg); color-scheme: light; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   body {
     margin: 0; background: var(--bg); color: var(--cream);
-    font: 400 16px/1.6 var(--sans); font-kerning: normal;
+    font: 400 15px/1.5 var(--sans); font-kerning: normal; letter-spacing: -0.2px;
     -webkit-font-smoothing: antialiased; overflow-wrap: break-word;
   }
   h1, h2, h3, p, ul { margin: 0; padding: 0; }
@@ -130,7 +131,7 @@
   }
   .nw { white-space: nowrap; }
 
-  .wrap { width: 100%; max-width: calc(640px + var(--gutter) * 2); margin-inline: auto; padding-inline: var(--gutter); }
+  .wrap { width: 100%; max-width: calc(680px + var(--gutter) * 2); margin-inline: auto; padding-inline: var(--gutter); }
 
   /* ---------- Header plate: the live site's background mountain, drawn in like a sketch ---------- */
   .plate { position: relative; margin: 0 calc(var(--gutter) * -1); }
@@ -146,7 +147,7 @@
 
   /* ---------- Header: hiker logo beside the lockup, tucked into the foot of the plate ---------- */
   .top {
-    --hiker-h: 112px;
+    --hiker-h: 92px;
     position: relative; z-index: 1;
     display: grid; grid-template-columns: auto minmax(0, 1fr);
     grid-template-areas: "mark name" "aff aff" "pos pos" "seek seek" "act act" "lines lines";
@@ -156,11 +157,11 @@
   .name {
     grid-area: name;
     display: flex; flex-direction: column; align-items: flex-start;
-    font: var(--name-weight, 800) clamp(34px, 9.4vw, 48px)/1 var(--name-font, var(--sans)); letter-spacing: -0.03em;
+    font: var(--name-weight, 600) clamp(28px, 7.5vw, 36px)/1 var(--name-font, var(--sans)); letter-spacing: -0.035em;
   }
   .hari { font: italic 400 1.2em/0.95 var(--serif); letter-spacing: 0; color: var(--tan); }
   .sur { text-transform: var(--name-case, uppercase); white-space: nowrap; }
-  .aff { grid-area: aff; margin-top: 16px; color: var(--soft); }
+  .aff { grid-area: aff; margin-top: 12px; color: var(--soft); }
   .aff-a { display: block; }
   .aff-sep { display: none; }
   .seek { grid-area: seek; margin-top: 8px; color: var(--tan); font-weight: 500; text-wrap: pretty; }
@@ -168,13 +169,13 @@
   .act { grid-area: act; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 12px; }
   .btn {
     display: inline-flex; align-items: center; justify-content: center;
-    min-height: 44px; padding: 0 18px; border: 1px solid transparent; border-radius: 4px;
-    font: 600 15px/1 var(--sans); text-decoration: none;
+    min-height: 40px; padding: 0 16px; border: 1px solid transparent; border-radius: 4px;
+    font: 500 14px/1 var(--sans); text-decoration: none;
   }
   .btn-fill { background: var(--tan); border-color: var(--tan); color: var(--bg); }
   .btn-line { border-color: var(--outline); color: var(--cream); }
   .soc { display: inline-flex; align-items: center; margin-left: -8px; }
-  .soc a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; font-size: 15px; color: var(--soft); }
+  .soc a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 8px; font-size: 14px; color: var(--soft); }
   .soc .dot { color: var(--muted); }
 
   /* ---------- Contour dividers (decorative): two minor lines and one index line ---------- */
@@ -184,13 +185,13 @@
   .ci { stroke-width: 1.4; stroke-opacity: 0.13; }
 
   /* ---------- Sections: spacing and the label's hairline do the dividing ---------- */
-  main > section { padding-top: 40px; }
-  main > section:first-child { padding-top: 28px; }
+  main > section { padding-top: 20px; }
+  main > section:first-child { padding-top: 18px; }
 
   /* ---------- Section labels: waypoints ---------- */
   .head {
-    padding-bottom: 7px; border-bottom: 1px solid var(--rule-head);
-    font: 500 12px/1.7 var(--mono); letter-spacing: 0.14em; text-transform: uppercase;
+    padding-bottom: 6px; border-bottom: 1px solid var(--rule-head);
+    font: 500 15px/1.5 var(--sans); letter-spacing: -0.2px; color: var(--cream);
     scroll-margin-top: 16px;
   }
   .head .idx { color: var(--muted); }
@@ -200,20 +201,23 @@
     position: relative; display: grid;
     grid-template-columns: minmax(0, 1fr) var(--datew);
     grid-template-areas: "ttl when" "line line";
-    column-gap: 16px; align-items: baseline; padding: 12px 0 13px;
+    column-gap: 16px; align-items: baseline; padding: 7px 0 8px;
   }
   .row + .row { border-top: 1px solid var(--rule); }
-  .ttl { grid-area: ttl; font: 600 16px/1.4 var(--sans); text-wrap: balance; }
-  .ttl .role { font-weight: 500; }
+  .ttl { grid-area: ttl; font: 500 15px/1.4 var(--sans); color: var(--cream); text-wrap: balance; }
+  .ttl .role { font-weight: 400; }
+  a.org { color: inherit; text-decoration-line: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;
+          text-decoration-color: rgba(26, 26, 24, 0.22); transition: color 0.2s, text-decoration-color 0.2s; }
+  .line a.org { text-decoration-color: rgba(110, 109, 104, 0.35); }
   .loc {
     display: block; margin-top: 2px;
-    font: 400 12px/1.4 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+    font: 400 13px/1.45 var(--sans); color: var(--muted);
   }
   .when {
     grid-area: when; text-align: right; white-space: nowrap; color: var(--muted);
-    font: 400 12.5px/1.4 var(--mono); font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1;
+    font: 400 13px/1.45 var(--sans); font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1;
   }
-  .line { grid-area: line; margin-top: 1px; color: var(--soft); text-wrap: pretty; }
+  .line { grid-area: line; margin-top: 0; line-height: 1.45; color: var(--soft); text-wrap: pretty; }
   .lead { color: var(--tan); font-weight: 500; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
   a.lead { text-decoration-color: var(--ul-tan); }
   .row--solo { grid-template-areas: "line line"; }
@@ -224,7 +228,7 @@
   .xp summary {
     display: grid; grid-template-columns: minmax(0, 1fr) var(--datew);
     grid-template-areas: "ttl when" "line line";
-    column-gap: 16px; align-items: baseline; padding: 12px 0 13px;
+    column-gap: 16px; align-items: baseline; padding: 7px 0 8px;
     list-style: none; cursor: pointer; border-radius: 2px;
   }
   .xp summary::-webkit-details-marker { display: none; }
@@ -243,19 +247,19 @@
   @media (hover: hover) and (pointer: fine) {
     .xp details[open] summary:not(:hover):not(:focus-visible) .co::after { opacity: 0; }
   }
-  .note { margin: 12px 0 0; color: var(--soft); }
-  .memo-empty { margin: 4px 0 0; padding: 12px 0 13px; border-top: 1px solid var(--rule); color: var(--muted); }
+  .note { margin: 10px 0 0; font-size: 14px; color: var(--soft); }
+  .memo-empty { margin: 4px 0 0; padding: 7px 0 8px; border-top: 1px solid var(--rule); font-size: 14px; color: var(--muted); }
   .xp .body {
-    margin: -2px 0 16px; padding: 2px 0 2px 16px;
+    margin: -2px 0 12px; padding: 2px 0 2px 14px;
     border-left: 1px solid rgba(15, 125, 170, 0.45);
-    color: var(--soft);
+    font-size: 14px; line-height: 1.55; color: var(--soft);
   }
-  .xp .body p + p { margin-top: 8px; }
-  .xp .meta { font: 400 12.5px/1.7 var(--mono); color: var(--muted); }
+  .xp .body p + p { margin-top: 6px; }
+  .xp .meta { font: 400 13px/1.6 var(--sans); color: var(--muted); }
   .xp .meta a { color: var(--cream); }
 
   /* theses */
-  .kicker { margin-top: 12px; font: 400 12.5px/1.6 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .kicker { margin-top: 10px; font: 500 13px/1.5 var(--sans); color: var(--muted); }
   .beliefs { margin: 4px 0 0; padding: 0; list-style: none; }
   .beliefs li { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr); align-items: baseline; padding: 11px 0 12px; }
   .beliefs li + li { border-top: 1px solid var(--rule); }
@@ -265,7 +269,7 @@
   .xp .body .beliefs li:first-child { padding-top: 2px; }
   .theses-more { margin-top: 14px; border-top: 1px solid var(--rule); }
   /* essays: title and its one-line description on the left, the date on the right */
-  .rl.rl--essay { align-items: flex-start; padding: 11px 0 12px; }
+  .rl.rl--essay { align-items: flex-start; padding: 6px 0 7px; }
   .rl.rl--essay .et { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
   .rl.rl--essay .ed { color: var(--muted); font-size: 15px; line-height: 1.5; text-wrap: pretty; }
   .rl.rl--essay .val { text-decoration: none; white-space: nowrap; line-height: 22px; }
@@ -292,20 +296,19 @@
 
   /* header additions: one line of point of view, then the dated now line and the toolkit */
   .pos { grid-area: pos; margin-top: 10px; color: var(--cream); text-wrap: balance; }
-  .ledger-lines { grid-area: lines; margin-top: 18px; border-top: 1px solid var(--rule); }
+  .ledger-lines { grid-area: lines; margin-top: 12px; border-top: 1px solid var(--rule); }
   .ledger-lines p {
-    padding: 7px 0 8px; border-bottom: 1px solid var(--rule);
-    font: 400 12px/1.6 var(--mono); color: var(--muted); text-wrap: pretty;
-    word-spacing: -0.3em; /* tighter gaps around the dots so the toolkit fits on two lines */
+    padding: 6px 0 7px; border-bottom: 1px solid var(--rule);
+    font: 400 13px/1.55 var(--sans); color: var(--soft); text-wrap: pretty;
   }
-  .ledger-lines .k { letter-spacing: 0.1em; text-transform: uppercase; color: var(--cream); }
+  .ledger-lines .k { font-weight: 500; color: var(--cream); }
 
   /* one decision per project, under its story */
   .xp .body .decide { color: var(--soft); }
   .decide .k { font: 400 12px/1.6 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-right: 0.5em; }
 
   /* essays: a quiet sub-label between the theses and the list */
-  .kicker--sub { margin-top: 22px; }
+  .kicker--sub { margin-top: 18px; }
   .theses-more.essays { margin-top: 4px; }
 
   /* ---------- The pack: beside Mountaineering on wide screens, inside it when opened on narrow ones ---------- */
@@ -344,25 +347,25 @@
   /* ---------- The ending: under the surface (the page's one animation) ---------- */
   .band {
     --band-h: 260px;
-    position: relative; height: var(--band-h); margin-top: 56px; overflow: hidden; isolation: isolate;
+    position: relative; height: var(--band-h); margin-top: 28px; overflow: hidden; isolation: isolate;
     background: linear-gradient(to bottom,
       #fff 0, #fff 21.9%, #C9EAF4 22%, #8FD0E6 33%, #2F9CC4 51%, #0F7DAA 66%, #0A4D6E 83%, #0A1822 100%);
   }
-  @media (min-width: 600px)  { .band { --band-h: 320px; } }
-  @media (min-width: 1000px) { .band { --band-h: 380px; } }
+  @media (min-width: 600px)  { .band { --band-h: 300px; } }
+  @media (min-width: 1000px) { .band { --band-h: 320px; } }
   .band canvas, .band svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .band canvas { touch-action: pan-y; -webkit-tap-highlight-color: transparent; }
   .band svg { pointer-events: none; }
   .band[data-gl="on"] svg { display: none; }
   .deep { background: #0A1822; color: #D9EEF7; }
-  .deep-in { max-width: calc(640px + var(--gutter) * 2); margin: 0 auto; padding: 4px var(--gutter) 40px; }
-  .deep-open { margin: 0 0 4px; font: 400 15px/1.6 var(--sans); color: #D9EEF7; text-wrap: pretty; }
-  .deep-contact { margin: 0; font: 400 15px/2 var(--sans); }
+  .deep-in { max-width: calc(680px + var(--gutter) * 2); margin: 0 auto; padding: 4px var(--gutter) 28px; }
+  .deep-open { margin: 0 0 4px; font: 400 14px/1.6 var(--sans); color: #D9EEF7; text-wrap: pretty; }
+  .deep-contact { margin: 0; font: 400 14px/1.8 var(--sans); }
   .deep-contact a { color: #F2FBFE; text-decoration-color: rgba(242, 251, 254, 0.45); }
   .deep-contact a:hover { color: #9BF3EA; text-decoration-color: #9BF3EA; }
   .deep-contact .dot { color: #8FB2C3; }
-  .deep-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-top: 10px; }
-  .deep-line p, .motion-toggle { margin: 0; font: 400 12px/1.4 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: #9FC3D3; }
+  .deep-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-top: 6px; }
+  .deep-line p, .motion-toggle { margin: 0; font: 400 12.5px/1.4 var(--sans); color: #9FC3D3; }
   .motion-toggle { background: none; border: 0; padding: 0 0 0 0; min-height: 44px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(159, 195, 211, 0.5); }
   .motion-toggle:hover { color: #F2FBFE; }
   .deep a:focus-visible, .motion-toggle:focus-visible { outline: 2px solid #9BF3EA; outline-offset: 3px; border-radius: 2px; }
@@ -384,13 +387,13 @@
   @media (max-width: 1179px) { .deep-in { padding-bottom: 76px; } } /* clear the collapsed picker */
   @media (min-width: 600px) {
     html[data-mtn="right"] header { position: relative; }
-    html[data-mtn="right"] .plate { position: absolute; top: 0; right: var(--gutter); width: 52%; margin: 0; padding: 0; }
+    html[data-mtn="right"] .plate { position: absolute; top: -10px; right: var(--gutter); width: 40%; margin: 0; padding: 0; }
     html[data-mtn="right"] .scene--mtn { aspect-ratio: 560 / 250; }
     html[data-mtn="right"] .plate::after {
-      background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 55%, var(--bg) 97%),
+      background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 38%, var(--bg) 80%),
                   linear-gradient(to right, var(--bg) 0%, rgba(255, 255, 255, 0) 35%);
     }
-    html[data-mtn="right"] .top { margin-top: 0; padding-top: 36px; }
+    html[data-mtn="right"] .top { margin-top: 0; padding-top: 22px; }
   }
 
   .typepick {
@@ -427,12 +430,12 @@
   .row--link { display: block; padding: 0; }
   .rl {
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
-    min-height: 44px; padding: 8px 0 9px; text-decoration: none;
+    min-height: 36px; padding: 6px 0 7px; text-decoration: none;
   }
-  .rl .lab { font-weight: 500; }
+  .rl .lab { font-weight: 500; color: var(--cream); }
   .rl .val {
     text-align: right; overflow-wrap: anywhere; color: var(--muted);
-    font: 400 12.5px/1.5 var(--mono);
+    font: 400 13px/1.5 var(--sans);
     text-decoration: underline; text-decoration-color: var(--ul); text-decoration-thickness: 1px; text-underline-offset: 0.25em;
   }
 
@@ -453,10 +456,10 @@
 
   /* ---------- Wider viewports ---------- */
   @media (min-width: 600px) {
-    :root { --datew: 11.25rem; } /* fits "Sep 2025 – Jan 2026" */
+    :root { --datew: 8.75rem; } /* fits "Sep 2025 – Jan 2026" */
     .plate { margin-inline: 0; padding-top: 0; }
     .top {
-      --hiker-h: 140px;
+      --hiker-h: 92px;
       grid-template-areas: "mark name" "mark aff" "pos pos" "seek seek" "act act" "lines lines";
       column-gap: 24px; margin-top: -40px;
     }
@@ -465,8 +468,8 @@
     .aff-a { display: inline; }
     .aff-sep { display: inline; }
     .pos { margin-top: 20px; }
-    .seek { margin-top: 6px; font-size: 15px; } /* one line beside the column */
-    .act { margin-top: 14px; }
+    .seek { margin-top: 6px; } /* one line beside the column */
+    .act { margin-top: 10px; }
     .loc { display: inline-block; margin: 0 0 0 0.7em; }
     .foot-line .part { display: inline; }
     .foot-line .sep { display: inline; }
@@ -478,17 +481,19 @@
   /* ---------- Desktop pointers only: benchmark marker, company name, hairline ---------- */
   @media (hover: hover) and (pointer: fine) {
     .row:hover::before, .row:has(:focus-visible)::before {
-      content: ""; position: absolute; left: calc(var(--tri-off) * -1 + 4px); top: 15px;
+      content: ""; position: absolute; left: calc(var(--tri-off) * -1 + 4px); top: 10px;
       width: 2px; height: 16px; pointer-events: none; border-radius: 1px;
       background: var(--tan);
     }
     .row--solo:hover::before, .row--solo:has(:focus-visible)::before { top: 17px; }
-    .row--link:hover::before, .row--link:has(:focus-visible)::before { top: 14px; }
+    .row--link:hover::before, .row--link:has(:focus-visible)::before { top: 10px; }
     .row:hover, .row:has(:focus-visible) { border-top-color: var(--rule-hover); }
     .row:hover + .row, .row:has(:focus-visible) + .row { border-top-color: var(--rule-hover); }
     .row:hover .co, .row:has(:focus-visible) .co { color: var(--tan); }
     .xp summary:hover .co::after { opacity: 1; }
     a:hover { color: var(--tan); text-decoration-color: var(--tan); }
+    a.org:hover { color: var(--cream); text-decoration-color: currentColor; }
+    .line a.org:hover { color: var(--soft); }
     .rl:hover { color: inherit; }
     .rl:hover .val { color: var(--tan); text-decoration-color: var(--tan); }
     .btn-fill:hover { background: #0B6A93; border-color: #0B6A93; color: var(--bg); }
@@ -627,23 +632,23 @@
 <main class="wrap">
 
   <section aria-labelledby="experience">
-    <h2 class="head" id="experience"><span class="idx">01</span> · EXPERIENCE</h2>
+    <h2 class="head" id="experience">Experience</h2>
     <ul role="list">
       <li class="row xp"><details>
         <summary>
-          <span class="ttl"><span class="role">CEO &amp; Co-Founder,</span> <span class="co">Loadstone&nbsp;Labs</span></span>
+          <span class="ttl"><span class="role">CEO &amp; Co-Founder,</span> <span class="co"><a class="org" href="https://loadstonelabs.com/" target="_blank" rel="noopener">Loadstone&nbsp;Labs<span class="sr-only"> (opens in new tab)</span></a></span></span>
           <span class="when">Feb&nbsp;2026&nbsp;–&nbsp;now</span>
-          <span class="line"><span class="lead">We pull in 132,000+ water-rights records a day</span>, <span class="c-panel">with grants from AWS and LvlUp&nbsp;Ventures</span><span class="c-hari">and are venture-backed with grants from AWS and LvlUp&nbsp;Ventures</span>.</span>
+          <span class="line"><span class="lead">We pull in 132,000+ water-rights records a day</span>, <span class="c-panel">with grants from <a class="org" href="https://aws.amazon.com/" target="_blank" rel="noopener">AWS<span class="sr-only"> (opens in new tab)</span></a> and <a class="org" href="https://www.lvlup.vc/" target="_blank" rel="noopener">LvlUp&nbsp;Ventures<span class="sr-only"> (opens in new tab)</span></a></span><span class="c-hari">and are venture-backed with grants from AWS and LvlUp&nbsp;Ventures</span>.</span>
         </summary>
         <div class="body">
           <p>Co-founded, and run as CEO, a data platform for Western water rights. County records are fragmented and inconsistent, so rights are hard to find and harder to value. Loadstone puts workflow, basin intelligence and transaction infrastructure in one place for the attorneys and engineers who work them.</p>
           <p>The pipeline ingests 132,000+ live water-rights records a day from 44 Colorado counties into a single schema. Supported by grants from AWS and LvlUp&nbsp;Ventures.</p>
-          <p class="meta">Ithaca, NY · <a href="https://loadstonelabs.com" target="_blank" rel="noopener">Site<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+          <p class="meta">Ithaca, NY</p>
         </div>
       </details></li>
       <li class="row xp"><details>
         <summary>
-          <span class="ttl"><span class="role">Consulting Intern,</span> <span class="co">EXL</span></span>
+          <span class="ttl"><span class="role">Consulting Intern,</span> <span class="co"><a class="org" href="https://www.exlservice.com/" target="_blank" rel="noopener">EXL<span class="sr-only"> (opens in new tab)</span></a></span></span>
           <span class="when">Jul&nbsp;2026&nbsp;–&nbsp;Sep&nbsp;2026</span>
           <span class="line"><span class="lead">Built a CRM tool</span> so the team could stop tracking <span class="c-panel">an eight-figure</span><span class="c-hari">a $70M+</span> book of Fortune&nbsp;100 contracts by&nbsp;hand.</span>
         </summary>
@@ -657,29 +662,29 @@
         <summary>
           <span class="ttl"><span class="role">Operations &amp; Strategy Intern,</span> <span class="co">Midian&nbsp;Partners</span></span>
           <span class="when">Jun&nbsp;2026&nbsp;–&nbsp;Jul&nbsp;2026</span>
-          <span class="line"><span class="lead">Took the lender network from 6 to 25+ partners</span> in under five weeks, while revenue grew about&nbsp;300%.</span>
+          <span class="line"><span class="lead">Took the lender network from 6 to 25+ partners</span> in under five weeks, while revenue grew&nbsp;310%.</span>
         </summary>
         <div class="body">
-          <p>Grew an early-stage mortgage fintech’s lender network from 6 to 25+ signed partners in under five weeks; over the same period, revenue grew ~300%.</p>
+          <p>Grew an early-stage mortgage fintech’s lender network from 6 to 25+ signed partners in under five weeks; over the same period, revenue grew 310%.</p>
           <p>Negotiated terms with partner executives, ran user testing, and coordinated a technical review of the platform’s 12 subsystems.</p>
           <p class="meta">Remote</p>
         </div>
       </details></li>
       <li class="row xp"><details>
         <summary>
-          <span class="ttl"><span class="role">AI Strategy Consultant,</span> <span class="co">Adobe</span></span>
+          <span class="ttl"><span class="role">AI Strategy Consultant,</span> <span class="co"><a class="org" href="https://www.adobe.com/" target="_blank" rel="noopener">Adobe<span class="sr-only"> (opens in new tab)</span></a></span></span>
           <span class="when">Jan&nbsp;2026&nbsp;–&nbsp;Apr&nbsp;2026</span>
           <span class="line"><span class="lead">Market sizing and positioning</span> for Adobe’s enterprise AI products, tied to $1M+ in&nbsp;contracts.</span>
         </summary>
         <div class="body">
           <p>Contract role on AI product strategy for seven-figure enterprise accounts, working with IT teams at Fortune 500 customers.</p>
           <p>Built market-sizing frameworks, UX benchmarks and positioning analyses, and proposed business cases for the product suite.</p>
-          <p class="meta">Remote · Contract through Cornell&nbsp;DTI</p>
+          <p class="meta">Remote · Contract</p>
         </div>
       </details></li>
       <li class="row xp"><details>
         <summary>
-          <span class="ttl"><span class="role">Problem Design Engineer,</span> <span class="co">IdlExperts</span></span>
+          <span class="ttl"><span class="role">Problem Design Engineer,</span> <span class="co"><a class="org" href="https://idlexperts.ai/" target="_blank" rel="noopener">IdlExperts<span class="sr-only"> (opens in new tab)</span></a></span></span>
           <span class="when">Jan&nbsp;2026&nbsp;–&nbsp;Apr&nbsp;2026</span>
           <span class="line"><span class="lead">Wrote 6 problem sets</span> used to test frontier AI&nbsp;models.</span>
         </summary>
@@ -704,16 +709,16 @@
   </section>
 
   <section aria-labelledby="on-campus">
-    <h2 class="head" id="on-campus"><span class="idx">02</span> · ON CAMPUS</h2>
+    <h2 class="head" id="on-campus">On campus</h2>
     <ul role="list">
       <li class="row row--plain">
-        <span class="ttl"><span class="role">Analyst,</span> <span class="co">Cornell Venture&nbsp;Capital</span></span>
+        <span class="ttl"><span class="role">Analyst,</span> <span class="co"><a class="org" href="https://cornellvc.com/" target="_blank" rel="noopener">Cornell Venture&nbsp;Capital<span class="sr-only"> (opens in new tab)</span></a></span></span>
         <span class="when">Sep&nbsp;2026&nbsp;–&nbsp;now</span>
-        <p class="line"><span class="lead">Sourced 10 startups</span> for G20&nbsp;Ventures to consider investing&nbsp;in.</p>
+        <p class="line"><span class="lead">Sourced 10 startups</span> for <a class="org" href="https://www.g20vc.com/" target="_blank" rel="noopener">G20&nbsp;Ventures<span class="sr-only"> (opens in new tab)</span></a> to consider investing&nbsp;in.</p>
       </li>
       <li class="row xp"><details>
         <summary>
-          <span class="ttl"><span class="role">Co-President,</span> <span class="co">Cornell Entrepreneurship&nbsp;Club</span></span>
+          <span class="ttl"><span class="role">Co-President,</span> <span class="co"><a class="org" href="https://www.cornellec.com/" target="_blank" rel="noopener">Cornell Entrepreneurship&nbsp;Club<span class="sr-only"> (opens in new tab)</span></a></span></span>
           <span class="when">Sep&nbsp;2025&nbsp;–&nbsp;now</span>
           <span class="line"><span class="lead">Brought Paul Graham, Scott Nolan and Cory Levy</span> to campus, with 150+ people at each&nbsp;talk.</span>
         </summary>
@@ -724,7 +729,7 @@
         </div>
       </details></li>
       <li class="row row--plain">
-        <span class="ttl"><span class="role">Builder,</span> <span class="co">Cornell&nbsp;Armada</span></span>
+        <span class="ttl"><span class="role">Builder,</span> <span class="co"><a class="org" href="https://armada.build/" target="_blank" rel="noopener">Cornell&nbsp;Armada<span class="sr-only"> (opens in new tab)</span></a></span></span>
         <span class="when">Jan&nbsp;2026&nbsp;–&nbsp;now</span>
         <p class="line"><span class="lead">A YC-backed community of Cornell builders.</span> We work on side projects together, and I built its member directory, bigred.network.</p>
       </li>
@@ -732,13 +737,13 @@
   </section>
 
   <section aria-labelledby="projects">
-    <h2 class="head" id="projects"><span class="idx">03</span> · PROJECTS &amp; RESEARCH</h2>
+    <h2 class="head" id="projects">Projects &amp; research</h2>
     <ul role="list">
       <li class="row xp"><details>
         <summary>
           <span class="ttl"><span class="co">Vest Practices</span> <span class="loc">DNHacks 2026</span></span>
           <span class="when">Sep&nbsp;2026</span>
-          <span class="line"><span class="lead">AI glasses that coach tradespeople</span> on the job. Built with a team of five at&nbsp;DNHacks.</span>
+          <span class="line"><span class="lead">AI glasses that coach tradespeople</span> on the job. Built with a team of five at&nbsp;<a class="org" href="https://dnhacks.org/" target="_blank" rel="noopener">DNHacks<span class="sr-only"> (opens in new tab)</span></a>.</span>
         </summary>
         <div class="body">
           <p>A wearable training system for tradespeople, built on AI glasses by a team of five at DNHacks 2026 (Energy &amp; Industrialization track).</p>
@@ -761,26 +766,26 @@
       </details></li>
       <li class="row xp"><details>
         <summary>
-          <span class="ttl"><span class="co">OEIS A363004</span> <span class="loc">Number theory</span></span>
+          <span class="ttl"><span class="co"><a class="org" href="https://oeis.org/A363004" target="_blank" rel="noopener">OEIS A363004<span class="sr-only"> (opens in new tab)</span></a></span> <span class="loc">Number theory</span></span>
           <span class="when">Jul&nbsp;2026</span>
           <span class="line"><span class="lead">Computed a new term</span> in a sequence tied to Gilbreath’s conjecture, an unsolved problem about prime&nbsp;numbers.</span>
         </summary>
         <div class="body">
           <p>Take the primes, write the gaps between neighbors, then the gaps between those gaps, and so on. Gilbreath’s conjecture says every row starts with 1. It’s been checked for hundreds of billions of rows but never proved.</p>
           <p>A363004 counts how many sequences of distinct numbers have the same all-ones pattern. I wrote the search that found the 12th term, 9,290,399,173, and the OEIS now credits it to me.</p>
-          <p class="meta">Python · <a href="https://oeis.org/A363004" target="_blank" rel="noopener">Entry<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+          <p class="meta">Python</p>
         </div>
       </details></li>
       <li class="row xp"><details>
         <summary>
-          <span class="ttl"><span class="co">bigred.network</span> <span class="loc">Cornell Armada</span></span>
+          <span class="ttl"><span class="co"><a class="org" href="https://www.bigred.network/" target="_blank" rel="noopener">bigred.network<span class="sr-only"> (opens in new tab)</span></a></span> <span class="loc">Cornell Armada</span></span>
           <span class="when">Jan&nbsp;2026</span>
           <span class="line"><span class="lead">A directory of 65 Cornell founders and builders</span>. Every member gets reviewed by&nbsp;hand.</span>
         </summary>
         <div class="body">
           <p>Built bigred.network, the directory of Cornell’s founders, builders and operators, as part of Cornell Armada, a YC-backed founder community. 65 members as of Oct 2026.</p>
           <p>Features member filtering and a network visualization.</p>
-          <p class="meta">React · TypeScript · <a href="https://www.bigred.network/" target="_blank" rel="noopener">Site<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a></p>
+          <p class="meta">React · TypeScript</p>
         </div>
       </details></li>
       <!-- Project Dactyl (AI-integrated ring) returns here, by date, once it has a sentence, a date and a link. -->
@@ -788,7 +793,7 @@
   </section>
 
   <section aria-labelledby="writing">
-    <h2 class="head" id="writing"><span class="idx">04</span> · WRITING</h2>
+    <h2 class="head" id="writing">Writing</h2>
     <p class="note">Everything here is my own writing. None of it is AI-generated.</p>
     <p class="kicker kicker--sub">Investment memos</p>
     <p class="memo-empty">First memos coming soon.</p>
@@ -803,7 +808,7 @@
   </section>
 
   <section aria-labelledby="off-the-clock">
-    <h2 class="head" id="off-the-clock"><span class="idx">05</span> · WHEN I’M NOT WORKING</h2>
+    <h2 class="head" id="off-the-clock">When I’m not working</h2>
     <ul role="list">
       <li class="row xp"><details>
         <summary>
@@ -1336,7 +1341,7 @@ void main(){
 <details class="typepick">
   <summary>Typeface &amp; wording · mockup only</summary>
   <div class="opts" role="group" aria-label="Typeface pairing">
-    <button type="button" data-font="current">Current</button>
+    <button type="button" data-font="current">Geist (Ashton)</button>
     <button type="button" data-font="instrument">Instrument</button>
     <button type="button" data-font="geist">Geist</button>
     <button type="button" data-font="plex">IBM Plex</button>
@@ -1368,8 +1373,8 @@ void main(){
 <script>
 (() => {
   const root = document.documentElement, q = new URLSearchParams(location.search);
-  const DEF_CASE = { current: 'upper', instrument: 'mixed', geist: 'mixed', plex: 'mixed', editorial: 'mixed', swiss: 'mixed', schibsted: 'upper', manrope: 'mixed' };
-  let font = q.get('font') || 'manrope', kase = q.get('case') || DEF_CASE[font] || 'upper';
+  const DEF_CASE = { current: 'mixed', instrument: 'mixed', geist: 'mixed', plex: 'mixed', editorial: 'mixed', swiss: 'mixed', schibsted: 'upper', manrope: 'mixed' };
+  let font = q.get('font') || 'current', kase = q.get('case') || DEF_CASE[font] || 'upper';
   let copy = root.dataset.copy === 'hari' ? 'hari' : 'panel';
   let asks = root.dataset.asks === 'hide' ? 'hide' : 'show';
   let mtn = root.dataset.mtn === 'behind' ? 'behind' : 'right';

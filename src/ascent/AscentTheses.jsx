@@ -3,14 +3,10 @@ import { ArrowUpRight } from 'lucide-react';
 import SubShell from './SubShell';
 import { PRINCIPLES, PUBLISHED_THESES } from './data';
 import { useUnifiedFeed } from '../hooks/useUnifiedFeed';
+import { HIDDEN_POST_SLUGS } from '../blog/hidden';
 
-const thesisLink = (
-  <Link to="/thesis" data-hot className="asc-link" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, color: 'var(--amber)', fontStyle: 'normal' }}>
-    Investment thesis <ArrowUpRight size={16} />
-  </Link>
-);
-
-const isEssay = (it) => it.source === 'blog' && it.internalSlug;
+// Hidden posts keep working at their URL but stay out of this list.
+const isEssay = (it) => it.source === 'blog' && it.internalSlug && !HIDDEN_POST_SLUGS.includes(it.internalSlug);
 
 // Shared row body for essays and Medium theses; `kind` stacks under the date.
 function FeedRow({ date, title, kind }) {
@@ -54,7 +50,6 @@ export default function AscentTheses() {
         <div className="asc-col asc-principles">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
             <span className="asc-mono asc-amber">Me in 10 bullet points</span>
-            {thesisLink}
           </div>
           <ol style={{ marginTop: 12, listStyle: 'none', padding: 0 }}>
             {PRINCIPLES.map((p, i) => (

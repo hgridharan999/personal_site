@@ -1,0 +1,40 @@
+import { Link } from 'react-router-dom';
+
+import { NBSP, WRITING } from './content';
+
+/** One essay: the title on the left, the month on the right, the whole row is the link. */
+function EssayRow({ essay }) {
+  return (
+    <li className="row row--link">
+      <Link className="rl rl--essay" to={`/blog/${essay.slug}`}>
+        <span className="et"><span className="lab co">{essay.title}</span></span>
+        <span className="val"><time dateTime={essay.date}>{essay.when}</time></span>
+      </Link>
+    </li>
+  );
+}
+
+/** Writing: the honesty note, memos (none yet), and the essay list ending in the theses link. */
+export default function WritingSection() {
+  const { id, title, note, memos, essaysLabel, essays, thesesLink } = WRITING;
+  return (
+    <section aria-labelledby={id}>
+      <h2 className="head" id={id}>{title}</h2>
+      <p className="note">{note}</p>
+      <h3 className="kicker kicker--sub">{memos.label}</h3>
+      <p className="memo-empty">{memos.empty}</p>
+      <h3 className="kicker kicker--sub">{essaysLabel}</h3>
+      <ul role="list" className="theses-more essays">
+        {essays.map((essay) => <EssayRow key={essay.slug} essay={essay} />)}
+        <li className="row row--link">
+          <Link className="rl" to={thesesLink.href}>
+            <span className="lab co">
+              {thesesLink.label}
+              <span aria-hidden="true">{NBSP}→</span>
+            </span>
+          </Link>
+        </li>
+      </ul>
+    </section>
+  );
+}

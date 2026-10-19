@@ -1,8 +1,81 @@
 {
+  "redirects": [
+    {
+      "source": "/climbing",
+      "destination": "/hiking",
+      "statusCode": 301
+    },
+    {
+      "source": "/blog",
+      "destination": "/theses",
+      "statusCode": 301
+    },
+    {
+      "source": "/ascent/hiking",
+      "destination": "/hiking",
+      "statusCode": 301
+    },
+    {
+      "source": "/ascent/theses",
+      "destination": "/theses",
+      "statusCode": 301
+    },
+    {
+      "source": "/work",
+      "destination": "/",
+      "statusCode": 301
+    },
+    {
+      "source": "/projects",
+      "destination": "/",
+      "statusCode": 301
+    },
+    {
+      "source": "/thesis",
+      "destination": "/",
+      "statusCode": 301
+    },
+    {
+      "source": "/trailsense",
+      "destination": "/",
+      "statusCode": 301
+    },
+    {
+      "source": "/ascent",
+      "destination": "/",
+      "statusCode": 301
+    },
+    {
+      "source": "/ascent/:path*",
+      "destination": "/",
+      "statusCode": 301
+    },
+    {
+      "source": "/Gridharan_Hari_Resume.pdf",
+      "destination": "/Hari_Gridharan_Resume.pdf",
+      "statusCode": 301
+    },
+    {
+      "source": "/resume.pdf",
+      "destination": "/Hari_Gridharan_Resume.pdf",
+      "statusCode": 301
+    }
+  ],
   "rewrites": [
     {
       "source": "/((?!api/).*)",
       "destination": "/"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/fonts/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     }
   ]
 }

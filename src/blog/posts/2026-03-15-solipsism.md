@@ -1,5 +1,5 @@
 ---
-title: "Solipsism and Why You Should Take Every Risk in the World"
+title: "Solipsism and the Case for Taking More Risks"
 date: "2026-03-15"
 slug: "solipsism-take-every-risk"
 description: "What if no one around you is actually real? And why that might be the best reason to stop holding yourself back."

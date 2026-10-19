@@ -1,0 +1,318 @@
+/* Homepage styles, ported from concepts/v-refined.
+   Every rule lives under the .hm root, or under html.hm-page for the document itself, so
+   generic names like .row, .top and .btn cannot collide with Tailwind or with other pages.
+   Keyframes and SVG ids carry an hm- prefix for the same reason. The ending's rules
+   (water band, footer) live in band/band.css. */
+
+/* ---------- The document, while the homepage is mounted ----------
+   src/index.css gives the whole site a dark body, a noise layer, a custom cursor,
+   backface-visibility and themed scrollbars. These rules undo each one. useHomeDocument adds
+   hm-page to <html>, and a script in index.html adds it before first paint on "/". */
+html.hm-page { background:#fff; color-scheme:light; text-size-adjust:100%; scrollbar-color:rgba(0,0,0,.3) #fff; }
+html.hm-page body { background:#fff; color:#1A1A18; font-family:"Geist",ui-sans-serif,system-ui,sans-serif; overflow-x:visible; }
+html.hm-page body::before { content:none; }
+html.hm-page *, html.hm-page *::before, html.hm-page *::after { cursor:revert; -webkit-backface-visibility:visible; backface-visibility:visible; }
+html.hm-page ::-webkit-scrollbar-track { background:#fff; border:0; }
+html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-color:#fff; }
+
+/* ---------- Tokens and base ---------- */
+.hm {
+  --bg: #FFFFFF;
+  --cream: #1A1A18;                      /* ink: headings and names */
+  --tan: #0F7DAA;                        /* iceberg blue, 4.6:1 on white */
+  --soft: #6E6D68;                       /* body copy, warm grey, 5.2:1 on white */
+  --muted: #75746F;                      /* dates, labels, 4.7:1 on white */
+  --rule: rgba(0, 0, 0, 0.10);           /* ledger hairline */
+  --rule-head: rgba(0, 0, 0, 0.22);
+  --rule-hover: rgba(0, 0, 0, 0.28);
+  --ul: rgba(0, 0, 0, 0.40);             /* link underline */
+  --ul-tan: rgba(15, 125, 170, 0.55);
+  --outline: rgba(0, 0, 0, 0.55);
+  --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --serif: "Instrument Serif", "Times New Roman", serif;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --gutter: 16px;
+  --datew: 6.25rem;                      /* fixed date column: never squeezes the title */
+  --tri-off: 14px;                       /* benchmark marker distance left of the row */
+
+  margin: 0;
+  background: var(--bg);
+  color: var(--cream);
+  font: 400 15px/1.5 var(--sans);
+  font-kerning: normal;
+  letter-spacing: -0.2px;
+  -webkit-font-smoothing: antialiased;
+  overflow-wrap: break-word;
+}
+.hm *, .hm *::before, .hm *::after { box-sizing: border-box; }
+.hm h1, .hm h2, .hm h3, .hm p, .hm ul { margin: 0; padding: 0; }
+.hm ul { list-style: none; }
+.hm ::selection, .hm::selection { background: var(--tan); color: var(--bg); }
+.hm a { color: inherit; text-decoration: underline; text-decoration-color: var(--ul); text-decoration-thickness: 1px; text-underline-offset: 0.22em; }
+.hm a:focus-visible { outline: 2px solid var(--tan); outline-offset: 3px; border-radius: 2px; }
+.hm .sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+.hm .nw { white-space: nowrap; }
+
+.hm .wrap { width: 100%; max-width: calc(680px + var(--gutter) * 2); margin-inline: auto; padding-inline: var(--gutter); }
+
+/* ---------- The hiker mark ----------
+   The live site's own hiker art, revealed by three thick masked strokes. Fully drawn with CSS
+   animations off; the draw-in is in the motion block at the end. */
+.hm .hiker { display: block; height: var(--hiker-h, 132px); width: auto; aspect-ratio: 294 / 480; overflow: visible; }
+.hm .hiker .ink { fill: none; stroke: #fff; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
+
+/* ---------- Header plate: the live site's mountain, drawn in like a sketch ---------- */
+.hm .plate { position: relative; margin: 0 calc(var(--gutter) * -1); }
+.hm .scene { display: block; width: 100%; height: auto; overflow: hidden; opacity: 0.5; }
+/* the line art was drawn cream-on-black: render it as black ink on white */
+.hm .scene image, .hm .hiker image { filter: brightness(0); }
+.hm .scene--strip { aspect-ratio: 1280 / 250; }
+.hm .scene--peak { display: none; aspect-ratio: 560 / 250; }
+.hm .plate::after { content: ""; position: absolute; inset: -1px 0; background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 50%, var(--bg) 97%); pointer-events: none; }
+.hm .scene .ink { fill: none; stroke: #fff; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
+
+/* ---------- Header: hiker logo beside the lockup, tucked into the foot of the plate ---------- */
+.hm .top {
+  --hiker-h: 92px;
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: "mark name" "aff aff" "seek seek" "act act" "lines lines";
+  column-gap: 16px; align-items: center; margin-top: -22px;
+}
+.hm .top .hiker { grid-area: mark; transform: scaleX(-1); } /* face the peak: he climbs the strip behind the name */
+.hm .name {
+  grid-area: name;
+  display: flex; flex-direction: column; align-items: flex-start;
+  font: 600 clamp(28px, 7.5vw, 36px)/1 var(--sans); letter-spacing: -0.035em;
+}
+.hm .hari { font: italic 400 1.2em/0.95 var(--serif); letter-spacing: 0; color: var(--tan); }
+.hm .sur { white-space: nowrap; }
+.hm .aff { grid-area: aff; margin-top: 12px; color: var(--soft); }
+.hm .aff-a { display: block; }
+.hm .aff-sep { display: none; }
+.hm .seek { grid-area: seek; margin-top: 8px; color: var(--tan); font-weight: 500; text-wrap: pretty; }
+.hm .seek-intro { color: var(--cream); font-weight: 400; }
+.hm .act { grid-area: act; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 12px; }
+.hm .btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 40px; padding: 0 16px; border: 1px solid transparent; border-radius: 4px;
+  font: 500 14px/1 var(--sans); text-decoration: none;
+}
+.hm .btn-fill { background: var(--tan); border-color: var(--tan); color: var(--bg); }
+.hm .btn-line { border-color: var(--outline); color: var(--cream); }
+.hm .soc { display: inline-flex; align-items: center; margin-left: -8px; }
+.hm .soc a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 8px; font-size: 14px; color: var(--soft); }
+.hm .soc .dot { color: var(--muted); }
+
+/* the dated "now" line and the toolkit */
+.hm .ledger-lines { grid-area: lines; margin-top: 12px; border-top: 1px solid var(--rule); }
+.hm .ledger-lines p {
+  padding: 6px 0 7px; border-bottom: 1px solid var(--rule);
+  font: 400 13px/1.55 var(--sans); color: var(--soft); text-wrap: pretty;
+}
+.hm .ledger-lines .k { font-weight: 500; color: var(--cream); }
+
+/* ---------- Sections: spacing and the label's hairline do the dividing ---------- */
+.hm main > section { padding-top: 20px; }
+.hm main > section:first-child { padding-top: 18px; }
+.hm .head {
+  padding-bottom: 6px; border-bottom: 1px solid var(--rule-head);
+  font: 500 15px/1.5 var(--sans); letter-spacing: -0.2px; color: var(--cream);
+  scroll-margin-top: 16px;
+}
+
+/* ---------- Ledger rows ---------- */
+.hm .row {
+  position: relative; display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--datew);
+  grid-template-areas: "ttl when" "line line";
+  column-gap: 16px; align-items: baseline; padding: 7px 0 8px;
+}
+.hm .row + .row { border-top: 1px solid var(--rule); }
+.hm .ttl { grid-area: ttl; font: 500 15px/1.4 var(--sans); color: var(--cream); text-wrap: balance; }
+.hm .ttl .role { font-weight: 400; }
+.hm a.org {
+  color: inherit; text-decoration-line: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;
+  text-decoration-color: rgba(26, 26, 24, 0.35); transition: color 0.2s, text-decoration-color 0.2s;
+}
+.hm .line a.org, .hm .body a.org { text-decoration-color: rgba(110, 109, 104, 0.45); }
+.hm .loc { display: block; margin-top: 2px; font: 400 13px/1.45 var(--sans); color: var(--muted); }
+.hm .when {
+  grid-area: when; text-align: right; white-space: nowrap; color: var(--muted);
+  font: 400 13px/1.45 var(--sans); font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1;
+}
+.hm .line { grid-area: line; margin-top: 0; line-height: 1.45; color: var(--soft); text-wrap: pretty; }
+.hm .lead { color: var(--tan); font-weight: 500; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+/* ---------- Expandable rows ----------
+   Title line (.xp-head: role, company link, date) on top, then <details> whose summary is the
+   one-liner and whose body opens below. Links cannot live inside a summary, so the title line sits
+   outside it; useRowMotion forwards mouse clicks on it to the summary, hence the pointer cursor. */
+.hm .row.xp { display: block; padding: 0; }
+.hm .xp-head {
+  display: grid; grid-template-columns: minmax(0, 1fr) var(--datew);
+  grid-template-areas: "ttl when";
+  column-gap: 16px; align-items: baseline; padding: 7px 0 0; cursor: pointer;
+}
+.hm .xp summary { display: block; padding: 0 0 8px; list-style: none; cursor: pointer; border-radius: 2px; }
+.hm .xp summary::-webkit-details-marker { display: none; }
+.hm .xp summary:focus-visible { outline: 2px solid var(--tan); outline-offset: 4px; }
+.hm .xp .ttl { display: block; }
+.hm .xp .when, .hm .xp .line { display: block; }
+/* the open/close mark: a small plus after the company that turns into a cross when the row opens.
+   Decorative (aria-hidden); the open state comes from the details inside the same row. */
+.hm .xp-mark {
+  display: inline-block; width: 9px; height: 9px; margin-left: 9px; vertical-align: 0.06em;
+  background: linear-gradient(var(--tan), var(--tan)) center / 100% 1.5px no-repeat,
+              linear-gradient(var(--tan), var(--tan)) center / 1.5px 100% no-repeat;
+}
+.hm .xp:has(details[open]) .xp-mark { transform: rotate(45deg); }
+/* once the pointer leaves an open row, its cross fades away; hovering or focusing the row brings it back */
+@media (hover: hover) and (pointer: fine) {
+  .hm .xp:has(details[open]):not(:hover):not(:has(:focus-visible)) .xp-mark { opacity: 0; }
+}
+/* Windows high contrast strips background images, so the mark is redrawn in the system text colour */
+@media (forced-colors: active) {
+  .hm .xp-mark {
+    forced-color-adjust: none;
+    background: linear-gradient(CanvasText, CanvasText) center / 100% 1.5px no-repeat,
+                linear-gradient(CanvasText, CanvasText) center / 1.5px 100% no-repeat;
+  }
+}
+.hm .note { margin: 10px 0 0; font-size: 14px; color: var(--soft); }
+.hm .memo-empty { margin: 4px 0 0; padding: 7px 0 8px; border-top: 1px solid var(--rule); font-size: 14px; color: var(--muted); }
+.hm .xp .body {
+  margin: -2px 0 12px; padding: 2px 0 2px 14px;
+  border-left: 1px solid rgba(15, 125, 170, 0.45);
+  font-size: 14px; line-height: 1.55; color: var(--soft);
+}
+.hm .xp .body p + p { margin-top: 6px; }
+.hm .xp .meta { font: 400 13px/1.6 var(--sans); color: var(--muted); }
+.hm .xp .meta a { color: var(--cream); }
+
+/* ---------- Writing: a quiet sub-label, then essays with the date on the right ---------- */
+.hm .kicker { margin-top: 10px; font: 500 13px/1.5 var(--sans); color: var(--muted); }
+.hm .kicker--sub { margin-top: 18px; }
+.hm .theses-more { margin-top: 14px; border-top: 1px solid var(--rule); }
+.hm .theses-more.essays { margin-top: 4px; }
+.hm .rl.rl--essay { align-items: flex-start; padding: 6px 0 7px; }
+.hm .rl.rl--essay .et { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hm .rl.rl--essay .val { text-decoration: none; white-space: nowrap; line-height: 22px; }
+
+/* label / value rows (essay links) */
+.hm .row--link { display: block; padding: 0; }
+.hm .rl {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  min-height: 36px; padding: 6px 0 7px; text-decoration: none;
+}
+.hm .rl .lab { font-weight: 500; color: var(--cream); }
+.hm .rl .val {
+  text-align: right; overflow-wrap: anywhere; color: var(--muted);
+  font: 400 13px/1.5 var(--sans);
+  text-decoration: underline; text-decoration-color: var(--ul); text-decoration-thickness: 1px; text-underline-offset: 0.25em;
+}
+
+/* ---------- Phones: the date moves under the title so titles stop wrapping ---------- */
+@media (max-width: 599px) {
+  .hm .xp-head { grid-template-columns: minmax(0, 1fr); grid-template-areas: "ttl" "when"; }
+  .hm .row--plain { grid-template-columns: minmax(0, 1fr); grid-template-areas: "ttl" "when" "line"; }
+  .hm .xp .when, .hm .row--plain .when { text-align: left; margin-top: 1px; }
+  .hm .xp-mark { width: 12px; height: 12px; }
+}
+
+/* ---------- Wider viewports ----------
+   From 600px the mountain moves to the right of the lockup. This block comes after the base
+   rules it overrides (.plate, .top, the scenes), so it wins on order, not on specificity. */
+@media (min-width: 600px) {
+  .hm { --datew: 8.75rem; } /* fits "Sep 2025 – Jan 2026" */
+  .hm header.wrap { position: relative; }
+  .hm .scene--strip { display: none; }
+  .hm .scene--peak { display: block; }
+  .hm .plate { position: absolute; top: -10px; right: var(--gutter); width: 40%; margin: 0; padding: 0; }
+  .hm .plate::after {
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 38%, var(--bg) 80%),
+                linear-gradient(to right, var(--bg) 0%, rgba(255, 255, 255, 0) 35%);
+  }
+  .hm .top {
+    grid-template-areas: "mark name" "mark aff" "seek seek" "act act" "lines lines";
+    column-gap: 24px; margin-top: 0; padding-top: 22px;
+  }
+  .hm .name { flex-direction: row; align-items: baseline; column-gap: 0.2em; align-self: end; }
+  .hm .aff { margin-top: 8px; align-self: start; text-wrap: balance; }
+  .hm .aff-a { display: inline; }
+  .hm .aff-sep { display: inline; }
+  .hm .seek { margin-top: 6px; } /* one line beside the column */
+  .hm .act { margin-top: 10px; }
+  .hm .loc { display: inline-block; margin: 0 0 0 0.7em; }
+}
+@media (min-width: 768px) {
+  .hm { --gutter: 32px; --tri-off: 26px; }
+}
+
+/* ---------- Desktop pointers only: benchmark marker, company name, hairline ---------- */
+@media (hover: hover) and (pointer: fine) {
+  .hm .row:hover::before, .hm .row:has(:focus-visible)::before {
+    content: ""; position: absolute; left: calc(var(--tri-off) * -1 + 4px); top: 10px;
+    width: 2px; height: 16px; pointer-events: none; border-radius: 1px;
+    background: var(--tan);
+  }
+  .hm .row:hover, .hm .row:has(:focus-visible) { border-top-color: var(--rule-hover); }
+  .hm .row:hover + .row, .hm .row:has(:focus-visible) + .row { border-top-color: var(--rule-hover); }
+  .hm .row:hover .co, .hm .row:has(:focus-visible) .co { color: var(--tan); }
+  .hm a:hover { color: var(--tan); text-decoration-color: var(--tan); }
+  .hm a.org:hover { color: var(--cream); text-decoration-color: currentColor; }
+  .hm .line a.org:hover, .hm .body a.org:hover { color: var(--soft); }
+  .hm .rl:hover { color: inherit; }
+  .hm .rl:hover .val { color: var(--tan); text-decoration-color: var(--tan); }
+  .hm .btn-fill:hover { background: #0B6A93; border-color: #0B6A93; color: var(--bg); }
+  .hm .btn-line:hover { border-color: var(--tan); color: var(--tan); }
+}
+
+/* ---------- All motion lives here ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  /* The plate draws first (ridge left to right, then the slopes), then the hiker walks in. */
+  .hm .scene .ink { animation: hm-scene-ink 0.5s cubic-bezier(0.65, 0, 0.35, 1) both; }
+  /* right-side mountain: drawn alongside the hiker, finishing as he does */
+  .hm .scene .m1 { animation-delay: 0.3s; animation-duration: 0.3s; }
+  .hm .scene .m2 { animation-delay: 0.55s; animation-duration: 0.4s; }
+  .hm .scene .m3 { animation-delay: 0.9s; animation-duration: 0.4s; }
+  .hm .scene .m4 { animation-delay: 1.25s; animation-duration: 0.4s; }
+  .hm .scene .i1 { animation-duration: 0.6s; }
+  .hm .scene .i2 { animation-delay: 0.2s; }
+  .hm .scene .i3 { animation-delay: 0.4s; }
+  .hm .hiker .ink { animation: hm-hiker-ink 0.45s cubic-bezier(0.65, 0, 0.35, 1) both; }
+  .hm .hiker .ink-1 { animation-duration: 0.3s; animation-delay: 0.45s; }
+  .hm .hiker .ink-2 { animation-delay: 0.75s; }
+  .hm .hiker .ink-3 { animation-delay: 1.2s; }
+
+  /* Opening a row: the plus turns, the trail line draws down and the text follows it.
+     The motion runs only while .is-anim is on the row: useRowMotion adds it on a real click and
+     removes it ~0.7s later, which cancels any transition or animation still running. A row opened
+     any other way (find-in-page, a script), or one whose timeline is paused (a hidden tab, a
+     headless capture), is drawn in its final state, text visible, with no hidden first frame. */
+  .hm .xp-mark { transition: transform 0.3s var(--ease), opacity 0.2s var(--ease); }
+  .hm .xp details.is-anim[open] .body { animation: hm-trail-open 0.42s var(--ease) both; }
+  .hm .xp details.is-anim[open] .body > * { animation: hm-trail-text 0.42s var(--ease) both; }
+  .hm .xp details.is-anim[open] .body > :nth-child(2) { animation-delay: 0.05s; }
+  .hm .xp details.is-anim[open] .body > :nth-child(3) { animation-delay: 0.1s; }
+  /* Where supported, the row's height also eases open and closed instead of jumping. */
+  @supports (interpolate-size: allow-keywords) {
+    .hm { interpolate-size: allow-keywords; }
+    /* transition: none at rest, so removing .is-anim cancels a stalled transition (the initial "all" would keep it) */
+    .hm .xp details::details-content { height: 0; overflow: clip; transition: none; }
+    .hm .xp details[open]::details-content { height: auto; }
+    .hm .xp details.is-anim::details-content { transition: height 0.38s var(--ease), content-visibility 0.38s allow-discrete; }
+  }
+  .hm a, .hm .btn, .hm .co, .hm .row, .hm .rl .val { transition: color 0.2s var(--ease), background-color 0.2s var(--ease), border-color 0.2s var(--ease), text-decoration-color 0.2s var(--ease); }
+  @media (hover: hover) and (pointer: fine) {
+    .hm .row:hover::before, .hm .row:has(:focus-visible)::before { animation: hm-tri-in 0.25s var(--ease) both; }
+  }
+}
+@keyframes hm-hiker-ink { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes hm-scene-ink { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes hm-trail-open { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes hm-trail-text { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@keyframes hm-tri-in { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; transform: none; } }

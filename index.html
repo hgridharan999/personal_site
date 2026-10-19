@@ -2,18 +2,103 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/mountain.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Hari Gridharan builds AI products, founder tools, and growth experiments from Cornell. A Colorado climber with a story-first portfolio and a bias toward building things that feel personal, useful, and a little obsessive." />
+    <title>Hari Gridharan · Cornell Dyson ’29</title>
+    <meta name="description" content="Cornell Dyson ’29 and Dyson Scholar, CEO and co-founder of Loadstone Labs. Seeking Summer 2027 internships in strategy, investing, business analysis and product." />
+    <meta name="author" content="Hari Gridharan" />
     <meta name="theme-color" content="#0B0A0A" />
+    <!-- Pre-paint, homepage only: style the document white and start the mountain
+         download before React mounts, so "/" never flashes the dark site. Other
+         routes keep the dark theme-color above. useHomeDocument() does the same
+         on client-side navigation. -->
+    <script>
+      (function () {
+        if (location.pathname !== '/') return;
+        document.documentElement.classList.add('hm-page');
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', '#FFFFFF');
+        var preload = document.createElement('link');
+        preload.rel = 'preload';
+        preload.as = 'image';
+        preload.href = '/mountain-plate.webp';
+        preload.type = 'image/webp';
+        preload.setAttribute('fetchpriority', 'high');
+        document.head.appendChild(preload);
+        // the homepage's fonts, so the first paint is already in Geist (no re-wrap)
+        ['/fonts/geist-latin.woff2', '/fonts/instrument-serif-italic-latin.woff2'].forEach(function (href) {
+          var font = document.createElement('link');
+          font.rel = 'preload';
+          font.as = 'font';
+          font.type = 'font/woff2';
+          font.href = href;
+          font.crossOrigin = 'anonymous';
+          document.head.appendChild(font);
+        });
+      })();
+    </script>
     <meta name="robots" content="index,follow" />
-    <title>Hari Gridharan</title>
+    <!-- No canonical link or Open Graph URL here: this file is served for every route. -->
 
-    <!-- Google Fonts — editorial serif system + handwritten signature accent -->
+    <!-- Site icon: the hiker on a dark tile -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Link previews -->
+    <meta property="og:type" content="profile" />
+    <meta property="og:site_name" content="Hari Gridharan" />
+    <meta property="og:title" content="Hari Gridharan · Cornell Dyson ’29" />
+    <meta property="og:description" content="Cornell Dyson ’29 and Dyson Scholar, CEO and co-founder of Loadstone Labs. Seeking Summer 2027 internships in strategy, investing, business analysis and product." />
+    <meta property="og:image" content="https://www.harigridharan.com/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Hari Gridharan, Cornell Dyson ’29 and Dyson Scholar, beside his hiker drawing. Seeking Summer 2027 roles in strategy, investing, BA and PM, NYC / SF." />
+    <meta property="og:locale" content="en_US" />
+    <meta property="profile:first_name" content="Hari" />
+    <meta property="profile:last_name" content="Gridharan" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Hari Gridharan · Cornell Dyson ’29" />
+    <meta name="twitter:description" content="Cornell Dyson ’29 and Dyson Scholar, CEO and co-founder of Loadstone Labs. Seeking Summer 2027 internships in strategy, investing, business analysis and product." />
+    <meta name="twitter:image" content="https://www.harigridharan.com/og-image.png" />
+    <meta name="twitter:image:alt" content="Hari Gridharan, Cornell Dyson ’29 and Dyson Scholar, beside his hiker drawing. Seeking Summer 2027 roles in strategy, investing, BA and PM, NYC / SF." />
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "@id": "https://www.harigridharan.com/#person",
+      "name": "Hari Gridharan",
+      "givenName": "Hari",
+      "familyName": "Gridharan",
+      "url": "https://www.harigridharan.com/",
+      "image": "https://www.harigridharan.com/og-image.png",
+      "description": "Cornell Dyson ’29 and Dyson Scholar, CEO and co-founder of Loadstone Labs. Seeking Summer 2027 internships in strategy, investing, business analysis and product.",
+      "email": "mailto:hg532@cornell.edu",
+      "affiliation": {
+        "@type": "CollegeOrUniversity",
+        "name": "Cornell University",
+        "url": "https://www.cornell.edu/"
+      },
+      "worksFor": {
+        "@type": "Organization",
+        "name": "Loadstone Labs",
+        "url": "https://loadstonelabs.com/"
+      },
+      "sameAs": [
+        "https://www.linkedin.com/in/harigridharan1/",
+        "https://github.com/hgridharan999",
+        "https://oeis.org/wiki/User:Hari_Gridharan"
+      ]
+    }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Site v2 homepage: Geist + Instrument Serif italic are self-hosted (src/fonts.css, public/fonts/)
+         and preloaded on "/" by the pre-paint script above. -->
+    <!-- Older pages still routed (hiking, theses, posts, climate search, legal, /me) need these -->
+    <!-- Editorial serif system + handwritten signature accent -->
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
-    <!-- "The Ascent" redesign — grotesk display + mono + editorial serif accent -->
+    <!-- "The Ascent": grotesk display + mono + editorial serif accent -->
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   </head>
   <body>

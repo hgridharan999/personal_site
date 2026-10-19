@@ -1,21 +1,21 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import ClimateSearchPage from './pages/ClimateSearchPage';
-import AscentTrailSense from './ascent/AscentTrailSense';
-import HikerHeroScene from './components/HikerHeroScene';
-import AscentPage from './ascent/AscentPage';
-import AscentWork from './ascent/AscentWork';
-import AscentProjects from './ascent/AscentProjects';
-import AscentHiking from './ascent/AscentHiking';
-import AscentTheses from './ascent/AscentTheses';
-import AscentThesis from './ascent/AscentThesis';
-import AscentPost from './ascent/AscentPost';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import HomePage from './home/HomePage';
 import CookieConsentBanner from './components/CookieConsentBanner';
-import LegalPage from './pages/LegalPage';
-import LoginPage from './private/LoginPage';
-import PrivateHome from './private/PrivateHome';
-import PrivateShell from './private/PrivateShell';
-import RequireAuth from './private/RequireAuth';
+import ScrollToTop from './components/ScrollToTop';
+
+// Everything but the homepage loads on demand, so a visitor to "/" downloads only
+// the homepage: the old pages carry gsap, framer-motion, zdog, lenis and markdown,
+// and the private shell carries ascent.css and private.css.
+const PrivateShell = lazy(() => import('./private/PrivateShell'));
+const RequireAuth = lazy(() => import('./private/RequireAuth'));
+const AscentHiking = lazy(() => import('./ascent/AscentHiking'));
+const AscentTheses = lazy(() => import('./ascent/AscentTheses'));
+const AscentPost = lazy(() => import('./ascent/AscentPost'));
+const ClimateSearchRoute = lazy(() => import('./pages/ClimateSearchRoute'));
+const LegalPage = lazy(() => import('./pages/LegalPage'));
+const LoginPage = lazy(() => import('./private/LoginPage'));
+const PrivateHome = lazy(() => import('./private/PrivateHome'));
 
 // Trainer code is lazy-loaded: public visitors never download it.
 const TrainerPage = lazy(() => import('./private/trainers/TrainerPage'));
@@ -38,23 +38,23 @@ const privateFallback = (
 function AnimatedRoutes() {
   const location = useLocation();
   return (
+    <Suspense fallback={null}>
     <Routes location={location}>
-      {/* The Ascent redesign is now the site. */}
-      <Route path="/" element={<AscentPage />} />
-      <Route path="/work" element={<AscentWork />} />
-      <Route path="/projects" element={<AscentProjects />} />
+      {/* Site v2: a single homepage. The old Ascent pages it still links to
+          (hiking, theses, posts, climate search) keep their dark look for now;
+          the rest (work, projects, thesis, trailsense) are unrouted but their
+          files stay on disk, and vercel.json 301s their old URLs. */}
+      <Route path="/" element={<HomePage />} />
       <Route path="/hiking" element={<AscentHiking />} />
       <Route path="/theses" element={<AscentTheses />} />
-      <Route path="/thesis" element={<AscentThesis />} />
       <Route path="/blog/:slug" element={<AscentPost />} />
 
-      <Route path="/trailsense" element={<AscentTrailSense />} />
-      <Route path="/climate-search" element={<div className="asc-climate"><ClimateSearchPage /></div>} />
+      <Route path="/climate-search" element={<ClimateSearchRoute />} />
       <Route path="/privacy" element={<LegalPage />} />
       <Route path="/terms" element={<LegalPage />} />
       <Route path="/legal" element={<LegalPage />} />
 
-      {/* Private area — reached via the hidden link on the home page. */}
+      {/* Private area: reachable by URL only (no public page links to it). */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/me" element={<RequireAuth>{({ logout }) => <PrivateHome onLogout={logout} />}</RequireAuth>} />
       {/* Poker has its own pages; these must come before the generic /me/:trainer route. */}
@@ -83,31 +83,18 @@ function AnimatedRoutes() {
         element={<RequireAuth>{() => <Suspense fallback={privateFallback}><GameDetail /></Suspense>}</RequireAuth>}
       />
 
-      {/* Legacy aliases — same components at old paths. */}
-      <Route path="/climbing" element={<AscentHiking />} />
-      <Route path="/blog" element={<AscentTheses />} />
-      <Route path="/ascent" element={<AscentPage />} />
-      <Route path="/ascent/work" element={<AscentWork />} />
-      <Route path="/ascent/projects" element={<AscentProjects />} />
-      <Route path="/ascent/hiking" element={<AscentHiking />} />
-      <Route path="/ascent/theses" element={<AscentTheses />} />
-      <Route path="/ascent/thesis" element={<AscentThesis />} />
+      {/* Unknown and removed paths go home. Vercel 301s the removed ones before
+          the SPA loads; this catches client-side navigation and anything else. */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   );
-}
-
-// Backgrounds: the storm hiker on the home page; the two still-original pages
-// keep their warm panorama backdrop; every Ascent page owns its dark background.
-function GlobalChrome() {
-  const { pathname } = useLocation();
-  if (pathname === '/' || pathname === '/ascent') return <HikerHeroScene mode="whole-site" animated={false} />;
-  return null;
 }
 
 function App() {
   return (
     <Router>
-      <GlobalChrome />
+      <ScrollToTop />
       <AnimatedRoutes />
       <CookieConsentBanner />
     </Router>
