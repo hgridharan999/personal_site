@@ -229,15 +229,17 @@ describe('homepage content: resume match', () => {
     expect(affiliation.fellowship).toBe('KKR Accelerator Scholar');
   });
 
-  it('keeps the ledger lines in order: Now, Toolkit, Coursework', () => {
-    expect(content.HEADER.lines.map((line) => line.label)).toEqual(['Now', 'Toolkit', 'Coursework']);
+  it('keeps the toolkit and coursework in one closed Skills row, not in the header', () => {
+    expect(content.HEADER.lines).toBeUndefined();
+    expect(content.SKILLS.rows).toHaveLength(1);
+    expect(content.SKILLS.rows[0].body).toHaveLength(3); // tools, methods, coursework
   });
 
   it('has the new toolkit entries and the six courses', () => {
-    const [, toolkit, coursework] = content.HEADER.lines;
-    expect(toolkit.text).toMatch(/Multi.Agent.Orchestration/); // U+2011: the hyphen never breaks the line
-    expect(toolkit.text).toMatch(/competitive.analysis/);
-    expect(coursework.text.split(/\s·\s/)).toHaveLength(6); // the dot is glued to the item before it
+    const [tools, methods, coursework] = content.SKILLS.rows[0].body;
+    expect(tools).toMatch(/Multi.Agent.Orchestration/); // U+2011: the hyphen never breaks the line
+    expect(methods).toMatch(/competitive.analysis/);
+    expect(coursework.replace(/^Coursework: /, '').split(/\s·\s/)).toHaveLength(6); // the dot is glued to the item before it
   });
 
   it('opens the Armada row, with the directory linked in its body', () => {

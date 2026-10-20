@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 
 import Ending from './band/Ending';
-import { EXPERIENCE, OFF_CLOCK, ON_CAMPUS, PROJECTS } from './content';
+import { EXPERIENCE, OFF_CLOCK, ON_CAMPUS, PROJECTS, SKILLS } from './content';
 import Header from './Header';
 import RowSection from './RowSection';
 import { useHomeDocument } from './useHomeDocument';
@@ -27,6 +27,7 @@ export default function HomePage() {
         <RowSection section={PROJECTS} />
         <WritingSection />
         <RowSection section={OFF_CLOCK} />
+        <RowSection section={SKILLS} />
       </main>
       <Ending />
     </div>

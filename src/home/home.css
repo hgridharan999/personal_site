@@ -21,7 +21,7 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
   --cream: #1A1A18;                      /* ink: headings and names */
   --tan: #0F7DAA;                        /* iceberg blue, 4.6:1 on white */
   --soft: #6E6D68;                       /* body copy, warm grey, 5.2:1 on white */
-  --muted: #75746F;                      /* dates, labels, 4.7:1 on white */
+  --muted: #6E6D68;                      /* dates and labels: the same warm grey as the copy (one grey, not two) */
   --rule: rgba(0, 0, 0, 0.10);           /* ledger hairline */
   --rule-head: rgba(0, 0, 0, 0.22);
   --rule-hover: rgba(0, 0, 0, 0.28);
@@ -79,7 +79,7 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
   --hiker-h: 92px;
   position: relative; z-index: 1;
   display: grid; grid-template-columns: auto minmax(0, 1fr);
-  grid-template-areas: "mark name" "aff aff" "seek seek" "act act" "lines lines";
+  grid-template-areas: "mark name" "aff aff" "seek seek" "act act";
   column-gap: 16px; align-items: center; margin-top: -22px;
 }
 .hm .top .hiker { grid-area: mark; transform: scaleX(-1); } /* face the peak: he climbs the strip behind the name */
@@ -99,27 +99,19 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
 .hm .btn {
   display: inline-flex; align-items: center; justify-content: center;
   min-height: 40px; padding: 0 16px; border: 1px solid transparent; border-radius: 4px;
-  font: 500 14px/1 var(--sans); text-decoration: none;
+  font: 500 15px/1 var(--sans); text-decoration: none;
 }
 .hm .btn-fill { background: var(--tan); border-color: var(--tan); color: var(--bg); }
 .hm .btn-line { border-color: var(--outline); color: var(--cream); }
 .hm .soc { display: inline-flex; align-items: center; margin-left: -8px; }
-.hm .soc a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 8px; font-size: 14px; color: var(--soft); }
+.hm .soc a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 8px; font-size: 15px; color: var(--soft); }
 .hm .soc .dot { color: var(--muted); }
 
-/* the dated "now" line and the toolkit */
-.hm .ledger-lines { grid-area: lines; margin-top: 12px; border-top: 1px solid var(--rule); }
-.hm .ledger-lines p {
-  padding: 6px 0 7px; border-bottom: 1px solid var(--rule);
-  font: 400 13px/1.55 var(--sans); color: var(--soft); text-wrap: pretty;
-}
-.hm .ledger-lines .k { font-weight: 500; color: var(--cream); }
-
-/* ---------- Sections: spacing and the label's hairline do the dividing ---------- */
-.hm main > section { padding-top: 20px; }
-.hm main > section:first-child { padding-top: 18px; }
+/* ---------- Sections: space does the dividing (no rules), so the groups read as groups ---------- */
+.hm main > section { padding-top: 52px; }
+.hm main > section:first-child { padding-top: 40px; }
 .hm .head {
-  padding-bottom: 6px; border-bottom: 1px solid var(--rule-head);
+  padding-bottom: 4px;
   font: 500 15px/1.5 var(--sans); letter-spacing: -0.2px; color: var(--cream);
   scroll-margin-top: 16px;
 }
@@ -129,10 +121,9 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
   position: relative; display: grid;
   grid-template-columns: minmax(0, 1fr) var(--datew);
   grid-template-areas: "ttl when" "line line";
-  column-gap: 16px; align-items: baseline; padding: 7px 0 8px;
+  column-gap: 16px; align-items: baseline; padding: 9px 0;
 }
-.hm .row + .row { border-top: 1px solid var(--rule); }
-.hm .ttl { grid-area: ttl; font: 500 15px/1.4 var(--sans); color: var(--cream); text-wrap: balance; }
+.hm .ttl { grid-area: ttl; font: 500 15px/1.55 var(--sans); color: var(--cream); text-wrap: balance; }
 .hm .ttl .role { font-weight: 400; }
 .hm a.org {
   color: inherit; text-decoration-line: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;
@@ -144,8 +135,9 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
   grid-area: when; text-align: right; white-space: nowrap; color: var(--muted);
   font: 400 13px/1.45 var(--sans); font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1;
 }
-.hm .line { grid-area: line; margin-top: 0; line-height: 1.45; color: var(--soft); text-wrap: pretty; }
-.hm .lead { color: var(--tan); font-weight: 500; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+.hm .line { grid-area: line; margin-top: 0; line-height: 1.55; color: var(--soft); text-wrap: pretty; }
+/* the lead is ink, not blue: the title stays the heaviest thing on the row */
+.hm .lead { color: var(--cream); font-weight: 400; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
 
 /* ---------- Expandable rows ----------
    Title line (.xp-head: role, company link, date) on top, then <details> whose summary is the
@@ -155,9 +147,9 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
 .hm .xp-head {
   display: grid; grid-template-columns: minmax(0, 1fr) var(--datew);
   grid-template-areas: "ttl when";
-  column-gap: 16px; align-items: baseline; padding: 7px 0 0; cursor: pointer;
+  column-gap: 16px; align-items: baseline; padding: 9px 0 0; cursor: pointer;
 }
-.hm .xp summary { display: block; padding: 0 0 8px; list-style: none; cursor: pointer; border-radius: 2px; }
+.hm .xp summary { display: block; padding: 0 0 9px; list-style: none; cursor: pointer; border-radius: 2px; }
 .hm .xp summary::-webkit-details-marker { display: none; }
 .hm .xp summary:focus-visible { outline: 2px solid var(--tan); outline-offset: 4px; }
 .hm .xp .ttl { display: block; }
@@ -166,10 +158,11 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
    Decorative (aria-hidden); the open state comes from the details inside the same row. */
 .hm .xp-mark {
   display: inline-block; width: 9px; height: 9px; margin-left: 9px; vertical-align: 0.06em;
-  background: linear-gradient(var(--tan), var(--tan)) center / 100% 1.5px no-repeat,
-              linear-gradient(var(--tan), var(--tan)) center / 1.5px 100% no-repeat;
+  --mark: var(--soft);                   /* grey at rest (5.2:1); blue when the row is hovered or open */
+  background: linear-gradient(var(--mark), var(--mark)) center / 100% 1.5px no-repeat,
+              linear-gradient(var(--mark), var(--mark)) center / 1.5px 100% no-repeat;
 }
-.hm .xp:has(details[open]) .xp-mark { transform: rotate(45deg); }
+.hm .xp:has(details[open]) .xp-mark { transform: rotate(45deg); --mark: var(--tan); }
 /* once the pointer leaves an open row, its cross fades away; hovering or focusing the row brings it back */
 @media (hover: hover) and (pointer: fine) {
   .hm .xp:has(details[open]):not(:hover):not(:has(:focus-visible)) .xp-mark { opacity: 0; }
@@ -182,12 +175,12 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
                 linear-gradient(CanvasText, CanvasText) center / 1.5px 100% no-repeat;
   }
 }
-.hm .note { margin: 10px 0 0; font-size: 14px; color: var(--soft); }
-.hm .memo-empty { margin: 4px 0 0; padding: 7px 0 8px; border-top: 1px solid var(--rule); font-size: 14px; color: var(--muted); }
+.hm .note { margin: 6px 0 0; font-size: 13px; color: var(--soft); }
+.hm .memo-empty { margin: 2px 0 0; color: var(--muted); }
 .hm .xp .body {
   margin: -2px 0 12px; padding: 2px 0 2px 14px;
   border-left: 1px solid rgba(15, 125, 170, 0.45);
-  font-size: 14px; line-height: 1.55; color: var(--soft);
+  font-size: 15px; line-height: 1.55; color: var(--soft);
 }
 .hm .xp .body p + p { margin-top: 6px; }
 .hm .xp .meta { font: 400 13px/1.6 var(--sans); color: var(--muted); }
@@ -196,9 +189,9 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
 /* ---------- Writing: a quiet sub-label, then essays with the date on the right ---------- */
 .hm .kicker { margin-top: 10px; font: 500 13px/1.5 var(--sans); color: var(--muted); }
 .hm .kicker--sub { margin-top: 18px; }
-.hm .theses-more { margin-top: 14px; border-top: 1px solid var(--rule); }
-.hm .theses-more.essays { margin-top: 4px; }
-.hm .rl.rl--essay { align-items: flex-start; padding: 6px 0 7px; }
+.hm .theses-more { margin-top: 8px; }
+.hm .theses-more.essays { margin-top: 2px; }
+.hm .rl.rl--essay { align-items: flex-start; padding: 7px 0; }
 .hm .rl.rl--essay .et { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .hm .rl.rl--essay .val { text-decoration: none; white-space: nowrap; line-height: 22px; }
 
@@ -206,7 +199,7 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
 .hm .row--link { display: block; padding: 0; }
 .hm .rl {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  min-height: 36px; padding: 6px 0 7px; text-decoration: none;
+  min-height: 0; padding: 7px 0; text-decoration: none;
 }
 .hm .rl .lab { font-weight: 500; color: var(--cream); }
 .hm .rl .val {
@@ -237,7 +230,7 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
                 linear-gradient(to right, var(--bg) 0%, rgba(255, 255, 255, 0) 35%);
   }
   .hm .top {
-    grid-template-areas: "mark name" "mark aff" "seek seek" "act act" "lines lines";
+    grid-template-areas: "mark name" "mark aff" "seek seek" "act act";
     column-gap: 24px; margin-top: 0; padding-top: 22px;
   }
   .hm .name { flex-direction: row; align-items: baseline; column-gap: 0.2em; align-self: end; }
@@ -255,12 +248,11 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
 /* ---------- Desktop pointers only: benchmark marker, company name, hairline ---------- */
 @media (hover: hover) and (pointer: fine) {
   .hm .row:hover::before, .hm .row:has(:focus-visible)::before {
-    content: ""; position: absolute; left: calc(var(--tri-off) * -1 + 4px); top: 10px;
+    content: ""; position: absolute; left: calc(var(--tri-off) * -1 + 4px); top: 13px;
     width: 2px; height: 16px; pointer-events: none; border-radius: 1px;
     background: var(--tan);
   }
-  .hm .row:hover, .hm .row:has(:focus-visible) { border-top-color: var(--rule-hover); }
-  .hm .row:hover + .row, .hm .row:has(:focus-visible) + .row { border-top-color: var(--rule-hover); }
+  .hm .xp:hover .xp-mark { --mark: var(--tan); }
   .hm .row:hover .co, .hm .row:has(:focus-visible) .co { color: var(--tan); }
   .hm a:hover { color: var(--tan); text-decoration-color: var(--tan); }
   .hm a.org:hover { color: var(--cream); text-decoration-color: currentColor; }

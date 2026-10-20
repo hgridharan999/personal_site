@@ -93,7 +93,7 @@ const selectors = selectorsIn(css);
 describe('home.css scoping', () => {
   it('parses a realistic number of selectors (the checks below are not vacuous)', () => {
     expect(selectors.length).toBeGreaterThan(100);
-    expect(selectors).toContain('.hm .row:hover + .row');
+    expect(selectors).toContain('.hm .xp:hover .xp-mark');
   });
 
   it('starts every selector with the .hm root or html.hm-page', () => {

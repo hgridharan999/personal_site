@@ -35,7 +35,6 @@ export const HEADER = {
     school: `Cornell${_}Dyson${_}’29${_}· Dyson${_}Scholar`,
     fellowship: 'KKR Accelerator Scholar',
     major: `Applied Economics, AI${_}minor`,
-    gpa: `GPA${_}3.53`,
   },
   seek: {
     intro: `Co-founder @ Loadstone${_}Labs`,
@@ -49,21 +48,6 @@ export const HEADER = {
       { label: 'GitHub', href: 'https://github.com/hgridharan999' },
     ],
   },
-  lines: [
-    {
-      label: 'Now',
-      date: { text: 'Oct 2026', iso: '2026-10' },
-      text: 'Building Loadstone Labs and writing my first investment memos',
-    },
-    {
-      label: 'Toolkit',
-      text: list('Excel', 'PowerPoint', 'Bloomberg', 'SQL', 'Python', 'FastAPI', 'React/TypeScript', 'Cloudflare', 'Claude Code', 'Multi‑Agent Orchestration', 'Salesforce', 'financial modeling', 'market sizing', 'competitive analysis', 'unit economics'),
-    },
-    {
-      label: 'Coursework',
-      text: list('Spreadsheet Modeling', 'Linear Algebra', 'Math Foundations of CS', 'Finance', 'Financial Accounting', 'Statistics'),
-    },
-  ],
 };
 
 export const EXPERIENCE = {
@@ -75,8 +59,8 @@ export const EXPERIENCE = {
       co: `Loadstone${_}Labs`,
       coHref: 'https://loadstonelabs.com/',
       when: nb('Feb 2026 – now'),
-      lead: `Venture-backed, with grants from AWS and LvlUp${_}Ventures.`,
-      rest: ' We pull in 132,000+ water-rights records a day.',
+      lead: 'Venture-backed water-rights data platform,',
+      rest: ` with grants from AWS and LvlUp${_}Ventures.`,
       body: [
         'Run a data platform for Western U.S. water rights that brings rights workflow, basin intelligence and transaction infrastructure into one place.',
         'Architected a pipeline that ingests 132,000+ live water-rights records a day from 44 Colorado counties into one unified schema.',
@@ -96,7 +80,7 @@ export const EXPERIENCE = {
       coHref: 'https://www.exlservice.com/',
       when: nb('Jul 2026 – Sep 2026'),
       lead: 'Built a CRM tool',
-      rest: ` so the team could stop tracking an eight-figure book of Fortune${_}100 contracts by${_}hand.`,
+      rest: ` for an eight-figure book of Fortune${_}100 contracts.`,
       body: [
         'Supported an eight-figure book of Fortune 100 client contracts, tracking scope, deliverables and renewal terms across accounts.',
         'Built a custom CRM tool that replaced manual contract tracking and centralized account status for the full client services team.',
@@ -191,7 +175,7 @@ export const ON_CAMPUS = {
       coHref: 'https://armada.build/',
       when: nb('Jan 2026 – now'),
       lead: 'A YC-backed community of Cornell builders.',
-      rest: ' We work on side projects together, and I built its member directory, bigred.network.',
+      rest: ' I built its member directory.',
       body: [
         [
           'Built ',
@@ -235,7 +219,7 @@ export const PROJECTS = {
       loc: 'Venture sourcing',
       when: nb('Dec 2025 – Jan 2026'),
       lead: 'A search engine for 212 climate startups',
-      rest: `, built for investors. Results come back in about half a${_}second.`,
+      rest: `, with results in half a${_}second.`,
       body: [
         'An investor sourcing tool covering 212 indexed climate-tech startups across 12 verticals. It ranks candidates with multi-factor scoring across founder backgrounds, patent data and market signals.',
         'Search blends BERT embeddings (FAISS) with BM25 keyword ranking through reciprocal rank fusion, expands queries with synonyms, and is measured with NDCG@10.',
@@ -254,25 +238,12 @@ export const PROJECTS = {
       loc: 'Number theory',
       when: nb('Jul 2026'),
       lead: 'Computed a new term',
-      rest: ` in a sequence tied to Gilbreath’s conjecture, an unsolved problem about prime${_}numbers.`,
+      rest: ` in a sequence tied to an unsolved conjecture about${_}primes.`,
       body: [
         'Take the primes, write the gaps between neighbors, then the gaps between those gaps, and so on. Gilbreath’s conjecture says every row starts with 1. It’s been checked for hundreds of billions of rows but never proved.',
         'A363004 counts how many sequences of distinct numbers have the same all-ones pattern. I wrote the search that found the 12th term, 9,290,399,173, and the OEIS now credits it to me.',
       ],
       meta: ['Python'],
-    },
-    {
-      co: 'bigred.network',
-      coHref: 'https://www.bigred.network/',
-      loc: 'Cornell Armada',
-      when: nb('Jan 2026'),
-      lead: 'A directory of 65 Cornell founders and builders',
-      rest: `. Every member gets reviewed by${_}hand.`,
-      body: [
-        'Built bigred.network, the directory of Cornell’s founders, builders and operators, as part of Cornell Armada, a YC-backed founder community. 65 members as of Oct 2026.',
-        'Features member filtering and a network visualization.',
-      ],
-      meta: ['React', 'TypeScript'],
     },
   ],
 };
@@ -283,7 +254,7 @@ export const WRITING = {
   id: 'writing',
   title: 'Writing',
   note: 'Everything here is my own writing. None of it is AI-generated.',
-  memos: { label: 'Investment memos', empty: 'First memos coming soon.' },
+  memos: { label: 'Investment memos', empty: 'Coming soon.' },
   essaysLabel: 'Essays',
   essays: [
     { slug: 'tat-tvam-asi', title: 'Tat Tvam Asi and Conviction', date: '2026-10-06', when: nb('Oct 2026') },
@@ -346,6 +317,25 @@ export const OFF_CLOCK = {
 const { resume, email, social } = HEADER.actions;
 
 /** Resume, email, LinkedIn, GitHub as SmartLink props. `arrow: true` picks the glyph for the link kind. */
+// The toolkit and coursework, kept but closed by default: they are reference detail (and on the
+// resume), and as open ledger lines in the header they crowded the first screen.
+export const SKILLS = {
+  id: 'skills',
+  title: 'Skills',
+  rows: [
+    {
+      co: 'Toolkit and coursework',
+      lead: 'Excel, PowerPoint, Bloomberg, SQL and Python,',
+      rest: ` plus financial modeling and market${_}sizing.`,
+      body: [
+        `Tools: ${list('Excel', 'PowerPoint', 'Bloomberg', 'SQL', 'Python', 'FastAPI', 'React/TypeScript', 'Cloudflare', 'Claude Code', 'Multi\u2011Agent Orchestration', 'Salesforce')}`,
+        `Methods: ${list('financial modeling', 'market sizing', 'competitive analysis', 'unit economics')}`,
+        `Coursework: ${list('Spreadsheet Modeling', 'Linear Algebra', 'Math Foundations of CS', 'Finance', 'Financial Accounting', 'Statistics')}`,
+      ],
+    },
+  ],
+};
+
 export const CONTACT_LINKS = [
   { label: resume.label, href: resume.href, arrow: '↓', sr: A11Y.pdf },
   { label: email.href.replace(/^mailto:/, ''), href: email.href },
