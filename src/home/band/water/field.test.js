@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { WL, insideBerg } from '../iceberg.js';
+import { WL } from '../iceberg.js';
 import { FIELD, SIM } from './constants.js';
 import { createField, fieldDims, fieldStability, psi } from './field.js';
 import { applyCursor } from './interact.js';
@@ -185,156 +185,45 @@ describe('what the shader reads', () => {
   });
 });
 
-describe('the iceberg is solid', () => {
-  const iceCells = (f) => f.snapshot().solid.flatMap((s, k) => (s ? [k] : []));
-  const allZero = (f, ice) => {
-    const { u, v } = f.snapshot();
-    return ice.every((k) => u[k] === 0 && v[k] === 0);
-  };
-
-  it('marks the cells whose centre is inside the polygon, and only those', () => {
-    const f = createField(A);
-    const { nx, dx, dy } = f.dims;
-    const ice = iceCells(f);
-    expect(ice.length).toBeGreaterThan(500);
-    for (const k of ice) {
-      const i = k % nx;
-      const j = Math.floor(k / nx);
-      expect(insideBerg(-A / 2 + (i + 0.5) * dx, WL + (j + 0.5) * dy)).toBe(true);
-    }
-    expect(f.isSolid(0, 0)).toBe(false); // the far corner is open water
-    expect(f.isSolid(Math.floor(nx / 2), Math.round(0.3 / dy))).toBe(true); // the middle of the hull
-  });
-
-  it('stirring inside the ice changes nothing at all', () => {
-    const f = createField(A);
-    f.addImpulse(0, WL + 0.3, 5, 0.03);
-    f.stir(0.1, WL + 0.25, 2, 0.025);
-    expect(f.snapshot().v.every((x) => x === 0)).toBe(true);
-    run(f, 100);
-    expect(f.snapshot().u.every((x) => x === 0)).toBe(true);
-  });
-
-  it('a ring next to the hull leaves every ice cell at exactly 0 for as long as it rings', () => {
-    const f = createField(A);
-    const ice = iceCells(f);
-    f.addImpulse(0.78, WL + 0.31, 3, 0.03); // the hull's right flank
-    for (let i = 0; i < 6 * STEPS_PER_SECOND; i++) {
-      f.step();
-      if (i % 12 === 0) expect(allZero(f, ice)).toBe(true);
-      expect(Number.isFinite(f.energy())).toBe(true);
-    }
-  });
-
-  it('reflects off the hull: where the wave meets the ice it is stronger than at the same distance in open water', () => {
-    const f = createField(A);
-    const { nx, dx, dy } = f.dims;
-    const yRel = 0.3;
-    const row = Math.round(yRel / dy - 0.5);
-    let edge = -1;
-    for (let i = 0; i < nx; i++) if (f.isSolid(i, row)) edge = i; // the hull's right flank in this row
-    const wall = -A / 2 + (edge + 1) * dx;
-    const d = 0.2;
-    f.addImpulse(wall + d, WL + yRel, 3, 0.03);
-    const cell = (x) => row * nx + Math.floor((x + A / 2) / dx);
-    const kWall = cell(wall + 0.01);
-    const kOpen = cell(wall + 2 * d - 0.01); // the same distance from the source, the other way
-    let atWall = 0;
-    let inOpen = 0;
-    for (let i = 0; i < 1.2 * STEPS_PER_SECOND; i++) {
-      f.step();
-      const { u } = f.snapshot();
-      atWall = Math.max(atWall, Math.abs(u[kWall]));
-      inOpen = Math.max(inOpen, Math.abs(u[kOpen]));
-    }
-    // a wall that leaked into the ice would show less than open water; a mirror adds the reflection on top
-    expect(atWall / inOpen).toBeGreaterThan(1.1);
-  });
-
-  it('the hull is a wall: the energy next to it stays, where an open grid would let it spread away', () => {
-    const f = createField(A);
-    f.addImpulse(0.78, WL + 0.31, 3, 0.03);
-    const e0 = f.energy();
-    expect(e0).toBeGreaterThan(0);
-    run(f, 20);
-    // nothing is lost into the ice in a few steps: damping and the free surface only take a little
-    expect(f.energy()).toBeGreaterThan(0.5 * e0);
-    expect(f.energy()).toBeLessThan(1.5 * e0);
-  });
-
-  it('keeps decaying to exactly 0 around the ice, and stays stable under heavy stirring at the largest step', () => {
-    const f = createField(A);
-    f.addImpulse(-0.5, WL + 0.4, 3, 0.03);
-    const window = 40;
-    const maxima = [];
-    for (let w = 0; w < (6 * STEPS_PER_SECOND) / window; w++) {
-      let m = 0;
-      for (let i = 0; i < window; i++) {
-        f.step();
-        m = Math.max(m, f.energy());
+describe('the iceberg is not in the field', () => {
+  it('a ring under the iceberg is the same ring as in open water, shifted (60 cells = 0.9375)', () => {
+    const shift = 60;
+    const a = createField(A);
+    const b = createField(A);
+    const { nx, ny } = a.dims;
+    a.addImpulse(0.9375, WL + 0.3, 3, 0.03);
+    b.addImpulse(0, WL + 0.3, 3, 0.03);
+    run(a, 60);
+    run(b, 60); // 0.5 s: the rings are 0.2 out, nowhere near a side wall
+    const ua = a.snapshot().u;
+    const ub = b.snapshot().u;
+    const mid = Math.round(A / 2 / a.dims.dx - 0.5);
+    let peak = 0;
+    for (let j = 0; j < ny; j++) {
+      for (let d = -25; d <= 25; d++) {
+        expect(ua[j * nx + mid + shift + d]).toBeCloseTo(ub[j * nx + mid + d], 10);
+        peak = Math.max(peak, Math.abs(ub[j * nx + mid + d]));
       }
-      maxima.push(m);
     }
-    for (let i = 1; i < maxima.length; i++) expect(maxima[i]).toBeLessThan(maxima[i - 1]);
-    run(f, 20 * STEPS_PER_SECOND);
-    expect(f.active).toBe(false);
-    expect(f.energy()).toBe(0);
-
-    let s = 5;
-    const rand = () => (s = (s * 16807) % 2147483647) / 2147483647;
-    for (let i = 0; i < 3000; i++) {
-      f.addImpulse((rand() - 0.5) * A, WL + rand() * 0.78, (rand() - 0.5) * 40, 0.03);
-      f.step();
-    }
-    for (const x of f.snapshot().u) expect(Number.isFinite(x)).toBe(true);
+    expect(peak).toBeGreaterThan(1e-3); // and it was a real ring, not two empty windows
   });
 
-  it('encodes the ice as at rest: no ripple and no fake gradient where the ice starts', () => {
+  it('stirring anywhere moves the water, including in the middle of the iceberg', () => {
     const f = createField(A);
-    const ice = iceCells(f);
-    f.addImpulse(0.78, WL + 0.31, 3, 0.03);
-    run(f, 40);
-    const { nx, ny } = f.dims;
-    const out = new Uint8Array(nx * ny * 4);
-    f.encode(out);
-    for (const k of ice) expect([...out.slice(4 * k, 4 * k + 4)]).toEqual([128, 128, 128, 0]);
-    expect(out.some((b, i) => i % 4 < 3 && b !== 128)).toBe(true); // while the open water beside it moves
+    f.addImpulse(0, WL + 0.3, 3, 0.03);
+    expect(f.snapshot().v.some((x) => x !== 0)).toBe(true);
+    run(f, 20);
+    expect(f.energy()).toBeGreaterThan(0);
   });
 
-  it('draws no light bending right against the ice, and all of it a few cells away', () => {
+  it('encodes the same way everywhere: nothing is held at rest under the ice', () => {
     const f = createField(A);
     const { nx, ny } = f.dims;
-    const { solid } = f.snapshot();
-    // the open cells touching ice, and some far from any
-    const touching = [];
-    for (let k = 0; k < nx * ny; k++) {
-      const i = k % nx;
-      const nb = [i > 0 ? k - 1 : -1, i < nx - 1 ? k + 1 : -1, k >= nx ? k - nx : -1, k < nx * ny - nx ? k + nx : -1];
-      if (!solid[k] && nb.some((m) => m >= 0 && solid[m])) touching.push(k);
-    }
-    expect(touching.length).toBeGreaterThan(50);
-    const u = Array.from({ length: nx * ny }, (_, k) => (solid[k] ? 0 : 0.01 * Math.sin(k * 0.37))); // a bumpy field everywhere
+    const u = Array.from({ length: nx * ny }, (_, k) => 0.01 * Math.sin(k * 0.37));
     f.load({ u });
     const out = new Uint8Array(nx * ny * 4);
     f.encode(out);
-    for (const k of touching) expect([out[4 * k + 1], out[4 * k + 2]]).toEqual([128, 128]); // no bending
-    expect(touching.some((k) => out[4 * k] !== 128)).toBe(true); // while the ripple height is still there
-    const far = 3 + 3; // columns from the left wall, well clear of the ice
-    expect(out.slice(4 * (10 * nx + far), 4 * (10 * nx + far) + 3).some((b) => b !== 128)).toBe(true);
-  });
-
-  it('shares one wall rule between the step and the energy: a lone cell against a wall is a mirror', () => {
-    // a uniform field is a steady state of a closed box, so its gradient energy at the ice and the walls is 0
-    const f = createField(A);
-    const { nx, ny } = f.dims;
-    const solid = f.snapshot().solid;
-    f.load({ u: solid.map((s) => (s ? 0 : 0.002)) });
-    // the only gradient left is the free surface at the top row: with the wall rule the ice adds nothing
-    const e = f.energy();
-    let surfaceOnly = 0;
-    const { dx, dy } = f.dims;
-    for (let i = 0; i < nx; i++) if (!solid[i]) surfaceOnly += 0.5 * FIELD.c * FIELD.c * 2 * 0.002 ** 2 / (dy * dy);
-    expect(e).toBeCloseTo(surfaceOnly * dx * dy, 12);
-    expect(ny).toBeGreaterThan(2);
+    const centre = 30 * nx + Math.round(A / 2 / f.dims.dx - 0.5); // inside the hull
+    expect(out.slice(4 * centre, 4 * centre + 3).some((b) => b !== 128)).toBe(true);
   });
 });

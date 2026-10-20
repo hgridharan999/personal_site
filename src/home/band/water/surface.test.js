@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SIM, SURFACE } from './constants.js';
 import { ENC, decodeSigned } from './pack.js';
-import { bergClearance } from '../iceberg.js';
 import { createSurface, phaseSpeed, surfaceCols, surfaceStability } from './surface.js';
 
 const A = 3.125; // a 1000 x 320 band
@@ -114,40 +113,42 @@ describe('stability under abuse', () => {
   });
 });
 
-describe('basins and the iceberg', () => {
-  it('splits the water in two, with the iceberg\'s columns between', () => {
+describe('one basin across the band', () => {
+  it('is a single run of columns with walls at the band edges (the iceberg is not in the water)', () => {
     const s = createSurface(A);
-    expect(s.segments).toHaveLength(2);
-    const [left, right] = s.segments;
-    expect(left.start).toBe(0);
-    expect(right.end).toBe(s.dims.n - 1);
-    expect(right.start - left.end - 1).toBeGreaterThan(40); // 0.4367 / dx = ~70 columns under the berg
+    const { n } = s.dims;
+    s.addVelocity(0, 0.03, 1); // right under the iceberg: it is water like any other
+    run(s, 10);
+    expect(Math.max(...s.snapshot().h.map(Math.abs))).toBeGreaterThan(1e-5);
+    s.addVelocity(-A / 2 + 0.01, 0.03, 1);
+    s.addVelocity(A / 2 - 0.01, 0.03, 1); // the first and last columns take kicks too
+    expect(s.snapshot().v[0]).toBeGreaterThan(0.9);
+    expect(s.snapshot().v[n - 1]).toBeGreaterThan(0.9);
   });
 
-  it('keeps the iceberg\'s columns at exactly 0, and a kick in one basin never reaches the other', () => {
-    for (const side of [-1, 1]) {
-      const s = kicked(A, side * 0.9, 1);
-      run(s, 4 * STEPS_PER_SECOND);
-      const { h, v, foam } = s.snapshot();
-      const [left, right] = s.segments;
-      const dead = side < 0 ? right : left;
-      const berg = [];
-      for (let j = left.end + 1; j < right.start; j++) berg.push(j);
-      for (const j of berg) expect([h[j], v[j], foam[j]]).toEqual([0, 0, 0]);
-      for (let j = dead.start; j <= dead.end; j++) expect([h[j], v[j]]).toEqual([0, 0]);
-      const live = side < 0 ? left : right;
-      expect(Math.max(...h.slice(live.start, live.end + 1).map(Math.abs))).toBeGreaterThan(1e-4);
-    }
+  it('a kick anywhere reaches everywhere: waves travel straight across the columns under the iceberg and on', () => {
+    const s = kicked(A, 0.9, 1);
+    run(s, 4 * STEPS_PER_SECOND);
+    const { h } = s.snapshot();
+    const near = (x0, x1) => Math.max(...h.filter((_, j) => { const x = -A / 2 + (j + 0.5) * s.dims.dx; return x > x0 && x < x1; }).map(Math.abs));
+    expect(near(-0.2, 0.24)).toBeGreaterThan(1e-4); // under the tip
+    expect(near(-1.5, -0.8)).toBeGreaterThan(1e-4); // and the far side
   });
 
-  it('ignores kicks that land on the iceberg', () => {
-    const s = createSurface(A);
-    s.addVelocity(0, 0.03, 1);
-    run(s, 100);
-    expect(s.snapshot().h.every((x) => x === 0)).toBe(true);
+  it('is the same wave over the iceberg as over open water: a kick at x = 0 is a kick at x = 0.9375, shifted', () => {
+    const shift = 150; // 0.9375 is exactly 150 columns here, so the two grids line up
+    const a = kicked(A, 0.9375, 0.7, 0.04);
+    const b = kicked(A, 0, 0.7, 0.04);
+    run(a, 48);
+    run(b, 48); // 0.4 s: the waves are 0.3 out and nothing has reached a wall
+    const ha = a.snapshot().h;
+    const hb = b.snapshot().h;
+    const mid = Math.round(A / 2 / a.dims.dx - 0.5); // the column at x = 0
+    expect(mid).toBeGreaterThan(100);
+    for (let d = -60; d <= 60; d++) expect(ha[mid + shift + d]).toBeCloseTo(hb[mid + d], 9); // the same, up to rounding
   });
 
-  it('conserves water in each basin: the mean height stays 0', () => {
+  it('conserves water: the mean height stays 0', () => {
     const s = createSurface(A);
     const rand = rng(5);
     for (let i = 0; i < 1500; i++) {
@@ -157,40 +158,29 @@ describe('basins and the iceberg', () => {
       }
       s.step();
     }
-    const { h } = s.snapshot();
-    for (const { start, end } of s.segments) {
-      const sum = h.slice(start, end + 1).reduce((a, b) => a + b, 0);
-      expect(Math.abs(sum)).toBeLessThan(1e-12);
-    }
+    const sum = s.snapshot().h.reduce((acc, x) => acc + x, 0);
+    expect(Math.abs(sum)).toBeLessThan(1e-12);
   });
 
-  it('reflects waves at the walls: a pulse comes back from the band edge', () => {
+  it('reflects waves at the band edges: a pulse comes back from the wall', () => {
     const s = createSurface(A);
-    const [left] = s.segments;
-    const dx = s.dims.dx;
-    const xLeft = (left.start + 0.5) * dx - A / 2 + 0.4;
-    s.addVelocity(xLeft, 0.03, 0.5);
-    // follow the right-going pulse; after it reaches the wall (0.4 away) and returns, energy is still in the basin
-    run(s, Math.round(1.2 * STEPS_PER_SECOND));
+    s.addVelocity(-A / 2 + 0.4, 0.03, 0.5);
+    run(s, Math.round(1.2 * STEPS_PER_SECOND)); // the left-going half reaches the wall (0.4 away) and returns
     const { h } = s.snapshot();
-    const inBasin = h.slice(left.start, left.end + 1).map(Math.abs);
-    expect(Math.max(...inBasin.slice(0, 20))).toBeGreaterThan(1e-5); // some water at the wall
+    expect(Math.max(...h.slice(0, 20).map(Math.abs))).toBeGreaterThan(1e-5); // some water at the wall
     expect(s.energy()).toBeGreaterThan(0);
   });
 });
 
 describe('dispersion', () => {
-  /** Frequency of the standing mode m in the left basin, from the zero crossings of one probe column. */
+  /** Frequency of the standing mode m across the whole basin, from the zero crossings of one probe column. */
   function measure(m) {
     const s = createSurface(A);
-    const { start, end } = s.segments[0];
-    const M = end - start + 1;
-    const dx = s.dims.dx;
-    const n = s.dims.n;
+    const { n, dx } = s.dims;
     const h = new Array(n).fill(0);
-    for (let i = 0; i < M; i++) h[start + i] = 1e-3 * Math.cos((m * Math.PI * (i + 0.5)) / M);
+    for (let i = 0; i < n; i++) h[i] = 1e-3 * Math.cos((m * Math.PI * (i + 0.5)) / n);
     s.load({ h });
-    const probe = start + Math.floor(M * 0.05);
+    const probe = Math.floor(n * 0.05);
     const crossings = [];
     let prev = s.snapshot().h[probe];
     for (let i = 1; i <= 3 * STEPS_PER_SECOND; i++) {
@@ -200,11 +190,11 @@ describe('dispersion', () => {
       prev = cur;
     }
     const omega = (Math.PI * (crossings.length - 1)) / (crossings.at(-1) - crossings[0]);
-    return { omega, k: (m * Math.PI) / (M * dx) };
+    return { omega, k: (m * Math.PI) / (n * dx) };
   }
 
   it('matches c k / sqrt(1 + beta k^2) within 5% for a long wave and a short one', () => {
-    for (const m of [12, 40, 80]) {
+    for (const m of [25, 80, 160]) {
       const { omega, k } = measure(m);
       const expected = Math.sqrt((k * phaseSpeed(k)) ** 2 - (SURFACE.damp / 2) ** 2); // the damped frequency
       expect(Math.abs(omega - expected) / expected).toBeLessThan(0.05);
@@ -212,8 +202,8 @@ describe('dispersion', () => {
   });
 
   it('is dispersive: short waves are slower than long ones', () => {
-    const long = measure(12);
-    const short = measure(80);
+    const long = measure(25);
+    const short = measure(160);
     expect(short.omega / short.k).toBeLessThan(0.85 * (long.omega / long.k));
   });
 });
@@ -250,101 +240,16 @@ describe('what the shader reads', () => {
     expect(out[4 * 105 + 3]).toBeGreaterThan(100);
     expect(out[4 * 105 + 2]).toBe(ENC.zero);
   });
-});
 
-describe('the drawn line meets the iceberg cleanly', () => {
-  const x = (s, j) => -A / 2 + (j + 0.5) * s.dims.dx;
-  const encoded = (s) => {
-    const out = new Uint8Array(s.dims.n * 4);
-    s.encode(out);
-    return out;
-  };
-  const etaOf = (out, j) => decodeSigned(out[4 * j]) * SURFACE.etaScale;
-  const flat = (s, value) => {
-    const h = new Array(s.dims.n).fill(value);
+  it('draws every column the same way, under the iceberg or not: eta is encoded as it is, with no taper', () => {
+    const s = createSurface(A);
+    const { n, dx } = s.dims;
+    const h = new Array(n).fill(0.02);
     s.load({ h });
-    return encoded(s);
-  };
-
-  it('tapers the waves to nothing where the ice reaches the line, and not at all in open water', () => {
-    const s = createSurface(A);
-    for (let j = 0; j < s.dims.n; j++) {
-      const clear = bergClearance(x(s, j));
-      if (clear === 0) expect(s.taper[j]).toBe(0);
-      else if (clear === Infinity) expect(s.taper[j]).toBe(1);
-      else expect(s.taper[j]).toBeGreaterThan(0);
-      expect(s.taper[j]).toBeLessThanOrEqual(1);
-    }
-    expect(s.taper[0]).toBe(1);
-    expect(s.taper[s.dims.n - 1]).toBe(1);
-  });
-
-  it('a column inside the tip span encodes eta 0, whatever the height is', () => {
-    const s = createSurface(A);
-    const out = flat(s, -0.04);
-    for (let j = 0; j < s.dims.n; j++) {
-      if (bergClearance(x(s, j)) === 0) expect(out[4 * j]).toBe(ENC.zero);
-    }
-  });
-
-  it('over the shelf even a full-depth dip is drawn shallower than the ice below it', () => {
-    const s = createSurface(A);
-    for (const height of [-SURFACE.hMax, -SURFACE.etaScale, -0.03]) {
-      const out = flat(s, height);
-      let checked = 0;
-      for (let j = 0; j < s.dims.n; j++) {
-        const clear = bergClearance(x(s, j));
-        if (clear > 0 && clear < Infinity) {
-          expect(etaOf(out, j)).toBeGreaterThan(-clear);
-          checked++;
-        }
-      }
-      expect(checked).toBeGreaterThan(30);
-    }
-  });
-
-  it('leaves the water beyond the hull untouched', () => {
-    const s = createSurface(A);
-    const out = flat(s, 0.02);
-    let checked = 0;
-    for (let j = 0; j < s.dims.n; j++) {
-      if (bergClearance(x(s, j)) === Infinity) {
-        expect(etaOf(out, j)).toBeCloseTo(0.02, 3);
-        checked++;
-      }
-    }
-    expect(checked).toBeGreaterThan(200);
-  });
-
-  it('takes the slope from the tapered line: a steady swell fading into the tip is a gentle slope, not a step', () => {
-    const s = createSurface(A);
-    const out = flat(s, 0.03);
-    const j = s.segments[1].start + 3; // a few columns right of the tip, on the rising shelf
-    const lo = j - 1;
-    const hi = j + 1;
-    const shown = (k) => s.taper[k] * 0.03; // 0.03 is inside the display range, so only the taper shapes it
-    const expected = (shown(hi) - shown(lo)) / (2 * s.dims.dx);
-    expect(Math.abs(expected)).toBeGreaterThan(0.01); // the taper alone makes a slope here
-    expect(decodeSigned(out[4 * j + 1]) * SURFACE.slopeScale).toBeCloseTo(expected, 1);
-  });
-
-  it('fades foam toward the ice with the waves: full in open water, reduced over the shelf', () => {
-    const s = createSurface(A);
-    s.load({ h: new Array(s.dims.n).fill(0) });
-    s.addFoam(-1.0, 0.05, 1); // open water
-    s.addFoam(-0.33, 0.01, 1); // the left shelf, a hair under the line
-    const out = encoded(s);
-    const col = (xx) => Math.round((xx + A / 2) / s.dims.dx - 0.5);
-    expect(out[4 * col(-1.0) + 3]).toBeGreaterThan(250); // the bump peaks between columns
-    const shelf = col(-0.33);
-    expect(s.taper[shelf]).toBeLessThan(0.9);
-    expect(out[4 * shelf + 3]).toBe(Math.round(255 * s.snapshot().foam[shelf] * s.taper[shelf]));
-  });
-
-  it('is display only: the simulation keeps the full height', () => {
-    const s = createSurface(A);
-    flat(s, -0.04);
-    expect(Math.min(...s.snapshot().h)).toBe(-0.04);
-    expect(s.eta(x(s, 5))).toBeCloseTo(-0.04, 12);
+    const out = new Uint8Array(n * 4);
+    s.encode(out);
+    const under = Math.round(A / 2 / dx - 0.5); // x = 0, in the middle of the tip
+    expect(out[4 * under]).toBe(out[4 * 5]);
+    expect(decodeSigned(out[4 * under]) * SURFACE.etaScale).toBeCloseTo(0.02, 3);
   });
 });

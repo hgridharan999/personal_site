@@ -6,7 +6,9 @@ export { VS };
 /*
  * main() is the mockup's, line for line, except where the simulated water comes in: the waterline
  * rides the surface height, caustics sway with its slope, crests catch light, foam rides the line,
- * and the ripples under it warp the light as before.
+ * and the ripples warp the light. The ripples and waves live in the water in front of the iceberg, so
+ * they cross it like open water: the facet caustics and the rings of light show over the ice, while
+ * the ice's own outline barely moves (BERG_REFRACT is tiny).
  */
 const MAIN = `
 void main(){
@@ -49,7 +51,7 @@ void main(){
   /* the iceberg's silhouette, seen through the moving water */
   float uw = smoothstep(WL - 0.012, WL + 0.03, p.y);
   vec2 shim = 0.0035 * vec2(sin(p.y * 29.0 + t * 1.3), sin(p.x * 23.0 - t * 1.1));
-  vec2 pb = p + (shim + 0.05 * disp) * uw;             // seen through moving water
+  vec2 pb = p + (shim + BERG_REFRACT * disp) * uw;     // seen through moving water (the ripples only shimmer the ice, they never move it)
   float sd = 1.0;
   if (abs(pb.x) < 0.78 && pb.y > 0.0 && pb.y < 0.95) sd = sdBerg(pb);
   float sdpx = sd * H;
@@ -74,6 +76,7 @@ void main(){
   vec3 col = mix(vec3(1.0), water, below);
 
   /* ---------------- the iceberg ---------------- */
+  float iceCov = 0.0;                                  // how much of this pixel is ice (the rings below shade it)
   if (sd < 0.06) {
     bool sub = p.y > wl;
     vec3 bc;
@@ -112,10 +115,13 @@ void main(){
     /* a cold halo just outside the hull */
     if (sub) col += vec3(0.30, 0.70, 0.85) * 0.16 * exp(-max(sdpx, 0.0) / 8.0) * (1.0 - inside) * below;
     col = mix(col, bc, inside * inA);
+    iceCov = inside * inA;
   }
 
   /* the rings themselves: light crests, dim troughs */
-  col += vec3(0.60, 0.90, 1.0) * rh * 0.30 * below;
+  col += vec3(0.60, 0.90, 1.0) * rh * 0.30 * below * (1.0 - iceCov);
+  /* over the ice the same rings read as shading: it is too bright to take more light, and subtracting a blue light from white turns it grey, so crests and troughs scale it instead */
+  col *= 1.0 + ICE_RING * clamp(rh, -0.7, 0.7) * iceCov * below * vec3(1.0, 0.8, 0.6);   // red goes first, so a trough shades the ice blue and never grey or brown
 
   /* a crest of the waterline catches light, just under it */
   float z = (p.y - wl) * H;

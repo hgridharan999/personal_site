@@ -25,7 +25,6 @@ export const SURFACE = Object.freeze({
   etaScale: 0.05, // the texture stores eta / etaScale: 0.05 band heights is the largest visible lift
   slopeScale: 1.0, // ... and slope / slopeScale
   sway: 0.25, // how much the surface slope sways the caustics beneath it (shader)
-  taperDepth: 0.08, // the drawn waves fade to nothing as the iceberg's top rises to the line, over this clearance
   foamDecay: 0.8, // seconds
   foamRate: 2.0, // foam made per second by water moving faster than foamV0
   foamV0: 0.25,
@@ -44,7 +43,6 @@ export const FIELD = Object.freeze({
   nxMax: 512,
   rhScale: 40, // the texture stores 40 u as the ripple height ...
   gradScale: 1.0, // ... and grad u as the light displacement
-  hullFade: 3, // cells over which the drawn light bending fades out before the ice
   idleU: 1e-4,
   idleV: 1e-3,
 });
@@ -82,6 +80,8 @@ export const IMPACT = Object.freeze({
 export const SHADE = Object.freeze({
   fieldRh: 1.0, // ripple height from the field, in the units the old ripples used
   fieldDisp: 1.0, // light displacement from the field's gradient
+  iceRing: 1.4, // the ripples' rings of light, drawn over the ice as shading so they read as clearly as over open water
+  bergRefract: 0.008, // how far the ripples shift the iceberg's own outline and facets: a hairline shimmer, never a smear
   crest: 0.35, // light along a rising crest of the waterline
   crestFall: 10, // ... fading with depth below the line, in px
   foam: 0.85, // foam white-out

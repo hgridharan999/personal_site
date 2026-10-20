@@ -1,16 +1,16 @@
-import { WL, bergWaterSpan } from '../iceberg.js';
+import { WL } from '../iceberg.js';
 import { CURSOR as C, IMPACT as I, SIM } from './constants.js';
 import { smoothstep, speedStrength } from './head.js';
 
 /*
  * What the cursor and taps do to the water: the injection rules, kept apart from the stepping in
  * sim.js. Everything here runs inside one fixed step and takes its inputs from the head's swept
- * segment, so a stroke deposits the same amount however often pointer events arrive.
+ * segment, so a stroke deposits the same amount however often pointer events arrive. Nothing here
+ * knows where the iceberg is: the water behaves the same everywhere across the band.
  *
  * ctx = { surface, field, time, coolPlunge, coolExit, lastD, stats }
  */
 
-const [BERG_L, BERG_R] = bergWaterSpan();
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 /** The y of the water line at x. */
@@ -85,17 +85,11 @@ export function applyCursor(ctx, h) {
   const E = clamp((U - 0.5) / 1.5, 0, 1);
   const crossing = () => h.x0 + clamp(-d0 / (d1 - d0), 0, 1) * dx;
   if (d0 < 0 && d1 >= 0 && Vy > I.plungeVy && ctx.time >= ctx.coolPlunge) {
-    const xc = crossing();
-    if (xc < BERG_L || xc > BERG_R) { // an open column, not the iceberg
-      plunge(ctx, xc, E);
-      ctx.coolPlunge = ctx.time + I.cooldown;
-    }
+    plunge(ctx, crossing(), E);
+    ctx.coolPlunge = ctx.time + I.cooldown;
   } else if (d0 >= 0 && d1 < 0 && -Vy > I.plungeVy && ctx.time >= ctx.coolExit) {
-    const xc = crossing();
-    if (xc < BERG_L || xc > BERG_R) {
-      exit(ctx, xc, E);
-      ctx.coolExit = ctx.time + I.cooldown;
-    }
+    exit(ctx, crossing(), E);
+    ctx.coolExit = ctx.time + I.cooldown;
   }
 }
 

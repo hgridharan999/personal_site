@@ -1,4 +1,3 @@
-import { bergClearance, bergWaterSpan } from '../iceberg.js';
 import { SIM, SURFACE as S } from './constants.js';
 import { encodeSigned } from './pack.js';
 
@@ -7,24 +6,18 @@ import { encodeSigned } from './pack.js';
  *
  *   h_tt = c^2 D2(h + p) + beta D2 h_tt - damping - viscosity
  *
- * Waves travel at c / sqrt(1 + beta k^2), so long swells lead and short ripples trail. The columns
- * under the iceberg are held at exactly 0, which splits the water into two basins, and every basin
- * has reflecting walls (mirror ghosts) at its ends. The step is semi-implicit: the beta term is a
- * tridiagonal solve (Thomas algorithm, factors precomputed per basin), and the gradient and the
- * velocity update are stable for any column count.
+ * Waves travel at c / sqrt(1 + beta k^2), so long swells lead and short ripples trail. The water is
+ * one basin across the whole band with reflecting walls (mirror ghosts) at its two ends. The
+ * iceberg is not part of it: the waves live in the water plane in front of the ice and pass over it
+ * exactly as they pass over open water. The step is semi-implicit: the beta term is a tridiagonal
+ * solve (Thomas algorithm, factors precomputed), and the gradient and the velocity update are
+ * stable for any column count.
  *
  * h is eta, the height of the water above its rest level (positive = up); p is a pressure pressing
  * the surface down (the cursor's dimple), recomputed by the caller every step.
- *
- * The simulation itself knows nothing about how the line is drawn. Only encode() tapers the waves
- * toward the iceberg (see `taper`), so a dip can never pull the line off the tip and show the shelf.
  */
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-const smoothstep = (a, b, x) => {
-  const t = clamp((x - a) / (b - a), 0, 1);
-  return t * t * (3 - 2 * t);
-};
 
 /** Columns for a band of this aspect (width / height), cell-centred; never more than the GPU can take as a texture width. */
 export function surfaceCols(aspect, maxCols = S.colsMax) {
@@ -48,41 +41,16 @@ export function createSurface(aspect, { maxCols = S.colsMax } = {}) {
   const dx = aspect / n;
   const x0 = -aspect / 2;
   const xAt = (j) => x0 + (j + 0.5) * dx;
-  const [bergL, bergR] = bergWaterSpan();
 
-  // basins: the runs of columns outside the iceberg
-  const segments = [];
-  const isBerg = new Uint8Array(n);
-  let run = -1;
-  for (let j = 0; j <= n; j++) {
-    const open = j < n && !(xAt(j) >= bergL && xAt(j) <= bergR);
-    if (j < n) isBerg[j] = open ? 0 : 1;
-    if (open && run < 0) run = j;
-    if (!open && run >= 0) {
-      segments.push({ start: run, end: j - 1 });
-      run = -1;
-    }
-  }
-
-  // How much of a wave is drawn at each column: all of it in open water, none where the iceberg's
-  // top reaches the line, and a smooth fade over the shelf in between. A full-height dip is then
-  // always shallower than the ice below it (the display never exceeds etaScale).
-  const taper = new Float64Array(n);
-  for (let j = 0; j < n; j++) taper[j] = smoothstep(0, S.taperDepth, bergClearance(xAt(j)));
-
-  // (I - beta D2) per basin: tridiagonal, with the mirror ends giving 1 + b on the end diagonals
+  // (I - beta D2): tridiagonal, with the mirror ends giving 1 + b on the end diagonals
   const b = S.beta / (dx * dx);
   const cprime = new Float64Array(n);
   const invden = new Float64Array(n);
-  for (const { start, end } of segments) {
-    const m = end - start + 1;
-    for (let i = 0; i < m; i++) {
-      const diag = m === 1 ? 1 : 1 + (i === 0 || i === m - 1 ? 1 : 2) * b;
-      const prev = i === 0 ? 0 : cprime[start + i - 1];
-      const den = diag + b * prev;
-      invden[start + i] = 1 / den;
-      cprime[start + i] = i === m - 1 ? 0 : -b / den;
-    }
+  for (let j = 0; j < n; j++) {
+    const diag = 1 + (j === 0 || j === n - 1 ? 1 : 2) * b;
+    const den = diag + b * (j === 0 ? 0 : cprime[j - 1]);
+    invden[j] = 1 / den;
+    cprime[j] = j === n - 1 ? 0 : -b / den;
   }
 
   const h = new Float64Array(n);
@@ -92,7 +60,6 @@ export function createSurface(aspect, { maxCols = S.colsMax } = {}) {
   const u = new Float64Array(n); // scratch: h + p
   const r = new Float64Array(n); // scratch: the right-hand side, then the solved acceleration
   const w = new Float64Array(n); // scratch: v before smoothing
-  const shown = new Float64Array(n); // scratch for encode(): the heights as drawn
   const c2 = (S.c * S.c) / (dx * dx);
   const damp = Math.exp(-S.damp * SIM.dt);
   const eps = Math.min(0.25, (S.nu * SIM.dt) / (dx * dx));
@@ -100,35 +67,35 @@ export function createSurface(aspect, { maxCols = S.colsMax } = {}) {
   let active = false;
   let count = 0;
 
-  function solveBasin(start, end) {
+  function solve() {
     // r = c^2 D2(h + p), solved against (I - beta D2); the right-hand side is overwritten by the solution
-    for (let j = start; j <= end; j++) u[j] = h[j] + p[j];
-    for (let j = start; j <= end; j++) {
-      const lo = j > start ? u[j - 1] : u[j];
-      const hi = j < end ? u[j + 1] : u[j];
+    for (let j = 0; j < n; j++) u[j] = h[j] + p[j];
+    for (let j = 0; j < n; j++) {
+      const lo = j > 0 ? u[j - 1] : u[j];
+      const hi = j < n - 1 ? u[j + 1] : u[j];
       r[j] = c2 * (lo - 2 * u[j] + hi);
     }
-    r[start] *= invden[start];
-    for (let j = start + 1; j <= end; j++) r[j] = (r[j] + b * r[j - 1]) * invden[j];
-    for (let j = end - 1; j >= start; j--) r[j] -= cprime[j] * r[j + 1];
+    r[0] *= invden[0];
+    for (let j = 1; j < n; j++) r[j] = (r[j] + b * r[j - 1]) * invden[j];
+    for (let j = n - 2; j >= 0; j--) r[j] -= cprime[j] * r[j + 1];
   }
 
-  function advanceBasin(start, end) {
-    for (let j = start; j <= end; j++) w[j] = (v[j] + SIM.dt * r[j]) * damp;
+  function advance() {
+    for (let j = 0; j < n; j++) w[j] = (v[j] + SIM.dt * r[j]) * damp;
     let mh = 0;
     let mv = 0;
-    for (let j = start; j <= end; j++) {
-      const lo = j > start ? w[j - 1] : w[j];
-      const hi = j < end ? w[j + 1] : w[j];
+    for (let j = 0; j < n; j++) {
+      const lo = j > 0 ? w[j - 1] : w[j];
+      const hi = j < n - 1 ? w[j + 1] : w[j];
       v[j] = clamp(w[j] + eps * (lo - 2 * w[j] + hi), -S.vMax, S.vMax);
       h[j] = clamp(h[j] + SIM.dt * v[j], -S.hMax, S.hMax);
       mh += h[j];
       mv += v[j];
     }
-    // a basin cannot create or destroy water, so its mean stays exactly 0
-    mh /= end - start + 1;
-    mv /= end - start + 1;
-    for (let j = start; j <= end; j++) {
+    // the basin cannot create or destroy water, so its mean stays exactly 0
+    mh /= n;
+    mv /= n;
+    for (let j = 0; j < n; j++) {
       h[j] = clamp(h[j] - mh, -S.hMax, S.hMax);
       v[j] = clamp(v[j] - mv, -S.vMax, S.vMax);
       foam[j] = clamp(foam[j] * foamDecay + S.foamRate * Math.max(Math.abs(v[j]) - S.foamV0, 0) * SIM.dt, 0, 1);
@@ -144,12 +111,11 @@ export function createSurface(aspect, { maxCols = S.colsMax } = {}) {
     count = 0;
   }
 
-  /** Add `amount * exp(-((x - xc) / width)^2)` to `target` (a peak-normalised bump), skipping the iceberg's columns. */
+  /** Add `amount * exp(-((x - xc) / width)^2)` to `target` (a peak-normalised bump). */
   function bump(target, xc, width, amount, limit = Infinity) {
     const lo = Math.max(0, Math.floor((xc - 4 * width - x0) / dx));
     const hi = Math.min(n - 1, Math.ceil((xc + 4 * width - x0) / dx));
     for (let j = lo; j <= hi; j++) {
-      if (isBerg[j]) continue;
       const t = (xAt(j) - xc) / width;
       target[j] = Math.min(limit, target[j] + amount * Math.exp(-t * t));
     }
@@ -158,8 +124,6 @@ export function createSurface(aspect, { maxCols = S.colsMax } = {}) {
 
   return {
     dims: Object.freeze({ n, dx, aspect }),
-    segments,
-    taper,
     get active() { return active; },
 
     /** The water height at x (linear between column centres). */
@@ -178,10 +142,8 @@ export function createSurface(aspect, { maxCols = S.colsMax } = {}) {
 
     step() {
       if (!active) return;
-      for (const { start, end } of segments) {
-        solveBasin(start, end);
-        advanceBasin(start, end);
-      }
+      solve();
+      advance();
       p.fill(0);
       if (++count % S.idleEvery) return;
       // everything has come to rest: say so exactly, so the sim can stop spending anything
@@ -194,38 +156,29 @@ export function createSurface(aspect, { maxCols = S.colsMax } = {}) {
 
     reset: zero,
 
-    /** E = 1/2 v.(I - beta D2)v + 1/2 c^2 |grad h|^2, summed over the basins: what the damping drains. */
+    /** E = 1/2 v.(I - beta D2)v + 1/2 c^2 |grad h|^2: what the damping drains. */
     energy() {
       let e = 0;
-      for (const { start, end } of segments) {
-        for (let j = start; j <= end; j++) {
-          e += 0.5 * dx * v[j] * v[j];
-          if (j < end) {
-            e += 0.5 * S.beta * dx * ((v[j + 1] - v[j]) / dx) ** 2;
-            e += 0.5 * S.c * S.c * dx * ((h[j + 1] - h[j]) / dx) ** 2;
-          }
+      for (let j = 0; j < n; j++) {
+        e += 0.5 * dx * v[j] * v[j];
+        if (j < n - 1) {
+          e += 0.5 * S.beta * dx * ((v[j + 1] - v[j]) / dx) ** 2;
+          e += 0.5 * S.c * S.c * dx * ((h[j + 1] - h[j]) / dx) ** 2;
         }
       }
       return e;
     },
 
-    /**
-     * Write the n x 1 RGBA texture: R = eta, G = slope (both signed), B unused, A = foam. This is
-     * what is drawn, so the heights (and the foam) are tapered toward the iceberg first, and the
-     * slope is taken from the tapered line (a fading wave is a shallow slope, not a cliff).
-     */
+    /** Write the n x 1 RGBA texture: R = eta, G = slope (both signed), B unused, A = foam. */
     encode(out) {
-      // clamp to the display range first, then taper: tapering a wave that is bigger than the range
-      // would be undone by the clamp in encodeSigned, and a deep dip would still show the shelf
-      for (let j = 0; j < n; j++) shown[j] = clamp(h[j], -S.etaScale, S.etaScale) * taper[j];
       for (let j = 0; j < n; j++) {
         const lo = Math.max(j - 1, 0);
         const hi = Math.min(j + 1, n - 1);
-        const slope = (shown[hi] - shown[lo]) / ((hi - lo) * dx);
-        out[4 * j] = encodeSigned(shown[j] / S.etaScale);
+        const slope = (h[hi] - h[lo]) / ((hi - lo) * dx);
+        out[4 * j] = encodeSigned(h[j] / S.etaScale);
         out[4 * j + 1] = encodeSigned(slope / S.slopeScale);
         out[4 * j + 2] = encodeSigned(0);
-        out[4 * j + 3] = Math.round(255 * clamp(foam[j] * taper[j], 0, 1)); // foam fades toward the ice with the waves
+        out[4 * j + 3] = Math.round(255 * clamp(foam[j], 0, 1));
       }
     },
 

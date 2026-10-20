@@ -15,6 +15,8 @@ export function waterDefines() {
     `#define SURF_ETA ${num(SURFACE.etaScale)}`,
     `#define SURF_SLOPE ${num(SURFACE.slopeScale)}`,
     `#define SURF_SWAY ${num(SURFACE.sway)}`,
+    `#define BERG_REFRACT ${num(SHADE.bergRefract)}`,
+    `#define ICE_RING ${num(SHADE.iceRing)}`,
     `#define ENC_ZERO ${num(ENC.zero)}`,
     `#define ENC_SCALE ${num(ENC.scale)}`,
     `#define FIELD_H ${num(FIELD.depth)}`,

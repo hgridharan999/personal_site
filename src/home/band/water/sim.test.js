@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { WL, bergClearance } from '../iceberg.js';
-import { SIM, SURFACE } from './constants.js';
-import { decodeSigned } from './pack.js';
+import { WL } from '../iceberg.js';
+import { SIM } from './constants.js';
 import { createWater } from './sim.js';
 
 const W = 1000;
@@ -159,13 +158,6 @@ describe('impacts at the waterline', () => {
     expect(water.view().on).toBe(true);
   });
 
-  it('a plunge into the iceberg\'s own columns is not an impact: no foam', () => {
-    const water = make();
-    sweep(water, plunge(0.0), 0.5);
-    expect(water.snapshot().stats.plunges).toBe(0);
-    expect(foam(water).every((f) => f === 0)).toBe(true);
-  });
-
   it('a slow wade across the line is not an impact', () => {
     const water = make();
     sweep(water, (t) => [0.9, WL - 0.05 + 0.1 * t], 2);
@@ -235,47 +227,68 @@ describe('presses', () => {
   });
 });
 
-describe('the iceberg', () => {
-  const solidCells = (water) => {
-    const { field } = water.snapshot();
-    return field.solid.flatMap((s, k) => (s ? [k] : []));
+describe('the water is the same everywhere across the band', () => {
+  // 0.9375 is exactly 150 surface columns and 60 field cells at 1000 x 320, so a stroke at x = 0.9375
+  // and the same stroke at x = 0 (in the middle of the iceberg) sit on identical grid phases.
+  const SHIFT = 0.9375;
+  const SURF_SHIFT = 150;
+  const FIELD_SHIFT = 60;
+
+  const scenarios = {
+    'a plunge through the line': (x) => (w) => sweep(w, (t) => [x, 0.1 + 2 * Math.min(t, 0.4)], 0.6),
+    'a press at the surface': (x) => (w) => {
+      w.point(x, WL + 0.01, true);
+      w.press(x, WL + 0.01);
+      sweep(w, () => [x, WL + 0.01], 0.6, { drag: true });
+    },
+    'a press under water': (x) => (w) => {
+      w.point(x, 0.55, true);
+      w.press(x, 0.55);
+      sweep(w, () => [x, 0.55], 0.6, { drag: true });
+    },
+    'a circle under water': (x) => (w) => sweep(w, (t) => [x + 0.1 * Math.cos(6 * t), 0.55 + 0.1 * Math.sin(6 * t)], 0.6),
+    'coming out of the water': (x) => (w) => sweep(w, (t) => [x, 0.8 - 2 * Math.min(t, 0.5)], 0.6),
   };
 
-  it('stays dead still when the cursor moves through it: every ice cell holds exactly 0', () => {
-    const water = make();
-    const ice = solidCells(water);
-    expect(ice.length).toBeGreaterThan(500);
-    sweep(water, (t) => [-1.1 + t, WL + 0.2], 2.4, {
-      onFrame: (f, w) => {
-        if (f % 10) return;
-        const { u, v } = w.snapshot().field;
-        for (const k of ice) expect([u[k], v[k]]).toEqual([0, 0]);
-      },
-    });
-    expect(fieldEnergy(water)).toBeGreaterThan(0); // the water around it did move
-  });
+  describe.each(Object.entries(scenarios))('%s', (name, build) => {
+    const over = make();
+    const open = make();
+    build(0)(over); // over the iceberg
+    build(SHIFT)(open); // over open water
 
-  it('never draws a dip deeper than the ice below it: the line cannot pull off the tip and show the shelf', () => {
-    const water = make();
-    const { cols, aspect } = water.dims;
-    const dx = aspect / cols;
-    let deepest = 0;
-    sweep(water, (t) => [-1.1 + t, WL + 0.012], 2.8, {
-      onFrame: (f, w) => {
-        const { surf } = w.view();
-        for (let j = 0; j < cols; j++) {
-          const clear = bergClearance(-aspect / 2 + (j + 0.5) * dx);
-          const eta = decodeSigned(surf[4 * j]) * SURFACE.etaScale;
-          if (clear === 0) {
-            expect(surf[4 * j]).toBe(128); // under the tip: drawn flat
-          } else if (Number.isFinite(clear)) {
-            expect(eta).toBeGreaterThan(-clear);
-            deepest = Math.max(deepest, -eta / clear);
-          }
-        }
-      },
+    it('does the same to the cursor bookkeeping: same crossings, deposits and presses', () => {
+      const a = over.snapshot().stats;
+      const b = open.snapshot().stats;
+      for (const key of ['plunges', 'exits', 'presses']) expect(a[key]).toBe(b[key]);
+      expect(a.trench).toBeCloseTo(b.trench, 9);
+      expect(a.stir).toBeCloseTo(b.stir, 9);
     });
-    expect(deepest).toBeGreaterThan(0.05); // the test did see dips over the shelf
+
+    it('leaves the same energy in the surface and in the field', () => {
+      const a = over.energy();
+      const b = open.energy();
+      expect(a.surface + a.field).toBeGreaterThan(0);
+      // equal to a few parts in a million: the pulses have just begun to feel the nearer band edge
+      for (const key of ['surface', 'field']) expect(Math.abs(a[key] - b[key])).toBeLessThanOrEqual(1e-5 * Math.max(a[key], b[key]));
+    });
+
+    it('and the same waves and ripples, shifted by the offset', () => {
+      const sa = over.snapshot();
+      const sb = open.snapshot();
+      const { cols, nx, ny, aspect } = over.dims;
+      const midCol = Math.round(aspect / 2 / (aspect / cols) - 0.5);
+      for (let d = -60; d <= 60; d++) expect(sb.surface.h[midCol + SURF_SHIFT + d]).toBeCloseTo(sa.surface.h[midCol + d], 8);
+      const midCell = Math.round(aspect / 2 / (aspect / nx) - 0.5);
+      let seen = 0;
+      for (let j = 0; j < ny; j++) {
+        for (let d = -20; d <= 20; d++) {
+          const here = sa.field.u[j * nx + midCell + d];
+          expect(sb.field.u[j * nx + midCell + FIELD_SHIFT + d]).toBeCloseTo(here, 8);
+          seen = Math.max(seen, Math.abs(here));
+        }
+      }
+      if (name.includes('under water') || name.includes('plunge')) expect(seen).toBeGreaterThan(1e-4);
+    });
   });
 });
 

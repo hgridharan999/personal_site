@@ -68,6 +68,8 @@ describe('the water defines are generated from the JS constants', () => {
     expect(define('SURF_ETA')).toBe(SURFACE.etaScale);
     expect(define('SURF_SLOPE')).toBe(SURFACE.slopeScale);
     expect(define('SURF_SWAY')).toBe(SURFACE.sway);
+    expect(define('BERG_REFRACT')).toBe(SHADE.bergRefract);
+    expect(define('ICE_RING')).toBe(SHADE.iceRing);
     expect(define('ENC_ZERO')).toBe(ENC.zero);
     expect(define('ENC_SCALE')).toBe(ENC.scale);
     expect(define('FIELD_H')).toBe(FIELD.depth);
@@ -93,8 +95,13 @@ describe('what the water does to the picture', () => {
   it('sways the caustics with the slope, and keeps the field\'s ripples bending the light', () => {
     expect(src).toContain('warp += vec2(SURF_SWAY * slope * clamp(p.y - wl, 0.0, 0.3), 0.0);');
     expect(src).toContain('+ 0.075 * disp;');
-    expect(src).toContain('vec2 pb = p + (shim + 0.05 * disp) * uw;');
-    expect(src).toContain('col += vec3(0.60, 0.90, 1.0) * rh * 0.30 * below;');
+    // the ice's own outline and facets are barely shifted by the ripples (that was the jelly look); the caustics on it still are
+    expect(src).toContain('vec2 pb = p + (shim + BERG_REFRACT * disp) * uw;');
+    expect(src).not.toContain('0.05 * disp');
+    expect(src).toContain('warp * 0.6');
+    expect(src).toContain('col += vec3(0.60, 0.90, 1.0) * rh * 0.30 * below * (1.0 - iceCov);');
+    // and the rings show over the ice too: the ice is mixed in first, then the rings shade it
+    expect(src.indexOf('col *= 1.0 + ICE_RING * clamp(rh, -0.7, 0.7) * iceCov * below * vec3(1.0, 0.8, 0.6);')).toBeGreaterThan(src.indexOf('iceCov = inside * inA;'));
   });
 
   it('thins the hairline on steep water, lights crests before it, and lays foam after it', () => {
