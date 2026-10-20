@@ -1,0 +1,93 @@
+/* Shared shell and controls for the pages the homepage links to.
+   Every rule lives under .sp, which SiteShell sets beside .hm on its root, and every new class and
+   keyframe carries an sp- prefix, so nothing here can reach the homepage or the dark private area.
+   Tokens, base type, links, focus, .wrap, .head, .row and .btn come from home.css. Selectors are
+   written .sp .sp-x (not .sp-x) so they outrank home.css's .hm h1, .hm .wrap and similar. */
+
+/* ---------- Frame: a full-height column, so a short page still ends at the bottom ---------- */
+.sp { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+.sp .sp-main { flex: 1 0 auto; }
+/* the two-column pages (hiking, climate search) open the column; home.css sets .wrap at 680px */
+.sp.sp-wide .wrap { max-width: calc(1040px + var(--gutter) * 2); }
+
+/* ---------- Header: the hiker beside the name, linking home ---------- */
+.sp .sp-top { padding-top: 28px; }
+.sp .sp-home { --hiker-h: 34px; display: inline-flex; align-items: center; gap: 10px; min-height: 44px; text-decoration: none; }
+/* mirrored as on the homepage, where he faces the peak */
+.sp .sp-home .hiker { transform: scaleX(-1); }
+/* fully drawn: the draw-in plays once on "/" and would only distract here */
+.sp .sp-home .hiker .ink { animation: none; }
+.sp .sp-name { font: 600 18px/1 var(--sans); letter-spacing: -0.03em; color: var(--cream); }
+.sp .sp-hari { font: italic 400 1.2em/0.95 var(--serif); letter-spacing: 0; color: var(--tan); }
+
+.sp .sp-title { margin-top: 36px; font: 600 clamp(26px, 6vw, 30px)/1.15 var(--sans); letter-spacing: -0.03em; text-wrap: balance; }
+.sp .sp-intro { max-width: 60ch; margin-top: 10px; font-size: 15px; line-height: 1.55; color: var(--soft); text-wrap: pretty; }
+
+/* ---------- Footer: contact links, then privacy and the date ---------- */
+.sp .sp-end { margin-top: 80px; padding-bottom: 40px; }
+.sp .sp-end-open { max-width: 60ch; font-size: 14px; line-height: 1.55; color: var(--soft); text-wrap: pretty; }
+.sp .sp-end-links { margin-top: 6px; font-size: 14px; line-height: 1.55; color: var(--soft); }
+.sp .sp-end-fine { margin-top: 8px; font-size: 13px; line-height: 1.5; color: var(--muted); }
+/* a 24px-plus target for each link in the row (WCAG 2.5.8) without changing how the row reads */
+.sp .sp-end a { display: inline-block; padding: 5px 0; }
+.sp .sp-dot { color: var(--muted); }
+
+/* ---------- Focus: index.css gives every button a terracotta ring, which is wrong on white ---------- */
+.sp button:focus-visible, .sp summary:focus-visible, .sp input:focus-visible, .sp [role="button"]:focus-visible {
+  outline: 2px solid var(--tan); outline-offset: 2px;
+}
+
+/* ---------- Shared controls ---------- */
+.sp .sp-chip {
+  display: inline-flex; align-items: center; min-height: 32px; padding: 0 12px;
+  border: 1px solid var(--rule-head); border-radius: 4px; background: transparent;
+  font: 400 13px/1 var(--sans); letter-spacing: -0.2px; color: var(--cream); cursor: pointer;
+}
+.sp .sp-chip[aria-pressed="true"] { background: var(--tan); border-color: var(--tan); color: var(--bg); }
+
+.sp .sp-input {
+  display: block; width: 100%; height: 44px; padding: 0 12px;
+  border: 1px solid var(--outline); border-radius: 4px; background: var(--bg);
+  font: 400 15px/1.2 var(--sans); letter-spacing: -0.2px; color: var(--cream);
+  -webkit-appearance: none; appearance: none;
+}
+.sp .sp-input::placeholder { color: var(--muted); opacity: 1; }
+.sp .sp-input:focus { border-color: var(--tan); }
+.sp .sp-input--sm { height: 36px; }
+/* iOS zooms the page when an input under 16px takes focus */
+@media (pointer: coarse) { .sp .sp-input { font-size: 16px; } }
+
+.sp .sp-status { font-size: 13px; line-height: 1.5; color: var(--muted); }
+
+.sp .sp-text { font-size: 14px; line-height: 1.65; color: var(--soft); text-wrap: pretty; }
+.sp .sp-text p + p { margin-top: 8px; }
+.sp .head + .sp-text { margin-top: 4px; }
+
+/* a native <details> whose summary ends in the homepage's plus mark; it turns into a cross when open */
+.sp .sp-disclosure summary {
+  display: flex; align-items: center; min-height: 44px; list-style: none; cursor: pointer;
+  font: 500 15px/1.4 var(--sans); color: var(--cream);
+}
+.sp .sp-disclosure summary::-webkit-details-marker { display: none; }
+.sp .sp-disclosure[open] > summary .xp-mark { transform: rotate(45deg); --mark: var(--tan); }
+
+/* ---------- Phones: clear the cookie pill that floats at the foot of the page ---------- */
+@media (max-width: 599px) {
+  .sp .sp-end { padding-bottom: 64px; }
+}
+@media (min-width: 600px) {
+  .sp .sp-top { padding-top: 40px; }
+}
+
+/* ---------- Desktop pointers only ---------- */
+@media (hover: hover) and (pointer: fine) {
+  .sp .sp-chip:not([aria-pressed="true"]):hover { border-color: var(--tan); color: var(--tan); }
+  .sp .sp-chip[aria-pressed="true"]:hover { background: #0B6A93; border-color: #0B6A93; }
+  .sp .sp-disclosure summary:hover .xp-mark { --mark: var(--tan); }
+}
+
+/* ---------- Motion: only colour changes ease; nothing enters ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .sp .sp-chip, .sp .sp-input { transition: color 0.2s var(--ease), background-color 0.2s var(--ease), border-color 0.2s var(--ease); }
+  .sp .sp-disclosure .xp-mark { transition: transform 0.3s var(--ease); }
+}

@@ -239,7 +239,7 @@ describe('homepage content: resume match', () => {
     const [tools, methods, coursework] = content.SKILLS.rows[0].body;
     expect(tools).toMatch(/Multi.Agent.Orchestration/); // U+2011: the hyphen never breaks the line
     expect(methods).toMatch(/competitive.analysis/);
-    expect(coursework.replace(/^Coursework: /, '').split(/\s·\s/)).toHaveLength(6); // the dot is glued to the item before it
+    expect(coursework.replace(/^Coursework: /, '').split(/\s·\s/)).toHaveLength(9); // the dot is glued to the item before it
   });
 
   it('opens the Armada row, with the directory linked in its body', () => {

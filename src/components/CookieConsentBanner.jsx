@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
+import { isLightPath } from '../site/lightRoutes';
+
 const STORAGE_KEY = 'hari-site-consent';
 
-// The homepage is white, where the dark pages' white-on-transparent pill would
-// vanish, so "/" gets a light pill. Every other page keeps the original look.
+// The homepage and the pages it links to are white, where the dark pages' white-on-transparent
+// pill would vanish, so every light route gets a light pill. The private area keeps the original.
 const VARIANTS = {
   dark: {
     place: 'justify-center',
@@ -26,7 +28,7 @@ const VARIANTS = {
 export default function CookieConsentBanner() {
   const [visible, setVisible] = useState(false);
   const { pathname } = useLocation();
-  const v = pathname === '/' ? VARIANTS.light : VARIANTS.dark;
+  const v = isLightPath(pathname) ? VARIANTS.light : VARIANTS.dark;
 
   useEffect(() => {
     try {
@@ -49,7 +51,7 @@ export default function CookieConsentBanner() {
   if (!visible) return null;
 
   return (
-    <div className={`fixed inset-x-0 bottom-2 z-40 flex pointer-events-none ${v.place}`}>
+    <aside aria-label="Cookie notice" className={`fixed inset-x-0 bottom-2 z-40 flex pointer-events-none ${v.place}`}>
       <div className={`pointer-events-auto flex items-center gap-2 rounded-full border px-3 py-1 text-xs shadow-none ${v.pill}`} style={{ fontFamily: 'inherit' }}>
         <span className={`text-xs ${v.text}`}>We use minimal local preferences.</span>
         <Link to="/privacy" className={`underline underline-offset-2 text-xs ${v.link}`}>Privacy</Link>
@@ -63,6 +65,6 @@ export default function CookieConsentBanner() {
           Got it
         </button>
       </div>
-    </div>
+    </aside>
   );
 }

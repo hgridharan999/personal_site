@@ -1,9 +1,9 @@
 import { createGovernor } from './governor.js';
 import { STILL_T } from './iceberg.js';
-import { createTap, wirePointer } from './pointer.js';
+import { wirePointer } from './pointer.js';
 import { createRenderer } from './renderer.js';
+import { createWater } from './water/sim.js';
 import { onMediaChange, watchBand, watchContext } from './watch.js';
-import { createWake } from './wake.js';
 
 /*
  * The imperative core of the ending: one object owns the canvas, the GL context, the rAF loop, every
@@ -19,14 +19,13 @@ class BandEngine {
   #cb;
   #mq = window.matchMedia('(prefers-reduced-motion: reduce)');
   #gov = createGovernor();
-  #tap = createTap();
   #abort = new AbortController();
   #cleanups = []; // run in reverse by dispose()
-  #box = new Float32Array(4);
-  #trail = new Float32Array(0);
+  // test hook: a page can set globalThis.__bandSimProbe = (ms, steps) => ... to log what each frame's simulation cost
+  #probe = typeof globalThis.__bandSimProbe === 'function' ? globalThis.__bandSimProbe : null;
   #canvas = null;
   #renderer = null;
-  #wake = null;
+  #water = null;
   #disposed = false;
   #glOK = false;
   #visible = false;
@@ -55,13 +54,13 @@ class BandEngine {
 
   #resize() {
     const r = this.#band.getBoundingClientRect();
-    this.#renderer.resize(r.width, r.height, this.#gov.quality);
+    this.#water.resize(r.width, r.height); // a new grid starts calm; the same grid keeps its waves
+    this.#renderer.resize(r.width, r.height, this.#gov.quality, this.#water.dims);
   }
 
   #draw(t) {
     if (!this.#glOK) return;
-    this.#wake?.fill(this.#trail, this.#box); // an empty box tells the shader to skip the wake
-    this.#renderer.draw(t, this.#tap.data, this.#trail, this.#box);
+    this.#renderer.draw(t, this.#water.view()); // view() only encodes: drawing never moves the water
     this.#setStatus('on'); // the first drawn frame is what hides the SVG fallback
   }
 
@@ -71,14 +70,18 @@ class BandEngine {
     this.#draw(STILL_T);
   }
 
-  /** One rAF tick. The clock, the wake and the press ring all advance by the capped frame time, so none runs while stopped. */
+  /**
+   * One rAF tick. The clock and the water advance by the capped frame time on EVERY tick, including
+   * the ones the 60fps cap or half rate skips drawing, so the simulation never depends on the draw rate.
+   */
   #frame = (ts) => {
     this.#raf = requestAnimationFrame(this.#frame);
     const step = this.#gov.tick(ts);
     if (step.resize) this.#resize();
     this.#clock += step.dt;
-    this.#wake?.update(step.dt);
-    this.#tap.advance(step.dt);
+    const t0 = this.#probe ? performance.now() : 0;
+    const steps = this.#water.advance(step.dt);
+    if (this.#probe) this.#probe(performance.now() - t0, steps);
     if (step.draw) this.#draw(this.#clock);
   };
 
@@ -93,8 +96,7 @@ class BandEngine {
     } else if (!run && this.#raf) {
       cancelAnimationFrame(this.#raf);
       this.#raf = 0;
-      this.#wake?.reset(); // nothing may be left to pop when the loop resumes
-      this.#tap.clear();
+      this.#water.reset(); // a paused, hidden or offscreen frame is perfectly calm, and nothing is left to jump when the loop resumes
     }
     if (this.#glOK && reduced) this.#still();
     this.#setMotion(this.#glOK && !reduced);
@@ -109,8 +111,7 @@ class BandEngine {
     }
     if (!renderer) return false;
     this.#renderer = renderer;
-    this.#wake = renderer.trailN ? createWake(renderer.trailN) : null;
-    this.#trail = new Float32Array(renderer.trailN * 4);
+    this.#water = createWater({ dropN: renderer.dropN, maxTexture: renderer.maxTexture });
     this.#glOK = true;
     this.#resize();
     return true;
@@ -151,7 +152,7 @@ class BandEngine {
     this.#cleanups.push(() => this.#renderer?.dispose());
     this.#cleanups.push(
       watchContext(canvas, { onLost: this.#lost, onRestored: this.#restored }),
-      wirePointer(canvas, { running: () => this.#raf !== 0, wake: () => this.#wake, tap: this.#tap }),
+      wirePointer(canvas, { running: () => this.#raf !== 0, water: () => this.#water }),
       watchBand(this.#band, { onResize: this.#onResize, onVisible: (v) => { this.#visible = v; this.#sync(); } }),
       onMediaChange(this.#mq, this.#sync),
     );
@@ -168,7 +169,7 @@ class BandEngine {
     this.#paused = !this.#paused;
     this.#cb.onPaused(this.#paused);
     this.#sync();
-    if (this.#paused) this.#draw(this.#clock); // sync cleared the wake, so this is the calm frame
+    if (this.#paused) this.#draw(this.#clock); // sync reset the water, so this is the calm frame
   }
 
   /** Cancel the rAF and any shader wait, disconnect every observer, remove every listener, delete the GL objects, lose the context, remove the canvas. */

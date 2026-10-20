@@ -7,31 +7,38 @@
     <meta name="description" content="Cornell Dyson ’29 and Dyson Scholar, CEO and co-founder of Loadstone Labs. Seeking Summer 2027 internships in strategy, investing, business analysis and product." />
     <meta name="author" content="Hari Gridharan" />
     <meta name="theme-color" content="#0B0A0A" />
-    <!-- Pre-paint, homepage only: style the document white and start the mountain
-         download before React mounts, so "/" never flashes the dark site. Other
-         routes keep the dark theme-color above. useHomeDocument() does the same
-         on client-side navigation. -->
+    <!-- Pre-paint, light routes only ("/" and the pages it links to): style the
+         document white and preload the fonts before React mounts, so a hard load
+         never flashes the dark site. The mountain download starts on "/" alone.
+         Other routes (/login, /me) keep the dark theme-color above. The route list
+         repeats src/site/lightRoutes.js, and lightRoutes.test.js keeps the two in
+         step. useHomeDocument() does the same on client-side navigation. -->
     <script>
       (function () {
-        if (location.pathname !== '/') return;
+        var home = location.pathname === '/';
+        var light = home || /^\/(hiking|theses|climate-search|privacy|terms|legal|blog\/[^/]+)\/?$/i.test(location.pathname);
+        if (!light) return;
         document.documentElement.classList.add('hm-page');
         document.querySelector('meta[name="theme-color"]').setAttribute('content', '#FFFFFF');
-        var preload = document.createElement('link');
-        preload.rel = 'preload';
-        preload.as = 'image';
-        preload.href = '/mountain-plate.webp';
-        preload.type = 'image/webp';
-        preload.setAttribute('fetchpriority', 'high');
-        document.head.appendChild(preload);
-        // the homepage's fonts, so the first paint is already in Geist (no re-wrap)
+        function preload(href, as, type, extra) {
+          var link = document.createElement('link');
+          link.rel = 'preload';
+          link.as = as;
+          link.type = type;
+          link.href = href;
+          if (extra) extra(link);
+          document.head.appendChild(link);
+        }
+        if (home) {
+          preload('/mountain-plate.webp', 'image', 'image/webp', function (link) {
+            link.setAttribute('fetchpriority', 'high');
+          });
+        }
+        // the light pages' fonts, so the first paint is already in Geist (no re-wrap)
         ['/fonts/geist-latin.woff2', '/fonts/instrument-serif-italic-latin.woff2'].forEach(function (href) {
-          var font = document.createElement('link');
-          font.rel = 'preload';
-          font.as = 'font';
-          font.type = 'font/woff2';
-          font.href = href;
-          font.crossOrigin = 'anonymous';
-          document.head.appendChild(font);
+          preload(href, 'font', 'font/woff2', function (link) {
+            link.crossOrigin = 'anonymous';
+          });
         });
       })();
     </script>
@@ -95,7 +102,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- Site v2 homepage: Geist + Instrument Serif italic are self-hosted (src/fonts.css, public/fonts/)
          and preloaded on "/" by the pre-paint script above. -->
-    <!-- Older pages still routed (hiking, theses, posts, climate search, legal, /me) need these -->
+    <!-- Only the private area (/login, /me) still uses these older families; every public page is Geist. -->
     <!-- Editorial serif system + handwritten signature accent -->
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
     <!-- "The Ascent": grotesk display + mono + editorial serif accent -->

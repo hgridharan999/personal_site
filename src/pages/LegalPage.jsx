@@ -1,7 +1,10 @@
-import { Link } from 'react-router-dom';
+import SiteShell from '../site/SiteShell';
+
+const INTRO = 'This notice is intended to be clear, practical, and aligned with common privacy expectations for a personal website.';
 
 const sections = [
   {
+    id: 'privacy',
     title: 'Privacy policy',
     body: [
       'This website is operated by Hari Gridharan. We collect only the information needed to operate the site and respond to direct contact. We do not sell or rent your personal data.',
@@ -10,6 +13,7 @@ const sections = [
     ],
   },
   {
+    id: 'cookies',
     title: 'Cookies and tracking',
     body: [
       'This site uses a minimal consent preference cookie in your browser so it can remember whether you accepted the notice. No advertising, behavioral tracking, or third-party analytics are currently used.',
@@ -17,6 +21,7 @@ const sections = [
     ],
   },
   {
+    id: 'terms',
     title: 'Terms of use',
     body: [
       'By using this website, you agree to use it lawfully and respectfully. You may not attempt to interfere with the site or scrape it in a harmful way.',
@@ -24,6 +29,7 @@ const sections = [
     ],
   },
   {
+    id: 'contact',
     title: 'Contact',
     body: [
       'For privacy questions, deletion requests, or other legal inquiries, please contact Hari directly through the site contact channels or by reaching out through the public profiles linked on the site.',
@@ -31,33 +37,23 @@ const sections = [
   },
 ];
 
+/**
+ * /privacy, /terms and /legal all show this one notice, in the shared shell. Each section's h2
+ * carries the id (privacy, cookies, terms, contact) so a link can land on its heading.
+ */
 export default function LegalPage() {
   return (
-    <div className="min-h-screen bg-paper px-5 py-10 text-ink sm:px-8">
-      <div className="mx-auto flex max-w-4xl flex-col gap-8">
-        <div className="space-y-3">
-          <Link to="/" className="text-sm underline underline-offset-4 hover:text-highlight">
-            ← Back to site
-          </Link>
-          <h1 className="text-3xl font-semibold">Legal & privacy information</h1>
-          <p className="max-w-2xl text-sm leading-7 text-ink-accent">
-            This notice is intended to be clear, practical, and aligned with common privacy expectations for a personal website.
-          </p>
-        </div>
-
-        <div className="space-y-6">
-          {sections.map((section) => (
-            <section key={section.title} className="rounded-sm border border-line bg-white/70 p-5 shadow-sm">
-              <h2 className="mb-3 text-xl font-semibold">{section.title}</h2>
-              <div className="space-y-3 text-sm leading-7 text-ink-accent">
-                {section.body.map((paragraph) => (
-                  <p key={paragraph}>{paragraph}</p>
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      </div>
-    </div>
+    <SiteShell title="Legal & privacy" intro={INTRO}>
+      {sections.map(({ id, title, body }) => (
+        <section key={id} aria-labelledby={id}>
+          <h2 className="head" id={id}>{title}</h2>
+          <div className="sp-text">
+            {body.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))}
+          </div>
+        </section>
+      ))}
+    </SiteShell>
   );
 }

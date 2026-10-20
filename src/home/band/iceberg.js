@@ -26,6 +26,32 @@ export function canvasSize(cssW, cssH, dpr, quality) {
   return { w: Math.max(1, Math.round(w0 * s)), h: Math.max(1, Math.round(h0 * s)) };
 }
 
+/**
+ * Where the iceberg meets the water: the x of its two crossings of the waterline, [-0.2, 0.2367].
+ * The surface simulation holds these columns at 0, which splits the water into two basins.
+ */
+export function bergWaterSpan() {
+  const xs = [];
+  BERG.forEach(([x1, y1], i) => {
+    const [x2, y2] = BERG[(i + 1) % BERG.length];
+    // half-open test, so a vertex exactly on the line (the first one) counts once
+    if (y1 < 0 !== y2 < 0) xs.push(x1 + ((0 - y1) / (y2 - y1)) * (x2 - x1));
+  });
+  return [Math.min(...xs), Math.max(...xs)];
+}
+
+/** Whether a point (x from the centre line, y from the band top) is inside the iceberg polygon. */
+export function insideBerg(x, y) {
+  const yr = y - WL;
+  let inside = false;
+  for (let i = 0, j = BERG.length - 1; i < BERG.length; j = i++) {
+    const [xi, yi] = BERG[i];
+    const [xj, yj] = BERG[j];
+    if (yi > yr !== yj > yr && x < xi + ((yr - yi) / (yj - yi)) * (xj - xi)) inside = !inside;
+  }
+  return inside;
+}
+
 const pts = (a) => a.map((p) => `${p[0].toFixed(4)},${p[1].toFixed(4)}`).join(' ');
 
 /**

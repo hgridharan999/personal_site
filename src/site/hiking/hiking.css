@@ -1,0 +1,113 @@
+/* The hiking page. Every rule lives under .sp and every class is sp-, as in site.css; the tokens
+   (--cream, --tan, --muted, --rule-head, --sans) come from .hm in home.css. */
+
+/* ---------- Layout: side by side from 960px. The states and map come first in the DOM (Tab order);
+   on a phone the hike is moved above them so it is the first thing seen ---------- */
+.sp .sp-hk { display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px; margin-top: 32px; }
+.sp .sp-nav { display: grid; gap: 32px; align-content: start; min-width: 0; }
+.sp .sp-detail { order: -1; min-width: 0; scroll-margin-top: 16px; }
+@media (min-width: 960px) {
+  .sp .sp-hk { grid-template-columns: minmax(0, 340px) minmax(0, 1fr); column-gap: 56px; align-items: start; }
+  .sp .sp-nav { grid-column: 1; grid-row: 1; }
+  .sp .sp-detail { grid-column: 2; grid-row: 1; }
+}
+/* sticky only when the whole hike fits the window; a taller one would hide its own review */
+@media (min-width: 960px) and (min-height: 760px) {
+  .sp .sp-detail { position: sticky; top: 24px; }
+}
+
+/* ---------- State list: a native <details> per state, hikes as buttons ---------- */
+.sp .sp-disclosure.sp-state > summary {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; column-gap: 12px;
+}
+.sp .sp-state-name { font: 500 15px/1.4 var(--sans); color: var(--cream); }
+.sp .sp-state-count { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sp .sp-hikes { padding-bottom: 10px; }
+.sp .sp-hike-row {
+  position: relative; display: grid; grid-template-columns: 2.5ch minmax(0, 1fr) auto;
+  column-gap: 10px; align-items: baseline; align-content: center;
+  width: 100%; min-height: 40px; padding: 8px 6px 8px 12px; border: 0; background: none;
+  font: 400 15px/1.4 var(--sans); letter-spacing: -0.2px; text-align: left; color: var(--cream); cursor: pointer;
+}
+.sp .sp-hike-n, .sp .sp-hike-date { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sp .sp-hike-date { white-space: nowrap; text-align: right; }
+.sp .sp-hike-name { font-weight: 500; text-wrap: balance; }
+/* the chosen hike keeps a blue bar; the panel clips its overflow, so the bar and the focus ring sit inside */
+.sp .sp-hike-row[aria-pressed="true"] .sp-hike-name { color: var(--tan); }
+.sp .sp-hike-row[aria-pressed="true"]::before {
+  content: ""; position: absolute; left: 0; top: 9px; bottom: 9px; width: 2px; border-radius: 1px; background: var(--tan);
+}
+.sp .sp-hike-row:focus-visible { outline-offset: -2px; border-radius: 2px; }
+
+/* ---------- Map ---------- */
+.sp .sp-map-box { container-type: inline-size; }
+.sp .sp-map { display: block; width: 100%; height: auto; }
+.sp .sp-map-box .sp-status { margin-top: 8px; }
+.sp .sp-state-shape {
+  fill: #F5F5F3; stroke: rgba(26, 26, 24, 0.55); stroke-width: 1.25px; stroke-linejoin: round; vector-effect: non-scaling-stroke;
+}
+.sp .sp-map-label { fill: var(--muted); font: 500 var(--lab, 26px) var(--sans); letter-spacing: 0; }
+.sp .sp-pin { cursor: pointer; outline: none; }
+.sp .sp-map .sp-pin:focus-visible { outline: none; }
+.sp .sp-pin-dot { fill: #fff; stroke: var(--muted); stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
+.sp .sp-pin-ring { fill: none; stroke: var(--tan); stroke-width: 2px; vector-effect: non-scaling-stroke; opacity: 0; }
+.sp .sp-pin text { fill: var(--cream); font: 600 24px var(--sans); letter-spacing: 0; pointer-events: none; user-select: none; }
+.sp .sp-pin:focus-visible .sp-pin-ring { opacity: 1; }
+.sp .sp-pin:focus-visible .sp-pin-dot { stroke: var(--tan); }
+.sp .sp-pin:focus-visible text { fill: var(--tan); }
+.sp .sp-pin[aria-pressed="true"] .sp-pin-dot { fill: var(--tan); stroke: var(--tan); }
+.sp .sp-pin[aria-pressed="true"] text { fill: #fff; }
+/* a closed state's pins shrink away and then leave hit-testing and the focus order for good */
+.sp .sp-pin[aria-hidden="true"] { opacity: 0; visibility: hidden; pointer-events: none; }
+/* the map shrinks with its column, so on a phone or in the 340px column the pins grow to stay legible */
+@container (max-width: 520px) {
+  .sp .sp-map { --pk: 1.25; --lab: 30px; }
+}
+
+/* ---------- Photo and thumbnails ---------- */
+.sp .sp-photo {
+  display: flex; align-items: center; justify-content: center; margin: 0;
+  aspect-ratio: 4 / 3; overflow: hidden; border-radius: 4px; background: #F4F4F2;
+}
+@media (min-width: 960px) { .sp .sp-photo { max-height: 56vh; } }
+.sp .sp-photo img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.sp .sp-thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.sp .sp-thumb {
+  width: 64px; height: 44px; padding: 0; border: 0; border-radius: 3px; overflow: hidden;
+  background: #F4F4F2; opacity: 0.55; cursor: pointer;
+}
+.sp .sp-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.sp .sp-thumb:hover, .sp .sp-thumb:focus-visible, .sp .sp-thumb[aria-pressed="true"] { opacity: 1; }
+.sp .sp-thumb[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--tan); }
+
+/* ---------- The hike's words ---------- */
+.sp .sp-hike-title { margin-top: 20px; font: 600 20px/1.25 var(--sans); letter-spacing: -0.02em; text-wrap: balance; }
+.sp .sp-hike-meta { margin-top: 2px; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.sp .sp-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 12px 20px; margin: 16px 0 0; }
+.sp .sp-stats dt { font-size: 13px; line-height: 1.5; color: var(--muted); }
+.sp .sp-stats dd { margin: 0; font: 500 15px/1.5 var(--sans); color: var(--cream); font-variant-numeric: tabular-nums; }
+.sp .sp-detail .sp-text { max-width: 64ch; margin-top: 16px; }
+.sp .sp-hike-hl { margin-top: 12px; font-size: 13px; line-height: 1.5; color: var(--muted); }
+
+/* ---------- Desktop pointers only ---------- */
+@media (hover: hover) and (pointer: fine) {
+  .sp .sp-hike-row:hover .sp-hike-name { color: var(--tan); }
+  .sp .sp-pin:hover .sp-pin-dot { stroke: var(--tan); }
+  .sp .sp-pin:hover text { fill: var(--tan); }
+  .sp .sp-pin[aria-pressed="true"]:hover text { fill: #fff; }
+}
+
+/* ---------- Motion: eases only; nothing enters or loops ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .sp .sp-hike-name, .sp .sp-thumb, .sp .sp-pin-dot, .sp .sp-pin text, .sp .sp-pin-ring {
+    transition: color 0.2s var(--ease), fill 0.2s var(--ease), stroke 0.2s var(--ease), opacity 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  }
+  .sp .sp-pin { transition: transform 0.6s var(--ease), opacity 0.4s var(--ease), visibility 0s; }
+  .sp .sp-pin[aria-hidden="true"] { transition: transform 0.6s var(--ease), opacity 0.4s var(--ease), visibility 0s 0.4s; }
+  /* Where supported, a state's hikes also ease open and shut instead of jumping. */
+  @supports (interpolate-size: allow-keywords) {
+    .sp .sp-state { interpolate-size: allow-keywords; }
+    .sp .sp-state::details-content { height: 0; overflow: clip; transition: height 0.38s var(--ease), content-visibility 0.38s allow-discrete; }
+    .sp .sp-state[open]::details-content { height: auto; }
+  }
+}

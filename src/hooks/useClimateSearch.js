@@ -16,6 +16,9 @@ export function useClimateSearch() {
   const [error, setError] = useState(null);
   const [searchInfo, setSearchInfo] = useState(null);
   const searchTimeoutRef = useRef(null);
+  // Every search (and every clear) takes a new id. A response whose id is no longer the latest
+  // is dropped, so a slow earlier search can never land on top of a newer one or a cleared box.
+  const latestRef = useRef(0);
 
   /**
    * Perform a search
@@ -27,12 +30,14 @@ export function useClimateSearch() {
       clearTimeout(searchTimeoutRef.current);
     }
 
+    const id = ++latestRef.current;
     setLoading(true);
     setError(null);
 
     try {
       const response = await searchStartups(params);
-      
+      if (id !== latestRef.current) return;
+
       setResults(response.results || []);
       setSearchInfo({
         query: response.query,
@@ -40,12 +45,13 @@ export function useClimateSearch() {
         processingTime: response.processing_time_ms,
       });
     } catch (err) {
+      if (id !== latestRef.current) return;
       console.error('Search error:', err);
       setError(err.message || 'Search failed. Please try again.');
       setResults([]);
       setSearchInfo(null);
     } finally {
-      setLoading(false);
+      if (id === latestRef.current) setLoading(false);
     }
   }, []);
 
@@ -98,6 +104,8 @@ export function useClimateSearch() {
    * Clear search results
    */
   const clearResults = useCallback(() => {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    latestRef.current += 1; // anything still in flight is now stale
     setResults([]);
     setSearchInfo(null);
     setError(null);

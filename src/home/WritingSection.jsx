@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { NBSP, WRITING } from './content';
 
 /** One essay: the title on the left, the month on the right, the whole row is the link. */
-function EssayRow({ essay }) {
+export function EssayRow({ essay }) {
   return (
     <li className="row row--link">
       <Link className="rl rl--essay" to={`/blog/${essay.slug}`}>

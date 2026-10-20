@@ -5,14 +5,15 @@ import CookieConsentBanner from './components/CookieConsentBanner';
 import ScrollToTop from './components/ScrollToTop';
 
 // Everything but the homepage loads on demand, so a visitor to "/" downloads only
-// the homepage: the old pages carry gsap, framer-motion, zdog, lenis and markdown,
-// and the private shell carries ascent.css and private.css.
+// the homepage: the post page carries markdown, and the private shell carries ascent.css,
+// private.css and the animation libraries. The old Ascent and climate-search page files
+// (src/ascent, src/pages/ClimateSearch*) stay on disk, unrouted.
 const PrivateShell = lazy(() => import('./private/PrivateShell'));
 const RequireAuth = lazy(() => import('./private/RequireAuth'));
-const AscentHiking = lazy(() => import('./ascent/AscentHiking'));
-const AscentTheses = lazy(() => import('./ascent/AscentTheses'));
-const AscentPost = lazy(() => import('./ascent/AscentPost'));
-const ClimateSearchRoute = lazy(() => import('./pages/ClimateSearchRoute'));
+const HikingPage = lazy(() => import('./site/hiking/HikingPage'));
+const ThesesPage = lazy(() => import('./site/ThesesPage'));
+const PostPage = lazy(() => import('./site/PostPage'));
+const ClimateSearchPage = lazy(() => import('./site/climate/ClimateSearchPage'));
 const LegalPage = lazy(() => import('./pages/LegalPage'));
 const LoginPage = lazy(() => import('./private/LoginPage'));
 const PrivateHome = lazy(() => import('./private/PrivateHome'));
@@ -40,16 +41,16 @@ function AnimatedRoutes() {
   return (
     <Suspense fallback={null}>
     <Routes location={location}>
-      {/* Site v2: a single homepage. The old Ascent pages it still links to
-          (hiking, theses, posts, climate search) keep their dark look for now;
-          the rest (work, projects, thesis, trailsense) are unrouted but their
-          files stay on disk, and vercel.json 301s their old URLs. */}
+      {/* Site v2: a single homepage and the pages it links to, all in the homepage's
+          light look (src/site). The old Ascent and climate pages, and the rest (work,
+          projects, thesis, trailsense), are unrouted but their files stay on disk,
+          and vercel.json 301s their old URLs. */}
       <Route path="/" element={<HomePage />} />
-      <Route path="/hiking" element={<AscentHiking />} />
-      <Route path="/theses" element={<AscentTheses />} />
-      <Route path="/blog/:slug" element={<AscentPost />} />
+      <Route path="/hiking" element={<HikingPage />} />
+      <Route path="/theses" element={<ThesesPage />} />
+      <Route path="/blog/:slug" element={<PostPage />} />
 
-      <Route path="/climate-search" element={<ClimateSearchRoute />} />
+      <Route path="/climate-search" element={<ClimateSearchPage />} />
       <Route path="/privacy" element={<LegalPage />} />
       <Route path="/terms" element={<LegalPage />} />
       <Route path="/legal" element={<LegalPage />} />

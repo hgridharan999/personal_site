@@ -1,0 +1,46 @@
+/* Theses and posts: the ten bullet points, a thesis row's kind, and the reading column for a post.
+   Everything is under .sp with sp- classes; the essay rows themselves are the homepage's own
+   (.row, .rl, .theses-more from home.css). */
+
+/* ---------- Me in 10 bullet points: a number, then the line, with space and no rules ---------- */
+.sp .sp-points { margin: 8px 0 0; padding: 0; list-style: none; }
+.sp .sp-points li {
+  display: grid; grid-template-columns: 2.5ch minmax(0, 1fr); column-gap: 12px; align-items: baseline;
+  padding: 8px 0; font-size: 15px; line-height: 1.5; color: var(--cream); text-wrap: pretty;
+}
+.sp .sp-pn { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* a published thesis: Investment or Research under the title, like the date column beside it */
+.sp .sp-kind { font-size: 13px; line-height: 1.5; color: var(--muted); }
+
+/* ---------- A post ---------- */
+.sp .sp-date { display: block; margin-top: 36px; font-size: 13px; line-height: 1.5; color: var(--muted); }
+/* the headline is the one place Instrument Serif carries a whole line; italic only, as it is hosted */
+.sp .sp-title.sp-title--essay {
+  margin-top: 6px; font: italic 400 clamp(32px, 7vw, 44px)/1.08 var(--serif); letter-spacing: 0; color: var(--cream);
+}
+.sp .sp-prose { margin-top: 32px; font: 400 16px/1.7 var(--sans); letter-spacing: -0.2px; color: #3A3935; }
+.sp .sp-prose > * + * { margin-top: 1em; }
+.sp .sp-prose h2 { margin-top: 2.2em; font: 600 17px/1.4 var(--sans); letter-spacing: -0.01em; color: var(--cream); }
+.sp .sp-prose h3 { margin-top: 1.8em; font: 600 15px/1.4 var(--sans); color: var(--cream); }
+.sp .sp-prose h2 + *, .sp .sp-prose h3 + * { margin-top: 0.5em; }
+.sp .sp-prose strong { font-weight: 600; color: var(--cream); }
+.sp .sp-prose a { color: var(--cream); }
+/* home.css and Tailwind both strip list markers; a post wants them back */
+.sp .sp-prose ul { padding-left: 1.25em; list-style: disc; }
+.sp .sp-prose ol { padding-left: 1.25em; list-style: decimal; }
+.sp .sp-prose li::marker { color: var(--muted); }
+.sp .sp-prose li + li { margin-top: 0.4em; }
+.sp .sp-prose blockquote { margin-left: 0; padding-left: 14px; border-left: 1px solid rgba(15, 125, 170, 0.45); }
+.sp .sp-prose code, .sp .sp-prose pre { font-family: ui-monospace, monospace; background: #F4F4F2; }
+.sp .sp-prose code { padding: 0.1em 0.3em; border-radius: 3px; font-size: 0.9em; }
+.sp .sp-prose pre { padding: 14px; overflow-x: auto; border-radius: 4px; font-size: 14px; line-height: 1.55; }
+.sp .sp-prose pre code { padding: 0; background: none; font-size: inherit; }
+.sp .sp-prose img { max-width: 100%; height: auto; border-radius: 4px; }
+.sp .sp-prose hr { height: 0; border: 0; border-top: 1px solid var(--rule); }
+
+/* the way out of a missing post sits a line below the intro */
+.sp .sp-lost { margin-top: 16px; }
+
+/* the section element already gets its 52px of air from home.css's main > section rule */
+.sp .sp-more { margin-top: 24px; }

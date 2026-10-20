@@ -63,8 +63,30 @@ describe('App.jsx routes', () => {
   });
 
   it('drops the old homepage chrome and the removed pages\' imports', () => {
-    for (const name of ['GlobalChrome', 'HikerHeroScene', 'AscentPage', 'AscentWork', 'AscentProjects', 'AscentThesis', 'AscentTrailSense']) {
+    const gone = [
+      'GlobalChrome', 'HikerHeroScene', 'AscentPage', 'AscentWork', 'AscentProjects', 'AscentThesis', 'AscentTrailSense',
+      // the dark pages the homepage used to link to, replaced by src/site
+      'AscentHiking', 'AscentTheses', 'AscentPost', 'ClimateSearchRoute', 'SubShell', 'PageShell',
+    ];
+    for (const name of gone) {
       expect(app, name).not.toContain(name);
+    }
+  });
+
+  it('lazy-loads the restyled pages from src/site and keeps the legal page', () => {
+    const pages = {
+      HikingPage: './site/hiking/HikingPage',
+      ThesesPage: './site/ThesesPage',
+      PostPage: './site/PostPage',
+      ClimateSearchPage: './site/climate/ClimateSearchPage',
+      LegalPage: './pages/LegalPage',
+    };
+    for (const [name, file] of Object.entries(pages)) {
+      expect(app, name).toContain(`const ${name} = lazy(() => import('${file}'));`);
+      expect(existsSync(`${ROOT}src/${file.slice(2)}.jsx`), file).toBe(true);
+    }
+    for (const [path, name] of [['/hiking', 'HikingPage'], ['/theses', 'ThesesPage'], ['/blog/:slug', 'PostPage'], ['/climate-search', 'ClimateSearchPage']]) {
+      expect(app, path).toContain(`<Route path="${path}" element={<${name} />} />`);
     }
   });
 });
@@ -115,16 +137,17 @@ describe('sitemap.xml', () => {
   });
 });
 
-describe('AscentTheses.jsx', () => {
-  const src = read('src/ascent/AscentTheses.jsx');
+describe('ThesesPage.jsx', () => {
+  const src = read('src/site/ThesesPage.jsx');
 
   it('no longer links to the removed /thesis page', () => {
     expect(src).not.toContain("'/thesis'");
     expect(src).not.toContain('"/thesis"');
   });
 
-  it('filters out hidden posts', () => {
-    expect(src).toContain('HIDDEN_POST_SLUGS');
+  it('lists the essays from the homepage content, not the remote feed', () => {
+    expect(src).toMatch(/import\s*\{[^}]*\bWRITING\b[^}]*\}\s*from\s*'\.\.\/home\/content'/);
+    expect(src).not.toContain('useUnifiedFeed');
   });
 });
 
@@ -141,7 +164,7 @@ describe('index.html head', () => {
     expect(html).not.toContain('—');
   });
 
-  it('runs the pre-paint script for "/"', () => {
+  it('runs the pre-paint script on the light routes, starting the mountain on "/"', () => {
     const script = html.match(/<script>([\s\S]*?)<\/script>/);
     expect(script).not.toBeNull();
     expect(script[1]).toMatch(/location\.pathname [!=]== '\/'/);
@@ -150,7 +173,7 @@ describe('index.html head', () => {
     expect(script[1]).toContain('/mountain-plate.webp');
   });
 
-  it('self-hosts Geist and Instrument Serif italic and preloads them on "/"', () => {
+  it('self-hosts Geist and Instrument Serif italic and preloads them on the light routes', () => {
     const fonts = read('src/fonts.css');
     for (const file of ['/fonts/geist-latin.woff2', '/fonts/instrument-serif-italic-latin.woff2']) {
       expect(fonts).toContain(`url('${file}')`);

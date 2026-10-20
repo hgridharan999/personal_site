@@ -1,17 +1,20 @@
 import { BERG, WL } from '../iceberg.js';
 
 /*
- * The parts of the fragment shader that do not depend on the wake: the iceberg polygon, its signed
+ * The parts of the fragment shader that do not depend on the simulated water: the iceberg polygon, its signed
  * distance, the two Voronoi passes, the caustics and the depth ramp. Copied from the mockup as-is.
  */
 
 export const VS = 'attribute vec2 aPos; void main(){ gl_Position = vec4(aPos, 0.0, 1.0); }';
 
+/** Samplers need their own default: it is lowp otherwise, which cannot hold the bytes (up to 255) the decoder multiplies out. */
 export const PRECISION = `
 #ifdef GL_FRAGMENT_PRECISION_HIGH
 precision highp float;
+precision highp sampler2D;
 #else
 precision mediump float;
+precision mediump sampler2D;
 #endif
 `;
 
@@ -26,7 +29,7 @@ export function bergConstants() {
 ${vconst}`;
 }
 
-/** Everything main() calls except the wake and the tap ring. The polygon's edges are unrolled here. */
+/** Everything main() calls except the water's samplers and the drops. The polygon's edges are unrolled here. */
 export function helpers() {
   const NV = BERG.length;
   const edges = BERG.map((_, i) => `edge(p, V${(i + NV - 1) % NV}, V${i}, d, s);`).join('\n  ');

@@ -1,0 +1,101 @@
+/* /climate-search. Every rule starts with .sp. The shared controls (.sp-chip, .sp-input,
+   .sp-status, .sp-text, .sp-disclosure) come from site.css; this file only places them and
+   styles the few things this page owns. Tokens (--cream, --muted, --tan, --rule...) come from .hm. */
+
+/* Every selector is written .sp .sp-x, as in site.css: home.css resets margins with `.hm p, .hm ul`,
+   which has an element in it and would outrank a lone class that sets a margin. */
+
+/* ---------- Layout ---------- */
+.sp .sp-cs-meta { margin-top: 10px; }
+.sp .sp-cs { display: grid; gap: 40px; margin-top: 32px; }
+.sp .sp-cs-main { min-width: 0; }
+.sp .sp-cs-aside { display: grid; gap: 40px; align-content: start; min-width: 0; }
+/* the body wrapper is only a focus target (see the page), not a control, so it draws no ring */
+.sp .sp-cs-body { margin-top: 28px; }
+.sp .sp-cs-body:focus { outline: none; }
+
+@media (min-width: 960px) {
+  .sp .sp-cs { grid-template-columns: minmax(0, 680px) 280px; gap: 56px; align-items: start; }
+}
+/* Sticky only when the whole aside fits the window; a taller one would hide its lower half
+   until the page ends. */
+@media (min-width: 960px) and (min-height: 900px) {
+  .sp .sp-cs-aside { position: sticky; top: 24px; }
+}
+
+/* ---------- Search box ---------- */
+.sp .sp-search-field { position: relative; }
+.sp .sp-search-field .sp-input { width: 100%; padding: 0 40px; }
+.sp .sp-search-field[data-busy] .sp-input { padding-right: 68px; } /* room for the ring beside the clear button */
+.sp .sp-search-icon { position: absolute; left: 14px; top: 14px; color: var(--muted); pointer-events: none; }
+.sp .sp-search-clear {
+  position: absolute; top: 6px; right: 6px; width: 32px; height: 32px;
+  display: grid; place-items: center; padding: 0;
+  border: 0; border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer;
+}
+.sp .sp-search-hint { margin-top: 8px; }
+
+/* The spinning ring: in the box while a search runs, and in the status line. Under reduced
+   motion it does not turn; the blue quarter still marks it as busy. */
+.sp .sp-ring {
+  display: inline-block; flex: none; width: 16px; height: 16px;
+  border: 2px solid var(--rule-head); border-top-color: var(--tan); border-radius: 50%;
+}
+.sp .sp-search-field .sp-ring { position: absolute; top: 14px; right: 44px; }
+.sp .sp-searching { display: flex; align-items: center; gap: 8px; }
+
+/* ---------- Filters ---------- */
+.sp .sp-filters { display: grid; gap: 24px; }
+.sp .sp-filters-top { display: flex; align-items: baseline; min-height: 24px; margin-bottom: -12px; } /* its first group sits closer than the groups do to each other */
+.sp .sp-group { margin-bottom: 8px; }
+.sp .sp-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.sp .sp-years { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.sp .sp-year .sp-status { display: block; margin-bottom: 4px; }
+.sp .sp-year .sp-input { width: 100%; }
+.sp .sp-cs-filters .sp-filters { padding: 8px 0 12px; }
+
+/* "Clear all": a quiet text button, not a second chip */
+.sp .sp-clear {
+  margin-left: auto; min-height: 32px; padding: 0 2px;
+  border: 0; background: transparent; cursor: pointer;
+  font: 400 13px/1.5 var(--sans); color: var(--muted);
+  text-decoration: underline; text-decoration-color: var(--ul); text-underline-offset: 0.22em;
+}
+
+/* ---------- Results: the homepage ledger row with a third line for the facts ---------- */
+.sp .sp-results-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.sp .sp-results { margin-top: 6px; }
+.sp .row.sp-result { grid-template-areas: "ttl when" "line line" "meta meta"; padding: 12px 0; }
+.sp .sp-result-meta { grid-area: meta; margin-top: 4px; font: 400 13px/1.5 var(--sans); color: var(--muted); }
+@media (max-width: 599px) {
+  .sp .row.sp-result { grid-template-areas: "ttl" "when" "line" "meta"; }
+}
+
+/* ---------- Stats ---------- */
+.sp .sp-total { font: 500 15px/1.5 var(--sans); color: var(--cream); font-variant-numeric: tabular-nums; }
+.sp .sp-stats-gap { margin-top: 16px; }
+.sp .sp-bars { display: grid; gap: 10px; margin-top: 8px; }
+.sp .sp-bars li { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; row-gap: 4px; }
+.sp .sp-bar-name { font: 400 13px/1.4 var(--sans); color: var(--cream); }
+.sp .sp-bar-count { font: 400 13px/1.4 var(--sans); color: var(--muted); font-variant-numeric: tabular-nums; }
+.sp .sp-bar { position: relative; display: block; grid-column: 1 / -1; height: 3px; border-radius: 2px; background: rgba(0, 0, 0, 0.06); overflow: hidden; }
+.sp .sp-bar::after { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--share); border-radius: inherit; background: var(--tan); }
+/* a still placeholder: a pulse would be motion for something that resolves in a moment */
+.sp .sp-skel { display: block; height: 12px; margin-top: 10px; border-radius: 2px; background: #F0F0EE; }
+.sp .sp-skel--short { width: 60%; }
+
+/* ---------- Failure, empty and start states: text on the page, no boxes ---------- */
+.sp .sp-fail { padding: 2px 0 2px 14px; border-left: 2px solid #A4442B; }
+.sp .sp-fail-title, .sp .sp-prompt-title { font: 500 15px/1.5 var(--sans); color: var(--cream); text-wrap: balance; }
+.sp .sp-fail .sp-text { margin-top: 2px; overflow-wrap: anywhere; }
+.sp .sp-fail .btn { margin-top: 12px; background: transparent; cursor: pointer; }
+.sp .sp-prompt .sp-text { margin-top: 2px; max-width: 60ch; }
+.sp .sp-prompt .sp-chips { margin-top: 16px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .sp .sp-search-clear:hover, .sp .sp-clear:hover { color: var(--cream); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sp .sp-ring { animation: sp-spin 0.8s linear infinite; }
+}
+@keyframes sp-spin { to { transform: rotate(360deg); } }

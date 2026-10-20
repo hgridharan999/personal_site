@@ -10,7 +10,7 @@
 @media (min-width: 600px)  { .hm .band { --band-h: 300px; } }
 @media (min-width: 1000px) { .hm .band { --band-h: 320px; } }
 .hm .band canvas, .hm .band svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-/* pan-y: a vertical swipe still scrolls the page; a sideways drag paints the wake */
+/* pan-y: a vertical swipe still scrolls the page; a sideways drag stirs the water */
 .hm .band canvas { touch-action: pan-y; -webkit-tap-highlight-color: transparent; }
 .hm .band svg { pointer-events: none; }
 .hm .band[data-gl="on"] svg { display: none; }

@@ -292,7 +292,7 @@ export const SKILLS = {
       body: [
         `Tools: ${list('Excel', 'PowerPoint', 'Bloomberg', 'SQL', 'Python', 'FastAPI', 'React/TypeScript', 'Cloudflare', 'Claude Code', 'Multi\u2011Agent Orchestration', 'Salesforce')}`,
         `Methods: ${list('financial modeling', 'market sizing', 'competitive analysis', 'unit economics')}`,
-        `Coursework: ${list('Spreadsheet Modeling', 'Linear Algebra', 'Math Foundations of CS', 'Finance', 'Financial Accounting', 'Statistics')}`,
+        `Coursework: ${list('Spreadsheet Modeling', 'Linear Algebra', 'Math Foundations of CS', 'Computational Mathematics', 'Finance', 'Financial Accounting', 'Statistics', 'Business Management', 'Management Communication')}`,
       ],
     },
   ],

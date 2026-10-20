@@ -1,37 +1,12 @@
 /*
- * Pointer input for the band's canvas, in the shader's space: band-height units, x from the centre
+ * Pointer input for the band's canvas, in the water's space: band-height units, x from the centre
  * line and y from the top.
  */
-
-const TAP_LIFE = 5.0; // the shader draws a press ring only while its age < 5
-
-/** The press/tap ring's uniform data (x, y, age in seconds, strength); an age <= 0 means none. */
-export function createTap() {
-  const data = new Float32Array([0, 0, -1, 0]);
-  return {
-    data,
-    /** Start a ring. The age begins just above 0, because the shader treats 0 as "not started". */
-    press(x, y) {
-      data[0] = x;
-      data[1] = y;
-      data[2] = 0.001;
-      data[3] = 1;
-    },
-    advance(dt) {
-      if (data[2] <= 0) return;
-      const age = data[2] + dt;
-      data[2] = age > TAP_LIFE ? -1 : age;
-    },
-    clear() {
-      data[2] = -1;
-    },
-  };
-}
 
 /**
  * Raw listeners. All passive, so they can never delay scrolling. Touch scrolling is left to the
  * browser by the canvas's `touch-action: pan-y` (set in band.css): a vertical pan ends in
- * pointercancel, which simply ends the stroke; a sideways drag keeps painting the wake.
+ * pointercancel, which simply ends the stroke; a sideways drag keeps stirring the water.
  *
  * @param {HTMLCanvasElement} canvas
  * @param {{ onPoint(x: number, y: number, drag: boolean): void, onPress(x: number, y: number): void, onLeave(): void }} h
@@ -64,14 +39,15 @@ export function bindPointer(canvas, { onPoint, onPress, onLeave }) {
 }
 
 /**
- * Connect the canvas to the wake and the ring. Input is ignored unless the loop is running, so a
- * paused, hidden or reduced-motion page never reacts.
- * @param {{ running(): boolean, wake(): { point(x: number, y: number, drag: boolean): void, leave(): void } | null, tap: ReturnType<typeof createTap> }} src
+ * Connect the canvas to the water. Input is ignored unless the loop is running, so a paused,
+ * hidden or reduced-motion page never reacts. `water` is a getter, because a restored context
+ * brings a fresh simulation.
+ * @param {{ running(): boolean, water(): { point(x: number, y: number, drag: boolean): void, press(x: number, y: number): void, leave(): void } | null }} src
  */
-export function wirePointer(canvas, { running, wake, tap }) {
+export function wirePointer(canvas, { running, water }) {
   return bindPointer(canvas, {
-    onPoint: (x, y, drag) => { if (running()) wake()?.point(x, y, drag); },
-    onPress: (x, y) => { if (running()) tap.press(x, y); },
-    onLeave: () => wake()?.leave(),
+    onPoint: (x, y, drag) => { if (running()) water()?.point(x, y, drag); },
+    onPress: (x, y) => { if (running()) water()?.press(x, y); },
+    onLeave: () => water()?.leave(),
   });
 }

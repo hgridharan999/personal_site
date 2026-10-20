@@ -1,13 +1,14 @@
 import { PRECISION, VS, bergConstants, helpers } from './common.js';
-import { TAP_FN, TAP_UNIFORM, WAKE_FN, WAKE_UNIFORMS, wakeDefines } from './wake.js';
+import { DROPS, SAMPLERS, waterDefines, waterUniforms } from './water.js';
 
 export { VS };
 
 /*
- * main() is the mockup's, line for line, except the ripple block. That block used to stamp up to
- * five ring packets; it now asks tapRing() for the press ring and wakeField() for the cursor's path.
+ * main() is the mockup's, line for line, except where the simulated water comes in: the waterline
+ * rides the surface height, caustics sway with its slope, crests catch light, foam rides the line,
+ * the ripples under it warp the light as before, and splash drops are drawn last.
  */
-const mainFn = (trailN) => `
+const mainFn = (dropN) => `
 void main(){
   vec2 fc = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
   float H = uRes.y;
@@ -15,13 +16,14 @@ void main(){
   vec2 p = (fc - vec2(uRes.x * 0.5, 0.0)) / H;
   float t = uT;
 
-  /* the water answers the pointer: a press ring and the cursor's wake. Both warp the light and lift the surface */
+  /* the simulated water: waves on the line (eta, slope, foam) and ripples under it (they warp the light) */
   vec2 disp = vec2(0.0); float rh = 0.0;
-  tapRing(p, disp, rh);
-${trailN > 0 ? '  wakeField(p, disp, rh);\n' : ''}
-  /* waterline: three slow sines, a little ripple */
+  float eta = 0.0, slope = 0.0, foam = 0.0;
+  if (uSim.y > 0.5) { surfaceAt(p.x, eta, slope, foam); if (p.y > WL - SURF_ETA) fieldAt(p, disp, rh); }
+
+  /* waterline: three slow sines, a little ripple, and the simulated waves */
   float wl = WL + 0.0042 * sin(p.x * 9.0 + t * 0.8) + 0.0028 * sin(p.x * 17.0 - t * 1.15 + 1.7)
-                + 0.0016 * sin(p.x * 33.0 + t * 1.9 + 0.4) - 0.011 * rh;
+                + 0.0016 * sin(p.x * 33.0 + t * 1.9 + 0.4) - eta;
   float below = smoothstep(-px, px, p.y - wl);
 
   /* water colour by depth (the edges sit a little deeper than the middle) */
@@ -41,6 +43,8 @@ ${trailN > 0 ? '  wakeField(p, disp, rh);\n' : ''}
   /* the warp that bends all the light: slow swell plus the ripples */
   vec2 warp = 0.045 * vec2(sin(p.y * 7.0 + t * 0.6) + 0.5 * sin(p.y * 13.0 - t * 0.9),
                            sin(p.x * 6.0 - t * 0.5) + 0.5 * sin(p.x * 11.0 + t * 0.7)) + 0.075 * disp;
+  /* sloped water sways the caustics beneath it */
+  warp += vec2(SURF_SWAY * slope * clamp(p.y - wl, 0.0, 0.3), 0.0);
 
   /* the iceberg's silhouette, seen through the moving water */
   float uw = smoothstep(WL - 0.012, WL + 0.03, p.y);
@@ -113,11 +117,21 @@ ${trailN > 0 ? '  wakeField(p, disp, rh);\n' : ''}
   /* the rings themselves: light crests, dim troughs */
   col += vec3(0.60, 0.90, 1.0) * rh * 0.30 * below;
 
-  /* the waterline itself: a thin blue hairline that breaks up a little as it moves */
-  float lineD = (p.y - wl) * H;
+  /* a crest of the waterline catches light, just under it */
+  float z = (p.y - wl) * H;
+  col += vec3(0.50, 0.85, 1.0) * max(eta, 0.0) / SURF_ETA * CREST_GAIN * below * exp(-max(z, 0.0) / CREST_FALL);
+
+  /* the waterline itself: a thin blue hairline that breaks up a little as it moves (and thins where the water is steep) */
+  float lineD = z * inversesqrt(1.0 + slope * slope);
   float lineA = 0.55 + 0.45 * sin(p.x * 21.0 + t * 0.7) * sin(p.x * 7.3 - t * 0.4);
   col = mix(col, vec3(0.059, 0.490, 0.667), (1.0 - smoothstep(0.35, 1.15, abs(lineD))) * lineA * 0.9);
 
+  /* foam rides the line */
+  col = mix(col, vec3(0.94, 0.99, 1.0), foam * below * exp(-max(z, 0.0) / FOAM_FALL) * FOAM_GAIN);
+${dropN > 0 ? `
+  /* splash drops, over everything (but not under the water) */
+  if (uSim.y > 0.5) dropsOver(p, px, below, col);
+` : ''}
   /* floor: slightly darker in the lower corners, dithered so the deep gradient never bands */
   col *= 1.0 - 0.18 * smoothstep(0.9, 2.2, abs(p.x)) * smoothstep(0.4, 1.0, p.y);
   col = mix(col, vec3(0.039, 0.094, 0.133), smoothstep(0.93, 1.0, p.y));   // exactly the footer's colour at the floor
@@ -127,25 +141,22 @@ ${trailN > 0 ? '  wakeField(p, disp, rh);\n' : ''}
 `;
 
 /**
- * The fragment shader for a trail of `trailN` entries (0 = no wake at all: the cursor does
- * nothing but a press still rings). TRAIL_N is a #define so the uniform array and the loop
- * bound can't disagree.
+ * The fragment shader for a pool of `dropN` splash drops (0 = no drops drawn: a splash still moves
+ * the water). DROP_N is a #define so the uniform array and the loop bound can't disagree.
  */
-export function buildFragmentShader(trailN) {
-  const wake = trailN > 0;
+export function buildFragmentShader(dropN) {
   return [
-    `#define TRAIL_N ${trailN}`,
+    `#define DROP_N ${dropN}`,
     PRECISION,
     'uniform vec2  uRes;      // canvas size, device px',
     'uniform float uT;        // seconds',
-    TAP_UNIFORM,
-    wake ? WAKE_UNIFORMS : '',
-    wake ? wakeDefines() : '',
+    waterUniforms(dropN),
+    waterDefines(dropN),
     '',
     bergConstants(),
     helpers(),
-    TAP_FN,
-    wake ? WAKE_FN : '',
-    mainFn(trailN),
+    SAMPLERS,
+    dropN > 0 ? DROPS : '',
+    mainFn(dropN),
   ].join('\n');
 }

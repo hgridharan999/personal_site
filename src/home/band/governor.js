@@ -11,7 +11,7 @@ export const GOVERNOR = Object.freeze({
   slowFrames: 45, // consecutive slow frames before stepping down
   qualityStep: 0.8,
   qualityFloor: 0.55, // below this, halve the frame rate instead of shrinking further
-  maxDtSeconds: 0.1, // the clock and the wake never advance by more than this in one frame
+  maxDtSeconds: 0.1, // the clock and the water never advance by more than this in one frame
   // draw cap: never draw faster than ~60fps, however fast the display runs
   frameMs: 1000 / 60,
   capSlack: 0.6, // fraction of the rAF interval a draw may arrive early, so 75-90Hz displays are not halved
