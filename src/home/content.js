@@ -41,11 +41,11 @@ export const HEADER = {
     rest: ` · S27 internships in strategy, investing, BA, PM${_}→${_}NYC/SF`,
   },
   actions: {
-    resume: { label: 'Resume', href: RESUME_HREF },
-    email: { label: 'Email', href: 'mailto:hg532@cornell.edu' },
+    resume: { label: 'Resume', href: RESUME_HREF, icon: 'file', sr: A11Y.pdf },
+    email: { label: 'Email', href: 'mailto:hg532@cornell.edu', icon: 'mail' },
     social: [
-      { label: 'LinkedIn', href: 'https://www.linkedin.com/in/harigridharan1/' },
-      { label: 'GitHub', href: 'https://github.com/hgridharan999' },
+      { label: 'LinkedIn', href: 'https://www.linkedin.com/in/harigridharan1/', icon: 'linkedin' },
+      { label: 'GitHub', href: 'https://github.com/hgridharan999', icon: 'github' },
     ],
   },
 };
@@ -59,8 +59,8 @@ export const EXPERIENCE = {
       co: `Loadstone${_}Labs`,
       coHref: 'https://loadstonelabs.com/',
       when: nb('Feb 2026 – now'),
-      lead: 'Venture-backed water-rights data platform,',
-      rest: ` with grants from AWS and LvlUp${_}Ventures.`,
+      lead: 'Venture-backed',
+      rest: ` water-rights data${_}platform.`,
       body: [
         'Run a data platform for Western U.S. water rights that brings rights workflow, basin intelligence and transaction infrastructure into one place.',
         'Architected a pipeline that ingests 132,000+ live water-rights records a day from 44 Colorado counties into one unified schema.',
@@ -80,7 +80,7 @@ export const EXPERIENCE = {
       coHref: 'https://www.exlservice.com/',
       when: nb('Jul 2026 – Sep 2026'),
       lead: 'Built a CRM tool',
-      rest: ` for an eight-figure book of Fortune${_}100 contracts.`,
+      rest: ` for Fortune${_}100 contracts.`,
       body: [
         'Supported an eight-figure book of Fortune 100 client contracts, tracking scope, deliverables and renewal terms across accounts.',
         'Built a custom CRM tool that replaced manual contract tracking and centralized account status for the full client services team.',
@@ -92,8 +92,8 @@ export const EXPERIENCE = {
       role: 'Operations & Strategy Intern',
       co: `Midian${_}Partners`,
       when: nb('Jun 2026 – Jul 2026'),
-      lead: 'Took the lender network from 6 to 25+ partners',
-      rest: ` in under five weeks, while revenue grew${_}310%.`,
+      lead: 'Lender partners 6 to 25+',
+      rest: `, revenue up${_}310%.`,
       body: [
         'Grew an early-stage mortgage fintech’s lender network from 6 to 25+ partners in under five weeks as revenue increased 310%.',
         'Negotiated with partner executives, building a 14-agreement comparative dataset to counter an above-market recapture clause.',
@@ -106,8 +106,8 @@ export const EXPERIENCE = {
       co: 'Adobe',
       coHref: 'https://www.adobe.com/',
       when: nb('Jan 2026 – Apr 2026'),
-      lead: 'Market sizing and positioning',
-      rest: ` for Adobe’s enterprise AI products, tied to $1M+ in${_}contracts.`,
+      lead: 'AI strategy',
+      rest: ` for $1M+ enterprise${_}contracts.`,
       body: [
         'Advised on AI product and client strategy for $1M+ enterprise contracts, presenting business cases to a Fortune 500 IT C-suite.',
         'Proposed business cases for the enterprise suite now in beta testing, translating emerging AI capability into deployable features.',
@@ -127,8 +127,8 @@ export const ON_CAMPUS = {
       co: `Cornell Entrepreneurship${_}Club`,
       coHref: 'https://www.cornellec.com/',
       when: nb('Sep 2025 – now'),
-      lead: 'Brought Paul Graham, Scott Nolan and Cory Levy',
-      rest: ` to campus, with 150+ people at each${_}talk.`,
+      lead: 'Brought Paul Graham and Scott Nolan',
+      rest: ` to${_}campus.`,
       body: [
         'Run a speaker series bringing Paul Graham, Scott Nolan, Cory Levy and Tony Dang to campus for audiences of 150+ per talk.',
         `Since Sep${_}2025 the club’s reels have drawn 150,000+ views on Instagram, and its posts 350,000+ impressions on LinkedIn.`,
@@ -142,15 +142,15 @@ export const ON_CAMPUS = {
       coHref: 'https://cornellvc.com/',
       when: nb('Sep 2026 – now'),
       lead: 'Sourced 10 startups',
-      rest: [' for ', { text: `G20${_}Ventures`, href: 'https://www.g20vc.com/' }, ` to consider investing${_}in.`],
+      rest: [' for ', { text: `G20${_}Ventures`, href: 'https://www.g20vc.com/' }, '.'],
     },
     {
       role: 'Builder',
       co: `Cornell${_}Armada`,
       coHref: 'https://armada.build/',
       when: nb('Jan 2026 – now'),
-      lead: 'A YC-backed community of Cornell builders.',
-      rest: ' We build side projects together.',
+      lead: 'A YC-backed community',
+      rest: ` of Cornell${_}builders.`,
       body: [
         'Led technical projects across an AI-native product suite at a YC-backed community, partnering with VCs at $200M+ AUM.',
         'Engineered experimental systems spanning drone synchronization, ML applications, code optimizers and full-stack platforms.',
@@ -167,8 +167,8 @@ export const PROJECTS = {
       co: 'Vest Practices',
       loc: 'DNHacks 2026',
       when: nb('Sep 2026'),
-      lead: 'AI glasses that coach tradespeople',
-      rest: ` on the job. Built with a team of five at${_}DNHacks.`,
+      lead: 'AI glasses',
+      rest: ` that coach tradespeople on the${_}job.`,
       body: [
         [
           'A wearable training system for tradespeople, built on AI glasses by a team of five at ',
@@ -189,8 +189,8 @@ export const PROJECTS = {
       coHref: 'https://www.bigred.network/',
       loc: 'Cornell builder directory',
       when: nb('Feb 2026'),
-      lead: 'A directory of 65+ Cornell builders',
-      rest: ` and what they’re working${_}on.`,
+      lead: 'A directory of 65+',
+      rest: ` Cornell${_}builders.`,
       body: [
         'An unofficial map of the people building at Cornell: founders, engineers and researchers, with their programs, clubs and links.',
         'Every request to join is reviewed by hand. Members can be filtered, and a network graph shows how they and their clubs connect.',
@@ -201,8 +201,8 @@ export const PROJECTS = {
       co: 'Climate startup search',
       loc: 'Venture sourcing',
       when: nb('Dec 2025 – Jan 2026'),
-      lead: 'A search engine for 212 climate startups',
-      rest: `, with results in half a${_}second.`,
+      lead: 'A search engine',
+      rest: ` for 212 climate${_}startups.`,
       body: [
         'An investor sourcing tool covering 212 indexed climate-tech startups across 12 verticals. It ranks candidates with multi-factor scoring across founder backgrounds, patent data and market signals.',
         'Search blends BERT embeddings (FAISS) with BM25 keyword ranking through reciprocal rank fusion, expands queries with synonyms, and is measured with NDCG@10.',
@@ -221,7 +221,7 @@ export const PROJECTS = {
       loc: 'Number theory',
       when: nb('Jul 2026'),
       lead: 'Computed a new term',
-      rest: ` in a sequence tied to an unsolved conjecture about${_}primes.`,
+      rest: ` tied to Gilbreath’s${_}conjecture.`,
       body: [
         'Take the primes, write the gaps between neighbors, then the gaps between those gaps, and so on. Gilbreath’s conjecture says every row starts with 1. It’s been checked for hundreds of billions of rows but never proved.',
         'A363004 counts how many sequences of distinct numbers have the same all-ones pattern. I wrote the search that found the 12th term, 9,290,399,173, and the OEIS now credits it to me.',
@@ -267,7 +267,7 @@ export const OFF_CLOCK = {
       loc: 'Colorado fourteeners',
       when: nb('Jun 2025 – now'),
       lead: '8 Colorado fourteeners',
-      rest: ` so far. The most recent was the Decalibron${_}loop.`,
+      rest: ` so${_}far.`,
       body: [
         'I love hiking and being outdoors in general. Lately that means working through Colorado’s fourteeners: the first was Mt. Bierstadt in June 2025, and the most recent was the Decalibron loop.',
       ],
@@ -286,7 +286,6 @@ export const OFF_CLOCK = {
 // The ending's footer (under the water). Contact links reuse the header's data so the two cannot drift.
 const { resume, email, social } = HEADER.actions;
 
-/** Resume, email, LinkedIn, GitHub as SmartLink props. `arrow: true` picks the glyph for the link kind. */
 // The toolkit and coursework, kept but closed by default: they are reference detail (and on the
 // resume), and as open ledger lines in the header they crowded the first screen.
 export const SKILLS = {
@@ -295,8 +294,8 @@ export const SKILLS = {
   rows: [
     {
       co: 'Toolkit and coursework',
-      lead: 'Excel, PowerPoint, Bloomberg, SQL and Python,',
-      rest: ` plus financial modeling and market${_}sizing.`,
+      lead: 'Financial modeling',
+      rest: `, Excel, Bloomberg, SQL,${_}Python.`,
       body: [
         `Tools: ${list('Excel', 'PowerPoint', 'Bloomberg', 'SQL', 'Python', 'FastAPI', 'React/TypeScript', 'Cloudflare', 'Claude Code', 'Multi\u2011Agent Orchestration', 'Salesforce')}`,
         `Methods: ${list('financial modeling', 'market sizing', 'competitive analysis', 'unit economics')}`,
@@ -306,8 +305,9 @@ export const SKILLS = {
   ],
 };
 
+/** Resume, email, LinkedIn, GitHub as SmartLink props. `arrow: true` picks the glyph for the link kind. */
 export const CONTACT_LINKS = [
-  { label: resume.label, href: resume.href, arrow: '↓', sr: A11Y.pdf },
+  { label: resume.label, href: resume.href, arrow: '↓', sr: resume.sr },
   { label: email.href.replace(/^mailto:/, ''), href: email.href },
   ...social.map(({ label, href }) => ({ label, href, arrow: true })),
 ];

@@ -140,6 +140,7 @@ describe('home.css leaves the mockup-only machinery behind', () => {
     'c-hari', 'c-panel', 'mark.ask', 'ask-dep', 'ask-alt', '.ask',
     'contour', 'beliefs', 'decide', 'margin-fig', 'finale', 'has-fig',
     'row--solo', 'row--act', 'scene--full', 'scene--mtn', '.co::after',
+    'btn-fill', '.soc',
   ];
 
   it.each(REMOVED)('has no %s', (term) => {
@@ -192,6 +193,22 @@ describe('home.css covers the classes the components use', () => {
   it('defines every class named in a component', () => {
     const missing = used.filter(({ cls }) => !new RegExp(`\\.${cls}(?![\\w-])`).test(css));
     expect(missing).toEqual([]);
+  });
+});
+
+describe('home.css: header contact icons', () => {
+  const declarationsOf = (selector) => rulesIn(css).find((rule) => rule.prelude === selector)?.body ?? null;
+
+  it('gives each icon a 40px target', () => {
+    expect(declarationsOf('.hm .ico')).toMatch(/width: 40px;[\s\S]*height: 40px/);
+  });
+
+  it('keeps the word label hidden until hover or focus, and hoverable once shown (WCAG 1.4.13)', () => {
+    const tip = declarationsOf('.hm .ico-tip');
+    expect(tip).toContain('visibility: hidden');
+    expect(tip).toContain('opacity: 0');
+    expect(tip).not.toContain('pointer-events: none');
+    expect(declarationsOf('.hm .ico:focus-visible .ico-tip')).toMatch(/visibility: visible;[\s\S]*opacity: 1/);
   });
 });
 

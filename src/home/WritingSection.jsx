@@ -1,14 +1,15 @@
 import { Link } from 'react-router-dom';
 
 import { NBSP, WRITING } from './content';
+import { yearsOf } from './years';
 
-/** One essay: the title on the left, the month on the right, the whole row is the link. */
+/** One essay: the title on the left, the year on the right, the whole row is the link. */
 export function EssayRow({ essay }) {
   return (
     <li className="row row--link">
       <Link className="rl rl--essay" to={`/blog/${essay.slug}`}>
         <span className="et"><span className="lab co">{essay.title}</span></span>
-        <span className="val"><time dateTime={essay.date}>{essay.when}</time></span>
+        <span className="val"><time dateTime={essay.date}>{yearsOf(essay.when)}</time></span>
       </Link>
     </li>
   );

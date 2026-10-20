@@ -1,36 +1,40 @@
-import { Fragment } from 'react';
-
-import { A11Y, HEADER, NBSP } from './content';
+import { HEADER, NBSP } from './content';
 import HikerMark from './HikerMark';
+import { ICONS } from './icons';
 import MountainPlate from './MountainPlate';
 import { SmartLink } from './rows';
 
-/** Resume and Email as buttons, then the two profile links. The resume is a file, so a plain <a>. */
+/**
+ * Email, LinkedIn, GitHub and the resume as a row of quiet icons. Each is a real link with a 40px
+ * target: its name is screen-reader text (SmartLink adds "opens in new tab", the data adds "(PDF)"),
+ * and a small word label shows under the icon on hover and focus. An icon name with no drawing falls
+ * back to the plain word, so a typo in content.js can never blank the page.
+ */
 function Actions() {
   const { resume, email, social } = HEADER.actions;
   return (
     <div className="act">
-      <a className="btn btn-fill" href={resume.href}>
-        {resume.label}
-        <span aria-hidden="true">{NBSP}↓</span>
-        <span className="sr-only">{A11Y.pdf}</span>
-      </a>
-      <a className="btn btn-line" href={email.href}>{email.label}</a>
-      <span className="soc">
-        {social.map((link, index) => (
-          <Fragment key={link.href}>
-            {index > 0 && <span className="dot" aria-hidden="true">·</span>}
-            <SmartLink href={link.href} arrow>{link.label}</SmartLink>
-          </Fragment>
-        ))}
-      </span>
+      {[email, ...social, resume].map(({ label, href, icon, sr }) => {
+        const Icon = ICONS[icon];
+        return (
+          <SmartLink key={href} className="ico" href={href} sr={sr}>
+            {Icon ? (
+              <>
+                <Icon />
+                <span className="sr-only">{label}</span>
+                <span className="ico-tip" aria-hidden="true">{label}</span>
+              </>
+            ) : label}
+          </SmartLink>
+        );
+      })}
     </div>
   );
 }
 
 /**
- * The lockup: hiker mark beside the name, then affiliation, what he is looking for, the actions,
- * On wide screens the mountain plate sits behind the right-hand side.
+ * The lockup: hiker mark beside the name, then affiliation, what he is looking for and the contact
+ * icons. On wide screens the mountain plate sits behind the right-hand side.
  */
 export default function Header() {
   const { name, affiliation, seek } = HEADER;

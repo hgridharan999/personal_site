@@ -32,7 +32,7 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
   --serif: "Instrument Serif", "Times New Roman", serif;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --gutter: 16px;
-  --datew: 6.25rem;                      /* fixed date column: never squeezes the title */
+  --datew: 5.5rem;                       /* fixed date column, wide enough for "2025 – 2026": never squeezes the title */
   --tri-off: 14px;                       /* benchmark marker distance left of the row */
 
   margin: 0;
@@ -95,17 +95,27 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
 .hm .aff-sep { display: none; }
 .hm .seek { grid-area: seek; margin-top: 8px; color: var(--tan); font-weight: 500; text-wrap: pretty; }
 .hm .seek-intro { color: var(--cream); font-weight: 400; }
-.hm .act { grid-area: act; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 12px; }
+/* the contact icons: quiet grey, blue on hover and focus, a word label under each on hover and focus.
+   The 40px box is the target; the -10px margin lines the first glyph up with the text above. */
+.hm .act { grid-area: act; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; margin: 12px 0 0 -10px; }
+.hm .ico {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 6px; color: var(--soft); text-decoration: none;
+}
+.hm .ico svg { width: 22px; height: 22px; }
+.hm .ico-tip {
+  position: absolute; top: 100%; left: 50%; transform: translateX(-50%); padding-top: 4px;
+  font: 400 11px/1 var(--sans); color: var(--muted); white-space: nowrap; visibility: hidden; opacity: 0;
+}
+.hm .ico:focus-visible { color: var(--tan); outline-offset: 0; border-radius: 6px; }
+.hm .ico:focus-visible .ico-tip { visibility: visible; opacity: 1; }
+/* a plain button, used by the climate page's retry */
 .hm .btn {
   display: inline-flex; align-items: center; justify-content: center;
   min-height: 40px; padding: 0 16px; border: 1px solid transparent; border-radius: 4px;
   font: 500 15px/1 var(--sans); text-decoration: none;
 }
-.hm .btn-fill { background: var(--tan); border-color: var(--tan); color: var(--bg); }
 .hm .btn-line { border-color: var(--outline); color: var(--cream); }
-.hm .soc { display: inline-flex; align-items: center; margin-left: -8px; }
-.hm .soc a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 8px; font-size: 15px; color: var(--soft); }
-.hm .soc .dot { color: var(--muted); }
 
 /* ---------- Sections: space does the dividing (no rules), so the groups read as groups ---------- */
 .hm main > section { padding-top: 52px; }
@@ -221,7 +231,6 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
    From 600px the mountain moves to the right of the lockup. This block comes after the base
    rules it overrides (.plate, .top, the scenes), so it wins on order, not on specificity. */
 @media (min-width: 600px) {
-  .hm { --datew: 8.75rem; } /* fits "Sep 2025 – Jan 2026" */
   .hm header.wrap { position: relative; }
   .hm .scene--strip { display: none; }
   .hm .scene--peak { display: block; }
@@ -260,7 +269,7 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
   .hm .line a.org:hover, .hm .body a.org:hover { color: var(--soft); }
   .hm .rl:hover { color: inherit; }
   .hm .rl:hover .val { color: var(--tan); text-decoration-color: var(--tan); }
-  .hm .btn-fill:hover { background: #0B6A93; border-color: #0B6A93; color: var(--bg); }
+  .hm .ico:hover .ico-tip { visibility: visible; opacity: 1; }
   .hm .btn-line:hover { border-color: var(--tan); color: var(--tan); }
 }
 
@@ -300,6 +309,7 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
     .hm .xp details.is-anim::details-content { transition: height 0.38s var(--ease), content-visibility 0.38s allow-discrete; }
   }
   .hm a, .hm .btn, .hm .co, .hm .row, .hm .rl .val { transition: color 0.2s var(--ease), background-color 0.2s var(--ease), border-color 0.2s var(--ease), text-decoration-color 0.2s var(--ease); }
+  .hm .ico-tip { transition: opacity 0.2s var(--ease), visibility 0.2s var(--ease); }
   @media (hover: hover) and (pointer: fine) {
     .hm .row:hover::before, .hm .row:has(:focus-visible)::before { animation: hm-tri-in 0.25s var(--ease) both; }
   }

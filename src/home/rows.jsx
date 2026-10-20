@@ -2,6 +2,7 @@ import { Fragment } from 'react';
 import { Link } from 'react-router-dom';
 
 import { A11Y, NBSP } from './content';
+import { yearsOf } from './years';
 
 // A path with a file extension (the resume PDF) is a download, so the router must not handle it.
 const isRoute = (href) => href.startsWith('/') && !/\.[a-z0-9]+$/i.test(href);
@@ -110,7 +111,7 @@ export function XpRow({ row }) {
     <li className="row xp">
       <div className="xp-head">
         <Ttl {...row} mark />
-        {when && <span className="when">{when}</span>}
+        {when && <span className="when">{yearsOf(when)}</span>}
       </div>
       <details>
         <summary><Line as="span" lead={lead} rest={rest} /></summary>
@@ -129,7 +130,7 @@ export function PlainRow({ row }) {
   return (
     <li className="row row--plain">
       <Ttl {...row} />
-      {when && <span className="when">{when}</span>}
+      {when && <span className="when">{yearsOf(when)}</span>}
       {lead && <Line as="p" lead={lead} rest={rest} />}
     </li>
   );
