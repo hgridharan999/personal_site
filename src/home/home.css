@@ -110,9 +110,10 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
 /* ---------- Sections: space does the dividing (no rules), so the groups read as groups ---------- */
 .hm main > section { padding-top: 52px; }
 .hm main > section:first-child { padding-top: 40px; }
+/* a section label, not a heading the size of a row title: small, grey and slightly tracked */
 .hm .head {
-  padding-bottom: 4px;
-  font: 500 15px/1.5 var(--sans); letter-spacing: -0.2px; color: var(--cream);
+  padding-bottom: 2px;
+  font: 500 13px/1.5 var(--sans); letter-spacing: 0.01em; color: var(--muted);
   scroll-margin-top: 16px;
 }
 
@@ -135,9 +136,9 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
   grid-area: when; text-align: right; white-space: nowrap; color: var(--muted);
   font: 400 13px/1.45 var(--sans); font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1;
 }
-.hm .line { grid-area: line; margin-top: 0; line-height: 1.55; color: var(--soft); text-wrap: pretty; }
+.hm .line { grid-area: line; margin-top: 1px; font-size: 14px; line-height: 1.55; color: var(--soft); text-wrap: pretty; }
 /* the lead is ink, not blue: the title stays the heaviest thing on the row */
-.hm .lead { color: var(--cream); font-weight: 400; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+.hm .lead { color: #55544F; font-weight: 400; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
 
 /* ---------- Expandable rows ----------
    Title line (.xp-head: role, company link, date) on top, then <details> whose summary is the
@@ -176,11 +177,11 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
   }
 }
 .hm .note { margin: 6px 0 0; font-size: 13px; color: var(--soft); }
-.hm .memo-empty { margin: 2px 0 0; color: var(--muted); }
+.hm .also { margin-top: 6px; font-size: 14px; line-height: 1.55; color: var(--soft); text-wrap: pretty; }
 .hm .xp .body {
   margin: -2px 0 12px; padding: 2px 0 2px 14px;
   border-left: 1px solid rgba(15, 125, 170, 0.45);
-  font-size: 15px; line-height: 1.55; color: var(--soft);
+  font-size: 14px; line-height: 1.6; color: var(--soft);
 }
 .hm .xp .body p + p { margin-top: 6px; }
 .hm .xp .meta { font: 400 13px/1.6 var(--sans); color: var(--muted); }

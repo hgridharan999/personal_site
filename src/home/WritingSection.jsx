@@ -21,9 +21,19 @@ export default function WritingSection() {
     <section aria-labelledby={id}>
       <h2 className="head" id={id}>{title}</h2>
       <p className="note">{note}</p>
-      <h3 className="kicker kicker--sub">{memos.label}</h3>
-      <p className="memo-empty">{memos.empty}</p>
-      <h3 className="kicker kicker--sub">{essaysLabel}</h3>
+      {memos.items.length > 0 && (
+        <>
+          <h3 className="kicker kicker--sub">{memos.label}</h3>
+          <ul role="list" className="theses-more">
+            {memos.items.map((memo) => (
+              <li key={memo.href} className="row row--link">
+                <a className="rl" href={memo.href}><span className="lab co">{memo.title}</span></a>
+              </li>
+            ))}
+          </ul>
+          <h3 className="kicker kicker--sub">{essaysLabel}</h3>
+        </>
+      )}
       <ul role="list" className="theses-more essays">
         {essays.map((essay) => <EssayRow key={essay.slug} essay={essay} />)}
         <li className="row row--link">

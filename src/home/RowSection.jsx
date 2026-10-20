@@ -5,7 +5,7 @@ import { PlainRow, XpRow } from './rows';
  * content file decides each row's kind and this component never needs a flag.
  */
 export default function RowSection({ section }) {
-  const { id, title, rows } = section;
+  const { id, title, rows, also } = section;
   return (
     <section aria-labelledby={id}>
       <h2 className="head" id={id}>{title}</h2>
@@ -15,6 +15,7 @@ export default function RowSection({ section }) {
           ? <XpRow key={row.co} row={row} />
           : <PlainRow key={row.co} row={row} />))}
       </ul>
+      {also && <p className="also">{also}</p>}
     </section>
   );
 }

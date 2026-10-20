@@ -171,7 +171,7 @@ describe('homepage content: row shape', () => {
 
   it('keeps company links in the title of every row that has one', () => {
     const linkedTitles = allRows.filter((row) => row.coHref);
-    expect(linkedTitles.length).toBeGreaterThanOrEqual(8);
+    expect(linkedTitles.length).toBeGreaterThanOrEqual(7); // Loadstone, EXL, Adobe, CVC, CEC, Armada, OEIS
     for (const row of linkedTitles) expect(row.coHref, row.co).toMatch(/^https:/);
   });
 

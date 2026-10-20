@@ -115,31 +115,6 @@ export const EXPERIENCE = {
       ],
       meta: ['Remote'],
     },
-    {
-      role: 'Problem Design Engineer',
-      co: 'IdlExperts',
-      coHref: 'https://idlexperts.ai/',
-      when: nb('Jan 2026 – Apr 2026'),
-      lead: 'Wrote 6 problem sets',
-      rest: ` used to test frontier AI${_}models.`,
-      body: [
-        'Designed six real-world problem sets used to evaluate frontier AI models, building environments that isolate reasoning failures.',
-        'Benchmarked agent behavior and task completion across environments, turning observed failure patterns into task-design fixes.',
-        'Consolidated engineer feedback into shipped changes to the model training and execution environments used in production.',
-      ],
-      meta: ['Remote', 'formerly Widget Factory'],
-    },
-    {
-      role: 'Co-Founder',
-      co: 'Commit',
-      when: nb('Sep 2025 – Jan 2026'),
-      lead: `Built the MVP in 3${_}days`,
-      rest: ` for a social prediction market. Our YC application made the top${_}10%.`,
-      body: [
-        `Co-founded a social prediction-market platform; its Y${_}Combinator application ranked in the top 10% of applicants.`,
-        'Took it from concept to working MVP in three days, including prediction logic and a unit-economics model.',
-      ],
-    },
   ],
 };
 
@@ -164,7 +139,7 @@ export const ON_CAMPUS = {
       rest: ` to campus, with 150+ people at each${_}talk.`,
       body: [
         'Run a speaker series bringing Paul Graham, Scott Nolan, Cory Levy and Tony Dang to campus for audiences of 150+ per talk.',
-        `Grew the club’s reach to 500,000+ across Instagram and LinkedIn since Sep${_}2025: 150,000+ reel views and 350,000+ post impressions.`,
+        `Since Sep${_}2025 the club’s reels have drawn 150,000+ views on Instagram, and its posts 350,000+ impressions on LinkedIn.`,
         'Scout and evaluate student-led startups across technical verticals, building investment theses and operating strategies for each.',
       ],
       meta: ['Ithaca, NY'],
@@ -254,7 +229,7 @@ export const WRITING = {
   id: 'writing',
   title: 'Writing',
   note: 'Everything here is my own writing. None of it is AI-generated.',
-  memos: { label: 'Investment memos', empty: 'Coming soon.' },
+  memos: { label: 'Investment memos', items: [] }, // shown once there is a memo to list
   essaysLabel: 'Essays',
   essays: [
     { slug: 'tat-tvam-asi', title: 'Tat Tvam Asi and Conviction', date: '2026-10-06', when: nb('Oct 2026') },
@@ -277,6 +252,7 @@ export const WRITING = {
 export const OFF_CLOCK = {
   id: 'off-the-clock',
   title: 'When I’m not working',
+  also: `I also lift, play Catan (nationally ranked on colonist.io) and Brawl${_}Stars (top${_}100 in the world with Nani), cook regional Indian food and${_}sing.`,
   rows: [
     {
       co: 'Mountaineering',
@@ -296,20 +272,6 @@ export const OFF_CLOCK = {
       rest: `, and climbed Tabletop, a${_}5.10.`,
       body: ['Mostly bouldering, both in the gym and outside.'],
     },
-    {
-      co: 'Lifting',
-      lead: `205${_}lb bench`,
-      rest: ' and a muscle-up.',
-      body: ['I’ve lifted consistently for about a year and a half.'],
-    },
-    {
-      co: 'Video games',
-      lead: 'Nationally ranked in Catan',
-      rest: ` on colonist.io, and top${_}100 in the world with Nani in Brawl${_}Stars.`,
-      body: ['Made the Brawl Stars national qualifiers. I also play Hollow Knight and Minecraft.'],
-    },
-    { co: 'Cooking', lead: 'Regional Indian food', rest: ', dosa especially.' },
-    { co: 'Singing' },
   ],
 };
 
