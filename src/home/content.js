@@ -123,14 +123,6 @@ export const ON_CAMPUS = {
   title: 'On campus',
   rows: [
     {
-      role: 'Analyst',
-      co: `Cornell Venture${_}Capital`,
-      coHref: 'https://cornellvc.com/',
-      when: nb('Sep 2026 – now'),
-      lead: 'Sourced 10 startups',
-      rest: [' for ', { text: `G20${_}Ventures`, href: 'https://www.g20vc.com/' }, ` to consider investing${_}in.`],
-    },
-    {
       role: 'Co-President',
       co: `Cornell Entrepreneurship${_}Club`,
       coHref: 'https://www.cornellec.com/',
@@ -145,18 +137,21 @@ export const ON_CAMPUS = {
       meta: ['Ithaca, NY'],
     },
     {
+      role: 'Analyst',
+      co: `Cornell Venture${_}Capital`,
+      coHref: 'https://cornellvc.com/',
+      when: nb('Sep 2026 – now'),
+      lead: 'Sourced 10 startups',
+      rest: [' for ', { text: `G20${_}Ventures`, href: 'https://www.g20vc.com/' }, ` to consider investing${_}in.`],
+    },
+    {
       role: 'Builder',
       co: `Cornell${_}Armada`,
       coHref: 'https://armada.build/',
       when: nb('Jan 2026 – now'),
       lead: 'A YC-backed community of Cornell builders.',
-      rest: ' I built its member directory.',
+      rest: ' We build side projects together.',
       body: [
-        [
-          'Built ',
-          { text: 'bigred.network', href: 'https://www.bigred.network/' },
-          ', a hand-reviewed directory of 65 Cornell founders and builders with member filtering and a network graph.',
-        ],
         'Led technical projects across an AI-native product suite at a YC-backed community, partnering with VCs at $200M+ AUM.',
         'Engineered experimental systems spanning drone synchronization, ML applications, code optimizers and full-stack platforms.',
       ],
@@ -188,6 +183,19 @@ export const PROJECTS = {
         { label: 'Entry', href: 'https://portal.dnhacks.org/e/2026/showcase/b-v-est-practices' },
         { label: 'Team repo', href: 'https://github.com/8ddieHu0314/dnhacks' },
       ],
+    },
+    {
+      co: 'bigred.network',
+      coHref: 'https://www.bigred.network/',
+      loc: 'Cornell builder directory',
+      when: nb('Feb 2026'),
+      lead: 'A directory of 65+ Cornell builders',
+      rest: ` and what they’re working${_}on.`,
+      body: [
+        'An unofficial map of the people building at Cornell: founders, engineers and researchers, with their programs, clubs and links.',
+        'Every request to join is reviewed by hand. Members can be filtered, and a network graph shows how they and their clubs connect.',
+      ],
+      meta: ['TypeScript', 'Supabase'],
     },
     {
       co: 'Climate startup search',

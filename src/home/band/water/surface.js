@@ -1,4 +1,4 @@
-import { bergWaterSpan } from '../iceberg.js';
+import { bergClearance, bergWaterSpan } from '../iceberg.js';
 import { SIM, SURFACE as S } from './constants.js';
 import { encodeSigned } from './pack.js';
 
@@ -15,9 +15,16 @@ import { encodeSigned } from './pack.js';
  *
  * h is eta, the height of the water above its rest level (positive = up); p is a pressure pressing
  * the surface down (the cursor's dimple), recomputed by the caller every step.
+ *
+ * The simulation itself knows nothing about how the line is drawn. Only encode() tapers the waves
+ * toward the iceberg (see `taper`), so a dip can never pull the line off the tip and show the shelf.
  */
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const smoothstep = (a, b, x) => {
+  const t = clamp((x - a) / (b - a), 0, 1);
+  return t * t * (3 - 2 * t);
+};
 
 /** Columns for a band of this aspect (width / height), cell-centred; never more than the GPU can take as a texture width. */
 export function surfaceCols(aspect, maxCols = S.colsMax) {
@@ -57,6 +64,12 @@ export function createSurface(aspect, { maxCols = S.colsMax } = {}) {
     }
   }
 
+  // How much of a wave is drawn at each column: all of it in open water, none where the iceberg's
+  // top reaches the line, and a smooth fade over the shelf in between. A full-height dip is then
+  // always shallower than the ice below it (the display never exceeds etaScale).
+  const taper = new Float64Array(n);
+  for (let j = 0; j < n; j++) taper[j] = smoothstep(0, S.taperDepth, bergClearance(xAt(j)));
+
   // (I - beta D2) per basin: tridiagonal, with the mirror ends giving 1 + b on the end diagonals
   const b = S.beta / (dx * dx);
   const cprime = new Float64Array(n);
@@ -79,6 +92,7 @@ export function createSurface(aspect, { maxCols = S.colsMax } = {}) {
   const u = new Float64Array(n); // scratch: h + p
   const r = new Float64Array(n); // scratch: the right-hand side, then the solved acceleration
   const w = new Float64Array(n); // scratch: v before smoothing
+  const shown = new Float64Array(n); // scratch for encode(): the heights as drawn
   const c2 = (S.c * S.c) / (dx * dx);
   const damp = Math.exp(-S.damp * SIM.dt);
   const eps = Math.min(0.25, (S.nu * SIM.dt) / (dx * dx));
@@ -145,6 +159,7 @@ export function createSurface(aspect, { maxCols = S.colsMax } = {}) {
   return {
     dims: Object.freeze({ n, dx, aspect }),
     segments,
+    taper,
     get active() { return active; },
 
     /** The water height at x (linear between column centres). */
@@ -194,16 +209,23 @@ export function createSurface(aspect, { maxCols = S.colsMax } = {}) {
       return e;
     },
 
-    /** Write the n x 1 RGBA texture: R = eta, G = slope (both signed), B unused, A = foam. */
+    /**
+     * Write the n x 1 RGBA texture: R = eta, G = slope (both signed), B unused, A = foam. This is
+     * what is drawn, so the heights (and the foam) are tapered toward the iceberg first, and the
+     * slope is taken from the tapered line (a fading wave is a shallow slope, not a cliff).
+     */
     encode(out) {
+      // clamp to the display range first, then taper: tapering a wave that is bigger than the range
+      // would be undone by the clamp in encodeSigned, and a deep dip would still show the shelf
+      for (let j = 0; j < n; j++) shown[j] = clamp(h[j], -S.etaScale, S.etaScale) * taper[j];
       for (let j = 0; j < n; j++) {
         const lo = Math.max(j - 1, 0);
         const hi = Math.min(j + 1, n - 1);
-        const slope = (h[hi] - h[lo]) / ((hi - lo) * dx);
-        out[4 * j] = encodeSigned(h[j] / S.etaScale);
+        const slope = (shown[hi] - shown[lo]) / ((hi - lo) * dx);
+        out[4 * j] = encodeSigned(shown[j] / S.etaScale);
         out[4 * j + 1] = encodeSigned(slope / S.slopeScale);
         out[4 * j + 2] = encodeSigned(0);
-        out[4 * j + 3] = Math.round(255 * clamp(foam[j], 0, 1));
+        out[4 * j + 3] = Math.round(255 * clamp(foam[j] * taper[j], 0, 1)); // foam fades toward the ice with the waves
       }
     },
 

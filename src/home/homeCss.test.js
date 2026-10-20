@@ -222,6 +222,10 @@ describe('home.css: rows that open', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('gives the document the normal cursor: index.css puts its dot on <html> itself, and every element inherits it', () => {
+    expect(declarationsOf('html.hm-page')).toMatch(/cursor:\s*auto/);
+  });
+
   it('gives the title line a pointer cursor, since a click on it opens the row', () => {
     expect(declarationsOf('.hm .xp-head')).toContain('cursor: pointer');
   });

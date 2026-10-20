@@ -111,7 +111,7 @@ class BandEngine {
     }
     if (!renderer) return false;
     this.#renderer = renderer;
-    this.#water = createWater({ dropN: renderer.dropN, maxTexture: renderer.maxTexture });
+    this.#water = createWater({ maxTexture: renderer.maxTexture });
     this.#glOK = true;
     this.#resize();
     return true;

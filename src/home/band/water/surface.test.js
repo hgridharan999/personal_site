@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SIM, SURFACE } from './constants.js';
 import { ENC, decodeSigned } from './pack.js';
+import { bergClearance } from '../iceberg.js';
 import { createSurface, phaseSpeed, surfaceCols, surfaceStability } from './surface.js';
 
 const A = 3.125; // a 1000 x 320 band
@@ -248,5 +249,102 @@ describe('what the shader reads', () => {
     expect(decodeSigned(out[4 * 105 + 1]) * SURFACE.slopeScale).toBeCloseTo((h[106] - h[104]) / (2 * dx), 1);
     expect(out[4 * 105 + 3]).toBeGreaterThan(100);
     expect(out[4 * 105 + 2]).toBe(ENC.zero);
+  });
+});
+
+describe('the drawn line meets the iceberg cleanly', () => {
+  const x = (s, j) => -A / 2 + (j + 0.5) * s.dims.dx;
+  const encoded = (s) => {
+    const out = new Uint8Array(s.dims.n * 4);
+    s.encode(out);
+    return out;
+  };
+  const etaOf = (out, j) => decodeSigned(out[4 * j]) * SURFACE.etaScale;
+  const flat = (s, value) => {
+    const h = new Array(s.dims.n).fill(value);
+    s.load({ h });
+    return encoded(s);
+  };
+
+  it('tapers the waves to nothing where the ice reaches the line, and not at all in open water', () => {
+    const s = createSurface(A);
+    for (let j = 0; j < s.dims.n; j++) {
+      const clear = bergClearance(x(s, j));
+      if (clear === 0) expect(s.taper[j]).toBe(0);
+      else if (clear === Infinity) expect(s.taper[j]).toBe(1);
+      else expect(s.taper[j]).toBeGreaterThan(0);
+      expect(s.taper[j]).toBeLessThanOrEqual(1);
+    }
+    expect(s.taper[0]).toBe(1);
+    expect(s.taper[s.dims.n - 1]).toBe(1);
+  });
+
+  it('a column inside the tip span encodes eta 0, whatever the height is', () => {
+    const s = createSurface(A);
+    const out = flat(s, -0.04);
+    for (let j = 0; j < s.dims.n; j++) {
+      if (bergClearance(x(s, j)) === 0) expect(out[4 * j]).toBe(ENC.zero);
+    }
+  });
+
+  it('over the shelf even a full-depth dip is drawn shallower than the ice below it', () => {
+    const s = createSurface(A);
+    for (const height of [-SURFACE.hMax, -SURFACE.etaScale, -0.03]) {
+      const out = flat(s, height);
+      let checked = 0;
+      for (let j = 0; j < s.dims.n; j++) {
+        const clear = bergClearance(x(s, j));
+        if (clear > 0 && clear < Infinity) {
+          expect(etaOf(out, j)).toBeGreaterThan(-clear);
+          checked++;
+        }
+      }
+      expect(checked).toBeGreaterThan(30);
+    }
+  });
+
+  it('leaves the water beyond the hull untouched', () => {
+    const s = createSurface(A);
+    const out = flat(s, 0.02);
+    let checked = 0;
+    for (let j = 0; j < s.dims.n; j++) {
+      if (bergClearance(x(s, j)) === Infinity) {
+        expect(etaOf(out, j)).toBeCloseTo(0.02, 3);
+        checked++;
+      }
+    }
+    expect(checked).toBeGreaterThan(200);
+  });
+
+  it('takes the slope from the tapered line: a steady swell fading into the tip is a gentle slope, not a step', () => {
+    const s = createSurface(A);
+    const out = flat(s, 0.03);
+    const j = s.segments[1].start + 3; // a few columns right of the tip, on the rising shelf
+    const lo = j - 1;
+    const hi = j + 1;
+    const shown = (k) => s.taper[k] * 0.03; // 0.03 is inside the display range, so only the taper shapes it
+    const expected = (shown(hi) - shown(lo)) / (2 * s.dims.dx);
+    expect(Math.abs(expected)).toBeGreaterThan(0.01); // the taper alone makes a slope here
+    expect(decodeSigned(out[4 * j + 1]) * SURFACE.slopeScale).toBeCloseTo(expected, 1);
+  });
+
+  it('fades foam toward the ice with the waves: full in open water, reduced over the shelf', () => {
+    const s = createSurface(A);
+    s.load({ h: new Array(s.dims.n).fill(0) });
+    s.addFoam(-1.0, 0.05, 1); // open water
+    s.addFoam(-0.33, 0.01, 1); // the left shelf, a hair under the line
+    const out = encoded(s);
+    const col = (xx) => Math.round((xx + A / 2) / s.dims.dx - 0.5);
+    expect(out[4 * col(-1.0) + 3]).toBeGreaterThan(250); // the bump peaks between columns
+    const shelf = col(-0.33);
+    expect(s.taper[shelf]).toBeLessThan(0.9);
+    expect(out[4 * shelf + 3]).toBe(Math.round(255 * s.snapshot().foam[shelf] * s.taper[shelf]));
+  });
+
+  it('is display only: the simulation keeps the full height', () => {
+    const s = createSurface(A);
+    flat(s, -0.04);
+    expect(Math.min(...s.snapshot().h)).toBe(-0.04);
+    expect(s.eta(x(s, 5))).toBeCloseTo(-0.04, 12);
   });
 });

@@ -1,46 +1,32 @@
-import { insideBerg } from '../iceberg.js';
 import { CURSOR as C, SIM } from './constants.js';
 import { createField, fieldDims } from './field.js';
 import { createHead } from './head.js';
-import { applyCursor, applyPress, landDrop, noteHead, yLine } from './interact.js';
+import { applyCursor, applyPress, noteHead } from './interact.js';
 import { restBytes } from './pack.js';
-import { createSplash } from './splash.js';
 import { createSurface, surfaceCols } from './surface.js';
 
 /*
- * The water: a 1D surface wave, a 2D wave field under it, and a pool of splash drops, all stepped
- * on the CPU at a fixed 1/120 s and handed to the shader as RGBA8 textures plus a few uniforms.
+ * The water: a 1D wave along the waterline and a 2D wave field under it, both stepped on the CPU at
+ * a fixed 1/120 s and handed to the shader as RGBA8 textures.
  *
  * advance(dt) is the ONLY thing that steps. point / leave / press only record input, and view()
  * only encodes what the last step left behind, so drawing outside the animation loop (a resize,
  * the pause toggle, a context restore) can never move the water.
  */
 
-const NO_VIEW = Object.freeze({ on: false, dims: null, surf: null, surfVersion: 0, field: null, fieldVersion: 0, drops: null, dropBox: null });
+const NO_VIEW = Object.freeze({ on: false, dims: null, surf: null, surfVersion: 0, field: null, fieldVersion: 0 });
 
 /**
- * @param {{ dropN?: number, seed?: number, maxTexture?: number }} opts
- *   dropN: size of the drop pool (0 = no drops; splashes still move the water)
- *   maxTexture: the GPU's largest texture side, which caps the grid sizes
+ * @param {{ maxTexture?: number }} opts maxTexture: the GPU's largest texture side, which caps the grid sizes
  */
-export function createWater({ dropN = 0, seed = 1, maxTexture = 4096 } = {}) {
+export function createWater({ maxTexture = 4096 } = {}) {
   const head = createHead();
-  const splash = createSplash(dropN);
-  let rng = Math.floor(Math.abs(seed)) % 2147483647 || 1;
-  const rand = () => (rng = (rng * 16807) % 2147483647) / 2147483647;
   const ctx = {
-    surface: null, field: null, splash, rand,
-    time: 0, coolPlunge: 0, coolExit: 0, skim: 0, lastD: null, stats: { trench: 0, stir: 0 },
+    surface: null, field: null,
+    time: 0, coolPlunge: 0, coolExit: 0, lastD: null,
+    stats: { trench: 0, stir: 0, plunges: 0, exits: 0, presses: 0 },
   };
   const presses = [];
-  const drops = new Float32Array(dropN * 4);
-  const dropBox = new Float32Array(4);
-  const env = {
-    halfW: 0,
-    yLine: (x) => yLine(ctx.surface, x),
-    inside: insideBerg,
-    onLand: (info) => landDrop(ctx, info),
-  };
   let dims = null;
   let surfBytes = null;
   let fieldBytes = null;
@@ -50,13 +36,11 @@ export function createWater({ dropN = 0, seed = 1, maxTexture = 4096 } = {}) {
   let fieldDirty = true;
   let acc = 0;
   let steps = 0;
-  let vx = 0; // the head's last horizontal speed, for a drip that is let go in the air
 
   function step() {
     steps++;
     const h = head.step(SIM.dt);
-    if (h.active && !h.jumped) vx = (h.x1 - h.x0) / SIM.dt;
-    for (let n = 0; n < C.pressMax && presses.length; n++) applyPress(ctx, presses.shift(), vx);
+    for (let n = 0; n < C.pressMax && presses.length; n++) applyPress(ctx, presses.shift());
     if (h.active && !h.jumped) applyCursor(ctx, h);
     else noteHead(ctx, h);
     if (ctx.surface.active) {
@@ -67,7 +51,6 @@ export function createWater({ dropN = 0, seed = 1, maxTexture = 4096 } = {}) {
       ctx.field.step();
       fieldDirty = true;
     }
-    splash.step(env);
     ctx.time += SIM.dt;
   }
 
@@ -75,11 +58,9 @@ export function createWater({ dropN = 0, seed = 1, maxTexture = 4096 } = {}) {
     head.reset();
     ctx.surface?.reset();
     ctx.field?.reset();
-    splash.reset();
     presses.length = 0;
-    Object.assign(ctx, { time: 0, coolPlunge: 0, coolExit: 0, skim: 0, lastD: null });
+    Object.assign(ctx, { time: 0, coolPlunge: 0, coolExit: 0, lastD: null });
     acc = 0;
-    vx = 0;
     surfDirty = true;
     fieldDirty = true;
   }
@@ -99,7 +80,6 @@ export function createWater({ dropN = 0, seed = 1, maxTexture = 4096 } = {}) {
       dims = Object.freeze(next);
       ctx.surface = createSurface(aspect, { maxCols: maxTexture });
       ctx.field = createField(aspect, maxTexture);
-      env.halfW = aspect / 2;
       surfBytes = restBytes(dims.cols, 1);
       fieldBytes = restBytes(dims.nx, dims.ny);
       reset();
@@ -128,7 +108,7 @@ export function createWater({ dropN = 0, seed = 1, maxTexture = 4096 } = {}) {
       return n;
     },
 
-    /** Back to a perfectly flat, empty sea: what a paused, hidden or reduced-motion frame shows. */
+    /** Back to a perfectly flat sea: what a paused, hidden or reduced-motion frame shows. */
     reset,
 
     /** Encode whatever changed since the last view and say what to draw. Never steps; calling it twice changes nothing. */
@@ -144,9 +124,8 @@ export function createWater({ dropN = 0, seed = 1, maxTexture = 4096 } = {}) {
         fieldVersion++;
         fieldDirty = false;
       }
-      const on = ctx.surface.active || ctx.field.active || splash.alive > 0;
-      if (on && dropN > 0) splash.fill(drops, dropBox, acc);
-      return { on, dims, surf: surfBytes, surfVersion, field: fieldBytes, fieldVersion, drops, dropBox };
+      const on = ctx.surface.active || ctx.field.active;
+      return { on, dims, surf: surfBytes, surfVersion, field: fieldBytes, fieldVersion };
     },
 
     /** Copies of everything, for tests and debugging. */
@@ -154,7 +133,6 @@ export function createWater({ dropN = 0, seed = 1, maxTexture = 4096 } = {}) {
       steps, time: ctx.time, acc, dims,
       surface: ctx.surface?.snapshot() ?? null,
       field: ctx.field?.snapshot() ?? null,
-      drops: splash.snapshot(),
       stats: { ...ctx.stats },
     }),
 

@@ -1,16 +1,14 @@
 import { canvasSize } from './iceberg.js';
 import { VS, buildFragmentShader } from './shader/index.js';
-import { SPLASH } from './water/constants.js';
 import { restBytes } from './water/pack.js';
-import { dropCandidates } from './water/splash.js';
 
-/** Every uniform the shaders declare (uDrop and uDropBox are absent when the drops are compiled out). */
-const UNIFORMS = ['uRes', 'uT', 'uSim', 'uSurf', 'uField', 'uDropBox', 'uDrop'];
+/** Every uniform the shader declares. */
+const UNIFORMS = ['uRes', 'uT', 'uSim', 'uSurf', 'uField'];
 const CONTEXT = { antialias: false, alpha: false, depth: false, stencil: false, powerPreference: 'low-power' };
 const POLL_MS = 8;
 
 /** Submit the compile and link without reading any status: reading one blocks until the driver is done. */
-function startLink(gl, dropN) {
+function startLink(gl) {
   const make = (type, src) => {
     const shader = gl.createShader(type);
     if (shader) {
@@ -20,7 +18,7 @@ function startLink(gl, dropN) {
     return shader;
   };
   const vs = make(gl.VERTEX_SHADER, VS);
-  const fs = make(gl.FRAGMENT_SHADER, buildFragmentShader(dropN));
+  const fs = make(gl.FRAGMENT_SHADER, buildFragmentShader());
   const prog = gl.createProgram();
   if (!vs || !fs || !prog) return null;
   gl.attachShader(prog, vs);
@@ -53,9 +51,9 @@ function whenLinked(gl, ext, prog, signal) {
   });
 }
 
-/** Compile and link the program for a pool of dropN drops, or null if this GPU refuses it (or we were aborted). */
-async function link(gl, ext, dropN, signal) {
-  const job = startLink(gl, dropN);
+/** Compile and link the program, or null if this GPU refuses it (or we were aborted). */
+async function link(gl, ext, signal) {
+  const job = startLink(gl);
   if (!job) return null;
   const { prog, vs, fs } = job;
   await whenLinked(gl, ext, prog, signal);
@@ -124,16 +122,8 @@ export async function createRenderer(canvas, { signal = new AbortController().si
     if (!gl.isContextLost()) gl.getExtension('WEBGL_lose_context')?.loseContext();
   };
 
-  // Try the drop pool this GPU's uniform budget suggests, then 8, then none, moving on only once a
-  // candidate has finished compiling and failed.
   const ext = gl.getExtension('KHR_parallel_shader_compile');
-  let prog = null;
-  let dropN = 0;
-  for (const n of dropCandidates(gl.getParameter(gl.MAX_FRAGMENT_UNIFORM_VECTORS))) {
-    prog = await link(gl, ext, n, signal);
-    if (signal.aborted) break;
-    if (prog) { dropN = n; break; }
-  }
+  const prog = await link(gl, ext, signal);
   if (!prog || signal.aborted) {
     if (prog) gl.deleteProgram(prog);
     lose();
@@ -155,8 +145,6 @@ export async function createRenderer(canvas, { signal = new AbortController().si
   gl.uniform1i(loc.uField, 1);
 
   return {
-    /** Size of the drop pool this GPU accepted (0 = drops are compiled out). */
-    dropN,
     /** The GPU's largest texture side, which caps the water grids. */
     maxTexture: gl.getParameter(gl.MAX_TEXTURE_SIZE),
 
@@ -185,14 +173,10 @@ export async function createRenderer(canvas, { signal = new AbortController().si
     draw(t, view) {
       gl.uniform2f(loc.uRes, canvas.width, canvas.height);
       gl.uniform1f(loc.uT, t);
-      gl.uniform4f(loc.uSim, canvas.width / canvas.height / 2, view.on ? 1 : 0, SPLASH.streak, 0);
+      gl.uniform2f(loc.uSim, canvas.width / canvas.height / 2, view.on ? 1 : 0);
       if (view.on) {
         upload(gl, surf, view.surf, view.surfVersion);
         upload(gl, field, view.field, view.fieldVersion);
-        if (dropN > 0) {
-          gl.uniform4fv(loc.uDrop, view.drops);
-          gl.uniform4f(loc.uDropBox, view.dropBox[0], view.dropBox[1], view.dropBox[2], view.dropBox[3]);
-        }
       }
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     },

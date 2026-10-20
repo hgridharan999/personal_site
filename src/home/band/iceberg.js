@@ -52,6 +52,22 @@ export function insideBerg(x, y) {
   return inside;
 }
 
+/**
+ * How far the top of the iceberg is below the waterline at x, in band heights: 0 anywhere under the
+ * tip (it reaches the surface there), the depth of the hull's top edge over the shallow shelf on
+ * either side, and Infinity past the hull where there is no ice at all.
+ * The waterline display uses it to stay clear of the shelf: a dip may never be deeper than this.
+ */
+export function bergClearance(x) {
+  let top = Infinity;
+  BERG.forEach(([x1, y1], i) => {
+    const [x2, y2] = BERG[(i + 1) % BERG.length];
+    // the polygon's boundary crosses this vertical line here; the smallest y is the top of the ice
+    if (x1 <= x !== x2 <= x) top = Math.min(top, y1 + ((x - x1) / (x2 - x1)) * (y2 - y1));
+  });
+  return Math.max(0, top);
+}
+
 const pts = (a) => a.map((p) => `${p[0].toFixed(4)},${p[1].toFixed(4)}`).join(' ');
 
 /**

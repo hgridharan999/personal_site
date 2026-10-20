@@ -171,7 +171,7 @@ describe('homepage content: row shape', () => {
 
   it('keeps company links in the title of every row that has one', () => {
     const linkedTitles = allRows.filter((row) => row.coHref);
-    expect(linkedTitles.length).toBeGreaterThanOrEqual(7); // Loadstone, EXL, Adobe, CVC, CEC, Armada, OEIS
+    expect(linkedTitles.length).toBeGreaterThanOrEqual(8); // Loadstone, EXL, Adobe, CEC, CVC, Armada, bigred.network, OEIS
     for (const row of linkedTitles) expect(row.coHref, row.co).toMatch(/^https:/);
   });
 
@@ -242,11 +242,21 @@ describe('homepage content: resume match', () => {
     expect(coursework.replace(/^Coursework: /, '').split(/\s·\s/)).toHaveLength(9); // the dot is glued to the item before it
   });
 
-  it('opens the Armada row, with the directory linked in its body', () => {
-    const armada = content.ON_CAMPUS.rows.find((row) => row.co.startsWith('Cornell') && row.co.endsWith('Armada'));
-    expect(armada.body).toHaveLength(3);
-    const links = armada.body.flat().filter((segment) => typeof segment !== 'string');
-    expect(links.map((link) => link.href)).toEqual(['https://www.bigred.network/']);
+  it('lists the campus roles CEC, then CVC, then Armada', () => {
+    expect(content.ON_CAMPUS.rows.map((row) => row.coHref)).toEqual([
+      'https://www.cornellec.com/',
+      'https://cornellvc.com/',
+      'https://armada.build/',
+    ]);
+  });
+
+  it('gives bigred.network its own project row and leaves it out of Armada', () => {
+    const bigred = content.PROJECTS.rows.find((row) => row.coHref === 'https://www.bigred.network/');
+    expect(bigred.co).toBe('bigred.network');
+    expect(bigred.when).toBe('Feb 2026');
+    const armada = content.ON_CAMPUS.rows.find((row) => row.coHref === 'https://armada.build/');
+    expect(JSON.stringify(armada)).not.toMatch(/bigred|directory/i);
+    expect(armada.body).toHaveLength(2);
   });
 
   it('presents Loadstone as venture-backed, with the funders linked in the third paragraph', () => {

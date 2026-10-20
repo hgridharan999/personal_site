@@ -2,32 +2,27 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { BERG } from './iceberg.js';
 import { VS, buildFragmentShader } from './shader/index.js';
-import { FIELD, SHADE, SPLASH, SURFACE } from './water/constants.js';
+import { FIELD, SHADE, SURFACE } from './water/constants.js';
 import { ENC } from './water/pack.js';
 
-const SIZES = [32, 16, 8, 0];
+const src = buildFragmentShader();
 const renderer = readFileSync(new URL('./renderer.js', import.meta.url), 'utf8');
-const declaredUniforms = (src) => [...src.matchAll(/^\s*uniform\s+\w+\s+(\w+)/gm)].map((m) => m[1]);
-const count = (src, ch) => src.split(ch).length - 1;
+const declaredUniforms = (code) => [...code.matchAll(/^\s*uniform\s+\w+\s+(\w+)/gm)].map((m) => m[1]);
+const count = (code, ch) => code.split(ch).length - 1;
 
 /** The value of `#define NAME value` as a number, checking it is a valid GLSL float literal ("70" alone would be an int). */
-function define(src, name) {
+function define(name) {
   const hit = src.match(new RegExp(`^#define ${name} (\\S+)$`, 'm'));
   expect(hit, `${name} is not defined`).not.toBeNull();
   expect(hit[1]).toMatch(/^(\d+\.\d*|\d*\.\d+|\d+e-?\d+)$/);
   return Number(hit[1]);
 }
 
-describe.each(SIZES)('fragment shader with DROP_N = %i', (n) => {
-  const src = buildFragmentShader(n);
-
-  it('defines DROP_N to match', () => {
-    expect(src).toMatch(new RegExp(`^#define DROP_N ${n}$`, 'm'));
-    expect(src.match(/#define DROP_N/g)).toHaveLength(1);
-  });
-
-  it('has no leftover ripple array, trail, tap ring or wake', () => {
-    for (const gone of ['uRip', 'uTrail', 'uTap', 'WAKE_', 'wakeField', 'tapRing']) expect(src).not.toContain(gone);
+describe('fragment shader', () => {
+  it('has no leftover ripple array, trail, tap ring, wake or drops', () => {
+    for (const gone of ['uRip', 'uTrail', 'uTap', 'WAKE_', 'wakeField', 'tapRing', 'uDrop', 'DROP_', 'dropsOver']) {
+      expect(src).not.toContain(gone);
+    }
   });
 
   it('balances its braces, parentheses and brackets', () => {
@@ -39,7 +34,7 @@ describe.each(SIZES)('fragment shader with DROP_N = %i', (n) => {
 
   it('declares only uniforms that renderer.js looks up, with no precision qualifier before the name', () => {
     const names = declaredUniforms(src);
-    expect(names).toEqual(expect.arrayContaining(['uRes', 'uT', 'uSim', 'uSurf', 'uField']));
+    expect(names.sort()).toEqual(['uField', 'uRes', 'uSim', 'uSurf', 'uT']);
     for (const name of names) expect(renderer, `${name} is never looked up`).toContain(`'${name}'`);
     expect(src).not.toMatch(/uniform\s+(lowp|mediump|highp)/);
   });
@@ -68,55 +63,20 @@ describe.each(SIZES)('fragment shader with DROP_N = %i', (n) => {
   });
 });
 
-describe('the drops', () => {
-  it('are a uniform array of exactly DROP_N entries, with a bounding box, drawn last and only while running', () => {
-    const src = buildFragmentShader(16);
-    expect(src).toContain('uniform vec4  uDrop[DROP_N];');
-    expect(src).toContain('uniform vec4  uDropBox;');
-    expect(src).toContain('for (int i = 0; i < DROP_N; i++)');
-    expect(src).toContain('if (d.y > -5.0)');
-    expect(src).toContain('if (uSim.y > 0.5) dropsOver(p, px, below, col);');
-    expect(src.indexOf('dropsOver(p, px, below, col);')).toBeGreaterThan(src.indexOf('foam * below'));
-    expect(src.indexOf('dropsOver(p, px, below, col);')).toBeLessThan(src.indexOf('floor: slightly darker'));
-  });
-
-  it('are compiled out at DROP_N 0: no uDrop, no uDropBox, no dropsOver, no DROP_ defines', () => {
-    const src = buildFragmentShader(0);
-    for (const gone of ['uDrop', 'uDropBox', 'dropsOver', 'DROP_RMIN', 'DROP_SEG']) expect(src).not.toContain(gone);
-    expect(src).toContain('uniform vec4  uSim;');
-  });
-
-  it('use the same size formula as the JS pool (RMIN, RMAX and the golden ratio)', () => {
-    const src = buildFragmentShader(8);
-    expect(define(src, 'DROP_RMIN')).toBe(SPLASH.rMin);
-    expect(define(src, 'DROP_RMAX')).toBe(SPLASH.rMax);
-    expect(src).toContain('fract(float(i) * 0.618034)');
-  });
-
-  it('floors the streak maths per precision: 1e-8 on highp and 1e-4 on mediump', () => {
-    const src = buildFragmentShader(8);
-    const hit = src.match(/#ifdef GL_FRAGMENT_PRECISION_HIGH\n#define DROP_SEG (\S+)\n#else\n#define DROP_SEG (\S+)\n#endif/);
-    expect(Number(hit[1])).toBe(1e-8);
-    expect(Number(hit[2])).toBe(1e-4);
-  });
-});
-
 describe('the water defines are generated from the JS constants', () => {
-  const src = buildFragmentShader(8);
-
   it('as float literals that equal them', () => {
-    expect(define(src, 'SURF_ETA')).toBe(SURFACE.etaScale);
-    expect(define(src, 'SURF_SLOPE')).toBe(SURFACE.slopeScale);
-    expect(define(src, 'SURF_SWAY')).toBe(SURFACE.sway);
-    expect(define(src, 'ENC_ZERO')).toBe(ENC.zero);
-    expect(define(src, 'ENC_SCALE')).toBe(ENC.scale);
-    expect(define(src, 'FIELD_H')).toBe(FIELD.depth);
-    expect(define(src, 'FIELD_RH')).toBe(SHADE.fieldRh);
-    expect(define(src, 'FIELD_DISP')).toBe(SHADE.fieldDisp);
-    expect(define(src, 'CREST_GAIN')).toBe(SHADE.crest);
-    expect(define(src, 'CREST_FALL')).toBe(SHADE.crestFall);
-    expect(define(src, 'FOAM_GAIN')).toBe(SHADE.foam);
-    expect(define(src, 'FOAM_FALL')).toBe(SHADE.foamFall);
+    expect(define('SURF_ETA')).toBe(SURFACE.etaScale);
+    expect(define('SURF_SLOPE')).toBe(SURFACE.slopeScale);
+    expect(define('SURF_SWAY')).toBe(SURFACE.sway);
+    expect(define('ENC_ZERO')).toBe(ENC.zero);
+    expect(define('ENC_SCALE')).toBe(ENC.scale);
+    expect(define('FIELD_H')).toBe(FIELD.depth);
+    expect(define('FIELD_RH')).toBe(SHADE.fieldRh);
+    expect(define('FIELD_DISP')).toBe(SHADE.fieldDisp);
+    expect(define('CREST_GAIN')).toBe(SHADE.crest);
+    expect(define('CREST_FALL')).toBe(SHADE.crestFall);
+    expect(define('FOAM_GAIN')).toBe(SHADE.foam);
+    expect(define('FOAM_FALL')).toBe(SHADE.foamFall);
   });
 
   it('and the lookups mirror the encoder: dec() undoes the byte encoding around 128', () => {
@@ -125,8 +85,6 @@ describe('the water defines are generated from the JS constants', () => {
 });
 
 describe('what the water does to the picture', () => {
-  const src = buildFragmentShader(8);
-
   it('lifts the waterline by the simulated height (and the old ripple term is gone)', () => {
     expect(src).toMatch(/\+ 0\.0016 \* sin\(p\.x \* 33\.0 \+ t \* 1\.9 \+ 0\.4\) - eta;/);
     expect(src).not.toContain('0.011 * rh');

@@ -1,20 +1,17 @@
 import { WL, bergWaterSpan } from '../iceberg.js';
-import { CURSOR as C, SIM, SPLASH as P } from './constants.js';
+import { CURSOR as C, IMPACT as I, SIM } from './constants.js';
 import { smoothstep, speedStrength } from './head.js';
-import { radiusOfSlot } from './splash.js';
 
 /*
- * What the cursor and taps do to the water: the injection and spawn rules, kept apart from the
- * stepping in sim.js. Everything here runs inside one fixed step and takes its inputs from the head's
- * swept segment, so a stroke deposits the same amount however often pointer events arrive.
+ * What the cursor and taps do to the water: the injection rules, kept apart from the stepping in
+ * sim.js. Everything here runs inside one fixed step and takes its inputs from the head's swept
+ * segment, so a stroke deposits the same amount however often pointer events arrive.
  *
- * ctx = { surface, field, splash, rand, time, coolPlunge, coolExit, skim, lastD, stats }
+ * ctx = { surface, field, time, coolPlunge, coolExit, lastD, stats }
  */
 
 const [BERG_L, BERG_R] = bergWaterSpan();
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-const bump = (t, w) => Math.exp(-((t / w) ** 2)); // peak-normalised Gaussian, the design's G(x; w)
-const RAD = Math.PI / 180;
 
 /** The y of the water line at x. */
 export const yLine = (surface, x) => WL - surface.eta(x);
@@ -37,45 +34,25 @@ const footprint = ({ surface, field }) => ({
   r: Math.max(C.rMin, 1.6 * field.dims.cell),
 });
 
-function plunge(ctx, xc, E, Vx, U) {
-  const { surface, splash, rand } = ctx;
-  const toRight = 0.5 + 0.3 * (Vx / Math.max(U, 1e-6));
-  for (let i = 0, n = 3 + Math.round(7 * E); i < n; i++) {
-    const side = rand() < toRight ? 1 : -1;
-    const theta = (12 + 38 * rand()) * RAD;
-    const spd = P.vThrow * (0.45 + 0.55 * E) * (0.6 + 0.4 * rand());
-    const x = xc + (rand() * 2 - 1) * 0.014;
-    splash.spawn(x, yLine(surface, x) - 0.002 - 0.004 * rand(), side * Math.sin(theta) * spd + 0.25 * Vx, -Math.cos(theta) * spd);
-  }
-  surface.addVelocity(xc, 0.02, -P.plungeKick * E);
-  surface.addFoam(xc, 0.03, P.plungeFoam * E);
+/** The cursor went in through the line: push the water down and leave a little foam. */
+function plunge(ctx, xc, E) {
+  ctx.surface.addVelocity(xc, 0.02, -I.plungeKick * E);
+  ctx.surface.addFoam(xc, 0.03, I.plungeFoam * E);
+  ctx.stats.plunges++;
 }
 
-function exit(ctx, xc, E, Vx, Vy) {
-  const { surface, splash, rand } = ctx;
-  for (let i = 0, n = 2 + Math.round(4 * E); i < n; i++) {
-    const x = xc + (rand() * 2 - 1) * 0.01;
-    splash.spawn(x, yLine(surface, x) - 0.003, 0.4 * Vx + (rand() * 2 - 1) * 0.15, 0.55 * Vy * (0.7 + 0.3 * rand()));
-  }
-  surface.addVelocity(xc, 0.02, P.exitKick * E);
+/** The cursor came out through the line: the water follows it up. */
+function exit(ctx, xc, E) {
+  ctx.surface.addVelocity(xc, 0.02, I.exitKick * E);
+  ctx.stats.exits++;
 }
 
-function skim(ctx, h, Vx) {
-  const { surface, splash, rand } = ctx;
-  const E = clamp((Math.abs(Vx) - P.skimVx) / 1.5, 0, 1);
-  ctx.skim += P.skimRate * E * SIM.dt;
-  for (; ctx.skim >= 1; ctx.skim -= 1) {
-    splash.spawn(h.x1, yLine(surface, h.x1) - 0.003, 0.55 * Vx + (rand() * 2 - 1) * 0.1, -1.5 * (0.3 + 0.4 * rand()) * E);
-  }
-}
-
-/** The cursor moved from (x0, y0) to (x1, y1) this step: stir, dimple, and throw spray where it crosses or skims the line. */
+/** The cursor moved from (x0, y0) to (x1, y1) this step: stir the water, dimple the line, and kick it where the cursor crosses. */
 export function applyCursor(ctx, h) {
   const { surface, field, stats } = ctx;
   const dx = h.x1 - h.x0;
   const dy = h.y1 - h.y0;
   const L = Math.hypot(dx, dy);
-  const Vx = dx / SIM.dt;
   const Vy = dy / SIM.dt;
   const U = L / SIM.dt;
   const s = Math.max(speedStrength(U, h.dragMix), C.dragFloor * h.dragMix);
@@ -107,53 +84,31 @@ export function applyCursor(ctx, h) {
   ctx.lastD = d1;
   const E = clamp((U - 0.5) / 1.5, 0, 1);
   const crossing = () => h.x0 + clamp(-d0 / (d1 - d0), 0, 1) * dx;
-  if (d0 < 0 && d1 >= 0 && Vy > P.plungeVy && ctx.time >= ctx.coolPlunge) {
+  if (d0 < 0 && d1 >= 0 && Vy > I.plungeVy && ctx.time >= ctx.coolPlunge) {
     const xc = crossing();
     if (xc < BERG_L || xc > BERG_R) { // an open column, not the iceberg
-      plunge(ctx, xc, E, Vx, U);
-      ctx.coolPlunge = ctx.time + P.cooldown;
+      plunge(ctx, xc, E);
+      ctx.coolPlunge = ctx.time + I.cooldown;
     }
-  } else if (d0 >= 0 && d1 < 0 && -Vy > P.plungeVy && ctx.time >= ctx.coolExit) {
+  } else if (d0 >= 0 && d1 < 0 && -Vy > I.plungeVy && ctx.time >= ctx.coolExit) {
     const xc = crossing();
     if (xc < BERG_L || xc > BERG_R) {
-      exit(ctx, xc, E, Vx, Vy);
-      ctx.coolExit = ctx.time + P.cooldown;
+      exit(ctx, xc, E);
+      ctx.coolExit = ctx.time + I.cooldown;
     }
   }
-  if (Math.abs(d1) < P.skimSurface && Math.abs(Vx) > P.skimVx) skim(ctx, h, Vx);
-  else ctx.skim = 0;
 }
 
-/** A click or tap at (x, y): a crown at the surface, a drip in the air, a ring under water. */
-export function applyPress(ctx, { x, y }, headVx) {
-  const { surface, field, splash, rand } = ctx;
-  const d = y - yLine(surface, x);
-  if (Math.abs(d) < P.crownDepth) {
-    for (let i = 0, n = P.crown; i < n; i++) {
-      const theta = ((((i + 0.5) / n) - 0.5) * 2 * 55 + (rand() - 0.5) * 8) * RAD; // a fan about the vertical
-      const spd = P.vThrow * (0.6 + 0.4 * rand());
-      const px = x + (rand() * 2 - 1) * 0.014;
-      splash.spawn(px, yLine(surface, px) - 0.002 - 0.004 * rand(), Math.sin(theta) * spd, -Math.cos(theta) * spd);
-    }
-    surface.addVelocity(x, 0.02, -P.crownKick);
-    surface.addFoam(x, 0.03, P.crownFoam);
-  } else if (d < 0) {
-    splash.spawnLargest(x, y, 0.3 * headVx, 0);
-  } else {
+/** A click or tap at (x, y): waves from the surface, a ring under water, nothing in the air. */
+export function applyPress(ctx, { x, y }) {
+  const { surface, field } = ctx;
+  const d = depthAt(surface, x, y);
+  if (Math.abs(d) < I.pressDepth) {
+    surface.addVelocity(x, 0.02, -I.pressKick);
+    surface.addFoam(x, 0.03, I.pressFoam);
+    ctx.stats.presses++;
+  } else if (d > 0) {
     field.addImpulse(x, y, C.pressRing, C.pressRingR);
-  }
-}
-
-/** A drop met the water at info.x: kick the surface and the field, leave foam, and sometimes throw a jet back up. */
-export function landDrop(ctx, info) {
-  const { surface, field, splash, rand } = ctx;
-  const rad = radiusOfSlot(info.slot);
-  const q = (rad / P.rMax) ** 2;
-  const vy = Math.max(info.vy, 0);
-  surface.addVelocity(info.x, 0.012, -P.landKick * q * Math.min(vy, 3));
-  field.addImpulse(info.x, yLine(surface, info.x) + 0.03, (P.landField * q * vy) / 1.5, footprint(ctx).r);
-  surface.addFoam(info.x, 0.02, P.landFoam * q);
-  if (vy > 1.4 && rad > 0.6 * P.rMax && rand() < 0.3) {
-    splash.spawn(info.x, yLine(surface, info.x) - 0.003, 0, -0.4 * vy);
+    ctx.stats.presses++;
   }
 }

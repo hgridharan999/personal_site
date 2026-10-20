@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { WL } from '../iceberg.js';
-import { SIM, SPLASH } from './constants.js';
+import { WL, bergClearance } from '../iceberg.js';
+import { SIM, SURFACE } from './constants.js';
+import { decodeSigned } from './pack.js';
 import { createWater } from './sim.js';
 
 const W = 1000;
@@ -8,7 +9,7 @@ const H = 320;
 const FRAME = 1 / 60;
 
 const make = (opts = {}) => {
-  const water = createWater({ dropN: 32, seed: 1, ...opts });
+  const water = createWater(opts);
   water.resize(W, H);
   return water;
 };
@@ -31,9 +32,9 @@ function sweep(water, path, seconds, { frame = FRAME, eventHz = 60, drag = false
   }
 }
 
-const alive = (water) => water.snapshot().drops.length;
 const surfaceEnergy = (water) => water.energy().surface;
 const fieldEnergy = (water) => water.energy().field;
+const foam = (water) => water.snapshot().surface.foam;
 
 describe('stepping', () => {
   it('takes whole 1/120 s steps, at most 6 a frame, and none for no time', () => {
@@ -54,7 +55,7 @@ describe('stepping', () => {
   });
 
   it('does nothing before it has a size', () => {
-    const water = createWater({ dropN: 8 });
+    const water = createWater();
     expect(water.advance(FRAME)).toBe(0);
     expect(water.view().on).toBe(false);
   });
@@ -89,13 +90,13 @@ describe('frame rate and event rate do not change the water', () => {
     expect(a.steps).toBe(b.steps);
   });
 
-  it('includes the splashes: a plunge gives identical drops either way', () => {
+  it('includes the impacts: a plunge leaves identical water either way', () => {
     const plunge = (t) => [0.9, 0.1 + 2 * t];
     const a = make();
     const b = make();
-    sweep(a, plunge, 0.25, { frame: 1 / 60, eventHz: 60 }); // the drops are still in the air
-    sweep(b, plunge, 0.25, { frame: 1 / 120, eventHz: 60 });
-    expect(alive(a)).toBeGreaterThan(0);
+    sweep(a, plunge, 0.6, { frame: 1 / 60, eventHz: 60 });
+    sweep(b, plunge, 0.6, { frame: 1 / 120, eventHz: 60 });
+    expect(a.snapshot().stats.plunges).toBe(1);
     expect(a.snapshot()).toEqual(b.snapshot());
   });
 
@@ -115,19 +116,18 @@ describe('frame rate and event rate do not change the water', () => {
     expect(mid.deposit).toBeGreaterThan(0);
   });
 
-  it('is repeatable: same seed, same water; a different seed throws different drops', () => {
-    const run = (seed) => {
-      const water = make({ seed });
+  it('is repeatable: the same input gives the same water', () => {
+    const run = () => {
+      const water = make();
       sweep(water, (t) => [0.9, 0.1 + 2 * t], 0.4);
-      return water.snapshot().drops;
+      return water.snapshot();
     };
-    expect(run(1)).toEqual(run(1));
-    expect(run(1)).not.toEqual(run(2));
+    expect(run()).toEqual(run());
   });
 });
 
 describe('a still pointer', () => {
-  it('does nothing: no energy, no drops, and the view says to draw nothing', () => {
+  it('does nothing: no energy, and the view says to draw nothing', () => {
     const water = make();
     water.point(0.4, WL + 0.2, false);
     for (let i = 0; i < 300; i++) {
@@ -135,7 +135,6 @@ describe('a still pointer', () => {
       expect(surfaceEnergy(water)).toBe(0);
       expect(fieldEnergy(water)).toBe(0);
     }
-    expect(alive(water)).toBe(0);
     expect(water.view().on).toBe(false);
   });
 
@@ -143,67 +142,52 @@ describe('a still pointer', () => {
     const water = make();
     sweep(water, (t) => [Math.min(-0.5 + t * 0.5, -0.45), WL - 0.3], 1); // moving slowly above the line, then still
     sweep(water, () => [-0.45, WL - 0.3], 2);
-    expect(alive(water)).toBe(0);
     expect(water.view().on).toBe(false);
   });
 });
 
-describe('splashes', () => {
+describe('impacts at the waterline', () => {
   const plunge = (x = 0.9) => (t) => [x, 0.1 + 2 * t];
 
-  it('a plunge at 2 band heights a second spawns 3 to 10 drops, and every one lands within 2 seconds', () => {
+  it('a plunge at 2 band heights a second pushes the water down and leaves foam, and the waves keep ringing', () => {
     const water = make();
-    let most = 0;
-    sweep(water, plunge(), 0.5, { onFrame: () => { most = Math.max(most, alive(water)); } });
-    expect(most).toBeGreaterThanOrEqual(3);
-    expect(most).toBeLessThanOrEqual(10);
-    sweep(water, () => [0.9, 0.7], 2); // the pointer stays down in the water
-    expect(alive(water)).toBe(0);
-    expect(water.view().on).toBe(true); // the splash left ripples behind
+    sweep(water, plunge(), 0.5);
+    expect(water.snapshot().stats.plunges).toBe(1);
+    expect(foam(water).some((f) => f > 0.1)).toBe(true);
+    sweep(water, () => [0.9, 0.7], 1); // the pointer stays down in the water
+    expect(surfaceEnergy(water)).toBeGreaterThan(0);
+    expect(water.view().on).toBe(true);
   });
 
-  it('thrown drops end up kicking the surface and the field when they land', () => {
+  it('a plunge into the iceberg\'s own columns is not an impact: no foam', () => {
     const water = make();
-    sweep(water, plunge(), 0.2);
-    const before = water.energy();
-    // let the drops come down while the pointer sits still deep in the water
-    sweep(water, () => [0.9, 0.9], 0.8);
-    expect(water.energy().surface).toBeGreaterThan(0);
-    expect(before.surface).toBeGreaterThan(0);
+    sweep(water, plunge(0.0), 0.5);
+    expect(water.snapshot().stats.plunges).toBe(0);
+    expect(foam(water).every((f) => f === 0)).toBe(true);
   });
 
-  it('a plunge into the iceberg\'s own columns throws nothing', () => {
+  it('a slow wade across the line is not an impact', () => {
     const water = make();
-    sweep(water, plunge(0.0), 0.5, { onFrame: (f, w) => { expect(alive(w)).toBe(0); } });
-  });
-
-  it('a slow wade across the line throws no drops', () => {
-    const water = make();
-    sweep(water, (t) => [0.9, WL - 0.05 + 0.1 * t], 2, { onFrame: (f, w) => { expect(alive(w)).toBe(0); } });
+    sweep(water, (t) => [0.9, WL - 0.05 + 0.1 * t], 2);
+    const { stats } = water.snapshot();
+    expect([stats.plunges, stats.exits]).toEqual([0, 0]);
+    expect(foam(water).every((f) => f === 0)).toBe(true);
   });
 
   // The surface dips toward a cursor coming up from below, so the line can pass the cursor between two
   // steps without the cursor itself crossing it: the exit must still be seen.
-  it('lifting out of the water throws a few drops up', () => {
+  it('coming out of the water pulls the line up, once', () => {
     const water = make();
-    let most = 0;
-    sweep(water, (t) => [0.9, 0.7 - 2 * t], 0.5, { onFrame: () => { most = Math.max(most, alive(water)); } });
-    expect(most).toBeGreaterThanOrEqual(2);
+    sweep(water, (t) => [0.9, 0.7 - 2 * t], 0.7);
+    expect(water.snapshot().stats.exits).toBe(1);
   });
 
-  it('skimming along the line sprays', () => {
+  it('skimming along the line is not a splash: the view carries no drops', () => {
     const water = make();
-    let most = 0;
-    sweep(water, (t) => [-1.2 + 3 * t, WL], 0.8, { onFrame: () => { most = Math.max(most, alive(water)); } });
-    expect(most).toBeGreaterThan(0);
-  });
-
-  it('still moves the water when there are no drops to throw', () => {
-    const water = make({ dropN: 0 });
-    sweep(water, plunge(), 0.5);
-    expect(alive(water)).toBe(0);
-    expect(surfaceEnergy(water)).toBeGreaterThan(0);
-    expect(water.view().on).toBe(true);
+    sweep(water, (t) => [-1.2 + 3 * t, WL], 0.8);
+    const view = water.view();
+    expect(Object.keys(view).sort()).toEqual(['dims', 'field', 'fieldVersion', 'on', 'surf', 'surfVersion']);
+    expect(water.snapshot().drops).toBeUndefined();
   });
 });
 
@@ -216,27 +200,28 @@ describe('presses', () => {
     return water;
   };
 
-  it('at the surface: a crown of drops, a kick and foam', () => {
+  it('at the surface: a kick and foam send waves out, and nothing is thrown', () => {
     const water = press(0.9, WL + 0.01);
-    expect(alive(water)).toBeGreaterThanOrEqual(10);
-    expect(alive(water)).toBeLessThanOrEqual(SPLASH.crown);
+    expect(water.snapshot().stats.presses).toBe(1);
     expect(surfaceEnergy(water)).toBeGreaterThan(0);
-    expect(water.snapshot().surface.foam.some((f) => f > 0.1)).toBe(true);
+    expect(foam(water).some((f) => f > 0.1)).toBe(true);
+    expect(fieldEnergy(water)).toBe(0);
+    sweep(water, () => [0.9, WL + 0.01], 0.5);
+    const { h } = water.snapshot().surface;
+    expect(Math.max(...h.map(Math.abs))).toBeGreaterThan(0.002); // real waves, a pixel or more
   });
 
-  it('in the air: a single drip that is let go and falls in', () => {
+  it('in the air: nothing happens', () => {
     const water = press(0.9, WL - 0.2);
-    expect(alive(water)).toBe(1);
-    const [drop] = water.snapshot().drops;
-    expect(drop.vx).toBeCloseTo(0, 6);
-    sweep(water, () => [0.9, WL - 0.2], 1.5);
-    expect(alive(water)).toBe(0);
-    expect(surfaceEnergy(water)).toBeGreaterThan(0); // it landed and kicked the surface
+    expect(water.snapshot().stats.presses).toBe(0);
+    expect(surfaceEnergy(water)).toBe(0);
+    expect(fieldEnergy(water)).toBe(0);
+    expect(water.view().on).toBe(false);
   });
 
-  it('under water: a ring in the field, no drops', () => {
+  it('under water: a ring in the field and a calm surface', () => {
     const water = press(0.9, WL + 0.4);
-    expect(alive(water)).toBe(0);
+    expect(water.snapshot().stats.presses).toBe(1);
     expect(fieldEnergy(water)).toBeGreaterThan(0);
     expect(surfaceEnergy(water)).toBe(0);
   });
@@ -247,6 +232,50 @@ describe('presses', () => {
     water.advance(0.1);
     expect(water.steps).toBe(SIM.maxSteps);
     expect(fieldEnergy(water)).toBeGreaterThan(0);
+  });
+});
+
+describe('the iceberg', () => {
+  const solidCells = (water) => {
+    const { field } = water.snapshot();
+    return field.solid.flatMap((s, k) => (s ? [k] : []));
+  };
+
+  it('stays dead still when the cursor moves through it: every ice cell holds exactly 0', () => {
+    const water = make();
+    const ice = solidCells(water);
+    expect(ice.length).toBeGreaterThan(500);
+    sweep(water, (t) => [-1.1 + t, WL + 0.2], 2.4, {
+      onFrame: (f, w) => {
+        if (f % 10) return;
+        const { u, v } = w.snapshot().field;
+        for (const k of ice) expect([u[k], v[k]]).toEqual([0, 0]);
+      },
+    });
+    expect(fieldEnergy(water)).toBeGreaterThan(0); // the water around it did move
+  });
+
+  it('never draws a dip deeper than the ice below it: the line cannot pull off the tip and show the shelf', () => {
+    const water = make();
+    const { cols, aspect } = water.dims;
+    const dx = aspect / cols;
+    let deepest = 0;
+    sweep(water, (t) => [-1.1 + t, WL + 0.012], 2.8, {
+      onFrame: (f, w) => {
+        const { surf } = w.view();
+        for (let j = 0; j < cols; j++) {
+          const clear = bergClearance(-aspect / 2 + (j + 0.5) * dx);
+          const eta = decodeSigned(surf[4 * j]) * SURFACE.etaScale;
+          if (clear === 0) {
+            expect(surf[4 * j]).toBe(128); // under the tip: drawn flat
+          } else if (Number.isFinite(clear)) {
+            expect(eta).toBeGreaterThan(-clear);
+            deepest = Math.max(deepest, -eta / clear);
+          }
+        }
+      },
+    });
+    expect(deepest).toBeGreaterThan(0.05); // the test did see dips over the shelf
   });
 });
 
@@ -267,7 +296,6 @@ describe('reset and view', () => {
     const snap = water.snapshot();
     expect(snap.surface).toEqual(fresh.surface);
     expect(snap.field).toEqual(fresh.field);
-    expect(snap.drops).toEqual([]);
     const view = water.view();
     expect(view.on).toBe(false);
     expect([...view.surf].every((b, i) => b === (i % 4 === 3 ? 0 : 128))).toBe(true);
@@ -286,29 +314,14 @@ describe('reset and view', () => {
     const water = busy();
     const a = water.view();
     const aSurf = Uint8Array.from(a.surf);
-    const aDrops = Float32Array.from(a.drops);
     const versions = [a.surfVersion, a.fieldVersion];
     const b = water.view();
     expect([b.surfVersion, b.fieldVersion]).toEqual(versions);
     expect([...b.surf]).toEqual([...aSurf]);
-    expect([...b.drops]).toEqual([...aDrops]);
     water.advance(FRAME);
     const c = water.view();
     expect(c.surfVersion).toBeGreaterThan(versions[0]);
     expect(c.fieldVersion).toBeGreaterThan(versions[1]);
-  });
-
-  it('puts the drops in the view: dead slots at y = -10, live ones near where the snapshot says', () => {
-    const water = busy();
-    const { drops } = water.snapshot();
-    const view = water.view();
-    expect(view.drops).toHaveLength(32 * 4);
-    const liveSlots = drops.map((d) => d.slot);
-    for (let i = 0; i < 32; i++) {
-      if (!liveSlots.includes(i)) expect(view.drops[4 * i + 1]).toBe(SPLASH.dead);
-    }
-    expect(drops.length).toBeGreaterThan(0);
-    expect(view.dropBox[0]).toBeLessThan(view.dropBox[2]);
   });
 
   it('an idle sea has nothing to draw: on = false, versions still', () => {
@@ -339,7 +352,7 @@ describe('resize', () => {
     water.resize(W * 2, H); // a different aspect: a different grid
     expect(surfaceEnergy(water)).toBe(0);
     expect(water.view().on).toBe(false);
-    expect(water.dims.aspect).toBe(2 * W / H);
+    expect(water.dims.aspect).toBe((2 * W) / H);
   });
 
   it('ignores a zero, negative or junk size', () => {
@@ -350,7 +363,7 @@ describe('resize', () => {
   });
 
   it('caps the grids at the GPU texture size', () => {
-    const water = createWater({ dropN: 8, maxTexture: 128 });
+    const water = createWater({ maxTexture: 128 });
     water.resize(4000, 100);
     expect(water.dims.cols).toBeLessThanOrEqual(128);
     expect(water.dims.nx).toBeLessThanOrEqual(128);
@@ -370,7 +383,6 @@ describe('robustness', () => {
     }
     const snap = water.snapshot();
     for (const x of [...snap.surface.h, ...snap.surface.v, ...snap.field.u, ...snap.field.v]) expect(Number.isFinite(x)).toBe(true);
-    for (const d of snap.drops) for (const k of ['x', 'y', 'vx', 'vy']) expect(Number.isFinite(d[k])).toBe(true);
     const view = water.view();
     expect([...view.surf, ...view.field].every((b) => b >= 0 && b <= 255)).toBe(true);
   });

@@ -25,6 +25,7 @@ export const SURFACE = Object.freeze({
   etaScale: 0.05, // the texture stores eta / etaScale: 0.05 band heights is the largest visible lift
   slopeScale: 1.0, // ... and slope / slopeScale
   sway: 0.25, // how much the surface slope sways the caustics beneath it (shader)
+  taperDepth: 0.08, // the drawn waves fade to nothing as the iceberg's top rises to the line, over this clearance
   foamDecay: 0.8, // seconds
   foamRate: 2.0, // foam made per second by water moving faster than foamV0
   foamV0: 0.25,
@@ -43,11 +44,12 @@ export const FIELD = Object.freeze({
   nxMax: 512,
   rhScale: 40, // the texture stores 40 u as the ripple height ...
   gradScale: 1.0, // ... and grad u as the light displacement
+  hullFade: 3, // cells over which the drawn light bending fades out before the ice
   idleU: 1e-4,
   idleV: 1e-3,
 });
 
-/** How the cursor moves the water. Starting values from the design; see tuning notes in sim.js. */
+/** How the cursor moves the water (gains tuned by eye). */
 export const CURSOR = Object.freeze({
   trench: 0.24, // surface velocity pulled out per unit of path
   pressure: 0.03, // surface pressure dimple
@@ -64,34 +66,16 @@ export const CURSOR = Object.freeze({
   pressRingR: 0.03,
 });
 
-/** Splash drops. g and the throw speed keep the apex inside the air above the line. */
-export const SPLASH = Object.freeze({
-  g: 6,
-  drag: 0.4, // per second
-  life: 3,
-  vThrow: 1.5,
-  rMin: 0.004,
-  rMax: 0.011,
-  streak: 0.02, // seconds of motion the drawn streak trails behind a drop
-  dead: -10, // y of an unused slot (the shader skips anything above -5)
-  killY: 1.2,
-  killX: 0.05, // beyond the band edge
-  plungeVy: 0.5, // downward speed that makes a plunge (and upward, an exit)
-  cooldown: 0.08,
-  skimVx: 1.0,
-  skimRate: 40, // drops per second at full skim
-  skimSurface: 0.02, // |depth| under which the cursor is skimming
-  crown: 12,
-  crownDepth: 0.04, // a press this close to the line makes a crown
-  // what each event does to the water (peak surface velocity in band heights per second, field impulse, foam)
+/** What happens at the waterline when the cursor or a tap meets it. The kicks are peak surface velocities, band heights per second. */
+export const IMPACT = Object.freeze({
+  plungeVy: 0.5, // vertical speed that counts as going in (and, upward, as coming out)
+  cooldown: 0.08, // seconds before the same kind of crossing can fire again
   plungeKick: 0.9, // pushed down by a plunge, scaled by its violence E
-  exitKick: 0.5, // pulled up by an exit
-  crownKick: 1.2,
-  crownFoam: 0.9,
   plungeFoam: 0.7,
-  landKick: 0.3, // per landing drop, scaled by its size and speed
-  landField: 0.4,
-  landFoam: 0.5,
+  exitKick: 0.5, // pulled up by coming out
+  pressKick: 1.2, // a click or tap right at the surface
+  pressFoam: 0.9,
+  pressDepth: 0.04, // a press this close to the line (either side) lands on the surface
 });
 
 /** How the simulation is drawn (the shader's gains; tuned by eye). */
@@ -102,8 +86,4 @@ export const SHADE = Object.freeze({
   crestFall: 10, // ... fading with depth below the line, in px
   foam: 0.85, // foam white-out
   foamFall: 6, // ... in px below the line
-  dropFill: [0.8, 0.94, 0.98],
-  dropRim: [0.059, 0.49, 0.667],
-  segHigh: 1e-8, // shortest drop streak (squared) the closest-point maths divides by
-  segMedium: 1e-4, // ... mediump cannot hold 1e-8
 });

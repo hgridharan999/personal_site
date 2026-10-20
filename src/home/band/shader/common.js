@@ -29,7 +29,7 @@ export function bergConstants() {
 ${vconst}`;
 }
 
-/** Everything main() calls except the water's samplers and the drops. The polygon's edges are unrolled here. */
+/** Everything main() calls except the water's samplers. The polygon's edges are unrolled here. */
 export function helpers() {
   const NV = BERG.length;
   const edges = BERG.map((_, i) => `edge(p, V${(i + NV - 1) % NV}, V${i}, d, s);`).join('\n  ');

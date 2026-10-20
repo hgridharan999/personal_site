@@ -1,14 +1,14 @@
 import { PRECISION, VS, bergConstants, helpers } from './common.js';
-import { DROPS, SAMPLERS, waterDefines, waterUniforms } from './water.js';
+import { SAMPLERS, WATER_UNIFORMS, waterDefines } from './water.js';
 
 export { VS };
 
 /*
  * main() is the mockup's, line for line, except where the simulated water comes in: the waterline
  * rides the surface height, caustics sway with its slope, crests catch light, foam rides the line,
- * the ripples under it warp the light as before, and splash drops are drawn last.
+ * and the ripples under it warp the light as before.
  */
-const mainFn = (dropN) => `
+const MAIN = `
 void main(){
   vec2 fc = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
   float H = uRes.y;
@@ -128,10 +128,7 @@ void main(){
 
   /* foam rides the line */
   col = mix(col, vec3(0.94, 0.99, 1.0), foam * below * exp(-max(z, 0.0) / FOAM_FALL) * FOAM_GAIN);
-${dropN > 0 ? `
-  /* splash drops, over everything (but not under the water) */
-  if (uSim.y > 0.5) dropsOver(p, px, below, col);
-` : ''}
+
   /* floor: slightly darker in the lower corners, dithered so the deep gradient never bands */
   col *= 1.0 - 0.18 * smoothstep(0.9, 2.2, abs(p.x)) * smoothstep(0.4, 1.0, p.y);
   col = mix(col, vec3(0.039, 0.094, 0.133), smoothstep(0.93, 1.0, p.y));   // exactly the footer's colour at the floor
@@ -140,23 +137,18 @@ ${dropN > 0 ? `
 }
 `;
 
-/**
- * The fragment shader for a pool of `dropN` splash drops (0 = no drops drawn: a splash still moves
- * the water). DROP_N is a #define so the uniform array and the loop bound can't disagree.
- */
-export function buildFragmentShader(dropN) {
+/** The fragment shader: the mockup's iceberg and water, with the simulated water read from two textures. */
+export function buildFragmentShader() {
   return [
-    `#define DROP_N ${dropN}`,
     PRECISION,
     'uniform vec2  uRes;      // canvas size, device px',
     'uniform float uT;        // seconds',
-    waterUniforms(dropN),
-    waterDefines(dropN),
+    WATER_UNIFORMS,
+    waterDefines(),
     '',
     bergConstants(),
     helpers(),
     SAMPLERS,
-    dropN > 0 ? DROPS : '',
-    mainFn(dropN),
+    MAIN,
   ].join('\n');
 }
