@@ -6,7 +6,6 @@ import { mix3, rgb, smoothstep } from './math.js';
 // keeps the two in step.
 
 export const INK = [26, 26, 24];
-export const GLOW = [255, 250, 236];
 
 export const ZONES = [
   { top: 1800, c: [170, 146, 84] }, // cultivation: ochre-olive
@@ -51,19 +50,16 @@ export function makePalette() {
 }
 
 /**
- * Fills `pal` for one frame. `tideH` is the height (m) the colour has risen to; `bandH` and
- * `bandAmp` place and weigh the band of light that rises through the zones.
+ * Fills `pal` for one frame. `tideH` is the height (m) the colour has risen to. The band of light
+ * that rises through the zones is a CSS overlay (see glow.js), not part of the palette.
  */
-export function fillPalette(pal, tideH, bandH, bandAmp) {
+export function fillPalette(pal, tideH) {
   for (let b = 0; b < NB; b += 1) {
     const e = binE(b);
     const amt = smoothstep(e - 60, e + 520, tideH);
-    let c = mix3(INK, zoneColor(e), amt);
-    const lb = bandAmp * Math.exp(-(((e - bandH) / 330) ** 2));
-    c = mix3(c, mix3(c, GLOW, 0.6), lb);
-    pal.c[b] = rgb(c);
+    pal.c[b] = rgb(mix3(INK, zoneColor(e), amt));
     pal.a[b] = 1 + 0.9 * amt;
-    pal.w[b] = 0.5 * amt + 0.55 * lb;
+    pal.w[b] = 0.5 * amt;
     pal.e[b] = amt * smoothstep(4850, 5150, e);
   }
   return pal;

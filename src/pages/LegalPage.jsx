@@ -16,8 +16,8 @@ const sections = [
     id: 'cookies',
     title: 'Cookies and tracking',
     body: [
-      'This site uses a minimal consent preference cookie in your browser so it can remember whether you accepted the notice. No advertising, behavioral tracking, or third-party analytics are currently used.',
-      'If you decline the notice, the site will continue to function without storing this preference beyond the current browser session.',
+      'This site stores one small preference in your browser’s local storage so it can remember that you dismissed the notice. No advertising, behavioral tracking, or third-party analytics are used.',
+      'If you never press Got it, the site still works the same and simply shows the notice again on your next visit.',
     ],
   },
   {

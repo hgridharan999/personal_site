@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { NEXT_CLIMB } from '../content.js';
 import { mix3 } from './math.js';
 import {
-  BIN, BLEND, binE, binOf, E0, fillPalette, GLOW, INK, makePalette, NB, ZONES, zoneColor, zoneHex,
+  BIN, BLEND, binE, binOf, E0, fillPalette, INK, makePalette, NB, ZONES, zoneColor, zoneHex,
 } from './zones.js';
 
 const near = (a, b, eps = 1e-9) => a.every((v, i) => Math.abs(v - b[i]) < eps);
@@ -65,7 +65,7 @@ describe('the palette', () => {
   const pal = makePalette();
 
   it('is plain ink before the tide starts', () => {
-    fillPalette(pal, -1e9, -1e9, 0);
+    fillPalette(pal, -1e9);
     for (let b = 0; b < NB; b += 1) {
       expect(pal.c[b]).toBe(`rgb(${INK.join(',')})`);
       expect(pal.a[b]).toBe(1);
@@ -75,28 +75,22 @@ describe('the palette', () => {
   });
 
   it('colours only what the tide has reached', () => {
-    fillPalette(pal, 2500, -1e9, 0);
+    fillPalette(pal, 2500);
     expect(pal.a[binOf(1000)]).toBeGreaterThan(1.8); // well below the tide: fully coloured
     expect(pal.a[binOf(5500)]).toBe(1); // well above it: still ink
     expect(pal.c[binOf(5500)]).toBe(`rgb(${INK.join(',')})`);
   });
 
   it('shows the zone colours and the icy edge once the tide is above the summit', () => {
-    fillPalette(pal, 6500, -1e9, 0);
+    fillPalette(pal, 6500);
     const z = ZONES[1].c;
     expect(pal.c[binOf(2300)]).toBe(`rgb(${z[0]},${z[1]},${z[2]})`);
     expect(pal.e[binOf(5600)]).toBeCloseTo(1, 5);
     expect(pal.e[binOf(3000)]).toBe(0);
   });
 
-  it('lights a band of elevations toward the glow', () => {
-    fillPalette(pal, 6500, 3000, 0.55);
-    const lit = binOf(3000);
-    const dark = binOf(5600);
-    expect(pal.w[lit]).toBeGreaterThan(pal.w[dark]);
-    const [r] = pal.c[lit].match(/\d+/g).map(Number);
-    expect(r).toBeGreaterThan(zoneColor(3000)[0]);
-    expect(r).toBeLessThan(GLOW[0] + 1);
+  it('takes only the tide: the band of light is not part of the palette', () => {
+    expect(fillPalette.length).toBe(2);
   });
 });
 

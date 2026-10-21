@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  BAND_AT, BAND_PERIOD, BAND_RISE, createPlayhead, lifeState, lineProgress, ROUTE_AT, ROUTE_DUR,
-  STAGGER, stillState, TIDE, totalDraw,
+  createPlayhead, lifeState, LIFE_END, lineProgress, ROUTE_AT, ROUTE_DUR, STAGGER, stillState, TIDE, totalDraw,
 } from './timeline.js';
 
 describe('the draw-in', () => {
@@ -22,11 +21,11 @@ describe('the draw-in', () => {
   });
 });
 
-describe('life: the colour tide, the route and the band of light', () => {
+describe('life: the colour tide and the route', () => {
   const total = 1000;
 
   it('has nothing before life begins', () => {
-    expect(lifeState(-1, total)).toEqual({ tideH: -1e9, routeLen: 0, bandH: -1e9, bandAmp: 0 });
+    expect(lifeState(-1, total)).toEqual({ tideH: -1e9, routeLen: 0 });
   });
 
   it('raises the colour from the plains to above the summit in 3.6 s', () => {
@@ -40,90 +39,97 @@ describe('life: the colour tide, the route and the band of light', () => {
     }
   });
 
-  it('draws the route after a short wait, and has drawn all of it before the band of light', () => {
+  it('draws the route after a short wait, and all of it by the end of life', () => {
     expect(lifeState(ROUTE_AT, total).routeLen).toBe(0);
     expect(lifeState(ROUTE_AT + ROUTE_DUR / 2, total).routeLen).toBeCloseTo(500, 3);
-    expect(lifeState(ROUTE_AT + ROUTE_DUR, total).routeLen).toBe(total);
-    expect(ROUTE_AT + ROUTE_DUR).toBeLessThan(BAND_AT);
+    expect(lifeState(LIFE_END, total).routeLen).toBe(total);
   });
 
-  it('keeps the band of light for after the colour has settled', () => {
-    expect(lifeState(BAND_AT - 0.01, total).bandAmp).toBe(0);
-    expect(lifeState(BAND_AT + 1, total).bandAmp).toBe(0.55);
-    // each rise fades in from nothing, so the glow never pops on at the start of a cycle
-    expect(lifeState(BAND_AT + 0.001, total).bandAmp).toBeLessThan(0.01);
+  it('ends when both the colour and the route are done', () => {
+    expect(LIFE_END).toBeCloseTo(Math.max(TIDE, ROUTE_AT + ROUTE_DUR), 10);
+    expect(lifeState(LIFE_END, total).tideH).toBeCloseTo(6500, 6);
   });
 
-  it('rises through the zones, then rests, every 8 s', () => {
-    const rise = BAND_PERIOD * BAND_RISE;
-    expect(lifeState(BAND_AT, total).bandH).toBeCloseTo(250, 3);
-    expect(lifeState(BAND_AT + rise / 2, total).bandH).toBeCloseTo(250 + 3250, 0);
-    expect(lifeState(BAND_AT + rise - 0.001, total).bandH).toBeCloseTo(6750, 0);
-    expect(lifeState(BAND_AT + rise + 0.5, total).bandAmp).toBe(0);
-    expect(lifeState(BAND_AT + BAND_PERIOD + 1, total).bandH).toBeCloseTo(lifeState(BAND_AT + 1, total).bandH, 6);
+  it('has no band of light in it: that is a CSS overlay now', () => {
+    expect(Object.keys(lifeState(2, total)).sort()).toEqual(['routeLen', 'tideH']);
   });
 
-  it('has a finished frame with all colour, the whole route and no band of light', () => {
+  it('has a finished frame with all the colour and the whole route', () => {
     const s = stillState(total);
     expect(s.tideH).toBeCloseTo(6500, 6);
     expect(s.routeLen).toBe(total);
-    expect([s.bandH, s.bandAmp]).toEqual([-1e9, 0]);
   });
 });
 
 describe('the playhead', () => {
   it('starts idle', () => {
     const p = createPlayhead();
-    expect([p.drawT, p.lifeT, p.done, p.still, p.started]).toEqual([-1, -1, false, false, false]);
+    expect([p.drawT, p.lifeT, p.done, p.still, p.glow, p.started]).toEqual([-1, -1, false, false, false, false]);
     expect(p.lifeNow).toBe(-1);
+    expect(p.advance(1, 64)).toBe('idle');
   });
 
   it('draws in, then moves into life when the last line is down', () => {
     const p = createPlayhead();
-    p.begin(64, false);
+    p.begin();
     expect(p.drawT).toBe(0);
-    expect(p.advance(0.5, 64)).toBe(true);
+    expect(p.advance(0.5, 64)).toBe('run');
     expect(p.done).toBe(false);
-    expect(p.advance(totalDraw(64), 64)).toBe(true);
+    expect(p.advance(totalDraw(64), 64)).toBe('run');
     expect(p.done).toBe(true);
     expect(p.lifeT).toBe(0);
-    expect(p.advance(0.25, 64)).toBe(true);
+    expect(p.advance(0.25, 64)).toBe('run');
     expect(p.lifeT).toBeCloseTo(0.25, 10);
   });
 
-  it('does nothing before it begins', () => {
+  it('settles once, when life ends, and then has no work left', () => {
     const p = createPlayhead();
-    expect(p.advance(1, 64)).toBe(false);
-    expect(p.drawT).toBe(-1);
-  });
-
-  it('jumps straight to the finished frame when begun frozen, and then needs no frames', () => {
-    const p = createPlayhead();
-    p.begin(64, true);
-    expect([p.done, p.still, p.started]).toEqual([true, true, true]);
-    expect(p.lifeNow).toBe(BAND_AT);
+    p.begin();
+    p.advance(totalDraw(64), 64);
+    let steps = 0;
+    let last = 'run';
+    while (last === 'run') {
+      last = p.advance(1 / 60, 64);
+      steps += 1;
+    }
+    expect(last).toBe('settle');
+    expect(steps).toBeGreaterThan(LIFE_END * 60 - 2);
+    expect(steps).toBeLessThan(LIFE_END * 60 + 2);
+    expect([p.still, p.glow, p.lifeT]).toEqual([true, true, LIFE_END]);
+    for (let n = 0; n < 5; n += 1) expect(p.advance(1, 64)).toBe('idle');
     expect(p.life(500).routeLen).toBe(500);
-    expect(p.advance(1, 64)).toBe(false);
   });
 
   it('begins only once', () => {
     const p = createPlayhead();
-    p.begin(64, false);
+    p.begin();
     p.advance(1, 64);
-    p.begin(64, false);
+    p.begin();
     expect(p.drawT).toBeCloseTo(1, 10);
   });
 
-  it('freezes mid draw-in and carries on from the first band of light when thawed', () => {
+  it('freezes straight to the finished frame, without the light', () => {
     const p = createPlayhead();
-    p.begin(64, false);
+    p.begin();
     p.advance(0.5, 64);
     p.freeze(64);
-    expect(p.still).toBe(true);
+    expect([p.done, p.still, p.glow, p.started, p.lifeNow]).toEqual([true, true, false, true, LIFE_END]);
+    expect(p.life(500).routeLen).toBe(500);
+    expect(p.advance(1, 64)).toBe('idle');
+  });
+
+  it('lets the light start after a freeze, once and only once', () => {
+    const p = createPlayhead();
+    p.freeze(64);
     expect(p.thaw()).toBe(true);
-    expect([p.still, p.lifeT]).toEqual([false, BAND_AT]);
-    expect(p.advance(0.1, 64)).toBe(true);
-    expect(p.lifeT).toBeCloseTo(BAND_AT + 0.1, 10);
+    expect(p.glow).toBe(true);
     expect(p.thaw()).toBe(false);
+  });
+
+  it('has nothing to thaw while it is still moving', () => {
+    const p = createPlayhead();
+    p.begin();
+    expect(p.thaw()).toBe(false);
+    expect(p.glow).toBe(false);
   });
 });

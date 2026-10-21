@@ -38,6 +38,7 @@ export default function KiliEnding() {
     <>
       <div className="kili-band" ref={bandRef} aria-hidden="true" data-failed={failed || undefined}>
         <canvas />
+        <div className="kili-glow" data-kili="glow"><i /></div>
         <div className="kili-peak" data-kili="peak">
           <span className="kili-t" data-kili="peak-text">
             <span className="kili-nm">{summit.name}</span>

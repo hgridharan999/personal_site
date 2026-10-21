@@ -28,7 +28,8 @@ function selectorsIn(source) {
   return out;
 }
 
-const selectors = selectorsIn(css);
+// the keyframe stops (0%, 5.76% ...) are not selectors
+const selectors = selectorsIn(css.replace(/@keyframes[^{]*{(?:[^{}]*{[^}]*})*[^}]*}/g, ''));
 
 /** The declaration text of the first rule whose selector list is exactly `selector`. */
 function declarationsOf(selector) {
@@ -50,8 +51,9 @@ describe('kili.css', () => {
     expect(selectors.filter((s) => !/^\.hm(?![\w-])/.test(s))).toEqual([]);
   });
 
-  it('keeps to the page tokens: no :root, no fonts, no keyframes', () => {
-    expect(css).not.toMatch(/:root|@font-face|@import|@keyframes/);
+  it('keeps to the page tokens: no :root, no fonts, and one set of keyframes (the light)', () => {
+    expect(css).not.toMatch(/:root|@font-face|@import/);
+    expect([...css.matchAll(/@keyframes\s+([\w-]+)/g)].map((m) => m[1])).toEqual(['kili-glow']);
   });
 
   it('reserves the band height from the first paint: 290, 330 and 360 px', () => {

@@ -14,7 +14,7 @@ const ROUTE_BLUE_SOFT = 'rgba(15,125,170,0.6)';
  * A painter for one layout. Make a new one whenever the layout changes: the cached paths belong
  * to the sizes they were made for.
  *
- * `paint({ dpr, drawT, full, tideH, bandH, bandAmp, routeLen })`: `full` is true once every
+ * `paint({ dpr, pixelW, pixelH, drawT, full, tideH, routeLen })`: `full` is true once every
  * line is down (then `drawT` no longer matters); the rest is the timeline's state for the frame.
  */
 export function createPainter(ctx, layout, built) {
@@ -190,14 +190,16 @@ export function createPainter(ctx, layout, built) {
     ctx.globalCompositeOperation = 'source-over';
   }
 
-  return function paint({ dpr, drawT, full, tideH, bandH, bandAmp, routeLen }) {
+  return function paint({ dpr, pixelW, pixelH, drawT, full, tideH, routeLen }) {
+    // clear every device pixel (the last column can lie past W * dpr), then draw in CSS pixels
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, pixelW, pixelH);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.globalCompositeOperation = 'source-over';
-    ctx.clearRect(0, 0, W, H);
     ctx.lineJoin = 'round';
     if (full && !cache) cache = new Array(N);
     const zoned = full && tideH > E0 - 600;
-    if (zoned) fillPalette(pal, tideH, bandH, bandAmp);
+    if (zoned) fillPalette(pal, tideH);
 
     for (let i = 0; i < N; i += 1) {
       const p = full ? 1 : lineProgress(drawT, i);

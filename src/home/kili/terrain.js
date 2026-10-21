@@ -142,5 +142,11 @@ export function layoutLines(terrain, width, height, phone) {
     return [x, base0 + depth * persp(u) - amp * ampOf(u) * liftAt(row, x), li];
   };
 
-  return { width, height, phone, N, K, xs, yS, eS, lineBase, lineAmp, sx0, SW, cA, cB, drape };
+  /** Screen y of ground `elevation` metres up on grid row `row`, with no edge fade (for the light ring). */
+  const yAt = (row, elevation) => {
+    const u = lineOf(row) / (N - 1);
+    return base0 + depth * persp(u) - amp * ampOf(u) * liftOf(elevation);
+  };
+
+  return { width, height, phone, N, K, xs, yS, eS, lineBase, lineAmp, sx0, SW, cA, cB, drape, colToX, yAt };
 }

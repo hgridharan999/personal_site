@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 
 import { createKiliBand } from './draw.js';
 import { routeJson, terrainJson } from './testData.js';
-import { BAND_AT, totalDraw } from './timeline.js';
+import { LIFE_END, totalDraw } from './timeline.js';
 
 // A browser-shaped stand-in: just enough window, document, canvas and observers to run the
 // loop in node, with a rAF queue the test steps by hand.
@@ -38,13 +38,18 @@ function fakeContext() {
   return ctx;
 }
 
+function fakeStyle() {
+  return { setProperty(name, value) { this[name] = value; } };
+}
+
 function fakeElement(extra = {}) {
   const classes = new Set();
   return {
     classList: { add: (c) => classes.add(c), remove: (c) => classes.delete(c), contains: (c) => classes.has(c) },
-    style: {},
+    style: fakeStyle(),
+    dataset: {},
     offsetWidth: 90,
-    removeAttribute(name) { if (name === 'style') this.style = {}; },
+    removeAttribute(name) { if (name === 'style') this.style = fakeStyle(); },
     ...extra,
   };
 }
@@ -55,7 +60,7 @@ function setup({ width = 1440, height = 360, reduced = false, hidden = false, la
   const canvas = { width: 0, height: 0, getContext: (kind) => (kind === '2d' ? ctx : null) };
   const els = labels
     ? {
-      peak: fakeElement(), 'peak-text': fakeElement(), mawenzi: fakeElement(), key: fakeElement(),
+      peak: fakeElement(), 'peak-text': fakeElement(), mawenzi: fakeElement(), key: fakeElement(), glow: fakeElement(),
       machame: fakeElement({ dataset: { wp: 'Machame Gate' } }), barafu: fakeElement({ dataset: { wp: 'Barafu Camp' } }),
     }
     : {};
@@ -136,9 +141,16 @@ describe('starting', () => {
     expect(() => createKiliBand({ band: setup().band, terrainData: { grid: [3, 3] }, routeData, win: setup().win })).toThrow();
   });
 
-  it('sizes the canvas to the band, with the pixel ratio capped at 2', () => {
+  it('sizes the canvas to the band: draft density while it moves, then the screen density capped at 2', () => {
     const { env } = start({ width: 1000, height: 330, dpr: 3 });
-    expect([env.canvas.width, env.canvas.height]).toEqual([2000, 660]);
+    expect([env.canvas.width, env.canvas.height]).toEqual([1000, 330]);
+    env.see(0.5);
+    env.run(totalDraw(64) + LIFE_END - 0.5);
+    expect(env.canvas.width).toBe(1000); // still moving: still a draft
+    env.run(1);
+    expect([env.canvas.width, env.canvas.height]).toEqual([2000, 660]); // settled: crisp, and not 3x
+    const finished = start({ width: 1000, height: 330, dpr: 3, reduced: true });
+    expect(finished.env.canvas.width).toBe(2000);
     const low = start({ width: 1000, height: 330, dpr: 1 });
     expect([low.env.canvas.width, low.env.canvas.height]).toEqual([1000, 330]);
   });
@@ -261,17 +273,16 @@ describe('pausing', () => {
     expect(ending.state().lifeT).toBe(lifeT);
   });
 
-  it('carries on from the first band of light when played again', () => {
-    const { env, ending } = start();
+  it('lets the light start when played again after a pause mid draw-in, with no frame queued', () => {
+    const { env, ending } = start({ labels: true });
     env.see(0.5);
     env.run(0.5);
     ending.togglePause();
+    expect(env.els.glow.dataset.glow).toBeUndefined();
     expect(ending.togglePause()).toBe(false);
-    expect(env.queue.size).toBe(1);
-    expect(ending.state()).toMatchObject({ still: false, paused: false });
-    expect(ending.state().lifeT).toBeCloseTo(BAND_AT, 5);
-    env.run(0.5);
-    expect(ending.state().lifeT).toBeGreaterThan(BAND_AT);
+    expect(env.queue.size).toBe(0);
+    expect(ending.state()).toMatchObject({ still: true, paused: false, glow: true });
+    expect(env.els.glow.dataset.glow).toBe('run');
   });
 
   it('shows the finished frame, not an empty band, when paused before it ever came into view', () => {
@@ -323,8 +334,105 @@ describe('reduced motion', () => {
     expect(env.queue.size).toBe(0);
     env.setReduced(false);
     expect(onMotion).toHaveBeenLastCalledWith(true);
-    expect(env.queue.size).toBe(1);
-    expect(ending.state().still).toBe(false);
+    expect(env.queue.size).toBe(0); // the finished frame is up: nothing left to draw
+    expect(ending.state()).toMatchObject({ still: true, glow: true });
+  });
+});
+
+describe('after life', () => {
+  it('paints one last frame when the colour and route are done, then asks for no more frames', () => {
+    const { env, ending } = start();
+    env.see(0.5);
+    env.run(totalDraw(64) + LIFE_END + 0.5);
+    expect(env.queue.size).toBe(0);
+    expect(ending.state()).toMatchObject({ raf: false, done: true, still: true, glow: true });
+    const painted = env.ctx.calls.clearRect;
+    env.step(120);
+    expect(env.ctx.calls.clearRect).toBe(painted);
+    expect(env.queue.size).toBe(0);
+  });
+
+  it('has no work left, so an idle band in view costs no frames at all', () => {
+    const { env, ending } = start();
+    env.see(0.5);
+    env.run(totalDraw(64) + LIFE_END + 0.5);
+    env.see(0.2);
+    env.see(0.9);
+    env.docListeners.get('visibilitychange')();
+    expect(env.queue.size).toBe(0);
+    expect(ending.state().raf).toBe(false);
+  });
+
+  it('settles on the finished frame: the whole route and every label', () => {
+    const { env } = start({ labels: true });
+    env.see(0.5);
+    env.run(totalDraw(64) + LIFE_END + 0.5);
+    for (const name of ['peak', 'mawenzi', 'key', 'machame', 'barafu']) expect(env.els[name].classList.contains('on')).toBe(true);
+  });
+});
+
+describe('the light', () => {
+  const settled = () => {
+    const made = start({ labels: true });
+    made.env.see(0.5);
+    made.env.run(totalDraw(64) + LIFE_END + 0.5);
+    return made;
+  };
+
+  it('is placed from the layout and does not run before the canvas has settled', () => {
+    const { env } = start({ labels: true });
+    expect(env.els.glow.style['--g0']).toMatch(/^translate(.+) scale(.+)$/);
+    expect(env.els.glow.style['--g7']).toMatch(/^translate/);
+    env.see(0.5);
+    env.run(1);
+    expect(env.els.glow.dataset.glow).toBeUndefined();
+  });
+
+  it('starts running when life ends', () => {
+    expect(settled().env.els.glow.dataset.glow).toBe('run');
+  });
+
+  it('holds while the band is off screen, and runs again on return', () => {
+    const { env } = settled();
+    env.see(0);
+    expect(env.els.glow.dataset.glow).toBe('hold');
+    env.see(0.5);
+    expect(env.els.glow.dataset.glow).toBe('run');
+  });
+
+  it('holds while the tab is hidden, and runs again when it is shown', () => {
+    const { env } = settled();
+    env.hidden = true;
+    env.docListeners.get('visibilitychange')();
+    expect(env.els.glow.dataset.glow).toBe('hold');
+    env.hidden = false;
+    env.docListeners.get('visibilitychange')();
+    expect(env.els.glow.dataset.glow).toBe('run');
+  });
+
+  it('holds while motion is paused, and runs again when played', () => {
+    const { env, ending } = settled();
+    ending.togglePause();
+    expect(env.els.glow.dataset.glow).toBe('hold');
+    ending.togglePause();
+    expect(env.els.glow.dataset.glow).toBe('run');
+  });
+
+  it('never starts under reduced motion, and starts if the preference is lifted', () => {
+    const { env } = start({ labels: true, reduced: true });
+    env.see(1);
+    expect(env.els.glow.dataset.glow).toBeUndefined();
+    env.setReduced(false);
+    expect(env.els.glow.dataset.glow).toBe('run');
+    env.setReduced(true);
+    expect(env.els.glow.dataset.glow).toBeUndefined();
+  });
+
+  it('is cleared when the ending is disposed', () => {
+    const { env, ending } = settled();
+    ending.dispose();
+    expect(env.els.glow.dataset.glow).toBeUndefined();
+    expect(env.els.glow.style['--g0']).toBeUndefined();
   });
 });
 
@@ -392,7 +500,7 @@ describe('resizing and disposing', () => {
     expect(env.win.__kili).toBeUndefined();
     for (const name of ['peak', 'mawenzi', 'key', 'machame', 'barafu']) {
       expect(env.els[name].classList.contains('on')).toBe(false);
-      expect(env.els[name].style).toEqual({});
+      expect(Object.keys(env.els[name].style)).toEqual(['setProperty']);
     }
     env.see(0.9);
     env.step(5);
