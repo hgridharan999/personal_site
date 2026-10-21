@@ -205,10 +205,19 @@ describe('homepage content: row shape', () => {
     }
   });
 
-  it('stores every date as "Mon YYYY" or a range of them ending in a month or "now", which yearsOf reads', () => {
+  it('stores every date as a bare year, "Mon YYYY", or a range of them ending in a month or "now", which yearsOf reads', () => {
     const essays = content.WRITING.essays.map((essay) => essay.when);
     const dates = [...sections.flatMap((section) => section.rows).map((row) => row.when), ...essays].filter(Boolean);
-    for (const date of dates) expect(date).toMatch(/^[A-Z][a-z]{2}\u00A0\d{4}(\u00A0\u2013\u00A0([A-Z][a-z]{2}\u00A0\d{4}|now))?$/);
+    for (const date of dates) expect(date).toMatch(/^(?:\d{4}|[A-Z][a-z]{2}\u00A0\d{4}(\u00A0\u2013\u00A0([A-Z][a-z]{2}\u00A0\d{4}|now))?)$/);
+  });
+
+  it('lists IdlExperts last in Experience, in 2025, linked in its title', () => {
+    const rows = content.EXPERIENCE.rows;
+    const idl = rows[rows.length - 1];
+    expect(idl.co).toBe('IdlExperts');
+    expect(idl.coHref).toBe('https://idlexperts.ai/');
+    expect(idl.when).toBe('2025');
+    expect(idl.body).toHaveLength(3);
   });
 
   it('glues dates together so a range never breaks across lines', () => {

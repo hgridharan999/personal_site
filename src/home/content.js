@@ -115,6 +115,20 @@ export const EXPERIENCE = {
       ],
       meta: ['Remote'],
     },
+    {
+      role: 'Problem Design Engineer',
+      co: 'IdlExperts',
+      coHref: 'https://idlexperts.ai/',
+      when: '2025',
+      lead: 'Wrote 6 problem sets',
+      rest: ` to test frontier AI${_}models.`,
+      body: [
+        'Designed six real-world problem sets used to evaluate frontier AI models, building environments that isolate reasoning failures.',
+        'Benchmarked agent behavior and task completion across environments, turning observed failure patterns into task-design fixes.',
+        'Consolidated engineer feedback into shipped changes to the model training and execution environments used in production.',
+      ],
+      meta: ['Remote', 'formerly Widget Factory'],
+    },
   ],
 };
 
