@@ -117,6 +117,10 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
 .hm .btn-line { border-color: var(--outline); color: var(--cream); }
 
 /* ---------- Sections: space does the dividing (no rules), so the groups read as groups ---------- */
+/* Opening a row grows the page. Left out of scroll anchoring, the browser holds the header or the
+   mountain still instead of the clicked row, so near the bottom a row opens upward and the
+   drawing stays where it is. */
+.hm main { overflow-anchor: none; }
 .hm main > section { padding-top: 52px; }
 .hm main > section:first-child { padding-top: 40px; }
 /* a section label, not a heading the size of a row title: small, grey and slightly tracked */

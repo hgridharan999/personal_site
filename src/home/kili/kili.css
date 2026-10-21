@@ -3,6 +3,7 @@
    --gutter, --soft, --cream for ink, --tan for blue) come from the page root in home.css. */
 
 .hm .kili-next { margin-bottom: 40px; }
+.hm main > section.kili-next { padding-top: 76px; } /* a little more room than between ledger sections */
 
 /* ---------- The band: a canvas with HTML labels over it. Its height is reserved from the first
    paint, so nothing jumps when the drawing arrives. overflow-x only: the peak label stands

@@ -37,6 +37,10 @@ function declarationsOf(selector) {
 }
 
 describe('kili.css', () => {
+  it('sets Next climb a little further from the section above it than the 52px between sections', () => {
+    expect(css).toMatch(/\.hm main > section\.kili-next \{ padding-top: 76px; \}/);
+  });
+
   it('parses a realistic number of selectors (the checks below are not vacuous)', () => {
     expect(selectors.length).toBeGreaterThan(30);
     expect(selectors).toContain('.hm .kili-band canvas');

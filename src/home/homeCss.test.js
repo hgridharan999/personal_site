@@ -243,6 +243,10 @@ describe('home.css: rows that open', () => {
     expect(declarationsOf('html.hm-page')).toMatch(/cursor:\s*auto/);
   });
 
+  it('keeps the rows out of scroll anchoring, so opening one never pushes the mountain down', () => {
+    expect(declarationsOf('.hm main')).toContain('overflow-anchor: none');
+  });
+
   it('gives the title line a pointer cursor, since a click on it opens the row', () => {
     expect(declarationsOf('.hm .xp-head')).toContain('cursor: pointer');
   });
