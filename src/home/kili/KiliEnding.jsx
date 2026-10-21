@@ -31,14 +31,13 @@ function Legend() {
  */
 export default function KiliEnding() {
   const bandRef = useRef(null);
-  const { motion, paused, failed, toggle } = useKiliBand(bandRef);
+  const { failed } = useKiliBand(bandRef);
   const { summit, places } = NEXT_CLIMB;
 
   return (
     <>
       <div className="kili-band" ref={bandRef} aria-hidden="true" data-failed={failed || undefined}>
         <canvas />
-        <div className="kili-glow" data-kili="glow"><i /></div>
         <div className="kili-peak" data-kili="peak">
           <span className="kili-t" data-kili="peak-text">
             <span className="kili-nm">{summit.name}</span>
@@ -50,7 +49,7 @@ export default function KiliEnding() {
         <div className="kili-wp kili-wp--r" data-kili="wp" data-wp={places.camp}><span>{places.camp}</span></div>
         <Legend />
       </div>
-      <KiliFooter motion={motion} paused={paused} onToggle={toggle} />
+      <KiliFooter />
     </>
   );
 }

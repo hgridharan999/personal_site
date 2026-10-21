@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 
 import { createKiliBand } from './draw.js';
 import { routeJson, terrainJson } from './testData.js';
-import { LIFE_END, totalDraw } from './timeline.js';
+import { totalDraw } from './timeline.js';
 
 // A browser-shaped stand-in: just enough window, document, canvas and observers to run the
 // loop in node, with a rAF queue the test steps by hand.
@@ -158,17 +158,6 @@ describe('scrolling', () => {
     expect(ending.state().drawT).toBeGreaterThan(before);
   });
 
-  it('holds the light while the page scrolls, and runs it again once the scrolling stops', () => {
-    const { env } = start({ labels: true });
-    env.see(0.5);
-    env.run(30);
-    expect(env.els.glow.dataset.glow).toBe('run');
-    env.scroll();
-    expect(env.els.glow.dataset.glow).toBe('hold');
-    env.quiet();
-    expect(env.els.glow.dataset.glow).toBe('run');
-  });
-
   it('waits for the scrolling to stop before it starts drawing in', () => {
     const { env, ending } = start();
     env.scroll();
@@ -204,7 +193,7 @@ describe('starting', () => {
     env.see(0.5);
     env.run(0.5);
     expect([env.canvas.width, env.canvas.height]).toEqual([2000, 660]); // drawing in: already crisp
-    env.run(totalDraw(64) + LIFE_END);
+    env.run(totalDraw(64) + 0.5);
     expect([env.canvas.width, env.canvas.height]).toEqual([2000, 660]); // settled: the same, not 3x
     const finished = start({ width: 1000, height: 330, dpr: 3, reduced: true });
     expect(finished.env.canvas.width).toBe(2000);
@@ -245,24 +234,23 @@ describe('the animation', () => {
     expect(env.queue.size).toBe(1);
   });
 
-  it('draws the lines in, then runs the colour and the light until the tab or band goes away', () => {
+  it('draws the lines in and stops there: the finished drawing is a still picture', () => {
     env.see(0.5);
-    env.run(totalDraw(64) + 0.2);
-    expect(ending.state().done).toBe(true);
-    const before = ending.state().lifeT;
-    env.run(1);
-    expect(ending.state().lifeT).toBeGreaterThan(before);
-    expect(env.queue.size).toBe(1);
+    env.run(0.5);
+    expect(ending.state()).toMatchObject({ done: false, raf: true });
+    env.run(totalDraw(64));
+    expect(ending.state()).toMatchObject({ done: true, still: true, raf: false });
+    expect(env.queue.size).toBe(0);
   });
 
-  it('redraws every frame while it moves, so the draw-in and the route stay smooth, then stops', () => {
+  it('redraws every frame while it draws in, so the motion stays smooth, then stops', () => {
     env.see(0.5);
-    env.run(totalDraw(64) + 0.2);
+    env.run(0.2);
     const painted = () => env.ctx.calls.clearRect;
     const before = painted();
-    env.run(1);
-    expect(painted() - before).toBeGreaterThan(55); // about 60 a second, not 30
-    env.run(30);
+    env.run(0.5);
+    expect(painted() - before).toBeGreaterThan(27); // about 60 a second over half a second, not 30
+    env.run(totalDraw(64));
     const settled = painted();
     env.run(2);
     expect(painted()).toBe(settled); // finished: no more redraws
@@ -321,29 +309,6 @@ describe('pausing', () => {
     expect(env.queue.size).toBe(0);
   });
 
-  it('freezes mid-life where it is, with no frame queued', () => {
-    const { env, ending } = start();
-    env.see(0.5);
-    env.run(totalDraw(64) + 1);
-    ending.setPaused(true);
-    expect(env.queue.size).toBe(0);
-    const lifeT = ending.state().lifeT;
-    env.step(30);
-    expect(ending.state().lifeT).toBe(lifeT);
-  });
-
-  it('lets the light start when played again after a pause mid draw-in, with no frame queued', () => {
-    const { env, ending } = start({ labels: true });
-    env.see(0.5);
-    env.run(0.5);
-    ending.togglePause();
-    expect(env.els.glow.dataset.glow).toBeUndefined();
-    expect(ending.togglePause()).toBe(false);
-    expect(env.queue.size).toBe(0);
-    expect(ending.state()).toMatchObject({ still: true, paused: false, glow: true });
-    expect(env.els.glow.dataset.glow).toBe('run');
-  });
-
   it('shows the finished frame, not an empty band, when paused before it ever came into view', () => {
     const { env, ending } = start();
     ending.setPaused(true);
@@ -394,17 +359,17 @@ describe('reduced motion', () => {
     env.setReduced(false);
     expect(onMotion).toHaveBeenLastCalledWith(true);
     expect(env.queue.size).toBe(0); // the finished frame is up: nothing left to draw
-    expect(ending.state()).toMatchObject({ still: true, glow: true });
+    expect(ending.state()).toMatchObject({ still: true });
   });
 });
 
-describe('after life', () => {
-  it('paints one last frame when the colour and route are done, then asks for no more frames', () => {
+describe('once the lines are down', () => {
+  it('paints one last frame, then asks for no more frames', () => {
     const { env, ending } = start();
     env.see(0.5);
-    env.run(totalDraw(64) + LIFE_END + 0.5);
+    env.run(totalDraw(64) + 0.5);
     expect(env.queue.size).toBe(0);
-    expect(ending.state()).toMatchObject({ raf: false, done: true, still: true, glow: true });
+    expect(ending.state()).toMatchObject({ raf: false, done: true, still: true });
     const painted = env.ctx.calls.clearRect;
     env.step(120);
     expect(env.ctx.calls.clearRect).toBe(painted);
@@ -414,7 +379,7 @@ describe('after life', () => {
   it('has no work left, so an idle band in view costs no frames at all', () => {
     const { env, ending } = start();
     env.see(0.5);
-    env.run(totalDraw(64) + LIFE_END + 0.5);
+    env.run(totalDraw(64) + 0.5);
     env.see(0.2);
     env.see(0.9);
     env.docListeners.get('visibilitychange')();
@@ -425,78 +390,13 @@ describe('after life', () => {
   it('settles on the finished frame: the whole route and every label', () => {
     const { env } = start({ labels: true });
     env.see(0.5);
-    env.run(totalDraw(64) + LIFE_END + 0.5);
+    env.run(totalDraw(64) + 0.5);
     for (const name of ['peak', 'mawenzi', 'key', 'machame', 'barafu']) expect(env.els[name].classList.contains('on')).toBe(true);
   });
 });
 
-describe('the light', () => {
-  const settled = () => {
-    const made = start({ labels: true });
-    made.env.see(0.5);
-    made.env.run(totalDraw(64) + LIFE_END + 0.5);
-    return made;
-  };
-
-  it('is placed from the layout and does not run before the canvas has settled', () => {
-    const { env } = start({ labels: true });
-    expect(env.els.glow.style['--g0']).toMatch(/^translate(.+) scale(.+)$/);
-    expect(env.els.glow.style['--g7']).toMatch(/^translate/);
-    env.see(0.5);
-    env.run(1);
-    expect(env.els.glow.dataset.glow).toBeUndefined();
-  });
-
-  it('starts running when life ends', () => {
-    expect(settled().env.els.glow.dataset.glow).toBe('run');
-  });
-
-  it('holds while the band is off screen, and runs again on return', () => {
-    const { env } = settled();
-    env.see(0);
-    expect(env.els.glow.dataset.glow).toBe('hold');
-    env.see(0.5);
-    expect(env.els.glow.dataset.glow).toBe('run');
-  });
-
-  it('holds while the tab is hidden, and runs again when it is shown', () => {
-    const { env } = settled();
-    env.hidden = true;
-    env.docListeners.get('visibilitychange')();
-    expect(env.els.glow.dataset.glow).toBe('hold');
-    env.hidden = false;
-    env.docListeners.get('visibilitychange')();
-    expect(env.els.glow.dataset.glow).toBe('run');
-  });
-
-  it('holds while motion is paused, and runs again when played', () => {
-    const { env, ending } = settled();
-    ending.togglePause();
-    expect(env.els.glow.dataset.glow).toBe('hold');
-    ending.togglePause();
-    expect(env.els.glow.dataset.glow).toBe('run');
-  });
-
-  it('never starts under reduced motion, and starts if the preference is lifted', () => {
-    const { env } = start({ labels: true, reduced: true });
-    env.see(1);
-    expect(env.els.glow.dataset.glow).toBeUndefined();
-    env.setReduced(false);
-    expect(env.els.glow.dataset.glow).toBe('run');
-    env.setReduced(true);
-    expect(env.els.glow.dataset.glow).toBeUndefined();
-  });
-
-  it('is cleared when the ending is disposed', () => {
-    const { env, ending } = settled();
-    ending.dispose();
-    expect(env.els.glow.dataset.glow).toBeUndefined();
-    expect(env.els.glow.style['--g0']).toBeUndefined();
-  });
-});
-
 describe('the labels', () => {
-  it('are placed on the drawing and fade in as the route reaches them', () => {
+  it('are placed on the drawing and fade in once the lines are down', () => {
     const { env, ending } = start({ labels: true });
     const { peak, mawenzi, key, machame, barafu } = env.els;
     for (const el of [peak, mawenzi, machame, barafu]) {
@@ -506,13 +406,11 @@ describe('the labels', () => {
     }
     expect(key.style.right).toBe('130px');
     env.see(0.5);
-    env.run(totalDraw(64) + 0.1);
+    env.run(0.5);
+    expect(ending.state().done).toBe(false);
+    for (const el of [peak, mawenzi, key, machame, barafu]) expect(el.classList.contains('on')).toBe(false);
+    env.run(totalDraw(64));
     expect(ending.state().done).toBe(true);
-    expect(key.classList.contains('on')).toBe(true);
-    expect(peak.classList.contains('on')).toBe(false);
-    env.run(2);
-    expect(machame.classList.contains('on')).toBe(true);
-    env.run(3);
     for (const el of [peak, mawenzi, key, machame, barafu]) expect(el.classList.contains('on')).toBe(true);
   });
 
@@ -547,8 +445,8 @@ describe('resizing and disposing', () => {
   it('lets go of everything', () => {
     const { env, ending } = start({ labels: true });
     env.see(0.5);
-    env.run(totalDraw(64) + 1);
-    expect(env.queue.size).toBe(1);
+    env.run(0.5);
+    expect(env.queue.size).toBe(1); // mid draw-in
     expect(env.win.__kili).toBe(ending);
     ending.dispose();
     expect(env.queue.size).toBe(0);

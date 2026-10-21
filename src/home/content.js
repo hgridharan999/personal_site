@@ -328,5 +328,4 @@ export const CONTACT_LINKS = [
 export const FOOTER = {
   open: `Looking for a Summer${_}2027 internship in New${_}York or San${_}Francisco. Email is the fastest way to reach${_}me.`,
   updated: { label: 'Last updated', date: 'Oct 2026', datetime: '2026-10' },
-  motion: { pause: 'Pause motion', play: 'Play motion', stopped: 'Motion paused', playing: 'Motion playing' },
 };

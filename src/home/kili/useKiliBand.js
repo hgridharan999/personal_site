@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const LAZY_MARGIN = '0px 0px 100% 0px'; // wake up one screen before the band is reached
 const DATA_BASE = `${import.meta.env.BASE_URL}data/`;
@@ -37,12 +37,9 @@ async function getJSON(url, signal) {
  * fetched, never bundled, so a visitor who never scrolls down downloads neither.
  *
  * @param {{ current: HTMLElement | null }} bandRef the element holding the canvas and labels
- * @returns {{ motion: boolean, paused: boolean, failed: boolean, toggle: () => void }}
- *   motion: whether the pause toggle makes sense (the drawing runs and reduced motion is off)
+ * @returns {{ failed: boolean }} failed: the drawing could not load, so the band collapses
  */
 export function useKiliBand(bandRef) {
-  const [motion, setMotion] = useState(false);
-  const [paused, setPaused] = useState(false);
   const [failed, setFailed] = useState(false);
   const controllerRef = useRef(null);
 
@@ -53,8 +50,6 @@ export function useKiliBand(bandRef) {
     const abort = new AbortController();
     // a late callback (a media query change, an observer) must never set state on an unmounted component
     const guarded = (set) => (value) => { if (!disposed) set(value); };
-    setMotion(false);
-    setPaused(false);
     setFailed(false);
 
     const load = async () => {
@@ -68,7 +63,7 @@ export function useKiliBand(bandRef) {
         }),
       ]);
       if (disposed) return;
-      controllerRef.current = createKiliBand({ band, terrainData, routeData, onMotion: guarded(setMotion), onPaused: guarded(setPaused) });
+      controllerRef.current = createKiliBand({ band, terrainData, routeData });
     };
     // a failed chunk or data load collapses the band, so the page never shows an empty gap
     const cancelNear = whenNear(band, () => load().catch((error) => {
@@ -86,6 +81,5 @@ export function useKiliBand(bandRef) {
     };
   }, [bandRef]);
 
-  const toggle = useCallback(() => controllerRef.current?.togglePause(), []);
-  return { motion, paused, failed, toggle };
+  return { failed };
 }

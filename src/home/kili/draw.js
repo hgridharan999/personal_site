@@ -8,12 +8,10 @@ import { watchBand } from './watch.js';
 // useKiliBand), together with the modules it uses, so a visitor who never scrolls to the ending
 // downloads none of it.
 //
-// The canvas only moves while the lines draw in and the colour and route fill in (about 5 s).
-// Then it paints its final frame and the loop stops for good: no requestAnimationFrame is queued
-// again. The band of light that rises every 8 s afterwards is a CSS overlay on the compositor
-// (glow.js, kili.css); this file only tells it whether to run or hold, from the data-glow
-// attribute. Nothing runs while the band is off screen, the tab is hidden, motion is paused, or
-// the visitor asked for reduced motion (who gets the finished frame and no light).
+// The canvas only moves while the lines draw in (about 2 s). Then it paints its final frame and
+// the loop stops for good: no requestAnimationFrame is queued again, and the drawing is a still
+// picture. Nothing runs while the band is off screen, the tab is hidden, the page is scrolling,
+// or the visitor asked for reduced motion (who gets the finished frame straight away).
 
 const START_AT = 0.3; // draw in once this much of the band is on screen
 const COSTS_KEPT = 240;
@@ -21,9 +19,9 @@ const COSTS_KEPT = 240;
 /**
  * Starts the ending inside `band`. `terrainData` and `routeData` are the fetched JSON files
  * (`routeData` may be null: the terrain then draws without a route). Returns a controller:
- * `togglePause()`, `setPaused(bool)`, `dispose()`, `stats()` and `state()`. `onMotion(bool)`
- * says whether there is any motion to pause (false under reduced motion); `onPaused(bool)`
- * follows the toggle.
+ * `togglePause()`, `setPaused(bool)` (jump to the finished frame), `dispose()`, `stats()` and
+ * `state()`. The optional `onMotion(bool)` and `onPaused(bool)` report whether there is motion
+ * and whether it is paused; the page no longer needs them.
  */
 export function createKiliBand({ band, terrainData, routeData, onMotion = () => {}, onPaused = () => {}, win = window }) {
   const labels = createLabels(band);
@@ -48,13 +46,8 @@ export function createKiliBand({ band, terrainData, routeData, onMotion = () => 
   // nothing to draw before the draw-in begins, or once the final frame is up
   const hasWork = () => head.started && !head.still;
 
-  /** The light runs only once life is over, and only while it can be seen and motion is on. */
-  function syncGlow() {
-    labels.setGlow(reduced() || !head.glow ? null : canRun() ? 'run' : 'hold');
-  }
 
   function kick() {
-    syncGlow();
     if (raf || !hasWork() || !canRun()) return;
     last = performance.now();
     raf = win.requestAnimationFrame(frame);
@@ -75,8 +68,7 @@ export function createKiliBand({ band, terrainData, routeData, onMotion = () => 
     scene.paint();
     costs.push(performance.now() - t0);
     if (costs.length > COSTS_KEPT) costs.shift();
-    if (settling) syncGlow(); // the canvas is done: the light takes over
-    else raf = win.requestAnimationFrame(frame);
+    if (!settling) raf = win.requestAnimationFrame(frame); // settled: the drawing is a still picture now
   }
 
   function showFinished() {
@@ -84,7 +76,6 @@ export function createKiliBand({ band, terrainData, routeData, onMotion = () => 
     scene.setSharp(true);
     scene.update();
     scene.paint();
-    syncGlow();
   }
 
   function startDrawIn() {
@@ -113,7 +104,6 @@ export function createKiliBand({ band, terrainData, routeData, onMotion = () => 
       if (head.started && !head.done) showFinished();
       else if (head.started && !head.still) holdSharp(true); // frozen mid-life: show it crisp
     } else {
-      if (!reduced()) head.thaw();
       if (head.started && !head.still) holdSharp(false); // moving again: back to draft density
     }
     kick();
@@ -128,7 +118,6 @@ export function createKiliBand({ band, terrainData, routeData, onMotion = () => 
       onScreen = inView;
       if (ratio >= START_AT) startDrawIn();
       if (inView) kick();
-      else syncGlow();
     },
     onResize() {
       if (!scene.sizeChanged()) return;
@@ -146,7 +135,7 @@ export function createKiliBand({ band, terrainData, routeData, onMotion = () => 
     onPreference() {
       onMotion(!reduced());
       if (reduced()) showFinished();
-      else head.thaw();
+      else kick();
       kick();
     },
   });
@@ -188,8 +177,8 @@ export function createKiliBand({ band, terrainData, routeData, onMotion = () => 
     stats,
     /** For the dev-server checks: is a frame queued, and where is the timeline. */
     state: () => ({
-      raf: !!raf, onScreen, paused, started: head.started, done: head.done, still: head.still, glow: head.glow,
-      drawT: +head.drawT.toFixed(2), lifeT: +head.lifeT.toFixed(2), lines: scene.lineCount, width: scene.width, height: scene.height,
+      raf: !!raf, onScreen, paused, started: head.started, done: head.done, still: head.still,
+      drawT: +head.drawT.toFixed(2), lines: scene.lineCount, width: scene.width, height: scene.height,
     }),
   };
   if (import.meta.env?.DEV) win.__kili = api;

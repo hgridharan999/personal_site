@@ -231,7 +231,7 @@ export function createPainter(ctx, layout, built) {
         ctx.strokeStyle = INK_CSS;
         ctx.stroke(shape.curve);
       }
-      drawRoute(i, routeLen);
+      if (p >= 1) drawRoute(i, routeLen); // the route follows the lines in, one finished line at a time
     }
     fadeEdges();
     ctx.globalAlpha = 1;

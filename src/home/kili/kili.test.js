@@ -51,9 +51,9 @@ describe('kili.css', () => {
     expect(selectors.filter((s) => !/^\.hm(?![\w-])/.test(s))).toEqual([]);
   });
 
-  it('keeps to the page tokens: no :root, no fonts, and one set of keyframes (the light)', () => {
+  it('keeps to the page tokens: no :root, no fonts, and no keyframes (nothing loops)', () => {
     expect(css).not.toMatch(/:root|@font-face|@import/);
-    expect([...css.matchAll(/@keyframes\s+([\w-]+)/g)].map((m) => m[1])).toEqual(['kili-glow']);
+    expect(css).not.toMatch(/@keyframes|kili-glow|mix-blend-mode/);
   });
 
   it('reserves the band height from the first paint: 290, 330 and 360 px', () => {
@@ -77,11 +77,6 @@ describe('kili.css', () => {
     expect(block).toContain('.hm .kili-peak');
     expect(block).toContain('transition: opacity');
     expect(css.slice(0, css.indexOf('prefers-reduced-motion'))).not.toMatch(/transition:\s*opacity/);
-  });
-
-  it('gives the pause toggle a 44px target and a focus ring', () => {
-    expect(declarationsOf('.hm .kili-toggle')).toContain('min-height: 44px');
-    expect(declarationsOf('.hm .kili-toggle:focus-visible')).toMatch(/outline: 2px solid/);
   });
 
   it('keeps the toggle clear of the site-wide motion- class rule in index.css', () => {
@@ -165,18 +160,10 @@ describe('the markup', () => {
     expect(ending).not.toMatch(/>\s*(Uhuru|Mawenzi|Machame|Barafu|Planned)/);
   });
 
-  it('shows the pause toggle only while there is motion, and flips its label', () => {
+  it('has no pause toggle: the drawing only moves for the second or two it takes to draw in', () => {
     const footer = read('KiliFooter.jsx');
-    expect(footer).toMatch(/\{motion && \(\s*<button type="button" className="kili-toggle"/);
-    expect(footer).toContain('paused ? FOOTER.motion.play : FOOTER.motion.pause');
-    expect(footer).not.toContain('aria-pressed');
-  });
-
-  it('announces a press of the toggle in one quiet status region, silent on load (WCAG 4.1.3)', () => {
-    const footer = read('KiliFooter.jsx');
-    expect(footer).toMatch(/<p className="sr-only" role="status">\{said\}<\/p>/);
-    expect(footer).toContain("useState('')");
-    expect(footer).toContain('FOOTER.motion.playing : FOOTER.motion.stopped');
+    expect(footer).not.toMatch(/<button|kili-toggle|role="status"/);
+    expect(read('KiliEnding.jsx')).not.toMatch(/kili-glow|onToggle/);
   });
 
   it('keeps the footer copy and links from the old DeepFooter: open line, contact links, last updated', () => {

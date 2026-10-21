@@ -244,7 +244,7 @@ describe('homepage content: footer', () => {
     const { open, updated, motion } = content.FOOTER;
     expect(open).toMatch(/Summer.2027 internship in New.York or San.Francisco/);
     expect(updated).toEqual({ label: 'Last updated', date: 'Oct 2026', datetime: '2026-10' });
-    expect(motion).toEqual({ pause: 'Pause motion', play: 'Play motion', stopped: 'Motion paused', playing: 'Motion playing' });
+    expect(motion).toBeUndefined(); // no pause toggle any more
   });
 });
 

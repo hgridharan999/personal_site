@@ -50,8 +50,8 @@ export function makePalette() {
 }
 
 /**
- * Fills `pal` for one frame. `tideH` is the height (m) the colour has risen to. The band of light
- * that rises through the zones is a CSS overlay (see glow.js), not part of the palette.
+ * Fills `pal` for one frame. `tideH` is the height (m) the colour has risen to; the page passes
+ * Infinity, so every zone is in full colour from the first line.
  */
 export function fillPalette(pal, tideH) {
   for (let b = 0; b < NB; b += 1) {

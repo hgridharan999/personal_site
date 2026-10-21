@@ -11,39 +11,11 @@
 .hm .kili-band {
   --band-h: 290px;
   position: relative; height: var(--band-h); margin-top: 28px; overflow-x: clip;
-  isolation: isolate; background: var(--bg); /* the light blends against white, so white stays white */
+  background: var(--bg);
 }
 @media (min-width: 600px)  { .hm .kili-band { --band-h: 330px; } }
 @media (min-width: 1000px) { .hm .kili-band { --band-h: 360px; } }
 .hm .kili-band canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-
-/* ---------- The band of light: a soft ring that shrinks from the foothills to the summit, one
-   cycle every 8 s (the first starts 0.7 s after the canvas settles). Only transform and opacity
-   change, so it runs on the compositor and the canvas is never repainted for it. kili/draw.js sets
-   data-glow: absent until the drawing has settled, "run" while it can be seen, "hold" while
-   offscreen, hidden or paused. The stops --g0 to --g7 are set from glow.js. Under reduced motion
-   it is not shown at all. ---------- */
-.hm .kili-glow { position: absolute; inset: 0; overflow: hidden; pointer-events: none; display: none; }
-.hm .kili-glow[data-glow] { display: block; }
-.hm .kili-glow i {
-  position: absolute; left: -100px; top: -100px; width: 200px; height: 200px; opacity: 0; transform-origin: 50% 50%;
-  background: radial-gradient(closest-side, rgba(255, 246, 225, 0) 52%, rgba(255, 246, 225, 0.42) 80%, rgba(255, 246, 225, 0) 100%);
-  mix-blend-mode: screen; will-change: transform, opacity;
-  animation: kili-glow 8s linear 0.7s infinite;
-}
-.hm .kili-glow[data-glow="hold"] i { animation-play-state: paused; }
-@keyframes kili-glow {
-  0%    { transform: var(--g0); opacity: 0; }
-  5.76% { transform: var(--g1); opacity: 1; }
-  12%   { transform: var(--g2); }
-  20%   { transform: var(--g3); }
-  28%   { transform: var(--g4); }
-  36%   { transform: var(--g5); }
-  44%   { transform: var(--g6); opacity: 1; }
-  52%   { transform: var(--g7); opacity: 0; }
-  100%  { transform: var(--g7); opacity: 0; }
-}
-@media (prefers-reduced-motion: reduce) { .hm .kili-glow { display: none !important; } }
 
 /* the two peaks: a name, an optional height, and a tick down to the ridge */
 .hm .kili-peak {
@@ -100,20 +72,9 @@
 .hm .kili-foot-open { margin: 0 0 4px; font: 400 14px/1.6 var(--sans); color: var(--cream); text-wrap: pretty; }
 .hm .kili-foot-contact { margin: 0; font: 400 14px/1.8 var(--sans); }
 .hm .kili-dot { color: var(--soft); }
-/* min-height holds the line open for the pause toggle, so the date does not drop when it arrives */
-.hm .kili-foot-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-top: 6px; min-height: 44px; }
-.hm .kili-foot-line p, .hm .kili-toggle { margin: 0; font: 400 12.5px/1.4 var(--sans); letter-spacing: -0.1px; color: var(--soft); }
-.hm .kili-toggle {
-  background: none; border: 0; padding: 0; min-height: 44px; cursor: pointer;
-  text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(110, 109, 104, 0.5);
-}
-.hm .kili-toggle:focus-visible { outline: 2px solid var(--tan); outline-offset: 3px; border-radius: 2px; }
-
-@media (hover: hover) and (pointer: fine) {
-  .hm .kili-toggle:hover { color: var(--tan); text-decoration-color: var(--tan); }
-}
+.hm .kili-foot-line { margin-top: 10px; }
+.hm .kili-foot-line p { margin: 0; font: 400 12.5px/1.4 var(--sans); letter-spacing: -0.1px; color: var(--soft); }
 /* the labels fade in as the route reaches them; with reduced motion they are simply there */
 @media (prefers-reduced-motion: no-preference) {
   .hm .kili-peak, .hm .kili-key, .hm .kili-wp { transition: opacity 0.7s var(--ease); }
-  .hm .kili-toggle { transition: color 0.2s var(--ease), text-decoration-color 0.2s var(--ease); }
 }
