@@ -76,6 +76,7 @@ function setup({ width = 1440, height = 360, reduced = false, hidden = false, la
   let now = performance.now();
   const env = {
     ctx, canvas, band, els, queue, io: null, ro: null, motionListeners: new Set(), docListeners: new Map(),
+    winListeners: new Map(), timers: new Map(),
     reduced, hidden,
     step(frames = 1) {
       for (let n = 0; n < frames; n += 1) {
@@ -90,6 +91,10 @@ function setup({ width = 1440, height = 360, reduced = false, hidden = false, la
       for (let t = 0; t < seconds * 60 && queue.size; t += 1) env.step();
     },
     see(ratio) { env.io.cb([{ isIntersecting: ratio > 0, intersectionRatio: ratio }]); },
+    /** The page scrolls once. */
+    scroll() { env.winListeners.get('scroll')?.(); },
+    /** Time passes with no more scrolling: every pending timer fires. */
+    quiet() { const due = [...env.timers.values()]; env.timers.clear(); due.forEach((fn) => fn()); },
     setReduced(value) {
       env.reduced = value;
       env.motionListeners.forEach((fn) => fn());
@@ -108,6 +113,10 @@ function setup({ width = 1440, height = 360, reduced = false, hidden = false, la
       removeEventListener: (type) => env.docListeners.delete(type),
     },
     matchMedia: () => mq,
+    addEventListener: (type, fn) => env.winListeners.set(type, fn),
+    removeEventListener: (type) => env.winListeners.delete(type),
+    setTimeout: (fn) => { const id = nextId++; env.timers.set(id, fn); return id; },
+    clearTimeout: (id) => { env.timers.delete(id); },
     requestAnimationFrame: (cb) => { queue.set(nextId, cb); return nextId++; },
     cancelAnimationFrame: (id) => { queue.delete(id); },
     IntersectionObserver: class {
@@ -132,6 +141,54 @@ function start(options = {}, callbacks = {}) {
 
 beforeAll(() => { globalThis.Path2D = FakePath2D; });
 afterAll(() => { delete globalThis.Path2D; });
+
+describe('scrolling', () => {
+  it('holds the drawing while the page scrolls and picks up where it was once the scrolling stops', () => {
+    const { env, ending } = start();
+    env.see(0.5);
+    env.run(0.4);
+    const before = ending.state().drawT;
+    env.scroll();
+    env.step(3);
+    expect(env.queue.size).toBe(0); // no frames while scrolling
+    expect(ending.state().drawT).toBe(before);
+    env.quiet();
+    expect(env.queue.size).toBe(1);
+    env.step(2);
+    expect(ending.state().drawT).toBeGreaterThan(before);
+  });
+
+  it('holds the light while the page scrolls, and runs it again once the scrolling stops', () => {
+    const { env } = start({ labels: true });
+    env.see(0.5);
+    env.run(30);
+    expect(env.els.glow.dataset.glow).toBe('run');
+    env.scroll();
+    expect(env.els.glow.dataset.glow).toBe('hold');
+    env.quiet();
+    expect(env.els.glow.dataset.glow).toBe('run');
+  });
+
+  it('waits for the scrolling to stop before it starts drawing in', () => {
+    const { env, ending } = start();
+    env.scroll();
+    env.see(0.5);
+    env.step(3);
+    expect(ending.state().drawT).toBeLessThanOrEqual(0);
+    env.quiet();
+    env.step(3);
+    expect(ending.state().drawT).toBeGreaterThan(0);
+  });
+
+  it('stops listening for scrolls when it is disposed', () => {
+    const { env, ending } = start();
+    expect(env.winListeners.has('scroll')).toBe(true);
+    env.scroll();
+    ending.dispose();
+    expect(env.winListeners.has('scroll')).toBe(false);
+    expect(env.timers.size).toBe(0);
+  });
+});
 
 describe('starting', () => {
   it('needs a 2d canvas and a terrain that adds up', () => {

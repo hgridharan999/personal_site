@@ -42,10 +42,11 @@ export function createKiliBand({ band, terrainData, routeData, onMotion = () => 
   let lastDraw = 0;
   let onScreen = false;
   let paused = false;
+  let scrolling = false; // the page is scrolling: nothing here moves until it stops
   let disposed = false;
   const costs = [];
   const visible = () => !disposed && onScreen && !win.document.hidden;
-  const canRun = () => visible() && !reduced() && !paused;
+  const canRun = () => visible() && !reduced() && !paused && !scrolling;
   // nothing to draw before the draw-in begins, or once the final frame is up
   const hasWork = () => head.started && !head.still;
 
@@ -140,6 +141,12 @@ export function createKiliBand({ band, terrainData, routeData, onMotion = () => 
       scene.paint();
     },
     onWake: kick,
+    // While the page scrolls the drawing and the light hold still, so the browser only has to move
+    // finished layers. They pick up where they were once it has been still for a moment.
+    onScroll(next) {
+      scrolling = next;
+      kick();
+    },
     onPreference() {
       onMotion(!reduced());
       if (reduced()) showFinished();

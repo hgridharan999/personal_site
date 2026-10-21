@@ -12,8 +12,13 @@
  * @param {() => void} o.onResize the band's box changed
  * @param {() => void} o.onWake the tab's visibility changed
  * @param {() => void} o.onPreference the reduced-motion setting changed
+ * @param {(scrolling: boolean) => void} [o.onScroll] the page started scrolling, or has been still
+ *   for QUIET_MS since the last scroll
  */
-export function watchBand({ band, win, mq, thresholds, onView, onResize, onWake, onPreference }) {
+/** How long the page must be still after a scroll before the ending moves again, in ms. */
+export const QUIET_MS = 150;
+
+export function watchBand({ band, win, mq, thresholds, onView, onResize, onWake, onPreference, onScroll }) {
   const io = typeof win.IntersectionObserver === 'function'
     ? new win.IntersectionObserver((entries) => {
       const e = entries[entries.length - 1];
@@ -21,6 +26,19 @@ export function watchBand({ band, win, mq, thresholds, onView, onResize, onWake,
     }, { threshold: thresholds })
     : null;
   const ro = typeof win.ResizeObserver === 'function' ? new win.ResizeObserver(onResize) : null;
+
+  // Scrolling: one call when it starts, one once it has been still for QUIET_MS. Passive, so the
+  // listener can never hold up the scroll itself.
+  let scrolling = false;
+  let quietTimer = 0;
+  const settle = () => { quietTimer = 0; scrolling = false; onScroll?.(false); };
+  const onScrollEvent = () => {
+    if (!scrolling) { scrolling = true; onScroll?.(true); }
+    if (quietTimer) win.clearTimeout(quietTimer);
+    quietTimer = win.setTimeout(settle, QUIET_MS);
+  };
+  const listens = onScroll && typeof win.addEventListener === 'function';
+  if (listens) win.addEventListener('scroll', onScrollEvent, { passive: true });
 
   if (io) io.observe(band);
   else onView(true, 1); // no observer: treat the band as always in view
@@ -30,6 +48,8 @@ export function watchBand({ band, win, mq, thresholds, onView, onResize, onWake,
   else mq.addListener(onPreference);
 
   return () => {
+    if (listens) win.removeEventListener('scroll', onScrollEvent);
+    if (quietTimer) win.clearTimeout(quietTimer);
     io?.disconnect();
     ro?.disconnect();
     win.document.removeEventListener('visibilitychange', onWake);
