@@ -1,7 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import HomePage from './home/HomePage';
-import CookieConsentBanner from './components/CookieConsentBanner';
 import ScrollToTop from './components/ScrollToTop';
 
 // Everything but the homepage loads on demand, so a visitor to "/" downloads only
@@ -97,7 +96,6 @@ function App() {
     <Router>
       <ScrollToTop />
       <AnimatedRoutes />
-      <CookieConsentBanner />
     </Router>
   );
 }

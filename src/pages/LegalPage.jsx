@@ -16,8 +16,8 @@ const sections = [
     id: 'cookies',
     title: 'Cookies and tracking',
     body: [
-      'This site stores one small preference in your browser’s local storage so it can remember that you dismissed the notice. No advertising, behavioral tracking, or third-party analytics are used.',
-      'If you never press Got it, the site still works the same and simply shows the notice again on your next visit.',
+      'This site sets no cookies and uses no advertising, behavioral tracking, or third-party analytics.',
+      'The climate startup search keeps a random id for the current tab in your browser’s session storage, so it can count which results get clicked. It is not linked to you and is gone when you close the tab.',
     ],
   },
   {

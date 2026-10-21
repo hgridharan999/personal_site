@@ -255,15 +255,17 @@ describe('the animation', () => {
     expect(env.queue.size).toBe(1);
   });
 
-  it('redraws about 30 times a second once the lines are down, not 60', () => {
+  it('redraws every frame while it moves, so the draw-in and the route stay smooth, then stops', () => {
     env.see(0.5);
     env.run(totalDraw(64) + 0.2);
     const painted = () => env.ctx.calls.clearRect;
-    const start60 = painted();
+    const before = painted();
+    env.run(1);
+    expect(painted() - before).toBeGreaterThan(55); // about 60 a second, not 30
+    env.run(30);
+    const settled = painted();
     env.run(2);
-    const perSecond = (painted() - start60) / 2;
-    expect(perSecond).toBeGreaterThan(25);
-    expect(perSecond).toBeLessThan(35);
+    expect(painted()).toBe(settled); // finished: no more redraws
   });
 
   it('logs what each redraw cost', () => {

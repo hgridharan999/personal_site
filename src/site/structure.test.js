@@ -85,11 +85,10 @@ describe('the legal page', () => {
 describe('source hygiene', () => {
   const EM_DASH = String.fromCodePoint(0x2014);
 
-  it('has no em dash in the site files, the legal page, the banner or index.html', () => {
+  it('has no em dash in the site files, the legal page or index.html', () => {
     const files = [
       ...siteFiles.filter((file) => /\.(jsx?|css)$/.test(file)),
       LEGAL,
-      join(SRC, 'components', 'CookieConsentBanner.jsx'),
       join(SRC, '..', 'index.html'),
     ];
     expect(files.filter((file) => read(file).includes(EM_DASH)).map(rel)).toEqual([]);

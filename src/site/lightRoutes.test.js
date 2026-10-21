@@ -92,10 +92,8 @@ describe('App.jsx routes', () => {
   });
 });
 
-describe('CookieConsentBanner', () => {
-  it('picks its light pill from isLightPath, not from a single path', () => {
-    const banner = read('src/components/CookieConsentBanner.jsx');
-    expect(banner).toContain('isLightPath(pathname) ? VARIANTS.light : VARIANTS.dark');
-    expect(banner).not.toMatch(/pathname\s*===\s*'\/'/);
+describe('no cookie notice', () => {
+  it('mounts no consent banner: the public site sets no cookies and keeps no preferences', () => {
+    expect(read('src/App.jsx')).not.toMatch(/CookieConsent/);
   });
 });

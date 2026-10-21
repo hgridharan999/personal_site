@@ -15,7 +15,6 @@ import { watchBand } from './watch.js';
 // attribute. Nothing runs while the band is off screen, the tab is hidden, motion is paused, or
 // the visitor asked for reduced motion (who gets the finished frame and no light).
 
-const FRAME_MS = 30; // the colour and route need no more than ~30 redraws a second
 const START_AT = 0.3; // draw in once this much of the band is on screen
 const COSTS_KEPT = 240;
 
@@ -39,7 +38,6 @@ export function createKiliBand({ band, terrainData, routeData, onMotion = () => 
 
   let raf = 0;
   let last = 0;
-  let lastDraw = 0;
   let onScreen = false;
   let paused = false;
   let scrolling = false; // the page is scrolling: nothing here moves until it stops
@@ -72,13 +70,11 @@ export function createKiliBand({ band, terrainData, routeData, onMotion = () => 
     if (step === 'idle') return;
     if (head.done) scene.update();
     const settling = step === 'settle';
-    if (settling || now - lastDraw >= FRAME_MS) {
-      if (settling) scene.setSharp(true); // the last frame, at full density
-      scene.paint();
-      lastDraw = now;
-      costs.push(performance.now() - t0);
-      if (costs.length > COSTS_KEPT) costs.shift();
-    }
+    // every frame while it moves: the draw-in and the route read as one smooth stroke
+    if (settling) scene.setSharp(true); // marks the still frame
+    scene.paint();
+    costs.push(performance.now() - t0);
+    if (costs.length > COSTS_KEPT) costs.shift();
     if (settling) syncGlow(); // the canvas is done: the light takes over
     else raf = win.requestAnimationFrame(frame);
   }

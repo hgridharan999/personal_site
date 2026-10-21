@@ -67,10 +67,6 @@
 .sp .sp-disclosure summary::-webkit-details-marker { display: none; }
 .sp .sp-disclosure[open] > summary .xp-mark { transform: rotate(45deg); --mark: var(--tan); }
 
-/* ---------- Phones: clear the cookie pill that floats at the foot of the page ---------- */
-@media (max-width: 599px) {
-  .sp .sp-end { padding-bottom: 64px; }
-}
 @media (min-width: 600px) {
   .sp .sp-top { padding-top: 40px; }
 }

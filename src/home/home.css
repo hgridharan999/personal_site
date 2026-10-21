@@ -8,7 +8,7 @@
    src/index.css gives the whole site a dark body, a noise layer, a custom cursor (on <html> too),
    backface-visibility and themed scrollbars. These rules undo each one. useHomeDocument adds
    hm-page to <html>, and a script in index.html adds it before first paint on "/". */
-html.hm-page { background:#fff; color-scheme:light; cursor:auto; text-size-adjust:100%; scroll-padding-bottom:4rem; scrollbar-color:rgba(0,0,0,.3) #fff; }
+html.hm-page { background:#fff; color-scheme:light; cursor:auto; text-size-adjust:100%; scrollbar-color:rgba(0,0,0,.3) #fff; }
 html.hm-page body { background:#fff; color:#1A1A18; font-family:"Geist",ui-sans-serif,system-ui,sans-serif; overflow-x:visible; }
 html.hm-page body::before { content:none; }
 html.hm-page *, html.hm-page *::before, html.hm-page *::after { cursor:revert; -webkit-backface-visibility:visible; backface-visibility:visible; }

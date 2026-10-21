@@ -97,8 +97,6 @@
 /* ---------- The footer, light ---------- */
 .hm .kili-foot { background: var(--bg); color: var(--cream); }
 .hm .kili-foot-in { max-width: calc(680px + var(--gutter) * 2); margin: 0 auto; padding: 22px var(--gutter) 28px; }
-/* phones: the fixed cookie pill covers the bottom of the page, so lift the toggle and the date above it */
-@media (max-width: 599px) { .hm .kili-foot-in { padding-bottom: 64px; } }
 .hm .kili-foot-open { margin: 0 0 4px; font: 400 14px/1.6 var(--sans); color: var(--cream); text-wrap: pretty; }
 .hm .kili-foot-contact { margin: 0; font: 400 14px/1.8 var(--sans); }
 .hm .kili-dot { color: var(--soft); }
