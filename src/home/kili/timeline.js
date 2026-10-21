@@ -1,4 +1,4 @@
-import { clamp, easeInk, easeTide } from './math.js';
+import { clamp, easeInk } from './math.js';
 
 // The ending's timeline, in seconds. First the lines draw in, back to front. Once the last one is
 // down, "life" begins: the zone colour rises from the plains to the summit and the Machame route
@@ -8,11 +8,10 @@ import { clamp, easeInk, easeTide } from './math.js';
 
 export const LINE_DUR = 0.8; // one line drawing across
 export const STAGGER = 0.016; // the delay between neighbouring lines
-export const TIDE = 3.6; // the colour rising from plains to summit
 export const ROUTE_AT = 0.3; // the route starts this long after life begins
 export const ROUTE_DUR = 3.4;
-/** Seconds into life when the colour and the route are both done and the canvas can stop. */
-export const LIFE_END = Math.max(TIDE, ROUTE_AT + ROUTE_DUR);
+/** Seconds into life when the route is done and the canvas can stop. */
+export const LIFE_END = ROUTE_AT + ROUTE_DUR;
 /** The first band of light starts this long after life ends (an animation-delay in kili.css). */
 export const GLOW_DELAY = 0.7;
 
@@ -26,11 +25,12 @@ export function lineProgress(drawT, i) {
 
 /**
  * What moves once the lines are down, `t` seconds into life (-1 before it begins).
- * `routeTotal` is the drawn length of the whole route in pixels; `tideH` is an elevation in metres.
+ * `routeTotal` is the drawn length of the whole route in pixels. The zone colour is there from the
+ * first line (`tideH` is above every summit), so the drawing looks finished as it draws in.
  */
 export function lifeState(t, routeTotal) {
   return {
-    tideH: t < 0 ? -1e9 : 500 + 6000 * easeTide(t / TIDE),
+    tideH: Infinity,
     routeLen: t < 0 ? 0 : routeTotal * easeInk(clamp((t - ROUTE_AT) / ROUTE_DUR, 0, 1)),
   };
 }

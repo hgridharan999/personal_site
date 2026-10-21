@@ -72,7 +72,7 @@ export function createKiliBand({ band, terrainData, routeData, onMotion = () => 
     if (step === 'idle') return;
     if (head.done) scene.update();
     const settling = step === 'settle';
-    if (settling || !(head.done && now - lastDraw < FRAME_MS)) {
+    if (settling || now - lastDraw >= FRAME_MS) {
       if (settling) scene.setSharp(true); // the last frame, at full density
       scene.paint();
       lastDraw = now;

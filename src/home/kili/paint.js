@@ -20,7 +20,8 @@ const ROUTE_BLUE_SOFT = 'rgba(15,125,170,0.6)';
 export function createPainter(ctx, layout, built) {
   const { N, K, xs, yS, eS, lineBase, width: W, height: H, sx0 } = layout;
   const pal = makePalette();
-  let cache = null; // per line: { curve, poly, bins }
+  let cache = null; // per line, once finished: { curve, poly, tipX }
+  const binCache = []; // per line: its colour bins (the whole line, whatever has drawn)
   let routeCache = null; // per line: the finished route's paths
 
   /** One path per elevation bin the line passes through. */
@@ -147,14 +148,14 @@ export function createPainter(ctx, layout, built) {
     poly.lineTo(tipX, floorY);
     poly.lineTo(-2, floorY);
     poly.closePath();
-    const shape = { curve, poly, bins: null };
+    const shape = { curve, poly, tipX };
     if (full) cache[i] = shape;
     return shape;
   }
 
   function strokeZoned(shape, i, a0, w0) {
-    if (!shape.bins) shape.bins = binsFor(i);
-    const { idx, paths } = shape.bins;
+    if (!binCache[i]) binCache[i] = binsFor(i);
+    const { idx, paths } = binCache[i];
     ctx.lineCap = 'butt';
     for (let n = 0; n < idx.length; n += 1) {
       const b = idx[n];
@@ -198,7 +199,7 @@ export function createPainter(ctx, layout, built) {
     ctx.globalCompositeOperation = 'source-over';
     ctx.lineJoin = 'round';
     if (full && !cache) cache = new Array(N);
-    const zoned = full && tideH > E0 - 600;
+    const zoned = tideH > E0 - 600;
     if (zoned) fillPalette(pal, tideH);
 
     for (let i = 0; i < N; i += 1) {
@@ -214,7 +215,15 @@ export function createPainter(ctx, layout, built) {
 
       const a0 = 0.34 + 0.6 * Math.pow(u, 0.75);
       const w0 = 0.62 + 0.42 * u;
-      if (zoned) strokeZoned(shape, i, a0, w0);
+      if (zoned && p < 1) {
+        // still drawing: the whole coloured line, cut at its tip
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(-2, -2, shape.tipX + 2, H + 4);
+        ctx.clip();
+        strokeZoned(shape, i, a0, w0);
+        ctx.restore();
+      } else if (zoned) strokeZoned(shape, i, a0, w0);
       else {
         ctx.lineCap = 'round';
         ctx.globalAlpha = a0;

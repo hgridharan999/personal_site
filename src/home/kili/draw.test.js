@@ -198,14 +198,14 @@ describe('starting', () => {
     expect(() => createKiliBand({ band: setup().band, terrainData: { grid: [3, 3] }, routeData, win: setup().win })).toThrow();
   });
 
-  it('sizes the canvas to the band: draft density while it moves, then the screen density capped at 2', () => {
+  it('sizes the canvas to the band at the screen density (capped at 2) from the first frame, never a blurry draft', () => {
     const { env } = start({ width: 1000, height: 330, dpr: 3 });
-    expect([env.canvas.width, env.canvas.height]).toEqual([1000, 330]);
+    expect([env.canvas.width, env.canvas.height]).toEqual([2000, 660]);
     env.see(0.5);
-    env.run(totalDraw(64) + LIFE_END - 0.5);
-    expect(env.canvas.width).toBe(1000); // still moving: still a draft
-    env.run(1);
-    expect([env.canvas.width, env.canvas.height]).toEqual([2000, 660]); // settled: crisp, and not 3x
+    env.run(0.5);
+    expect([env.canvas.width, env.canvas.height]).toEqual([2000, 660]); // drawing in: already crisp
+    env.run(totalDraw(64) + LIFE_END);
+    expect([env.canvas.width, env.canvas.height]).toEqual([2000, 660]); // settled: the same, not 3x
     const finished = start({ width: 1000, height: 330, dpr: 3, reduced: true });
     expect(finished.env.canvas.width).toBe(2000);
     const low = start({ width: 1000, height: 330, dpr: 1 });

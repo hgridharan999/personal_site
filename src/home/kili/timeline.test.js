@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  createPlayhead, lifeState, LIFE_END, lineProgress, ROUTE_AT, ROUTE_DUR, STAGGER, stillState, TIDE, totalDraw,
+  createPlayhead, lifeState, LIFE_END, lineProgress, ROUTE_AT, ROUTE_DUR, STAGGER, stillState, totalDraw,
 } from './timeline.js';
 
 describe('the draw-in', () => {
@@ -24,19 +24,12 @@ describe('the draw-in', () => {
 describe('life: the colour tide and the route', () => {
   const total = 1000;
 
-  it('has nothing before life begins', () => {
-    expect(lifeState(-1, total)).toEqual({ tideH: -1e9, routeLen: 0 });
+  it('has no route before life begins, but the colour is already there', () => {
+    expect(lifeState(-1, total)).toEqual({ tideH: Infinity, routeLen: 0 });
   });
 
-  it('raises the colour from the plains to above the summit in 3.6 s', () => {
-    expect(lifeState(0, total).tideH).toBe(500);
-    expect(lifeState(TIDE, total).tideH).toBeCloseTo(6500, 6);
-    let prev = 0;
-    for (let t = 0; t <= TIDE; t += 0.1) {
-      const h = lifeState(t, total).tideH;
-      expect(h).toBeGreaterThanOrEqual(prev);
-      prev = h;
-    }
+  it('colours every line fully from the first frame: the drawing looks finished as it draws in', () => {
+    for (const t of [-1, 0, 1, LIFE_END]) expect(lifeState(t, total).tideH).toBe(Infinity);
   });
 
   it('draws the route after a short wait, and all of it by the end of life', () => {
@@ -45,9 +38,9 @@ describe('life: the colour tide and the route', () => {
     expect(lifeState(LIFE_END, total).routeLen).toBe(total);
   });
 
-  it('ends when both the colour and the route are done', () => {
-    expect(LIFE_END).toBeCloseTo(Math.max(TIDE, ROUTE_AT + ROUTE_DUR), 10);
-    expect(lifeState(LIFE_END, total).tideH).toBeCloseTo(6500, 6);
+  it('ends when the route is done', () => {
+    expect(LIFE_END).toBeCloseTo(ROUTE_AT + ROUTE_DUR, 10);
+    expect(lifeState(LIFE_END, total).routeLen).toBe(total);
   });
 
   it('has no band of light in it: that is a CSS overlay now', () => {
@@ -56,7 +49,7 @@ describe('life: the colour tide and the route', () => {
 
   it('has a finished frame with all the colour and the whole route', () => {
     const s = stillState(total);
-    expect(s.tideH).toBeCloseTo(6500, 6);
+    expect(s.tideH).toBe(Infinity);
     expect(s.routeLen).toBe(total);
   });
 });

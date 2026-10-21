@@ -6,7 +6,6 @@ const MAX_DPR = 2;
 // While the drawing is moving (about 5 s) the canvas is kept at one pixel per CSS pixel, even on a
 // 2x screen: repainting four times the pixels 30 times a second starves the whole page. When it
 // settles it is repainted once at full density, so the still frame is crisp.
-const DRAFT_DPR = 1;
 
 /**
  * The drawing for one band: lays the lines and route out at the band's size, puts the labels on
@@ -27,7 +26,7 @@ export function createScene({ band, canvas, ctx, terrain, routeData, labels, hea
   const screenDpr = () => Math.min(win.devicePixelRatio || 1, MAX_DPR);
   /** Size the canvas bitmap for the current density; this also clears it, so paint after. */
   function resizeBitmap() {
-    dpr = sharp ? fullDpr : Math.min(fullDpr, DRAFT_DPR);
+    dpr = fullDpr; // crisp from the first frame: no draft density, so nothing sharpens later
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
   }
@@ -55,11 +54,9 @@ export function createScene({ band, canvas, ctx, terrain, routeData, labels, hea
       return Math.round(band.clientWidth) !== W || Math.round(band.clientHeight) !== H || screenDpr() !== fullDpr;
     },
 
-    /** Full density (for a still frame) or draft density (while moving). Clears the canvas when it changes. */
+    /** Kept for the callers that mark a still frame; the density never changes, so nothing is redrawn. */
     setSharp(next) {
-      if (next === sharp) return;
       sharp = next;
-      resizeBitmap();
     },
 
     /** Take the playhead's state for the next paint, and fade in the labels it has reached. */
