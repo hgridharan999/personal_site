@@ -10,13 +10,9 @@
 /* the two-column pages (hiking, climate search) open the column; home.css sets .wrap at 680px */
 .sp.sp-wide .wrap { max-width: calc(1040px + var(--gutter) * 2); }
 
-/* ---------- Header: the hiker beside the name, linking home ---------- */
+/* ---------- Header: the mark beside the name, linking home ---------- */
 .sp .sp-top { padding-top: 28px; }
-.sp .sp-home { --hiker-h: 34px; display: inline-flex; align-items: center; gap: 10px; min-height: 44px; text-decoration: none; }
-/* mirrored as on the homepage, where he faces the peak */
-.sp .sp-home .hiker { transform: scaleX(-1); }
-/* fully drawn: the draw-in plays once on "/" and would only distract here */
-.sp .sp-home .hiker .ink { animation: none; }
+.sp .sp-home { --mark-h: 32px; display: inline-flex; align-items: center; gap: 10px; min-height: 44px; text-decoration: none; }
 .sp .sp-name { font: 600 18px/1 var(--sans); letter-spacing: -0.03em; color: var(--cream); }
 .sp .sp-hari { font: italic 400 1.2em/0.95 var(--serif); letter-spacing: 0; color: var(--tan); }
 

@@ -283,7 +283,7 @@ export const OFF_CLOCK = {
   ],
 };
 
-// The ending's footer (under the water). Contact links reuse the header's data so the two cannot drift.
+// The ending's footer. Contact links reuse the header's data so the two cannot drift.
 const { resume, email, social } = HEADER.actions;
 
 // The toolkit and coursework, kept but closed by default: they are reference detail (and on the
@@ -305,6 +305,19 @@ export const SKILLS = {
   ],
 };
 
+// The page ends on the next climb: Kilimanjaro, drawn from real terrain (src/home/kili). The route is
+// planned, not climbed, so the drawing dashes it. Zones run from the plains up, matching kili/zones.js.
+export const NEXT_CLIMB = {
+  id: 'next-climb',
+  title: 'Next climb',
+  lead: 'Kilimanjaro, Tanzania.',
+  rest: ` The Machame route, 7${_}days.`,
+  summit: { name: 'Uhuru Peak', height: `19,341${_}ft` },
+  places: { mawenzi: 'Mawenzi', start: 'Machame Gate', camp: 'Barafu Camp' },
+  zones: ['Cultivation', 'Rainforest', 'Heath and moorland', 'Alpine desert', 'Arctic summit'],
+  route: 'Planned route',
+};
+
 /** Resume, email, LinkedIn, GitHub as SmartLink props. `arrow: true` picks the glyph for the link kind. */
 export const CONTACT_LINKS = [
   { label: resume.label, href: resume.href, arrow: '↓', sr: resume.sr },
@@ -315,5 +328,5 @@ export const CONTACT_LINKS = [
 export const FOOTER = {
   open: `Looking for a Summer${_}2027 internship in New${_}York or San${_}Francisco. Email is the fastest way to reach${_}me.`,
   updated: { label: 'Last updated', date: 'Oct 2026', datetime: '2026-10' },
-  motion: { pause: 'Pause motion', play: 'Play motion' },
+  motion: { pause: 'Pause motion', play: 'Play motion', stopped: 'Motion paused', playing: 'Motion playing' },
 };

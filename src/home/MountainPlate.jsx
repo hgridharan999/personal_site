@@ -14,7 +14,7 @@ const STRIP = {
   ],
 };
 
-// Right-side crop for wider screens: scribbled down from the peak, the way the hiker draws.
+// Right-side crop for wider screens: scribbled down from the peak, like a pen sketch.
 const PEAK = {
   className: 'scene scene--peak',
   viewBox: '330 0 560 250',

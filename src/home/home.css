@@ -2,7 +2,7 @@
    Every rule lives under the .hm root, or under html.hm-page for the document itself, so
    generic names like .row, .top and .btn cannot collide with Tailwind or with other pages.
    Keyframes and SVG ids carry an hm- prefix for the same reason. The ending's rules
-   (water band, footer) live in band/band.css. */
+   (Kilimanjaro, footer) live in kili/kili.css. */
 
 /* ---------- The document, while the homepage is mounted ----------
    src/index.css gives the whole site a dark body, a noise layer, a custom cursor (on <html> too),
@@ -19,7 +19,7 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
 .hm {
   --bg: #FFFFFF;
   --cream: #1A1A18;                      /* ink: headings and names */
-  --tan: #0F7DAA;                        /* iceberg blue, 4.6:1 on white */
+  --tan: #0F7DAA;                        /* the site blue, 4.6:1 on white */
   --soft: #6E6D68;                       /* body copy, warm grey, 5.2:1 on white */
   --muted: #6E6D68;                      /* dates and labels: the same warm grey as the copy (one grey, not two) */
   --rule: rgba(0, 0, 0, 0.10);           /* ledger hairline */
@@ -58,31 +58,30 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
 
 .hm .wrap { width: 100%; max-width: calc(680px + var(--gutter) * 2); margin-inline: auto; padding-inline: var(--gutter); }
 
-/* ---------- The hiker mark ----------
-   The live site's own hiker art, revealed by three thick masked strokes. Fully drawn with CSS
-   animations off; the draw-in is in the motion block at the end. */
-.hm .hiker { display: block; height: var(--hiker-h, 132px); width: auto; aspect-ratio: 294 / 480; overflow: visible; }
-.hm .hiker .ink { fill: none; stroke: #fff; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
+/* ---------- The hg mark ----------
+   Mark.jsx: the ink follows currentColor (the ink token here), so a dark-surface version is a
+   colour change in this rule; the circumflex is always the brand blue. Each lockup sets --mark-h. */
+.hm .mark { display: block; height: var(--mark-h, 48px); width: auto; aspect-ratio: 99.33 / 123.98; color: var(--cream); overflow: visible; }
 
 /* ---------- Header plate: the live site's mountain, drawn in like a sketch ---------- */
 .hm .plate { position: relative; margin: 0 calc(var(--gutter) * -1); }
 .hm .scene { display: block; width: 100%; height: auto; overflow: hidden; opacity: 0.5; }
 /* the line art was drawn cream-on-black: render it as black ink on white */
-.hm .scene image, .hm .hiker image { filter: brightness(0); }
+.hm .scene image { filter: brightness(0); }
 .hm .scene--strip { aspect-ratio: 1280 / 250; }
 .hm .scene--peak { display: none; aspect-ratio: 560 / 250; }
 .hm .plate::after { content: ""; position: absolute; inset: -1px 0; background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 50%, var(--bg) 97%); pointer-events: none; }
 .hm .scene .ink { fill: none; stroke: #fff; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
 
-/* ---------- Header: hiker logo beside the lockup, tucked into the foot of the plate ---------- */
+/* ---------- Header: the mark beside the lockup, tucked into the foot of the plate ---------- */
 .hm .top {
-  --hiker-h: 92px;
+  --mark-h: 48px;
   position: relative; z-index: 1;
   display: grid; grid-template-columns: auto minmax(0, 1fr);
   grid-template-areas: "mark name" "aff aff" "seek seek" "act act";
-  column-gap: 16px; align-items: center; margin-top: -22px;
+  column-gap: 16px; align-items: center; margin-top: -6px;
 }
-.hm .top .hiker { grid-area: mark; transform: scaleX(-1); } /* face the peak: he climbs the strip behind the name */
+.hm .top .mark { grid-area: mark; }
 .hm .name {
   grid-area: name;
   display: flex; flex-direction: column; align-items: flex-start;
@@ -241,7 +240,7 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
   }
   .hm .top {
     grid-template-areas: "mark name" "mark aff" "seek seek" "act act";
-    column-gap: 24px; margin-top: 0; padding-top: 22px;
+    column-gap: 18px; margin-top: 0; padding-top: 22px;
   }
   .hm .name { flex-direction: row; align-items: baseline; column-gap: 0.2em; align-self: end; }
   .hm .aff { margin-top: 8px; align-self: start; text-wrap: balance; }
@@ -275,9 +274,9 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
 
 /* ---------- All motion lives here ---------- */
 @media (prefers-reduced-motion: no-preference) {
-  /* The plate draws first (ridge left to right, then the slopes), then the hiker walks in. */
+  /* The plate draws (ridge left to right, then the slopes) while the mark fades in beside the name. */
   .hm .scene .ink { animation: hm-scene-ink 0.5s cubic-bezier(0.65, 0, 0.35, 1) both; }
-  /* right-side mountain: drawn alongside the hiker, finishing as he does */
+  /* right-side mountain: drawn in stages, finishing last */
   .hm .scene .m1 { animation-delay: 0.3s; animation-duration: 0.3s; }
   .hm .scene .m2 { animation-delay: 0.55s; animation-duration: 0.4s; }
   .hm .scene .m3 { animation-delay: 0.9s; animation-duration: 0.4s; }
@@ -285,10 +284,7 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
   .hm .scene .i1 { animation-duration: 0.6s; }
   .hm .scene .i2 { animation-delay: 0.2s; }
   .hm .scene .i3 { animation-delay: 0.4s; }
-  .hm .hiker .ink { animation: hm-hiker-ink 0.45s cubic-bezier(0.65, 0, 0.35, 1) both; }
-  .hm .hiker .ink-1 { animation-duration: 0.3s; animation-delay: 0.45s; }
-  .hm .hiker .ink-2 { animation-delay: 0.75s; }
-  .hm .hiker .ink-3 { animation-delay: 1.2s; }
+  .hm .top .mark { animation: hm-mark-in 0.5s var(--ease) 0.15s both; }
 
   /* Opening a row: the plus turns, the trail line draws down and the text follows it.
      The motion runs only while .is-anim is on the row: useRowMotion adds it on a real click and
@@ -314,7 +310,7 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
     .hm .row:hover::before, .hm .row:has(:focus-visible)::before { animation: hm-tri-in 0.25s var(--ease) both; }
   }
 }
-@keyframes hm-hiker-ink { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes hm-mark-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes hm-scene-ink { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
 @keyframes hm-trail-open { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
 @keyframes hm-trail-text { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }

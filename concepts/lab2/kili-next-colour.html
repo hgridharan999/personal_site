@@ -1,0 +1,757 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kilimanjaro, five climates</title>
+<style>
+  @font-face { font-family: "Geist"; src: url("../_shared/fonts/geist-latin.woff2") format("woff2"); font-weight: 400 600; font-style: normal; font-display: swap; }
+  @font-face { font-family: "Instrument Serif"; src: url("../_shared/fonts/instrument-serif-italic-latin.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+
+  :root {
+    --bg: #FFFFFF;
+    --ink: #1A1A18;
+    --soft: #6E6D68;
+    --blue: #0F7DAA;
+    --rule: rgba(0, 0, 0, 0.10);
+    --ul: rgba(0, 0, 0, 0.40);
+    --serif: "Instrument Serif", "Times New Roman", serif;
+    --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --gutter: 16px;
+    --tri-off: 14px;
+    --band-h: 290px;
+  }
+  @media (min-width: 600px)  { :root { --band-h: 330px; } }
+  @media (min-width: 768px)  { :root { --gutter: 32px; --tri-off: 26px; } }
+  @media (min-width: 1000px) { :root { --band-h: 360px; } }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--bg); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 400 15px/1.5 var(--sans); letter-spacing: -0.2px; font-kerning: normal;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden; overflow-wrap: break-word;
+  }
+  h2, p, ul { margin: 0; padding: 0; }
+  ul { list-style: none; }
+  ::selection { background: var(--blue); color: var(--bg); }
+  a { color: inherit; text-decoration: underline; text-decoration-color: var(--ul); text-decoration-thickness: 1px; text-underline-offset: 0.22em; }
+  a:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 2px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+
+  .wrap { width: 100%; max-width: calc(680px + var(--gutter) * 2); margin-inline: auto; padding-inline: var(--gutter); }
+
+  /* ---------- header mock: the new mark beside the name ---------- */
+  .top {
+    display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "mark name" "aff aff";
+    column-gap: 14px; align-items: center; padding-top: 32px;
+  }
+  .top .mark { grid-area: mark; display: block; height: 44px; width: auto; }
+  .name {
+    grid-area: name; display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 0.2em; margin: 0;
+    font: 500 clamp(28px, 7.5vw, 34px)/1 var(--sans); letter-spacing: -0.035em; color: var(--ink);
+  }
+  .hari { font: italic 400 1.2em/0.95 var(--serif); letter-spacing: 0; color: var(--blue); }
+  .aff { grid-area: aff; margin-top: 12px; color: var(--soft); text-wrap: balance; }
+  @media (min-width: 600px) {
+    .top { grid-template-areas: "mark name" "mark aff"; column-gap: 18px; }
+    .name { align-self: end; }
+    .aff { margin-top: 6px; align-self: start; }
+  }
+
+  /* ---------- lab caption ---------- */
+  .cap { padding-top: 36px; font: 400 12px/1.5 var(--sans); letter-spacing: 0; color: var(--soft); }
+  .cap b { font-weight: 500; color: var(--ink); }
+
+  /* ---------- the tail of the homepage: Skills ---------- */
+  main > section { padding-top: 40px; }
+  .next { margin-top: 8px; margin-bottom: 40px; }
+  .next-line { margin-top: 2px; font-size: 14px; line-height: 1.55; color: var(--soft); text-wrap: pretty; }
+  .key .rt i { height: 0; background: none; border-top: 1.5px dashed #0F7DAA; border-radius: 0; }
+  .head { padding-bottom: 2px; font: 500 13px/1.5 var(--sans); letter-spacing: 0.01em; color: var(--soft); }
+  .row { position: relative; }
+  .xp-head { display: grid; grid-template-columns: minmax(0, 1fr); align-items: baseline; padding: 9px 0 0; cursor: pointer; }
+  .ttl { font: 500 15px/1.55 var(--sans); color: var(--ink); }
+  .xp-mark {
+    display: inline-block; width: 9px; height: 9px; margin-left: 9px; vertical-align: 0.06em;
+    --mark: var(--soft);
+    background: linear-gradient(var(--mark), var(--mark)) center / 100% 1.5px no-repeat,
+                linear-gradient(var(--mark), var(--mark)) center / 1.5px 100% no-repeat;
+  }
+  .xp:has(details[open]) .xp-mark { transform: rotate(45deg); --mark: var(--blue); }
+  .xp summary { display: block; padding: 0 0 9px; list-style: none; cursor: pointer; border-radius: 2px; }
+  .xp summary::-webkit-details-marker { display: none; }
+  .xp summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 4px; }
+  .line { display: block; margin-top: 1px; font-size: 14px; line-height: 1.55; color: var(--soft); text-wrap: pretty; }
+  .lead { color: #55544F; }
+  .xp .body { margin: -2px 0 12px; padding: 2px 0 2px 14px; border-left: 1px solid rgba(15, 125, 170, 0.45); font-size: 14px; line-height: 1.6; color: var(--soft); }
+  .xp .body p + p { margin-top: 6px; }
+  @media (max-width: 599px) { .xp-mark { width: 12px; height: 12px; } }
+
+  /* ---------- the ending: Quandary as a stack of ruled lines ---------- */
+  :root { --sky-mid: #FFFFFF; --sky-bot: #FFFFFF; }
+  .band {
+    position: relative; height: var(--band-h); margin-top: 28px;
+    background: linear-gradient(to bottom, #FFFFFF 0%, var(--sky-mid) 55%, var(--sky-bot) 100%);
+  }
+  .band canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .peak {
+    position: absolute; left: 0; top: 0; pointer-events: none; white-space: nowrap;
+    font: 400 12px/1 var(--sans); letter-spacing: 0; color: var(--soft); font-variant-numeric: tabular-nums;
+    opacity: 0; transform: translate(-50%, -100%);
+  }
+  .peak .t { display: block; padding: 2px 5px; }
+  .peak .t b { font-weight: 500; color: var(--ink); }
+  .peak::after { content: ""; display: block; width: 1px; height: 9px; margin: 3px auto 0; background: rgba(26, 26, 24, 0.45); }
+  .peak.on { opacity: 1; }
+  .peak .t { text-align: center; }
+  .peak .nm { display: block; font: 500 14px/1.2 var(--sans); letter-spacing: -0.01em; color: var(--ink); }
+  .peak .sub { display: block; margin-top: 3px; font: 400 12px/1.2 var(--sans); color: var(--soft); }
+  .key {
+    position: absolute; right: var(--gutter); top: 4px; pointer-events: none;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 5px;
+    font: 400 12px/1 var(--sans); letter-spacing: 0; color: var(--soft); opacity: 0;
+  }
+  .key span { display: flex; align-items: center; gap: 7px; }
+  .key i { display: block; width: 14px; height: 3px; border-radius: 1px; background: var(--z); }
+  .key .z1 { --z: #AA9254; } .key .z2 { --z: #247040; } .key .z3 { --z: #7A9442; }
+  .key .z4 { --z: #B07A4C; } .key .z5 { --z: #4E96C8; }
+  .key .z5 i { box-shadow: 0 0 0 0.75px rgba(26, 26, 24, 0.7); }
+  .peak.quiet .t { color: var(--soft); }
+  .peak.quiet::after { height: 7px; background: rgba(26, 26, 24, 0.28); }
+  .key.on { opacity: 1; }
+  .wp {
+    position: absolute; left: 0; top: 0; pointer-events: none; white-space: nowrap; opacity: 0;
+    font: 400 12px/1 var(--sans); letter-spacing: 0; color: var(--soft);
+  }
+  .wp span { display: block; padding: 2px 4px; background: rgba(255, 255, 255, 0.86); border-radius: 2px; }
+  .wp.r { transform: translate(5px, -50%); }
+  .wp.l { transform: translate(calc(-100% - 5px), -50%); }
+  .wp.on { opacity: 1; }
+
+  /* ---------- footer, restyled for a white ending ---------- */
+  .foot { background: var(--sky-bot); color: var(--ink); }
+  .runway { height: 70vh; }
+  .foot-in { max-width: calc(680px + var(--gutter) * 2); margin: 0 auto; padding: 22px var(--gutter) 28px; }
+  .foot-open { margin: 0 0 4px; font: 400 14px/1.6 var(--sans); color: var(--ink); text-wrap: pretty; }
+  .foot-contact { margin: 0; font: 400 14px/1.8 var(--sans); }
+  .foot-contact .dot { color: var(--soft); }
+  .foot-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-top: 6px; }
+  .foot-line p, .motion-toggle { margin: 0; font: 400 12.5px/1.4 var(--sans); letter-spacing: -0.1px; color: var(--soft); }
+  .motion-toggle {
+    background: none; border: 0; padding: 0; min-height: 44px; cursor: pointer;
+    text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(110, 109, 104, 0.5);
+  }
+  .motion-toggle:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 2px; }
+
+  @media (hover: hover) and (pointer: fine) {
+    .row:hover::before, .row:has(:focus-visible)::before {
+      content: ""; position: absolute; left: calc(var(--tri-off) * -1 + 4px); top: 13px;
+      width: 2px; height: 16px; pointer-events: none; border-radius: 1px; background: var(--blue);
+    }
+    .xp:hover .xp-mark { --mark: var(--blue); }
+    a:hover, .motion-toggle:hover { color: var(--blue); text-decoration-color: var(--blue); }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .peak, .key, .wp { transition: opacity 0.7s var(--ease); }
+    .xp-mark { transition: transform 0.3s var(--ease); }
+    a, .motion-toggle { transition: color 0.2s var(--ease), text-decoration-color 0.2s var(--ease); }
+  }
+</style>
+</head>
+<body>
+
+<header class="wrap top">
+  <img class="mark" src="../marks2/svg/estimator.svg" alt="" height="44">
+  <h1 class="name"><span class="hari">Hari</span><span class="sur">Gridharan</span></h1>
+  <p class="aff">Cornell Dyson&nbsp;’29 · Dyson&nbsp;Scholar · KKR Accelerator Scholar · Applied Economics, AI&nbsp;minor</p>
+</header>
+
+<div class="wrap cap"><p><b>Five climates, stronger.</b> Colour by real elevation, made easy to see. No cursor effect. Once the lines draw in, the five zones colour in from the plains to the summit by real elevation, and the Machame route draws up and back down. Then a faint band of light rises through the zones every 8&nbsp;s.</p></div>
+
+<main class="wrap">
+  <section aria-labelledby="skills">
+    <h2 class="head" id="skills">Skills</h2>
+    <ul role="list">
+      <li class="row xp">
+        <div class="xp-head"><span class="ttl"><span class="co">Toolkit and coursework<span class="xp-mark" aria-hidden="true"></span></span></span></div>
+        <details>
+          <summary><span class="line"><span class="lead">Financial modeling</span>, Excel, Bloomberg, SQL,&nbsp;Python.</span></summary>
+          <div class="body">
+            <p>Tools: Excel&nbsp;· PowerPoint&nbsp;· Bloomberg&nbsp;· SQL&nbsp;· Python&nbsp;· FastAPI&nbsp;· React/TypeScript&nbsp;· Cloudflare&nbsp;· Claude&nbsp;Code&nbsp;· Multi&#8209;Agent&nbsp;Orchestration&nbsp;· Salesforce</p>
+            <p>Methods: financial&nbsp;modeling&nbsp;· market&nbsp;sizing&nbsp;· competitive&nbsp;analysis&nbsp;· unit&nbsp;economics</p>
+            <p>Coursework: Spreadsheet&nbsp;Modeling&nbsp;· Linear&nbsp;Algebra&nbsp;· Math&nbsp;Foundations&nbsp;of&nbsp;CS&nbsp;· Computational&nbsp;Mathematics&nbsp;· Finance&nbsp;· Financial&nbsp;Accounting&nbsp;· Statistics&nbsp;· Business&nbsp;Management&nbsp;· Management&nbsp;Communication</p>
+          </div>
+        </details>
+      </li>
+    </ul>
+  </section>
+  <section class="next" aria-labelledby="next">
+    <h2 class="head" id="next">Next climb</h2>
+    <p class="next-line"><span class="lead">Kilimanjaro, Tanzania.</span> The Machame route, 7&nbsp;days.</p>
+  </section>
+</main>
+
+<div class="band" id="band" aria-hidden="true">
+  <canvas id="ridges"></canvas>
+  <div class="peak" id="peak"><span class="t"><span class="nm">Uhuru Peak</span><span class="sub">19,341&nbsp;ft</span></span></div>
+  <div class="peak quiet" id="mawenzi"><span class="t">Mawenzi</span></div>
+  <div class="wp l" id="wp-machame"><span>Machame Gate</span></div>
+  <div class="wp r" id="wp-barafu"><span>Barafu Camp</span></div>
+  <div class="key" id="key">
+    <span class="z5"><i></i>Arctic summit</span>
+    <span class="z4"><i></i>Alpine desert</span>
+    <span class="z3"><i></i>Heath and moorland</span>
+    <span class="z2"><i></i>Rainforest</span>
+    <span class="z1"><i></i>Cultivation</span>
+    <span class="rt"><i></i>Planned route</span>
+  </div>
+</div>
+
+<footer class="foot">
+  <div class="foot-in">
+    <p class="foot-open">Looking for a Summer&nbsp;2027 internship in New&nbsp;York or San&nbsp;Francisco. Email is the fastest way to reach&nbsp;me.</p>
+    <p class="foot-contact">
+      <a href="/Hari_Gridharan_Resume.pdf">Resume<span aria-hidden="true">&nbsp;↓</span><span class="sr-only"> (PDF)</span></a><span class="dot" aria-hidden="true"> · </span><a href="mailto:hg532@cornell.edu">hg532@cornell.edu</a><span class="dot" aria-hidden="true"> · </span><a href="https://www.linkedin.com/in/harigridharan1/" target="_blank" rel="noopener">LinkedIn<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a><span class="dot" aria-hidden="true"> · </span><a href="https://github.com/hgridharan999" target="_blank" rel="noopener">GitHub<span aria-hidden="true">&nbsp;↗</span><span class="sr-only"> (opens in new tab)</span></a>
+    </p>
+    <div class="foot-line">
+      <p>Last updated <time datetime="2026-10">Oct 2026</time></p>
+      <button type="button" class="motion-toggle" id="motion">Pause motion</button>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* the Skills row opens from its title line too, as on the site */
+document.querySelectorAll('.xp-head').forEach((h) => h.addEventListener('click', () => {
+  const s = h.parentElement.querySelector('summary'); if (s) s.click();
+}));
+</script>
+
+<script>
+(() => {
+  'use strict';
+
+  // ------------------------------------------------------------------ helpers
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const smoothstep = (e0, e1, x) => { const t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t); };
+  function bezier(x1, y1, x2, y2) {             // CSS cubic-bezier as a function of x
+    const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+    const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+    const sx = (t) => ((ax * t + bx) * t + cx) * t;
+    const sy = (t) => ((ay * t + by) * t + cy) * t;
+    const dx = (t) => (3 * ax * t + 2 * bx) * t + cx;
+    return (x) => {
+      if (x <= 0) return 0;
+      if (x >= 1) return 1;
+      let t = x;
+      for (let i = 0; i < 8; i++) {
+        const e = sx(t) - x;
+        if (Math.abs(e) < 1e-6) return sy(t);
+        const d = dx(t);
+        if (Math.abs(d) < 1e-6) break;
+        t -= e / d;
+      }
+      let lo = 0, hi = 1; t = x;
+      for (let i = 0; i < 40; i++) { const v = sx(t); if (Math.abs(v - x) < 1e-6) break; if (v < x) lo = t; else hi = t; t = (lo + hi) / 2; }
+      return sy(t);
+    };
+  }
+  const easeInk = bezier(0.65, 0, 0.35, 1);     // the curve the site's hiker and plate draw in with
+  const easeTide = (t) => 0.5 - 0.5 * Math.cos(Math.PI * clamp(t, 0, 1));
+  const mix3 = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+  const rgb = (c) => 'rgb(' + Math.round(c[0]) + ',' + Math.round(c[1]) + ',' + Math.round(c[2]) + ')';
+
+  // ------------------------------------------------------------------ elements
+  const band = document.getElementById('band');
+  const cv = document.getElementById('ridges');
+  const ctx = cv.getContext('2d');
+  const peakEl = document.getElementById('peak');
+  const peakText = peakEl.querySelector('.t');
+  const mawEl = document.getElementById('mawenzi');
+  const keyEl = document.getElementById('key');
+  const toggle = document.getElementById('motion');
+  const mqReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const wpLabelEls = { 'Machame Gate': document.getElementById('wp-machame'), 'Barafu Camp': document.getElementById('wp-barafu') };
+
+  // ------------------------------------------------------------------ terrain
+  const F0 = 800, LMAX = 5070;                  // metres: the plains around the massif, and the relief above them
+  const ROW0 = 0, ROW1 = 199;                    // north to south across the whole massif and its plains
+  const NEAR0 = 188;                             // only the last few rows (already plains) ease into plain ruled lines
+  const liftOf = (h) => { const u = (h - F0) / LMAX; return u <= 0 ? 0 : LMAX * (u > 1 ? 1 : u); };
+  let G = null, GR = 0, GC = 0, cellM = 229;     // heights, row-major
+  let summit = [132.92, 91.4], mawenzi = [170.24, 98.62];
+  let ROUTE = null;                              // kili-route-machame.json
+  function hRow(r, c) {                          // Catmull-Rom along one grid row
+    const row = r * GC;
+    const i = Math.floor(c), f = c - i;
+    const p0 = G[row + clamp(i - 1, 0, GC - 1)], p1 = G[row + clamp(i, 0, GC - 1)];
+    const p2 = G[row + clamp(i + 1, 0, GC - 1)], p3 = G[row + clamp(i + 2, 0, GC - 1)];
+    return p1 + 0.5 * f * (p2 - p0 + f * (2 * p0 - 5 * p1 + 4 * p2 - p3 + f * (3 * (p1 - p2) + p3 - p0)));
+  }
+  function hAt(rf, cf) {                         // smooth along columns, linear between rows
+    rf = clamp(rf, 0, GR - 1); cf = clamp(cf, 0, GC - 1);
+    const r0 = Math.floor(rf), r1 = Math.min(GR - 1, r0 + 1), t = rf - r0;
+    const a = hRow(r0, cf);
+    return t === 0 ? a : a + (hRow(r1, cf) - a) * t;
+  }
+
+  // ------------------------------------------------------------------ the five climates
+  // Colour comes from each sample's real elevation, blended softly across each boundary.
+  const INK = [26, 26, 24];
+  const ZONES = [
+    { top: 1800, c: [170, 146, 84] },           // cultivation: ochre-olive
+    { top: 2800, c: [36, 112, 64] },            // rainforest: clear forest green
+    { top: 4000, c: [122, 148, 66] },           // heath and moorland: moss
+    { top: 5000, c: [176, 122, 76] },           // alpine desert: sand and terracotta
+    { top: Infinity, c: [78, 150, 200] },       // arctic summit: glacier blue
+  ];
+  const BLEND = 230;
+  function zoneColor(e) {
+    let c = ZONES[0].c;
+    for (let z = 0; z < ZONES.length - 1; z++) c = mix3(c, ZONES[z + 1].c, smoothstep(ZONES[z].top - BLEND, ZONES[z].top + BLEND, e));
+    return c;
+  }
+  const E0 = 600, BIN = 70, NB = Math.ceil((6000 - E0) / BIN) + 1;   // elevation bins: one stroke each
+  const binE = (b) => E0 + (b + 0.5) * BIN;
+  const GLOW = [255, 250, 236];
+  const palC = new Array(NB), palA = new Float32Array(NB), palW = new Float32Array(NB), palE = new Float32Array(NB);
+  let tideH = -1e9, bandH = -1e9, bandAmp = 0;
+  function palette() {
+    for (let b = 0; b < NB; b++) {
+      const e = binE(b);
+      const amt = smoothstep(e - 60, e + 520, tideH);
+      let c = mix3(INK, zoneColor(e), amt);
+      const lb = bandAmp * Math.exp(-(((e - bandH) / 330) ** 2));
+      c = mix3(c, mix3(c, GLOW, 0.6), lb);
+      palC[b] = rgb(c);
+      palA[b] = 1 + 0.9 * amt;
+      palW[b] = 0.5 * amt + 0.55 * lb;
+      palE[b] = amt * smoothstep(4850, 5150, e);
+    }
+  }
+
+  // ------------------------------------------------------------------ scene geometry
+  let W = 0, H = 0, dpr = 1, phone = false;
+  let N = 0, K = 0;
+  let sx0 = 0, SW = 1, cA = 0, cB = 111;
+  let b0 = 0, D = 0, A = 0;
+  let lineRow, lineBase, lineAmp;                // per line
+  let xs, yS, eS;                                // render samples: x, y and real elevation (m)
+  const PER = 0.45;                              // perspective: lines spread a little toward the front
+  const persp = (t) => (t + PER * t * t) / (1 + PER);
+  const ampOf = (t) => 0.86 + 0.14 * t;
+  const taper = (u) => smoothstep(0, 0.06, u) * smoothstep(1, 0.94, u);
+
+  function colToX(c) { return sx0 + ((c - cA) / (cB - cA)) * SW; }
+  function xToCol(x) { return cA + ((x - sx0) / SW) * (cB - cA); }
+  function liftAt(rf, x) {                       // metres above the floor, faded out at the stage edges
+    const u = (x - sx0) / SW;
+    if (u <= 0 || u >= 1) return 0;
+    const c = cA + u * (cB - cA);
+    return liftOf(hAt(rf, c)) * taper(u) * smoothstep(ROW1, NEAR0, rf);
+  }
+  const lfOf = (r) => ((r - ROW0) / (ROW1 - ROW0)) * (N - 1);
+  function baseOf(lf) { return b0 + D * persp(lf / (N - 1)); }
+  function ampAt(lf) { return A * ampOf(lf / (N - 1)); }
+  function drape(c, r) { const x = colToX(c), lf = lfOf(r); return [x, baseOf(lf) - ampAt(lf) * liftAt(r, x), lf]; }
+
+  function layout() {
+    W = Math.max(1, Math.round(band.clientWidth));
+    H = Math.max(1, Math.round(band.clientHeight));
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    phone = W < 600;
+
+    N = phone ? 48 : 64;
+    if (phone) { cA = 80; cB = 215; SW = W; sx0 = 0; }
+    else { cA = 0; cB = GC - 1; SW = Math.min(W - 96, 1180); sx0 = (W - SW) / 2; }
+
+    const step = phone ? 2 : 3;
+    K = Math.ceil(W / step) + 1;
+    xs = new Float32Array(K);
+    for (let k = 0; k < K; k++) xs[k] = (k / (K - 1)) * W;
+
+    lineRow = new Float32Array(N); lineBase = new Float32Array(N); lineAmp = new Float32Array(N);
+    const raw = new Float32Array(N * K);
+    const maxLift = new Float32Array(N);
+    eS = new Float32Array(N * K);
+    for (let i = 0; i < N; i++) {
+      lineRow[i] = ROW0 + (i / (N - 1)) * (ROW1 - ROW0);
+      let m = 0;
+      for (let k = 0; k < K; k++) {
+        const v = liftAt(lineRow[i], xs[k]); raw[i * K + k] = v; if (v > m) m = v;
+        eS[i * K + k] = hAt(lineRow[i], xToCol(xs[k]));
+      }
+      maxLift[i] = m;
+    }
+    // fit the stack: the front line sits on the floor of the band, the tallest ridge stops short of its top
+    const topPad = phone ? 16 : 22, botPad = phone ? 5 : 6;
+    D = H * (phone ? 0.52 : 0.5);
+    b0 = H - botPad - D;
+    A = Infinity;
+    for (let i = 0; i < N; i++) {
+      const t = i / (N - 1);
+      lineBase[i] = b0 + D * persp(t);
+      if (maxLift[i] > 0) A = Math.min(A, (lineBase[i] - topPad) / (maxLift[i] * ampOf(t)));
+    }
+    for (let i = 0; i < N; i++) lineAmp[i] = A * ampOf(i / (N - 1));
+    yS = new Float32Array(N * K);
+    for (let i = 0; i < N; i++) for (let k = 0; k < K; k++) yS[i * K + k] = lineBase[i] - lineAmp[i] * raw[i * K + k];
+
+    buildRoute();
+    cache = null; rCache = null;
+    placeLabels();
+  }
+
+  // ------------------------------------------------------------------ the Machame route
+  // Ascent and descent are densified to about a pixel per step, draped on the terrain, and each
+  // little segment is bucketed under the ruled line just behind it, so nearer ridges hide it.
+  let RN = 0, rx, ry, rcum, rleg, rdash;         // dense route points
+  let RTOT = 1, RASC = 1;                        // drawn length in px: whole route, ascent only
+  let segB = [], dotB = [];                      // per line: segment end indices, waypoint dots
+  let wps = [];                                  // waypoints with screen position and route position
+  function buildRoute() {
+    segB = Array.from({ length: N }, () => []);
+    dotB = Array.from({ length: N }, () => []);
+    wps = []; RN = 0;
+    if (!ROUTE) return;
+    const pts = [];                              // [x, y, lf, leg, col, row]
+    const legs = [ROUTE.ascent, ROUTE.descent];
+    for (let g = 0; g < 2; g++) {
+      const L = legs[g];
+      for (let s = 0; s < L.length - 1; s++) {
+        const [c0, r0] = L[s], [c1, r1] = L[s + 1];
+        const pa = drape(c0, r0), pb = drape(c1, r1);
+        const n = Math.max(1, Math.ceil(Math.hypot(pb[0] - pa[0], pb[1] - pa[1]) / 1.1));
+        for (let q = s === 0 ? 0 : 1; q <= n; q++) {
+          const t = q / n, c = c0 + (c1 - c0) * t, r = r0 + (r1 - r0) * t;
+          const p = drape(c, r);
+          pts.push([p[0], p[1], p[2], g, c, r]);
+        }
+      }
+    }
+    RN = pts.length;
+    rx = new Float32Array(RN); ry = new Float32Array(RN); rcum = new Float32Array(RN);
+    rleg = new Uint8Array(RN); rdash = new Uint8Array(RN);
+    let dCum = 0;
+    for (let m = 0; m < RN; m++) {
+      rx[m] = pts[m][0]; ry[m] = pts[m][1]; rleg[m] = pts[m][3];
+      if (m > 0) {
+        const len = Math.hypot(rx[m] - rx[m - 1], ry[m] - ry[m - 1]);
+        rcum[m] = rcum[m - 1] + len;
+        if (rleg[m] !== rleg[m - 1]) continue;   // the turn at the summit is not a segment
+        if (rleg[m] === 0) RASC = rcum[m];
+        else { dCum += len; rdash[m] = (dCum - len * 0.5) % 6.2 < 3.4 ? 1 : 0; }
+        const lf = 0.5 * (pts[m][2] + pts[m - 1][2]);
+        segB[clamp(Math.floor(lf), 0, N - 1)].push(m);
+      }
+    }
+    RTOT = rcum[RN - 1];
+    for (const w of ROUTE.waypoints) {
+      if (w.kind === 'landmark') continue;
+      const [x, y, lf] = drape(w.col, w.row);
+      let best = 0, bd = Infinity;
+      for (let m = 0; m < RN; m++) { const d = (pts[m][4] - w.col) ** 2 + (pts[m][5] - w.row) ** 2; if (d < bd) { bd = d; best = m; } }
+      const wp = { name: w.name, kind: w.kind, x, y, at: rcum[best], r: w.kind === 'summit' ? 2.8 : 2.1 };
+      wps.push(wp);
+      dotB[clamp(Math.floor(lf), 0, N - 1)].push(wp);
+    }
+  }
+
+  function placeLabels() {
+    const s = wps.find((w) => w.kind === 'summit');
+    const [x, y] = s ? [s.x, s.y] : drape(summit[0], summit[1]);
+    peakEl.style.left = x.toFixed(1) + 'px';
+    peakEl.style.top = (y - 6).toFixed(1) + 'px';
+    const [mx, my] = drape(mawenzi[0], mawenzi[1]);
+    mawEl.style.left = mx.toFixed(1) + 'px';
+    mawEl.style.top = (my - 5).toFixed(1) + 'px';
+    const tw = peakText.offsetWidth, edge = phone ? 10 : 24;
+    peakText.style.transform = 'translateX(' + (Math.max(0, edge - (x - tw / 2)) + Math.min(0, (W - edge) - (x + tw / 2))).toFixed(1) + 'px)';
+    for (const w of wps) {
+      const el = wpLabelEls[w.name];
+      if (!el) continue;
+      el.style.left = w.x.toFixed(1) + 'px';
+      el.style.top = w.y.toFixed(1) + 'px';
+    }
+    keyEl.style.right = Math.max(phone ? 16 : 32, sx0).toFixed(0) + 'px';
+  }
+
+  // ------------------------------------------------------------------ timeline
+  const LINE_DUR = 0.8, STAGGER = 0.016;
+  const TIDE = 3.6, ROUTE_AT = 0.3, ROUTE_DUR = 3.4, BAND_AT = TIDE + 0.8, BAND_PERIOD = 8, BAND_RISE = 0.72;
+  let drawT = -1;                                // seconds since the draw-in began; -1 before
+  let doneDrawing = false;
+  let lifeT = -1;                                // seconds since the lines finished
+  let still = false;                             // reduced motion or paused mid draw-in: the final still frame
+  const totalDraw = () => (N - 1) * STAGGER + LINE_DUR;
+  function lineProg(i) { return drawT < 0 ? 0 : easeInk(clamp((drawT - i * STAGGER) / LINE_DUR, 0, 1)); }
+  let routeLen = 0;
+  function updateLife() {
+    const t = still ? BAND_AT : lifeT;
+    tideH = t < 0 ? -1e9 : 500 + 6000 * easeTide(t / TIDE);
+    routeLen = t < 0 ? 0 : RTOT * easeInk(clamp((t - ROUTE_AT) / ROUTE_DUR, 0, 1));
+    if (still || t < BAND_AT) { bandAmp = 0; bandH = -1e9; }
+    else {
+      const p = ((t - BAND_AT) / BAND_PERIOD) % 1, u = p / BAND_RISE;
+      bandAmp = u <= 1 ? 0.55 : 0;
+      bandH = 250 + 6500 * easeTide(u);
+    }
+    if (t >= 0) keyEl.classList.add('on');
+    if (routeLen >= RASC - 0.5) { peakEl.classList.add('on'); mawEl.classList.add('on'); }
+    for (const w of wps) { const el = wpLabelEls[w.name]; if (el && routeLen >= w.at - 0.5) el.classList.add('on'); }
+  }
+
+  // ------------------------------------------------------------------ render
+  // Once the lines are down their shapes never change: each line keeps its fill and one path per
+  // elevation bin, and the route keeps its paths once drawn. Frames only restroke with new colours.
+  let cache = null, rCache = null;
+  function binsFor(i) {
+    const row = i * K, list = new Array(NB).fill(null);
+    let prev = -1;
+    for (let k = 1; k < K; k++) {
+      const e = 0.5 * (eS[row + k - 1] + eS[row + k]);
+      const b = clamp(((e - E0) / BIN) | 0, 0, NB - 1);
+      let p = list[b];
+      if (!p) p = list[b] = new Path2D();
+      if (b !== prev) p.moveTo(xs[k - 1], yS[row + k - 1]);
+      p.lineTo(xs[k], yS[row + k]);
+      prev = b;
+    }
+    const idx = [], paths = [];
+    for (let b = 0; b < NB; b++) if (list[b]) { idx.push(b); paths.push(list[b]); }
+    return { idx, paths };
+  }
+
+  function routePaths(i, L) {
+    const asc = new Path2D(), desc = new Path2D();
+    let pa = -2, pd = -2;
+    for (const m of segB[i]) {
+      if (rcum[m - 1] >= L) continue;
+      let ex = rx[m], ey = ry[m];
+      if (rcum[m] > L) { const f = (L - rcum[m - 1]) / Math.max(1e-6, rcum[m] - rcum[m - 1]); ex = rx[m - 1] + (rx[m] - rx[m - 1]) * f; ey = ry[m - 1] + (ry[m] - ry[m - 1]) * f; }
+      if (rleg[m] === 0) {
+        if (pa !== m - 1) asc.moveTo(rx[m - 1], ry[m - 1]);
+        asc.lineTo(ex, ey); pa = m;
+      } else if (rdash[m]) {
+        if (pd !== m - 1) desc.moveTo(rx[m - 1], ry[m - 1]);
+        desc.lineTo(ex, ey); pd = m;
+      }
+    }
+    return { asc, desc };
+  }
+
+  function drawRoute(i) {
+    if (!RN || routeLen <= 0 || (!segB[i].length && !dotB[i].length)) return;
+    const doneR = routeLen >= RTOT - 1e-3;
+    if (doneR && !rCache) rCache = new Array(N);
+    let rp = doneR ? rCache[i] : null;
+    if (!rp) { rp = routePaths(i, routeLen); if (doneR) rCache[i] = rp; }
+    ctx.globalAlpha = 1; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.globalCompositeOperation = 'destination-out'; ctx.strokeStyle = '#000';
+    ctx.lineWidth = 3.6; ctx.stroke(rp.asc);
+    ctx.lineWidth = 3.0; ctx.stroke(rp.desc);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.setLineDash([5, 3.5]); ctx.strokeStyle = '#0F7DAA'; ctx.lineWidth = 1.45; ctx.stroke(rp.asc);
+    ctx.setLineDash([1.6, 3.2]); ctx.strokeStyle = 'rgba(15,125,170,0.6)'; ctx.lineWidth = 1.2; ctx.stroke(rp.desc);
+    ctx.setLineDash([]);
+    const dw = dotB[i];
+    if (dw.length) {
+      const halo = new Path2D(), dots = new Path2D();
+      let any = false;
+      for (const w of dw) {
+        if (w.at > routeLen + 0.5) continue;
+        halo.moveTo(w.x + w.r + 1.6, w.y); halo.arc(w.x, w.y, w.r + 1.6, 0, Math.PI * 2);
+        dots.moveTo(w.x + w.r, w.y); dots.arc(w.x, w.y, w.r, 0, Math.PI * 2);
+        any = true;
+      }
+      if (any) {
+        ctx.globalCompositeOperation = 'destination-out'; ctx.fillStyle = '#000'; ctx.fill(halo);
+        ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = '#0F7DAA'; ctx.fill(dots);
+      }
+    }
+  }
+
+  function draw() {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.clearRect(0, 0, W, H);
+    ctx.lineJoin = 'round';
+    const full = doneDrawing;
+    if (full && !cache) cache = new Array(N);
+    const zoned = full && tideH > E0 - 600;
+    if (zoned) palette();
+
+    for (let i = 0; i < N; i++) {
+      const p = full ? 1 : lineProg(i);
+      if (p <= 0) continue;
+      const t = i / (N - 1);
+      const kEnd = p * (K - 1), kLast = Math.floor(kEnd);
+      const row = i * K;
+      const hasTip = kLast < K - 1 && kEnd > kLast;
+      let tipX = xs[kLast], tipY = yS[row + kLast];
+      if (hasTip) { const ft = kEnd - kLast; tipX += (xs[kLast + 1] - tipX) * ft; tipY += (yS[row + kLast + 1] - tipY) * ft; }
+      let entry = full ? cache[i] : null, curve, poly;
+      if (entry) { curve = entry.curve; poly = entry.poly; }
+      else {
+        curve = new Path2D();
+        curve.moveTo(xs[0], yS[row]);
+        for (let k = 1; k <= kLast; k++) curve.lineTo(xs[k], yS[row + k]);
+        if (hasTip) curve.lineTo(tipX, tipY);
+        // the ground under a line hides whatever lies behind it: erase, so the page shows through
+        poly = new Path2D(curve);
+        const floorY = lineBase[i] + 4;
+        poly.lineTo(tipX, floorY); poly.lineTo(-2, floorY); poly.closePath();
+        if (full) entry = cache[i] = { curve, poly, bins: null };
+      }
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.globalAlpha = 1; ctx.fillStyle = '#000'; ctx.fill(poly);
+      ctx.globalCompositeOperation = 'source-over';
+
+      const a0 = 0.34 + 0.6 * Math.pow(t, 0.75), w0 = 0.62 + 0.42 * t;
+      if (!zoned) {
+        ctx.lineCap = 'round';
+        ctx.globalAlpha = a0; ctx.lineWidth = w0; ctx.strokeStyle = '#1A1A18'; ctx.stroke(curve);
+      } else {
+        if (!entry.bins) entry.bins = binsFor(i);
+        const { idx, paths } = entry.bins;
+        ctx.lineCap = 'butt';
+        for (let n = 0; n < idx.length; n++) {
+          const b = idx[n], pth = paths[n];
+          if (palE[b] > 0.01) {                  // the arctic zone: a fine ink edge under the icy line
+            ctx.globalAlpha = Math.min(1, a0 * 1.25) * 0.8 * palE[b]; ctx.lineWidth = w0 + palW[b] + 1.1; ctx.strokeStyle = '#1A1A18';
+            ctx.stroke(pth);
+          }
+          ctx.globalAlpha = Math.min(1, a0 * palA[b]); ctx.lineWidth = w0 + palW[b]; ctx.strokeStyle = palC[b];
+          ctx.stroke(pth);
+        }
+      }
+      drawRoute(i);
+    }
+    // the ruled lines fade into the page at both edges
+    if (sx0 > 1) {
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'destination-out';
+      const e = sx0 * 0.92;
+      let g = ctx.createLinearGradient(0, 0, e, 0);
+      g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, e, H);
+      g = ctx.createLinearGradient(W, 0, W - e, 0);
+      g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.fillRect(W - e, 0, e, H);
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // ------------------------------------------------------------------ loop
+  let raf = 0, last = 0, onScreen = false, paused = false, started = false, lastDraw = 0;
+  const costs = [];
+  const canRun = () => onScreen && !document.hidden && !mqReduce.matches && !paused;
+  function kick() {
+    if (raf || !canRun() || !G) return;
+    last = performance.now();
+    raf = requestAnimationFrame(frame);
+  }
+
+  function frame(now) {
+    raf = 0;
+    if (!canRun()) return;
+    const t0 = performance.now();
+    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
+    last = now;
+    let drawing = false;
+    if (!doneDrawing && drawT >= 0) {
+      drawT += dt;
+      if (drawT >= totalDraw()) { doneDrawing = true; lifeT = 0; }
+      drawing = true;
+    } else if (doneDrawing && !still) lifeT += dt;
+    const busy = drawing || (doneDrawing && !still);
+    if (doneDrawing) updateLife();
+    // the slow tide and band need no more than ~30 redraws a second
+    const throttle = doneDrawing && now - lastDraw < 30;
+    if (busy && !throttle) {
+      draw(); lastDraw = now;
+      costs.push(performance.now() - t0);
+      if (costs.length > 240) costs.shift();
+    }
+    if (busy) raf = requestAnimationFrame(frame);
+  }
+
+  function finishNow() {
+    drawT = totalDraw(); doneDrawing = true; started = true; still = true;
+    updateLife(); draw();
+  }
+  function startDrawIn() {
+    if (started) return;
+    started = true;
+    if (mqReduce.matches || paused) { finishNow(); return; }
+    drawT = 0;
+    kick();
+  }
+
+  // start drawing once a good part of the band is on screen; pause whenever it is off screen
+  new IntersectionObserver((es) => {
+    const e = es[es.length - 1];
+    onScreen = e.isIntersecting;
+    if (G && e.intersectionRatio >= 0.3) startDrawIn();
+    if (onScreen) kick();
+  }, { threshold: [0, 0.3, 0.6] }).observe(band);
+  document.addEventListener('visibilitychange', kick);
+  let lastW = 0;
+  new ResizeObserver(() => {
+    if (!G) return;
+    const w = Math.round(band.clientWidth), h = Math.round(band.clientHeight);
+    if (w === lastW && h === H) return;
+    lastW = w;
+    layout(); if (doneDrawing) updateLife(); draw();
+  }).observe(band);
+  const onPref = () => { if (mqReduce.matches) finishNow(); else { still = false; kick(); } };
+  if (mqReduce.addEventListener) mqReduce.addEventListener('change', onPref); else mqReduce.addListener(onPref);
+
+  toggle.addEventListener('click', () => {
+    paused = !paused;
+    toggle.textContent = paused ? 'Play motion' : 'Pause motion';
+    if (paused) {
+      if (raf) cancelAnimationFrame(raf); raf = 0;
+      if (started && !doneDrawing) finishNow();
+    } else { if (still && !mqReduce.matches) { still = false; lifeT = BAND_AT; } kick(); }
+  });
+
+  // ------------------------------------------------------------------ boot
+  const getJSON = (u) => fetch(u).then((r) => (r.ok ? r.json() : Promise.reject(new Error(u + ' ' + r.status))));
+  Promise.all([getJSON('../_shared/kilimanjaro-full-terrain.json'), getJSON('../_shared/kili-route-machame.json').catch((e) => { console.error(e); return null; })])
+    .then(([data, route]) => {
+      GR = data.heights.length; GC = data.heights[0].length;
+      G = new Float32Array(GR * GC);
+      for (let r = 0; r < GR; r++) for (let c = 0; c < GC; c++) G[r * GC + c] = data.heights[r][c];
+      cellM = data.cellMetres || 229;
+      for (const p of data.points || []) {
+        if (/Uhuru/.test(p.name)) summit = [p.col, p.row];
+        if (/Mawenzi/.test(p.name)) mawenzi = [p.col, p.row];
+      }
+      ROUTE = route;
+      layout();
+      lastW = W;
+      const r = band.getBoundingClientRect();
+      const vis = Math.max(0, Math.min(r.bottom, innerHeight) - Math.max(r.top, 0)) / Math.max(1, r.height);
+      if (mqReduce.matches) finishNow();
+      else if (vis >= 0.3) startDrawIn();
+      else draw();
+    })
+    .catch((err) => { console.error(err); });
+
+  // debug and verification hooks
+  window.__ridges = {
+    get cost() { const c = costs.slice().sort((a, b) => a - b); return c.length ? { n: c.length, median: +c[c.length >> 1].toFixed(3), p95: +c[Math.floor(c.length * 0.95)].toFixed(3), max: +c[c.length - 1].toFixed(3) } : null; },
+    get state() { return { N, K, W, H, drawT: +drawT.toFixed(2), doneDrawing, lifeT: +lifeT.toFixed(2), tideH: Math.round(tideH), bandH: Math.round(bandH), routeLen: Math.round(routeLen), RTOT: Math.round(RTOT), raf: !!raf }; },
+    seek(t) { lifeT = t; updateLife(); draw(); },
+    finish: finishNow,
+    resetCost() { costs.length = 0; },
+  };
+})();
+</script>
+</body>
+</html>

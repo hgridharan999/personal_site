@@ -1,6 +1,6 @@
 import { HEADER, NBSP } from './content';
-import HikerMark from './HikerMark';
 import { ICONS } from './icons';
+import Mark from './Mark';
 import MountainPlate from './MountainPlate';
 import { SmartLink } from './rows';
 
@@ -33,7 +33,7 @@ function Actions() {
 }
 
 /**
- * The lockup: hiker mark beside the name, then affiliation, what he is looking for and the contact
+ * The lockup: the hg mark beside the name, then affiliation, what he is looking for and the contact
  * icons. On wide screens the mountain plate sits behind the right-hand side.
  */
 export default function Header() {
@@ -42,7 +42,7 @@ export default function Header() {
     <header className="wrap">
       <MountainPlate />
       <div className="top">
-        <HikerMark />
+        <Mark />
         <h1 className="name">
           <span className="hari">{name.first}</span>{' '}
           <span className="sur">{name.last}</span>

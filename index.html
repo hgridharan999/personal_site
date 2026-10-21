@@ -45,9 +45,11 @@
     <meta name="robots" content="index,follow" />
     <!-- No canonical link or Open Graph URL here: this file is served for every route. -->
 
-    <!-- Site icon: the hiker on a dark tile -->
-    <link rel="icon" href="/favicon.ico" sizes="any" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <!-- Site icon: the hg mark. The SVG follows the browser's light or dark theme; the .ico and
+         PNG (a white tile) and the apple-touch-icon are fallbacks. The .ico says 32x32 rather
+         than "any" so that Chrome does not pick it over the SVG. -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
     <!-- Link previews -->

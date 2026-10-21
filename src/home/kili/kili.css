@@ -1,0 +1,91 @@
+/* The ending: Kilimanjaro as stacked ink lines, then the footer. Ported from
+   concepts/lab2/kili-next-colour.html. Every rule is scoped under .hm; the tokens (--sans,
+   --gutter, --soft, --cream for ink, --tan for blue) come from the page root in home.css. */
+
+.hm .kili-next { margin-bottom: 40px; }
+
+/* ---------- The band: a canvas with HTML labels over it. Its height is reserved from the first
+   paint, so nothing jumps when the drawing arrives. overflow-x only: the peak label stands
+   above the band's top edge. ---------- */
+.hm .kili-band {
+  --band-h: 290px;
+  position: relative; height: var(--band-h); margin-top: 28px; overflow-x: clip;
+}
+@media (min-width: 600px)  { .hm .kili-band { --band-h: 330px; } }
+@media (min-width: 1000px) { .hm .kili-band { --band-h: 360px; } }
+.hm .kili-band canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* the two peaks: a name, an optional height, and a tick down to the ridge */
+.hm .kili-peak {
+  position: absolute; left: 0; top: 0; pointer-events: none; white-space: nowrap;
+  font: 400 12px/1 var(--sans); letter-spacing: 0; color: var(--soft); font-variant-numeric: tabular-nums;
+  opacity: 0; transform: translate(-50%, -100%);
+}
+.hm .kili-peak::after { content: ""; display: block; width: 1px; height: 9px; margin: 3px auto 0; background: rgba(26, 26, 24, 0.45); }
+.hm .kili-peak.on { opacity: 1; }
+.hm .kili-t { display: block; padding: 2px 5px; text-align: center; }
+.hm .kili-nm { display: block; font: 500 14px/1.2 var(--sans); letter-spacing: -0.01em; color: var(--cream); }
+.hm .kili-sub { display: block; margin-top: 3px; font: 400 12px/1.2 var(--sans); color: var(--soft); }
+.hm .kili-peak--quiet::after { height: 7px; background: rgba(26, 26, 24, 0.28); }
+
+/* the legend: the five climates, summit first, then the route */
+.hm .kili-key {
+  position: absolute; right: var(--gutter); top: 4px; pointer-events: none;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 5px;
+  font: 400 12px/1 var(--sans); letter-spacing: 0; color: var(--soft); opacity: 0;
+}
+.hm .kili-key.on { opacity: 1; }
+.hm .kili-key span { display: flex; align-items: center; gap: 7px; }
+.hm .kili-key i { display: block; width: 14px; height: 3px; border-radius: 1px; background: var(--z); }
+.hm .kili-z1 { --z: #AA9254; }
+.hm .kili-z2 { --z: #247040; }
+.hm .kili-z3 { --z: #7A9442; }
+.hm .kili-z4 { --z: #B07A4C; }
+.hm .kili-z5 { --z: #4E96C8; }
+.hm .kili-z5 i { box-shadow: 0 0 0 0.75px rgba(26, 26, 24, 0.7); }
+.hm .kili-route i { height: 0; background: none; border-top: 1.5px dashed var(--tan); border-radius: 0; }
+
+/* the camp names beside their dots */
+.hm .kili-wp {
+  position: absolute; left: 0; top: 0; pointer-events: none; white-space: nowrap; opacity: 0;
+  font: 400 12px/1 var(--sans); letter-spacing: 0; color: var(--soft);
+}
+.hm .kili-wp span { display: block; padding: 2px 4px; background: rgba(255, 255, 255, 0.86); border-radius: 2px; }
+.hm .kili-wp--r { transform: translate(5px, -50%); }
+.hm .kili-wp--l { transform: translate(calc(-100% - 5px), -50%); }
+.hm .kili-wp.on { opacity: 1; }
+/* the drawing could not load: no blank gap above the footer */
+.hm .kili-band[data-failed] { display: none; }
+
+/* Phones: the mountain fills the band, so the legend would sit on the camp labels, and a label
+   set left of its dot runs off the screen. Drop the legend and set every camp name to the right. */
+@media (max-width: 599px) {
+  .hm .kili-key { display: none; }
+  .hm .kili-wp--l { transform: translate(5px, -50%); }
+}
+
+/* ---------- The footer, light ---------- */
+.hm .kili-foot { background: var(--bg); color: var(--cream); }
+.hm .kili-foot-in { max-width: calc(680px + var(--gutter) * 2); margin: 0 auto; padding: 22px var(--gutter) 28px; }
+/* phones: the fixed cookie pill covers the bottom of the page, so lift the toggle and the date above it */
+@media (max-width: 599px) { .hm .kili-foot-in { padding-bottom: 64px; } }
+.hm .kili-foot-open { margin: 0 0 4px; font: 400 14px/1.6 var(--sans); color: var(--cream); text-wrap: pretty; }
+.hm .kili-foot-contact { margin: 0; font: 400 14px/1.8 var(--sans); }
+.hm .kili-dot { color: var(--soft); }
+/* min-height holds the line open for the pause toggle, so the date does not drop when it arrives */
+.hm .kili-foot-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-top: 6px; min-height: 44px; }
+.hm .kili-foot-line p, .hm .kili-toggle { margin: 0; font: 400 12.5px/1.4 var(--sans); letter-spacing: -0.1px; color: var(--soft); }
+.hm .kili-toggle {
+  background: none; border: 0; padding: 0; min-height: 44px; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(110, 109, 104, 0.5);
+}
+.hm .kili-toggle:focus-visible { outline: 2px solid var(--tan); outline-offset: 3px; border-radius: 2px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .hm .kili-toggle:hover { color: var(--tan); text-decoration-color: var(--tan); }
+}
+/* the labels fade in as the route reaches them; with reduced motion they are simply there */
+@media (prefers-reduced-motion: no-preference) {
+  .hm .kili-peak, .hm .kili-key, .hm .kili-wp { transition: opacity 0.7s var(--ease); }
+  .hm .kili-toggle { transition: color 0.2s var(--ease), text-decoration-color 0.2s var(--ease); }
+}

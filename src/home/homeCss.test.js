@@ -116,15 +116,15 @@ describe('home.css scoping', () => {
   it('prefixes every keyframe name with hm- and uses each of them', () => {
     const names = [...withoutComments.matchAll(/@keyframes\s+([\w-]+)/g)].map((match) => match[1]);
     expect(names.sort()).toEqual(
-      ['hm-hiker-ink', 'hm-scene-ink', 'hm-tri-in', 'hm-trail-open', 'hm-trail-text'].sort(),
+      ['hm-mark-in', 'hm-scene-ink', 'hm-tri-in', 'hm-trail-open', 'hm-trail-text'].sort(),
     );
     for (const name of names) {
       expect(css, name).toMatch(new RegExp(`animation:[^;]*\\b${name}\\b`));
     }
   });
 
-  it('leaves the ending to band.css', () => {
-    const offenders = selectors.filter((selector) => /\.(band|deep)\b|\.deep-|motion-toggle/.test(selector));
+  it('leaves the ending to kili/kili.css', () => {
+    const offenders = selectors.filter((selector) => /\.kili|\.(band|deep)\b|\.deep-|motion-toggle/.test(selector));
     expect(offenders).toEqual([]);
   });
 

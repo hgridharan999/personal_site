@@ -244,7 +244,7 @@ describe('homepage content: footer', () => {
     const { open, updated, motion } = content.FOOTER;
     expect(open).toMatch(/Summer.2027 internship in New.York or San.Francisco/);
     expect(updated).toEqual({ label: 'Last updated', date: 'Oct 2026', datetime: '2026-10' });
-    expect(motion).toEqual({ pause: 'Pause motion', play: 'Play motion' });
+    expect(motion).toEqual({ pause: 'Pause motion', play: 'Play motion', stopped: 'Motion paused', playing: 'Motion playing' });
   });
 });
 
@@ -301,3 +301,18 @@ describe('homepage content: resume match', () => {
     expect(adobe.meta).toEqual(['Remote']);
   });
 });
+
+describe('homepage content: next climb', () => {
+  it('names the mountain, the route and the summit in plain words', () => {
+    const { title, lead, rest, summit, zones, route } = content.NEXT_CLIMB;
+    expect(title).toBe('Next climb');
+    expect(lead).toBe('Kilimanjaro, Tanzania.');
+    expect(rest).toMatch(/Machame route/);
+    expect(summit.name).toBe('Uhuru Peak');
+    expect(summit.height).toBe('19,341 ft');
+    expect(zones).toEqual(['Cultivation', 'Rainforest', 'Heath and moorland', 'Alpine desert', 'Arctic summit']);
+    expect(route).toBe('Planned route');
+    expect(JSON.stringify(content.NEXT_CLIMB)).not.toMatch(/\u2014/);
+  });
+});
+

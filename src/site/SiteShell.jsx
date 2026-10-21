@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-import HikerMark from '../home/HikerMark';
+import Mark from '../home/Mark';
 import { useHomeDocument } from '../home/useHomeDocument';
 import SiteFooter from './SiteFooter';
 import { useDocumentTitle } from './useDocumentTitle';
@@ -27,7 +27,7 @@ export default function SiteShell({ title, docTitle = title, intro, wide = false
     <div className={`hm sp${wide ? ' sp-wide' : ''}`}>
       <header className="wrap sp-top">
         <Link to="/" className="sp-home">
-          <HikerMark />
+          <Mark />
           <span className="sp-name"><span className="sp-hari">Hari</span> Gridharan</span>
           <span className="sr-only">, home</span>
         </Link>

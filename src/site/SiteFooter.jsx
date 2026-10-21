@@ -5,7 +5,7 @@ import { CONTACT_LINKS, FOOTER } from '../home/content';
 import { SmartLink } from '../home/rows';
 
 /**
- * The homepage's ending without the water: how to reach Hari, then the legal page and the date
+ * The homepage's footer without the mountain: how to reach Hari, then the legal page and the date
  * the site was last updated. Copy and links come from home/content.js so both stay in step.
  */
 export default function SiteFooter() {
