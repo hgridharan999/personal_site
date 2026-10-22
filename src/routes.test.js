@@ -141,6 +141,11 @@ describe('sitemap.xml', () => {
 describe('WritingPage.jsx', () => {
   const src = read('src/site/WritingPage.jsx');
 
+  it('lists the essays first, then the ten bullet points', () => {
+    expect(src.indexOf('sp-essays-head')).toBeGreaterThan(-1);
+    expect(src.indexOf('sp-essays-head')).toBeLessThan(src.indexOf('sp-points-head'));
+  });
+
   it('is titled Writing, from the homepage content', () => {
     expect(src).toContain('<SiteShell title={title}>');
     expect(src).toMatch(/const \{ title,[^}]*\} = WRITING;/);

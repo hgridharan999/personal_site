@@ -25,13 +25,21 @@ function ThesisRow({ thesis }) {
 }
 
 /**
- * Writing, in three parts: ten lines about me, the essays (the same rows the homepage lists, from
- * the same data), and the investment and research theses once one is published.
+ * Writing, in three parts: the essays (the same rows the homepage lists, from the same data), ten
+ * lines about me, and the investment and research theses once one is published.
  */
 export default function WritingPage() {
   const { title, note, essaysLabel, essays } = WRITING;
   return (
     <SiteShell title={title}>
+      <section aria-labelledby="sp-essays-head">
+        <h2 className="head" id="sp-essays-head">{essaysLabel}</h2>
+        <p className="note">{note}</p>
+        <ul role="list" className="theses-more essays">
+          {essays.map((essay) => <EssayRow key={essay.slug} essay={essay} />)}
+        </ul>
+      </section>
+
       <section aria-labelledby="sp-points-head">
         <h2 className="head" id="sp-points-head">Me in 10 bullet points</h2>
         <ol role="list" className="sp-points">
@@ -43,14 +51,6 @@ export default function WritingPage() {
             </li>
           ))}
         </ol>
-      </section>
-
-      <section aria-labelledby="sp-essays-head">
-        <h2 className="head" id="sp-essays-head">{essaysLabel}</h2>
-        <p className="note">{note}</p>
-        <ul role="list" className="theses-more essays">
-          {essays.map((essay) => <EssayRow key={essay.slug} essay={essay} />)}
-        </ul>
       </section>
 
       {PUBLISHED_THESES.length > 0 && (
