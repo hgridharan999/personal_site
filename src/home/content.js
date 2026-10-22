@@ -147,7 +147,7 @@ export const ON_CAMPUS = {
       rest: ` to${_}campus.`,
       body: [
         'Run a speaker series bringing Paul Graham, Scott Nolan, Cory Levy and Tony Dang to campus for audiences of 150+ per talk.',
-        `Since Sep${_}2025 the club’s reels have drawn 150,000+ views on Instagram, and its posts 350,000+ impressions on LinkedIn.`,
+        `Since Sep${_}2025 the club’s reels have drawn 850,000+ views on Instagram, and its posts 350,000+ impressions on LinkedIn.`,
         'Scout and evaluate student-led startups across technical verticals, building investment theses and operating strategies for each.',
       ],
       meta: ['Ithaca, NY'],
