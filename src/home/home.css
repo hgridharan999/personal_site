@@ -108,6 +108,12 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
 }
 .hm .ico:focus-visible { color: var(--tan); outline-offset: 0; border-radius: 6px; }
 .hm .ico:focus-visible .ico-tip { visibility: visible; opacity: 1; }
+/* Writing: a plain word after the icons, the same 40px height, grey like them and blue on hover */
+.hm .act-txt {
+  display: inline-flex; align-items: center; min-height: 40px; padding: 0 10px;
+  font: 400 14px/1 var(--sans); letter-spacing: -0.1px; color: var(--soft); text-decoration: none;
+}
+.hm .act-txt:focus-visible { color: var(--tan); outline-offset: 0; border-radius: 6px; }
 /* a plain button, used by the climate page's retry */
 .hm .btn {
   display: inline-flex; align-items: center; justify-content: center;
@@ -310,6 +316,7 @@ html.hm-page ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.28); border-colo
   }
   .hm a, .hm .btn, .hm .co, .hm .row, .hm .rl .val { transition: color 0.2s var(--ease), background-color 0.2s var(--ease), border-color 0.2s var(--ease), text-decoration-color 0.2s var(--ease); }
   .hm .ico-tip { transition: opacity 0.2s var(--ease), visibility 0.2s var(--ease); }
+  .hm .act-txt { transition: color 0.2s var(--ease); }
   @media (hover: hover) and (pointer: fine) {
     .hm .row:hover::before, .hm .row:has(:focus-visible)::before { animation: hm-tri-in 0.25s var(--ease) both; }
   }

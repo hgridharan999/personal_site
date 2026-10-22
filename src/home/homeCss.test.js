@@ -199,6 +199,12 @@ describe('home.css covers the classes the components use', () => {
 describe('home.css: header contact icons', () => {
   const declarationsOf = (selector) => rulesIn(css).find((rule) => rule.prelude === selector)?.body ?? null;
 
+  it('sets Writing as a plain word, no outline, with the same 40px height as the icons', () => {
+    const word = declarationsOf('.hm .act-txt');
+    expect(word).toContain('min-height: 40px');
+    expect(word).not.toMatch(/border:/);
+  });
+
   it('gives each icon a 40px target', () => {
     expect(declarationsOf('.hm .ico')).toMatch(/width: 40px;[\s\S]*height: 40px/);
   });

@@ -7,7 +7,12 @@
     },
     {
       "source": "/blog",
-      "destination": "/theses",
+      "destination": "/writing",
+      "statusCode": 301
+    },
+    {
+      "source": "/theses",
+      "destination": "/writing",
       "statusCode": 301
     },
     {
@@ -17,7 +22,7 @@
     },
     {
       "source": "/ascent/theses",
-      "destination": "/theses",
+      "destination": "/writing",
       "statusCode": 301
     },
     {

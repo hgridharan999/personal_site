@@ -42,6 +42,8 @@ export const HEADER = {
   },
   actions: {
     resume: { label: 'Resume', href: RESUME_HREF, icon: 'file', sr: A11Y.pdf },
+    // the one word in the icon row: the essays and theses live on /writing
+    writing: { label: 'Writing', href: '/writing' },
     email: { label: 'Email', href: 'mailto:hg532@cornell.edu', icon: 'mail' },
     social: [
       { label: 'LinkedIn', href: 'https://www.linkedin.com/in/harigridharan1/', icon: 'linkedin' },
@@ -268,7 +270,7 @@ export const WRITING = {
       when: nb('Feb 2026'),
     },
   ],
-  thesesLink: { label: 'Me in 10 bullet points', href: '/theses' },
+  thesesLink: { label: 'Me in 10 bullet points', href: '/writing' },
 };
 
 export const OFF_CLOCK = {

@@ -5,13 +5,14 @@ import MountainPlate from './MountainPlate';
 import { SmartLink } from './rows';
 
 /**
- * Email, LinkedIn, GitHub and the resume as a row of quiet icons. Each is a real link with a 40px
- * target: its name is screen-reader text (SmartLink adds "opens in new tab", the data adds "(PDF)"),
- * and a small word label shows under the icon on hover and focus. An icon name with no drawing falls
- * back to the plain word, so a typo in content.js can never blank the page.
+ * Email, LinkedIn, GitHub and the resume as a row of quiet icons, then Writing as a word. Each icon
+ * is a real link with a 40px target: its name is screen-reader text (SmartLink adds "opens in new
+ * tab", the data adds "(PDF)"), and a small word label shows under the icon on hover and focus. An
+ * icon name with no drawing falls back to the plain word, so a typo in content.js can never blank
+ * the page.
  */
 function Actions() {
-  const { resume, email, social } = HEADER.actions;
+  const { resume, email, social, writing } = HEADER.actions;
   return (
     <div className="act">
       {[email, ...social, resume].map(({ label, href, icon, sr }) => {
@@ -28,6 +29,7 @@ function Actions() {
           </SmartLink>
         );
       })}
+      <SmartLink className="act-txt" href={writing.href}>{writing.label}</SmartLink>
     </div>
   );
 }

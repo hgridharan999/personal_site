@@ -8,10 +8,10 @@ const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const read = (rel) => readFileSync(ROOT + rel, 'utf8');
 
 const LIGHT = [
-  '/', '/hiking', '/hiking/', '/HIKING', '/theses', '/blog/tat-tvam-asi',
+  '/', '/hiking', '/hiking/', '/HIKING', '/writing', '/blog/tat-tvam-asi',
   '/climate-search', '/privacy', '/terms', '/legal',
 ];
-const NOT_LIGHT = ['/login', '/me', '/me/poker', '/blog', '/blog/a/b', '/hikingx', '/x'];
+const NOT_LIGHT = ['/login', '/me', '/me/poker', '/blog', '/theses', '/blog/a/b', '/hikingx', '/x'];
 
 const FONTS = ['/fonts/geist-latin.woff2', '/fonts/instrument-serif-italic-latin.woff2'];
 const PLATE = '/mountain-plate.webp';

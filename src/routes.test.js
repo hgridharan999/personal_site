@@ -9,16 +9,17 @@ const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const read = (rel) => readFileSync(ROOT + rel, 'utf8');
 
 const SITE = 'https://www.harigridharan.com';
-const REMOVED = ['/work', '/projects', '/thesis', '/trailsense', '/ascent', '/climbing', '/blog'];
-const KEPT = ['/', '/hiking', '/theses', '/blog/:slug', '/climate-search', '/privacy', '/terms', '/legal', '/login', '/me'];
+const REMOVED = ['/work', '/projects', '/thesis', '/trailsense', '/ascent', '/climbing', '/blog', '/theses'];
+const KEPT = ['/', '/hiking', '/writing', '/blog/:slug', '/climate-search', '/privacy', '/terms', '/legal', '/login', '/me'];
 // Public pages a sitemap may list (/login and /me are disallowed in robots.txt).
-const PUBLIC_STATIC = new Set(['/', '/hiking', '/theses', '/climate-search', '/privacy', '/terms', '/legal']);
+const PUBLIC_STATIC = new Set(['/', '/hiking', '/writing', '/climate-search', '/privacy', '/terms', '/legal']);
 
 const EXPECTED_REDIRECTS = {
   '/climbing': '/hiking',
-  '/blog': '/theses',
+  '/blog': '/writing',
+  '/theses': '/writing',
   '/ascent/hiking': '/hiking',
-  '/ascent/theses': '/theses',
+  '/ascent/theses': '/writing',
   '/work': '/',
   '/projects': '/',
   '/thesis': '/',
@@ -76,7 +77,7 @@ describe('App.jsx routes', () => {
   it('lazy-loads the restyled pages from src/site and keeps the legal page', () => {
     const pages = {
       HikingPage: './site/hiking/HikingPage',
-      ThesesPage: './site/ThesesPage',
+      WritingPage: './site/WritingPage',
       PostPage: './site/PostPage',
       ClimateSearchPage: './site/climate/ClimateSearchPage',
       LegalPage: './pages/LegalPage',
@@ -85,7 +86,7 @@ describe('App.jsx routes', () => {
       expect(app, name).toContain(`const ${name} = lazy(() => import('${file}'));`);
       expect(existsSync(`${ROOT}src/${file.slice(2)}.jsx`), file).toBe(true);
     }
-    for (const [path, name] of [['/hiking', 'HikingPage'], ['/theses', 'ThesesPage'], ['/blog/:slug', 'PostPage'], ['/climate-search', 'ClimateSearchPage']]) {
+    for (const [path, name] of [['/hiking', 'HikingPage'], ['/writing', 'WritingPage'], ['/blog/:slug', 'PostPage'], ['/climate-search', 'ClimateSearchPage']]) {
       expect(app, path).toContain(`<Route path="${path}" element={<${name} />} />`);
     }
   });
@@ -137,8 +138,13 @@ describe('sitemap.xml', () => {
   });
 });
 
-describe('ThesesPage.jsx', () => {
-  const src = read('src/site/ThesesPage.jsx');
+describe('WritingPage.jsx', () => {
+  const src = read('src/site/WritingPage.jsx');
+
+  it('is titled Writing, from the homepage content', () => {
+    expect(src).toContain('<SiteShell title={title}>');
+    expect(src).toMatch(/const \{ title,[^}]*\} = WRITING;/);
+  });
 
   it('no longer links to the removed /thesis page', () => {
     expect(src).not.toContain("'/thesis'");

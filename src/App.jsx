@@ -10,7 +10,7 @@ import ScrollToTop from './components/ScrollToTop';
 const PrivateShell = lazy(() => import('./private/PrivateShell'));
 const RequireAuth = lazy(() => import('./private/RequireAuth'));
 const HikingPage = lazy(() => import('./site/hiking/HikingPage'));
-const ThesesPage = lazy(() => import('./site/ThesesPage'));
+const WritingPage = lazy(() => import('./site/WritingPage'));
 const PostPage = lazy(() => import('./site/PostPage'));
 const ClimateSearchPage = lazy(() => import('./site/climate/ClimateSearchPage'));
 const LegalPage = lazy(() => import('./pages/LegalPage'));
@@ -46,7 +46,7 @@ function AnimatedRoutes() {
           and vercel.json 301s their old URLs. */}
       <Route path="/" element={<HomePage />} />
       <Route path="/hiking" element={<HikingPage />} />
-      <Route path="/theses" element={<ThesesPage />} />
+      <Route path="/writing" element={<WritingPage />} />
       <Route path="/blog/:slug" element={<PostPage />} />
 
       <Route path="/climate-search" element={<ClimateSearchPage />} />

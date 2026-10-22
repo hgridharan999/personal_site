@@ -16,7 +16,7 @@
     <script>
       (function () {
         var home = location.pathname === '/';
-        var light = home || /^\/(hiking|theses|climate-search|privacy|terms|legal|blog\/[^/]+)\/?$/i.test(location.pathname);
+        var light = home || /^\/(hiking|writing|climate-search|privacy|terms|legal|blog\/[^/]+)\/?$/i.test(location.pathname);
         if (!light) return;
         document.documentElement.classList.add('hm-page');
         document.querySelector('meta[name="theme-color"]').setAttribute('content', '#FFFFFF');

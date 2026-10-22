@@ -18,7 +18,7 @@ const siteFiles = walk(SITE);
 // the pages App.jsx serves from the shell, plus the legal page, which was restyled in place
 const ROUTED = [
   join(SITE, 'hiking', 'HikingPage.jsx'),
-  join(SITE, 'ThesesPage.jsx'),
+  join(SITE, 'WritingPage.jsx'),
   join(SITE, 'PostPage.jsx'),
   join(SITE, 'climate', 'ClimateSearchPage.jsx'),
   LEGAL,

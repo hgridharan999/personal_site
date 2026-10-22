@@ -7,7 +7,7 @@ import * as content from './content.js';
 import { ICONS } from './icons.jsx';
 
 const POSTS_DIR = fileURLToPath(new URL('../blog/posts/', import.meta.url));
-const KEPT_ROUTES = new Set(['/', '/hiking', '/theses', '/climate-search']);
+const KEPT_ROUTES = new Set(['/', '/hiking', '/writing', '/climate-search']);
 // Hidden from every listing on purpose; the URL still works for anyone who has it.
 const HIDDEN_SLUGS = new Set(HIDDEN_POST_SLUGS);
 const RESUME_PATH = '/Hari_Gridharan_Resume.pdf';
@@ -95,6 +95,10 @@ describe('homepage content: links', () => {
     for (const action of actions) expect(Object.keys(ICONS), action.label).toContain(action.icon);
   });
 
+  it('links Writing from the header, as a word after the icons, to the writing page', () => {
+    expect(content.HEADER.actions.writing).toEqual({ label: 'Writing', href: '/writing' });
+  });
+
   it('keeps the resume "(PDF)" text in the data, shared by the header icon and the footer link', () => {
     expect(content.HEADER.actions.resume.sr).toBe(content.A11Y.pdf);
     expect(content.CONTACT_LINKS[0].sr).toBe(content.A11Y.pdf);
@@ -114,7 +118,7 @@ describe('homepage content: links', () => {
   });
 
   it('sends the theses link and the trail log to routes that still exist', () => {
-    expect(content.WRITING.thesesLink.href).toBe('/theses');
+    expect(content.WRITING.thesesLink.href).toBe('/writing');
     const mountaineering = content.OFF_CLOCK.rows.find((row) => row.co === 'Mountaineering');
     expect(mountaineering.meta.find((item) => item.href).href).toBe('/hiking');
     const climate = content.PROJECTS.rows.find((row) => row.co === 'Climate startup search');

@@ -57,7 +57,7 @@ export default function PostPage() {
   if (!loaded.post) {
     return (
       <SiteShell title="Post not found" intro="There is no post at this address.">
-        <p className="sp-text sp-lost"><SmartLink href="/theses" arrow>See the essays</SmartLink></p>
+        <p className="sp-text sp-lost"><SmartLink href="/writing" arrow>See the essays</SmartLink></p>
       </SiteShell>
     );
   }
