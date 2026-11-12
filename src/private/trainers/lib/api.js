@@ -12,7 +12,8 @@ export async function request(path, { method = 'GET', body, fetchImpl = fetch } 
   const res = await fetchImpl(path, {
     method,
     credentials: 'same-origin',
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    // The API's guard() rejects any write that is not JSON, even one with no payload.
+    headers: method === 'GET' ? undefined : { 'Content-Type': 'application/json' },
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await res.json().catch(() => ({}));

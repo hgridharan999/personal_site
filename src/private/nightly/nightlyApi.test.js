@@ -21,6 +21,22 @@ describe('nightlyApi', () => {
     expect(fetchImpl.mock.calls[0][1].method).toBe('POST');
   });
 
+  it('generate sends a JSON content type even though it has no body', async () => {
+    const fetchImpl = stub(201, { session: { id: ID, status: 'generated' } });
+    await generate({ fetchImpl });
+    const init = fetchImpl.mock.calls[0][1];
+    expect(init.method).toBe('POST');
+    expect(init.headers).toEqual({ 'Content-Type': 'application/json' });
+  });
+
+  it('getToday stays header- and body-less', async () => {
+    const fetchImpl = stub(200, { night: '2026-11-12', session: null });
+    await getToday({ fetchImpl });
+    const init = fetchImpl.mock.calls[0][1];
+    expect(init.headers).toBeUndefined();
+    expect(init.body).toBeUndefined();
+  });
+
   it('submit posts the body to /api/nightly?action=submit', async () => {
     const fetchImpl = stub(200, { session: { id: ID, status: 'submitted' } });
     const body = { sessionId: ID, answers: [{ idx: 0, answer: 'a' }], take: { storyIndex: 0, body: 't' } };

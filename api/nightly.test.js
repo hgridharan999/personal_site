@@ -215,6 +215,14 @@ describe('api/nightly: today', () => {
 });
 
 describe('api/nightly: generate', () => {
+  it('a body-less POST with no Content-Type is 415 (the client must send application/json)', async () => {
+    const { sql, model, call } = setup(READS('generated'));
+    const res = await call('generate', { contentType: '' });
+    expect(res.statusCode).toBe(415);
+    expect(model.generateBrief).not.toHaveBeenCalled();
+    expect(sql.queries).toHaveLength(0);
+  });
+
   it('when the claim fails: 202, and the model is not called', async () => {
     const { sql, model, call } = setup([
       ['FROM nightly_sessions WHERE date', [sessionRow('generating', { stories: null, niche: null, questions: null })]],
