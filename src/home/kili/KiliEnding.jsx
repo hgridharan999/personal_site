@@ -27,8 +27,9 @@ function Legend() {
  * `.hm` root: the styles are scoped to it.
  *
  * The band is decoration (the "Next climb" line above says it all in words), so all of it is
- * aria-hidden: the canvas, the labels, the legend and the door. It holds its height from the first paint,
- * blank, and the drawing code and terrain are only fetched when the band is a screen away.
+ * aria-hidden: the canvas, the labels, the legend and the door. It holds its height from the
+ * first paint, blank, and the drawing code and terrain are only fetched when the band is a
+ * screen away.
  */
 export default function KiliEnding() {
   const bandRef = useRef(null);
