@@ -104,9 +104,29 @@ describe('messageFor', () => {
     expect(messageFor(err(409, 'NOT_SUBMITTED'))).toBe('Nothing to grade yet.');
   });
 
-  it('falls back to a plain network message', () => {
+  it('says the model key is missing, rather than blaming the network', () => {
+    expect(messageFor(err(500, 'MODEL_NOT_CONFIGURED'))).toBe('The model key is not set on the server.');
+  });
+
+  it('adds the reason the server gave for a model failure, when there is one', () => {
+    const failed = (code, details) => Object.assign(err(502, code), { details });
+    expect(messageFor(failed('GENERATION_FAILED', { reason: 'BAD_URLS' })))
+      .toBe('The brief did not come together (reason: BAD_URLS). Try again.');
+    expect(messageFor(failed('GRADING_FAILED', { reason: 'TIMEOUT' })))
+      .toBe('Grading did not finish (reason: TIMEOUT). Try again.');
+    expect(messageFor(failed('GENERATION_FAILED', {}))).toBe('The brief did not come together. Try again.');
+    expect(messageFor(failed('GRADING_FAILED', { reason: 42 }))).toBe('Grading did not finish. Try again.');
+  });
+
+  it('uses a neutral server message for any other response the page cannot explain', () => {
+    expect(messageFor(err(500, 'INTERNAL'))).toBe('The server hit an error. Try again.');
+    expect(messageFor(err(503, 'HTTP_ERROR'))).toBe('The server hit an error. Try again.');
+    expect(messageFor(err(404, 'HTTP_ERROR'))).toBe('The server hit an error. Try again.');
+  });
+
+  it('blames the network only when no response came back', () => {
     expect(messageFor(new TypeError('Failed to fetch'))).toBe('Could not reach the server. Try again.');
-    expect(messageFor(err(500, 'INTERNAL'))).toBe('Could not reach the server. Try again.');
+    expect(messageFor(null)).toBe('Could not reach the server. Try again.');
   });
 });
 

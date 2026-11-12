@@ -31,7 +31,7 @@ export default function NightlyBrief({ stories = [], niche }) {
     <section className="nt-section" aria-labelledby="nt-brief-title">
       <h2 id="nt-brief-title" className="nt-section__title">The brief</h2>
       <ol className="nt-stories" role="list">
-        {stories.map((story, i) => <Item key={story.url ?? i} n={i + 1} item={story} />)}
+        {stories.map((story, i) => <Item key={i} n={i + 1} item={story} />)}
         {niche && <Item label={`Off the path · ${niche.topic}`} item={niche} />}
       </ol>
     </section>

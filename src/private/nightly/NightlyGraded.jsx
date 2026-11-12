@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { typeName } from './view';
+import { useCatchFocus } from './focus';
 import { Notice } from './NightlyStates';
 
 function ScoredAnswer({ answer }) {
@@ -15,34 +16,60 @@ function ScoredAnswer({ answer }) {
       </div>
       <p className="nt-prompt">{answer.prompt}</p>
       <p className="nt-prose nt-written">{answer.answer}</p>
-      <p className="nt-feedback">{answer.feedback}</p>
+      <p className="nt-feedback"><span className="nt-sr">Feedback: </span>{answer.feedback}</p>
     </li>
   );
 }
 
-/** Publish or Skip. Skip only hides the choice for this visit; publishing is one-way. */
+function Outcome({ outcome }) {
+  if (outcome === 'published') return <>Published on <Link to="/notes" className="nt-link">/notes</Link>.</>;
+  if (outcome === 'skipped') return 'Kept private.';
+  return null;
+}
+
+/**
+ * Publish or Skip. Skip only hides the choice for this visit; publishing is one-way. The outcome
+ * lands in a status line that is always on the page, and focus moves to it, since the buttons go.
+ */
 function PublishChoice({ take, publishing, notice, onPublish }) {
   const [skipped, setSkipped] = useState(false);
+  const statusRef = useRef(null);
+  const chose = useRef(false);
+  let outcome = null;
+  if (take.published) outcome = 'published';
+  else if (skipped) outcome = 'skipped';
 
-  if (take.published) {
-    return (
-      <p className="nt-muted nt-choice-done">
-        Published on <Link to="/notes" className="nt-link">/notes</Link>.
-      </p>
-    );
-  }
-  if (skipped) return <p className="nt-muted nt-choice-done">Kept private.</p>;
+  useEffect(() => {
+    if (outcome && chose.current) {
+      chose.current = false;
+      statusRef.current?.focus();
+    }
+  }, [outcome]);
+
+  // aria-disabled (not disabled) keeps a pressed button focusable while the publish runs.
+  const choose = (act) => () => {
+    if (publishing) return;
+    chose.current = true;
+    act();
+  };
 
   return (
-    <div className="nt-actions">
-      <div className="nt-confirm__buttons">
-        <button type="button" className="nt-btn nt-btn--primary" onClick={onPublish} disabled={publishing}>
-          {publishing ? 'Publishing…' : 'Publish to /notes'}
-        </button>
-        <button type="button" className="nt-btn" onClick={() => setSkipped(true)} disabled={publishing}>Skip</button>
-      </div>
-      <Notice notice={notice} />
-    </div>
+    <>
+      {!outcome && (
+        <div className="nt-actions">
+          <div className="nt-confirm__buttons">
+            <button type="button" className="nt-btn nt-btn--primary" aria-disabled={publishing} onClick={choose(onPublish)}>
+              {publishing ? 'Publishing…' : 'Publish to /notes'}
+            </button>
+            <button type="button" className="nt-btn" aria-disabled={publishing} onClick={choose(() => setSkipped(true))}>Skip</button>
+          </div>
+          <Notice notice={notice} />
+        </div>
+      )}
+      <p ref={statusRef} className="nt-muted nt-choice-done" role="status" tabIndex={-1}>
+        <Outcome outcome={outcome} />
+      </p>
+    </>
   );
 }
 
@@ -50,11 +77,13 @@ function PublishChoice({ take, publishing, notice, onPublish }) {
 export default function NightlyGraded({ session, publishing, notice, onPublish }) {
   const { answers = [], take, stories } = session;
   const story = stories?.[take.storyIndex];
+  const headingRef = useRef(null);
+  useCatchFocus(headingRef); // the Grading heading that held focus has just gone
 
   return (
     <>
       <section className="nt-section" aria-labelledby="nt-scores-title">
-        <h2 id="nt-scores-title" className="nt-section__title">Your answers, graded</h2>
+        <h2 id="nt-scores-title" className="nt-section__title" ref={headingRef} tabIndex={-1}>Your answers, graded</h2>
         <ol className="nt-answers" role="list">
           {answers.map((a) => <ScoredAnswer key={a.idx} answer={a} />)}
         </ol>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { NBSP } from '../home/content';
 import SiteShell from './SiteShell';
@@ -58,21 +58,32 @@ function Note({ note }) {
   );
 }
 
+/** The one status line, always on the page so each change is announced. */
+function statusLine(status, count) {
+  if (status === 'loading') return { text: 'Loading notes…', className: 'sp-status' };
+  if (status === 'empty') return { text: 'No notes yet.', className: 'sp-text' };
+  if (status === 'error') return { text: 'Could not load the notes.', className: 'sp-text' };
+  return { text: count === 1 ? '1 note.' : `${count} notes.`, className: 'sr-only' };
+}
+
 /** Short public takes, one a night, published from the private nightly page. Newest first. */
 export default function NotesPage() {
   const { status, notes, retry } = useNotes();
+  const statusRef = useRef(null);
+  const line = statusLine(status, notes.length);
+  // Try again goes away the moment it is pressed: focus moves to the status line, which stays.
+  const onRetry = () => {
+    statusRef.current?.focus();
+    retry();
+  };
 
   return (
     <SiteShell title="Notes" intro="Short takes, one a night.">
-      <section aria-label="Notes" aria-busy={status === 'loading'}>
-        {status === 'loading' && <p className="sp-status" role="status">Loading notes…</p>}
-        {status === 'empty' && <p className="sp-text">No notes yet.</p>}
-        {status === 'error' && (
-          <div className="sp-notes-fail" role="alert">
-            <p className="sp-text">Could not load the notes.</p>
-            <button type="button" className="btn btn-line" onClick={retry}>Try again</button>
-          </div>
-        )}
+      <section aria-label="Notes">
+        <div className="sp-notes-state">
+          <p ref={statusRef} className={line.className} role="status" tabIndex={-1}>{line.text}</p>
+          {status === 'error' && <button type="button" className="btn btn-line" onClick={onRetry}>Try again</button>}
+        </div>
         {status === 'ready' && (
           <ol role="list" className="sp-notes">
             {notes.map((note) => <Note key={note.date} note={note} />)}

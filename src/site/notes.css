@@ -13,7 +13,7 @@
 /* a 24px-plus target for the source link (WCAG 2.5.8) */
 .sp .sp-note-on a { display: inline-block; padding: 3px 0; }
 
-.sp .sp-notes-fail { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.sp .sp-notes-state { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
 
 @media (hover: hover) and (pointer: fine) {
   .sp .sp-note-on a:hover { color: var(--tan); text-decoration-color: var(--ul-tan); }

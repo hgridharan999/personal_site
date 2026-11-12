@@ -52,19 +52,35 @@ export function viewFor(today, ui = {}) {
 
 const MESSAGES = {
   NIGHT_CLOSED: 'This night closed at 3am. Your draft is saved on this device.',
-  GENERATION_FAILED: 'The brief did not come together. Try again.',
-  GRADING_FAILED: 'Grading did not finish. Try again.',
+  MODEL_NOT_CONFIGURED: 'The model key is not set on the server.',
   NOT_OPEN: 'These answers were already sent.',
   NOT_PUBLISHABLE: 'This take cannot be published now.',
   NOT_SUBMITTED: 'Nothing to grade yet.',
 };
+/** The model failures name the step, and the server's reason code when it sent one. */
+const MODEL_FAILURES = {
+  GENERATION_FAILED: 'The brief did not come together',
+  GRADING_FAILED: 'Grading did not finish',
+};
+const SERVER = 'The server hit an error. Try again.';
 const OFFLINE = 'Could not reach the server. Try again.';
 
-/** The line the page shows for a failed call. Server wording is shown only for a 400. */
+function modelFailure(error) {
+  const reason = error.details?.reason;
+  const why = typeof reason === 'string' && reason ? ` (reason: ${reason})` : '';
+  return `${MODEL_FAILURES[error.code]}${why}. Try again.`;
+}
+
+/**
+ * The line the page shows for a failed call. Server wording is shown only for a 400. "Could not
+ * reach the server" is only for no response at all; any other response gets a neutral line.
+ */
 export function messageFor(error) {
   if (MESSAGES[error?.code]) return MESSAGES[error.code];
+  if (MODEL_FAILURES[error?.code]) return modelFailure(error);
   if (error?.status === 401) return 'Your sign-in ran out. Sign in again; your draft is saved.';
   if (error?.status === 400 && error.message) return error.message;
+  if (Number.isInteger(error?.status) && error.status > 0) return SERVER;
   return OFFLINE;
 }
 

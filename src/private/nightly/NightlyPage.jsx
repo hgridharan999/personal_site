@@ -12,13 +12,12 @@ import { failureCopy } from './view';
 import './nightly.css';
 
 // Read out by one live region that stays mounted, since each view replaces the one before it.
+// Generating, Grading and the graded view are left out: their heading takes focus when it
+// arrives, and is read out then, so a status line here would say it twice.
 const ANNOUNCE = {
   loading: 'Loading tonight',
-  generating: "Generating tonight's brief",
   form: "Tonight's brief is ready",
-  grading: 'Answers locked. Grading',
   gradeFailed: 'Grading did not finish',
-  graded: 'Graded',
 };
 
 /**
@@ -39,7 +38,7 @@ export default function NightlyPage() {
         </Link>
       </div>
 
-      <main className="nt-main" aria-busy={view === 'loading'}>
+      <main className="nt-main">
         <header className="nt-head">
           <p className="asc-mono nt-kicker">
             {today?.night ? <time dateTime={today.night}>{formatLongDate(today.night)}</time> : 'Tonight'}
@@ -87,7 +86,7 @@ function Body({ nightly, storage }) {
     case 'gradeFailed':
       return (
         <>
-          <GradeFailed onRetry={() => runGrade(session.id)} />
+          <GradeFailed notice={noticeFor('grade')} onRetry={() => runGrade(session.id)} />
           <LockedAnswers session={session} />
         </>
       );

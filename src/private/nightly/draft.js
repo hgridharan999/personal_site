@@ -47,13 +47,23 @@ export function clearDraft(storage, night) {
 
 const blank = (text) => typeof text !== 'string' || text.trim() === '';
 
-/** What still needs filling before submit; the server checks the same rules again. */
+/** The longest answer or take the server accepts, so the boxes stop there too. */
+export const MAX_CHARS = 4000;
+
+/** The form's fields are `a0`..`a2`, `story` and `take`: each control's id, and its error's. */
+export const fieldId = (field) => `nt-${field}`;
+export const errorId = (field) => `nt-${field}-err`;
+
+/**
+ * What still needs filling before submit, as `{ field, message }` in page order, so the form can
+ * mark and focus the first one. The server checks the same rules again.
+ */
 export function draftProblems(draft) {
   const problems = draft.answers
-    .map((answer, i) => (blank(answer) ? `Answer question ${i + 1}.` : null))
+    .map((answer, i) => (blank(answer) ? { field: `a${i}`, message: `Answer question ${i + 1}.` } : null))
     .filter(Boolean);
-  if (!isStoryIndex(draft.storyIndex)) problems.push('Pick the story your take is on.');
-  if (blank(draft.take)) problems.push('Write your take.');
+  if (!isStoryIndex(draft.storyIndex)) problems.push({ field: 'story', message: 'Pick the story your take is on.' });
+  if (blank(draft.take)) problems.push({ field: 'take', message: 'Write your take.' });
   return problems;
 }
 

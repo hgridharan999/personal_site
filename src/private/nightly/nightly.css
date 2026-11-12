@@ -6,7 +6,7 @@
 
 /* the page uses the system pointer, not the ring cursor: a writing page wants a visible caret */
 .asc.nt, .asc.nt * { cursor: auto; }
-.asc.nt :is(a, button:not(:disabled), label.nt-choice, input[type="radio"]) { cursor: pointer; }
+.asc.nt :is(a, button:not(:disabled, [aria-disabled="true"]), label.nt-choice, input[type="radio"]) { cursor: pointer; }
 .asc.nt textarea { cursor: text; }
 
 .nt .nt-main { width: min(92vw, 760px); margin-inline: auto; padding: 8px 0 96px; }
@@ -53,9 +53,10 @@
 .nt .nt-q { display: flex; flex-direction: column; gap: 6px; }
 .nt .nt-on { font-size: 14px; }
 .nt .nt-label { display: block; margin-top: 24px; }
+/* the box edge uses --muted so it reads at 3:1 or more against the page (WCAG 1.4.11) */
 .nt .nt-textarea {
   display: block; width: 100%; min-height: 7.5em; padding: 12px 14px; resize: vertical;
-  background: var(--bg-2); color: var(--bone); border: 1px solid var(--line); border-radius: 2px;
+  background: var(--bg-2); color: var(--bone); border: 1px solid var(--muted); border-radius: 2px;
   font-family: var(--writing); font-size: 18px; line-height: 1.6;
 }
 .nt .nt-textarea--take { min-height: 10em; margin-top: 8px; }
@@ -80,7 +81,8 @@
   transition: color 0.3s var(--ease), border-color 0.3s var(--ease), background-color 0.3s var(--ease);
 }
 .nt .nt-btn--primary { background: var(--amber); border-color: var(--amber); color: var(--bg); }
-.nt .nt-btn:disabled { opacity: 0.45; }
+/* busy buttons are aria-disabled, not disabled, so they keep focus while the action runs */
+.nt .nt-btn:is(:disabled, [aria-disabled="true"]) { opacity: 0.45; }
 .nt .nt-confirm { display: flex; flex-direction: column; gap: 12px; padding: 16px; border: 1px solid var(--amber); width: 100%; }
 .nt .nt-confirm__q { margin: 0; font-size: 17px; color: var(--bone); }
 .nt .nt-confirm__buttons { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -117,8 +119,8 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .nt .nt-btn:not(:disabled):hover { border-color: var(--amber); color: var(--amber); }
-  .nt .nt-btn--primary:not(:disabled):hover { background: transparent; }
+  .nt .nt-btn:not(:disabled, [aria-disabled="true"]):hover { border-color: var(--amber); color: var(--amber); }
+  .nt .nt-btn--primary:not(:disabled, [aria-disabled="true"]):hover { background: transparent; }
   .nt .nt-source:hover { color: var(--amber); border-color: var(--amber); }
   .nt .nt-choice:hover { color: var(--amber); }
 }

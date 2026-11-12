@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { loadDraft, saveDraft, clearDraft, emptyDraft, draftProblems, toSubmitBody } from './draft.js';
+import {
+  loadDraft, saveDraft, clearDraft, emptyDraft, draftProblems, toSubmitBody, fieldId, errorId, MAX_CHARS,
+} from './draft.js';
 
 /** An in-memory Storage with the three methods the helpers use. */
 function memoryStorage() {
@@ -83,13 +85,32 @@ describe('draftProblems', () => {
     expect(draftProblems(draft)).toEqual([]);
   });
 
-  it('lists each missing piece, treating whitespace as blank', () => {
+  it('lists each missing piece with the field it belongs to, treating whitespace as blank', () => {
     expect(draftProblems({ answers: ['ok', '  ', ''], storyIndex: null, take: '\n' })).toEqual([
-      'Answer question 2.',
-      'Answer question 3.',
-      'Pick the story your take is on.',
-      'Write your take.',
+      { field: 'a1', message: 'Answer question 2.' },
+      { field: 'a2', message: 'Answer question 3.' },
+      { field: 'story', message: 'Pick the story your take is on.' },
+      { field: 'take', message: 'Write your take.' },
     ]);
+  });
+});
+
+describe('field ids', () => {
+  it('gives each field the id of its control, and its error an id of its own', () => {
+    expect(fieldId('a0')).toBe('nt-a0');
+    expect(fieldId('story')).toBe('nt-story');
+    expect(fieldId('take')).toBe('nt-take');
+    expect(errorId('a2')).toBe('nt-a2-err');
+  });
+
+  it('points every problem at a distinct control id', () => {
+    const fields = draftProblems(emptyDraft()).map((p) => p.field);
+    expect(fields).toEqual(['a0', 'a1', 'a2', 'story', 'take']);
+    expect(new Set(fields.map(fieldId)).size).toBe(fields.length);
+  });
+
+  it('caps each text at the 4000 characters the server accepts', () => {
+    expect(MAX_CHARS).toBe(4000);
   });
 });
 
