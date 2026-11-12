@@ -79,6 +79,34 @@ describe('kili.css', () => {
     expect(css.slice(0, css.indexOf('prefers-reduced-motion'))).not.toMatch(/transition:\s*opacity/);
   });
 
+  it('keeps the door invisible and out of the way until the drawing reveals it', () => {
+    const door = declarationsOf('.hm .kili-door');
+    expect(door).toContain('pointer-events: none');
+    expect(door).toContain('color: #AA9254');
+    expect(door).toContain('translateY(-100%)');
+    expect(declarationsOf('.hm .kili-door-l')).toMatch(/stroke-width: 1;[\s\S]*fill: none;[\s\S]*stroke-dasharray: 1;[\s\S]*stroke-dashoffset: 1/);
+  });
+
+  it('lets the door, and only the door, take the pointer once it is on', () => {
+    const on = declarationsOf('.hm .kili-door.on');
+    expect(on).toContain('pointer-events: auto');
+    expect(on).toContain('cursor: pointer');
+    const takers = selectors.filter((s) => declarationsOf(s)?.includes('pointer-events: auto'));
+    expect(takers).toEqual(['.hm .kili-door.on']);
+  });
+
+  it('lifts the door on hover only where there is a real hover, and when armed by a tap', () => {
+    expect(css).toMatch(/@media \(hover: hover\) and \(pointer: fine\)\s*\{\s*\.hm \.kili-door\.on:hover \.kili-door-l \{ stroke-dashoffset: 0; \}/);
+    expect(declarationsOf('.hm .kili-door.open .kili-door-l')).toContain('stroke-dashoffset: 0');
+  });
+
+  it('draws the door in only when motion is welcome: with reduced motion it is simply there', () => {
+    const at = css.indexOf('prefers-reduced-motion');
+    const block = css.match(/@media \(prefers-reduced-motion: no-preference\)\s*\{([\s\S]*)\}\s*$/)[1];
+    expect(block).toMatch(/\.hm \.kili-door-l \{[^}]*transition: stroke-dashoffset/);
+    expect(css.slice(0, at)).not.toMatch(/transition/);
+  });
+
   it('keeps the toggle clear of the site-wide motion- class rule in index.css', () => {
     for (const file of files.filter((f) => f.endsWith('.jsx') || f.endsWith('.css'))) expect(read(file), file).not.toMatch(/motion-/);
   });
@@ -153,6 +181,34 @@ describe('the markup', () => {
     expect(ending).toMatch(/<div className="kili-band" ref=\{bandRef\} aria-hidden="true"/);
     expect(ending.indexOf('<canvas />')).toBeGreaterThan(ending.indexOf('aria-hidden="true"'));
     expect(ending).toContain('<Legend />');
+  });
+
+  it('puts the door in the band, after the legend', () => {
+    expect(ending).toContain("import KiliDoor from './KiliDoor';");
+    expect(ending).toMatch(/<Legend \/>\s*<KiliDoor \/>\s*<\/div>\s*<KiliFooter \/>/);
+  });
+
+  it('keeps the door hidden: no link, no focus stop, no role, no name', () => {
+    const door = read('KiliDoor.jsx');
+    expect(door).not.toMatch(/href|tabIndex|aria-label|role=/);
+    expect(door).toContain('data-kili="door"');
+    expect(door.match(/<path [^>]*className="kili-door-l"[^>]*pathLength="1"/g)).toHaveLength(3);
+  });
+
+  it('opens /nightly through navigate() from a pointer up, and disarms on a tap elsewhere', () => {
+    const door = read('KiliDoor.jsx');
+    expect(door).toContain("navigate('/nightly')");
+    expect(door).toContain('onPointerUp=');
+    expect(door).toMatch(/addEventListener\('pointerdown'[\s\S]*removeEventListener\('pointerdown'/);
+  });
+
+  it('places the door on the front line at the stage edge, shows it with the legend and resets it', () => {
+    const labels = read('labels.js');
+    expect(labels).toContain("one('door')");
+    expect(labels).toContain('layout.lineBase[layout.N - 1]');
+    expect(labels).toMatch(/Math\.max\(layout\.phone \? 16 : 32, layout\.sx0\)/);
+    expect(labels).toMatch(/if \(lifeT >= 0\) \{?\s*show\(key\);\s*show\(door\);/);
+    expect(labels).toMatch(/for \(const el of \[[^\]]*\bdoor\b[^\]]*\]\) el\?\.removeAttribute\('style'\)/);
   });
 
   it('takes every word from content.js', () => {

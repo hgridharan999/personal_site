@@ -1,6 +1,6 @@
 import { labelAnchors } from './route.js';
 
-// The HTML over the canvas: Uhuru Peak, Mawenzi, the two camp names and the legend.
+// The HTML over the canvas: Uhuru Peak, Mawenzi, the two camp names, the legend and the door.
 // KiliEnding renders them (so the words come from content.js); this file finds them by their
 // data attributes, puts them on the drawing and fades them in as the route reaches them. It
 // only touches `left`, `top`, `right`, one transform and the `on` class, and `reset` undoes all
@@ -18,6 +18,7 @@ export function createLabels(band) {
   const peakText = one('peak-text');
   const mawenzi = one('mawenzi');
   const key = one('key');
+  const door = one('door');
   const waypoints = new Map([...band.querySelectorAll('[data-kili="wp"]')].map((el) => [el.dataset.wp, el]));
   const canvas = band.querySelector('canvas');
   const shown = new Set();
@@ -45,12 +46,18 @@ export function createLabels(band) {
       }
       for (const w of built.waypoints) place(waypoints.get(w.name), w.x, w.y);
       if (key) key.style.right = `${Math.max(layout.phone ? 16 : 32, layout.sx0).toFixed(0)}px`;
+      // the door mirrors the legend on the left, its foot on the front plains line (its CSS lifts
+      // it by its own height); a whole-pixel left keeps its jambs crisp
+      place(door, Math.round(Math.max(layout.phone ? 16 : 32, layout.sx0)), layout.lineBase[layout.N - 1]);
     },
 
 
-    /** Fade in what the drawing has reached: the legend once colour starts, the rest as the route arrives. */
+    /** Fade in what the drawing has reached: the legend (and the door) once colour starts, the rest as the route arrives. */
     reveal(lifeT, routeLen, built) {
-      if (lifeT >= 0) show(key);
+      if (lifeT >= 0) {
+        show(key);
+        show(door);
+      }
       if (routeLen >= built.ascentLength - 0.5) {
         show(peak);
         show(mawenzi);
@@ -61,7 +68,7 @@ export function createLabels(band) {
     reset() {
       for (const el of shown) el.classList.remove('on');
       shown.clear();
-      for (const el of [peak, mawenzi, key, peakText, ...waypoints.values()]) el?.removeAttribute('style');
+      for (const el of [peak, mawenzi, key, door, peakText, ...waypoints.values()]) el?.removeAttribute('style');
     },
   };
 }

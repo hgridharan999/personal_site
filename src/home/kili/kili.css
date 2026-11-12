@@ -56,6 +56,21 @@
 .hm .kili-wp--r { transform: translate(5px, -50%); }
 .hm .kili-wp--l { transform: translate(calc(-100% - 5px), -50%); }
 .hm .kili-wp.on { opacity: 1; }
+/* the door: a hidden way in to /nightly. Nothing at rest; on hover (or a first tap) two jambs rise
+   out of the front plains line and a shallow lintel joins them, in that line's ochre and weight.
+   labels.js stands its foot on the line, and gives it `on` (and so the pointer) once the drawing
+   is up. pathLength="1" on each line, so a dash and offset of 1 hide it and 0 draws it in. */
+.hm .kili-door {
+  position: absolute; left: 0; top: 0; width: 48px; height: 48px; transform: translateY(-100%);
+  pointer-events: none; color: #AA9254;
+}
+.hm .kili-door.on { pointer-events: auto; cursor: pointer; }
+.hm .kili-door svg { display: block; }
+.hm .kili-door-l { stroke-width: 1; fill: none; stroke-dasharray: 1; stroke-dashoffset: 1; }
+.hm .kili-door.open .kili-door-l { stroke-dashoffset: 0; }
+@media (hover: hover) and (pointer: fine) {
+  .hm .kili-door.on:hover .kili-door-l { stroke-dashoffset: 0; }
+}
 /* the drawing could not load: no blank gap above the footer */
 .hm .kili-band[data-failed] { display: none; }
 
@@ -74,7 +89,17 @@
 .hm .kili-dot { color: var(--soft); }
 .hm .kili-foot-line { margin-top: 10px; }
 .hm .kili-foot-line p { margin: 0; font: 400 12.5px/1.4 var(--sans); letter-spacing: -0.1px; color: var(--soft); }
-/* the labels fade in as the route reaches them; with reduced motion they are simply there */
+/* the labels fade in as the route reaches them, and the door lifts; with reduced motion they are
+   simply there. The door rises jambs first, then the lintel (280ms in all), and settles the other
+   way round: lintel first, then the jambs sink back into the line. */
 @media (prefers-reduced-motion: no-preference) {
   .hm .kili-peak, .hm .kili-key, .hm .kili-wp { transition: opacity 0.7s var(--ease); }
+  .hm .kili-door-l { transition: stroke-dashoffset 0.2s var(--ease) 0.08s; }
+  .hm .kili-door-l:last-child { transition-duration: 0.16s; transition-delay: 0s; }
+  .hm .kili-door.open .kili-door-l { transition-delay: 0s; }
+  .hm .kili-door.open .kili-door-l:last-child { transition-delay: 0.12s; }
+  @media (hover: hover) and (pointer: fine) {
+    .hm .kili-door.on:hover .kili-door-l { transition-delay: 0s; }
+    .hm .kili-door.on:hover .kili-door-l:last-child { transition-delay: 0.12s; }
+  }
 }
