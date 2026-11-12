@@ -82,5 +82,16 @@
         }
       ]
     }
-  ]
+  ],
+  "crons": [
+    {
+      "path": "/api/nightly-cron",
+      "schedule": "0 1 * * *"
+    }
+  ],
+  "functions": {
+    "api/nightly*.js": {
+      "maxDuration": 300
+    }
+  }
 }
