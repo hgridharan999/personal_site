@@ -9,9 +9,9 @@ const read = (rel) => readFileSync(ROOT + rel, 'utf8');
 
 const LIGHT = [
   '/', '/hiking', '/hiking/', '/HIKING', '/writing', '/blog/tat-tvam-asi',
-  '/climate-search', '/privacy', '/terms', '/legal',
+  '/climate-search', '/privacy', '/terms', '/legal', '/notes', '/notes/',
 ];
-const NOT_LIGHT = ['/login', '/me', '/me/poker', '/blog', '/theses', '/blog/a/b', '/hikingx', '/x'];
+const NOT_LIGHT = ['/login', '/me', '/me/poker', '/nightly', '/notes/x', '/notesx', '/blog', '/theses', '/blog/a/b', '/hikingx', '/x'];
 
 const FONTS = ['/fonts/geist-latin.woff2', '/fonts/instrument-serif-italic-latin.woff2'];
 const PLATE = '/mountain-plate.webp';
@@ -78,7 +78,7 @@ describe('the pre-paint script in index.html', () => {
 describe('App.jsx routes', () => {
   const app = read('src/App.jsx');
   const paths = [...app.matchAll(/\bpath="([^"]+)"/g)].map((m) => m[1]);
-  const isPrivate = (path) => path === '*' || /^\/(login|me)(\/|$)/.test(path);
+  const isPrivate = (path) => path === '*' || /^\/(login|me|nightly)(\/|$)/.test(path);
 
   it('finds the public routes to check', () => {
     expect(paths.filter((path) => !isPrivate(path)).length).toBeGreaterThanOrEqual(8);
