@@ -30,6 +30,21 @@ describe('Brief', () => {
     b.stories[0].url = 'not a url';
     expect(Brief.safeParse(b).success).toBe(false);
   });
+  it('rejects javascript: and data: URLs in stories and the niche item', () => {
+    for (const url of ['javascript:alert(1)', 'data:text/html,<script>alert(1)</script>']) {
+      const s = brief();
+      s.stories[0].url = url;
+      expect(Brief.safeParse(s).success, url).toBe(false);
+      const n = brief();
+      n.niche.url = url;
+      expect(Brief.safeParse(n).success, url).toBe(false);
+    }
+  });
+  it('accepts plain http URLs', () => {
+    const b = brief();
+    b.stories[0].url = 'http://example.com/a';
+    expect(Brief.safeParse(b).success).toBe(true);
+  });
 });
 
 describe('SubmitBody', () => {

@@ -5,7 +5,10 @@ const text = z.string().min(1);
 const idx = z.int().min(0).max(2);
 const body = z.string().trim().min(1).max(4000);
 
-export const Story = z.object({ headline: text, summary: text, url: z.url(), source: text });
+// http(s) only: these links are rendered as hrefs, so javascript: and data: must never pass.
+const webUrl = z.url({ protocol: /^https?$/ });
+
+export const Story = z.object({ headline: text, summary: text, url: webUrl, source: text });
 export const Niche = Story.extend({ topic: text });
 export const Question = z.object({ type: z.enum(TYPE_KEYS), story_index: idx, prompt: text });
 
