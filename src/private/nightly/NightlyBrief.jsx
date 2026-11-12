@@ -1,9 +1,15 @@
+import { httpUrl } from '../../site/notes';
+
 // The brief: three stories and the niche item, each in original wording with its source link.
 
+/** A link only for an http(s) URL; anything else (javascript:, data:, junk) is shown as text. */
 function SourceLink({ url, source }) {
+  const safeUrl = httpUrl(url);
+  const label = source || 'Source';
+  if (!safeUrl) return <p className="nt-source asc-mono">{label}</p>;
   return (
-    <a className="nt-source asc-mono" href={url} target="_blank" rel="noopener noreferrer">
-      {source || 'Source'} <span aria-hidden="true">↗</span>
+    <a className="nt-source asc-mono" href={safeUrl} target="_blank" rel="noopener noreferrer">
+      {label} <span aria-hidden="true">↗</span>
       <span className="nt-sr"> (opens in a new tab)</span>
     </a>
   );

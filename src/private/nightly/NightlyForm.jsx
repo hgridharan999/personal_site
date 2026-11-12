@@ -115,7 +115,7 @@ export default function NightlyForm({ session, storage, submitting, notice, onSu
           <ol className="nt-fields" role="list">
             {questions.map((q, i) => (
               <Question
-                key={q.type}
+                key={i}
                 i={i}
                 question={q}
                 story={stories[q.story_index]}

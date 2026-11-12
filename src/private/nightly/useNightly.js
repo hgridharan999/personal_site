@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { clearDraft, toSubmitBody } from './draft.js';
-import { generate, getToday, grade, pollToday, publish, submit } from './nightlyApi.js';
-import { isBusy, messageFor, viewFor } from './view.js';
+import { generate, grade, publish, submit } from './nightlyApi.js';
+import { isAuthLost, messageFor, viewFor } from './view.js';
+import { useRecovery } from './useRecovery.js';
 
 /** window.localStorage when the browser allows it; the draft helpers treat null as "no storage". */
 export function browserStorage() {
@@ -14,16 +16,18 @@ export function browserStorage() {
 
 /**
  * Tonight's session and the actions on it. `notice` is the last failed action's message,
- * `{ action, message }`, shown beside that action's button; `slow` marks a poll that ran its
- * six minutes without the server finishing.
+ * `{ action, code?, slow?, message }`, shown beside that action's button. A 401 anywhere sends
+ * Hari to sign in and back here; the draft is already saved on this device.
  */
 export function useNightly(storage) {
+  const navigate = useNavigate();
   const [today, setToday] = useState(null);
   const [error, setError] = useState(null);
   const [flags, setFlags] = useState({ generating: false, grading: false, submitting: false, publishing: false });
   const [notice, setNotice] = useState(null);
   const alive = useRef(true);
   const graded = useRef(new Set()); // session ids this visit has already asked to grade
+  const submitting = useRef(false); // guards submit by itself, whatever the buttons do
 
   useEffect(() => {
     alive.current = true;
@@ -33,40 +37,15 @@ export function useNightly(storage) {
   const flag = (name, value) => { if (alive.current) setFlags((f) => ({ ...f, [name]: value })); };
   const setSession = (session) => setToday((t) => ({ ...t, session }));
 
-  /** Polls while the server is busy; a poll that runs out of time leaves a "slow" notice. */
-  const follow = useCallback(async (action) => {
-    const result = await pollToday({ cancelled: () => !alive.current });
-    if (!result) return;
-    setToday(result.today);
-    if (result.timedOut) setNotice({ action, slow: true, message: 'This is taking longer than usual.' });
+  // navigate sits in a ref so authLost, and so load, keep one identity: the load effect runs once.
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
+  const authLost = useCallback((err) => {
+    if (!isAuthLost(err)) return false;
+    if (alive.current) navigateRef.current('/login', { replace: true, state: { from: '/nightly' } });
+    return true;
   }, []);
-
-  /** After a failed call, re-read the truth: keep polling if the server is still at it, else explain. */
-  const recover = useCallback(async (action, err) => {
-    try {
-      const fresh = await getToday();
-      if (!alive.current) return;
-      setToday(fresh);
-      if (isBusy(fresh.session)) return void (await follow(action));
-    } catch {
-      // the re-read failed too; the message below still applies
-    }
-    if (alive.current) setNotice({ action, message: messageFor(err) });
-  }, [follow]);
-
-  const load = useCallback(async () => {
-    setToday(null);
-    setError(null);
-    setNotice(null);
-    try {
-      const fresh = await getToday();
-      if (!alive.current) return;
-      setToday(fresh);
-      if (isBusy(fresh.session)) await follow(fresh.session.status === 'grading' ? 'grade' : 'generate');
-    } catch (err) {
-      if (alive.current) setError(err);
-    }
-  }, [follow]);
+  const { load, follow, recover } = useRecovery({ alive, setToday, setNotice, setError, authLost });
 
   /** Runs one action with its busy flag; a 202 switches to polling. */
   const run = useCallback(async (action, name, call) => {
@@ -92,6 +71,8 @@ export function useNightly(storage) {
   }, [run]);
 
   const runSubmit = async (draft) => {
+    if (submitting.current) return;
+    submitting.current = true;
     const { id, date } = today.session;
     flag('submitting', true);
     setNotice(null);
@@ -108,6 +89,7 @@ export function useNightly(storage) {
         setNotice({ action: 'submit', code: err.code, message: messageFor(err) });
       } else await recover('submit', err);
     } finally {
+      submitting.current = false;
       flag('submitting', false);
     }
   };

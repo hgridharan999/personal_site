@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { NBSP } from '../home/content';
 import SiteShell from './SiteShell';
 import { formatLongDate } from './format';
-import { readNotes } from './notes';
+import { httpUrl, readNotes } from './notes';
 import './notes.css';
 
 // Nothing here comes from src/private: the fetch is written out below so the public bundle
@@ -36,15 +36,17 @@ function useNotes() {
 }
 
 function Note({ note }) {
+  // readNotes already drops a non-http(s) url; checking again here keeps the href safe on its own.
+  const safeUrl = httpUrl(note.url);
   return (
     <li>
       <article className="sp-note">
         <time className="sp-note-date" dateTime={note.date}>{formatLongDate(note.date)}</time>
         <p className="sp-note-body">{note.body}</p>
-        {note.url && (
+        {safeUrl && (
           <p className="sp-note-on">
             On:{' '}
-            <a href={note.url} target="_blank" rel="noopener noreferrer">
+            <a href={safeUrl} target="_blank" rel="noopener noreferrer">
               {note.headline ?? note.source ?? 'the story'}
               <span aria-hidden="true">{NBSP}↗</span>
               <span className="sr-only">{note.source ? `, ${note.source}` : ''}, opens in a new tab</span>

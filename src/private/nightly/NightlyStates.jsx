@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react';
+
 // The small screens around the brief: loading, no brief yet, generating, grading, and failures.
 // Each one that can get stuck carries a way out.
 
@@ -51,9 +53,17 @@ export function Generating({ notice, onRetry, busy }) {
 }
 
 export function Grading({ notice, onRetry, busy }) {
+  const headingRef = useRef(null);
+  // After Confirm, the form (and the focused button) is gone and focus has dropped to <body>.
+  // Pick it up here; never take focus from something Hari is using.
+  useEffect(() => {
+    const lost = !document.activeElement || document.activeElement === document.body;
+    if (lost) headingRef.current?.focus();
+  }, []);
+
   return (
     <section className="nt-panel" aria-labelledby="nt-grading-title">
-      <h2 id="nt-grading-title" className="nt-panel__title nt-state">
+      <h2 id="nt-grading-title" className="nt-panel__title nt-state" ref={headingRef} tabIndex={-1}>
         <span className="nt-pulse" aria-hidden="true" /> Grading…
       </h2>
       <p className="nt-muted">Your answers are locked. The grade and the blind take are on their way.</p>

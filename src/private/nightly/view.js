@@ -56,6 +56,7 @@ const MESSAGES = {
   GRADING_FAILED: 'Grading did not finish. Try again.',
   NOT_OPEN: 'These answers were already sent.',
   NOT_PUBLISHABLE: 'This take cannot be published now.',
+  NOT_SUBMITTED: 'Nothing to grade yet.',
 };
 const OFFLINE = 'Could not reach the server. Try again.';
 
@@ -65,4 +66,19 @@ export function messageFor(error) {
   if (error?.status === 401) return 'Your sign-in ran out. Sign in again; your draft is saved.';
   if (error?.status === 400 && error.message) return error.message;
   return OFFLINE;
+}
+
+/** A 401: the sign-in cookie ran out, so the page sends Hari to /login (the draft is saved). */
+export const isAuthLost = (error) => error?.status === 401;
+
+/**
+ * The error view's copy. With an error, the load failed; without one, the session came back in a
+ * status this page does not know, which is not the network's fault.
+ */
+export function failureCopy(error) {
+  if (error) return { title: "Could not load tonight's session.", detail: messageFor(error) };
+  return {
+    title: "Tonight's session is in a state this page cannot show.",
+    detail: 'Reload to check again, or come back later.',
+  };
 }

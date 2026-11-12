@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { viewFor, typeName, TYPE_NAMES, isBusy, messageFor } from './view.js';
+import { viewFor, typeName, TYPE_NAMES, isBusy, messageFor, isAuthLost, failureCopy } from './view.js';
 
 const idle = { generating: false, grading: false, error: null };
 const today = (session) => ({ night: '2026-11-12', session });
@@ -101,10 +101,35 @@ describe('messageFor', () => {
   it('explains the two state conflicts instead of blaming the network', () => {
     expect(messageFor(err(409, 'NOT_OPEN'))).toBe('These answers were already sent.');
     expect(messageFor(err(409, 'NOT_PUBLISHABLE'))).toBe('This take cannot be published now.');
+    expect(messageFor(err(409, 'NOT_SUBMITTED'))).toBe('Nothing to grade yet.');
   });
 
   it('falls back to a plain network message', () => {
     expect(messageFor(new TypeError('Failed to fetch'))).toBe('Could not reach the server. Try again.');
     expect(messageFor(err(500, 'INTERNAL'))).toBe('Could not reach the server. Try again.');
+  });
+});
+
+describe('isAuthLost', () => {
+  it('is true only for a 401', () => {
+    expect(isAuthLost(Object.assign(new Error('x'), { status: 401 }))).toBe(true);
+    expect(isAuthLost(Object.assign(new Error('x'), { status: 403 }))).toBe(false);
+    expect(isAuthLost(new TypeError('Failed to fetch'))).toBe(false);
+    expect(isAuthLost(null)).toBe(false);
+  });
+});
+
+describe('failureCopy', () => {
+  it('blames the network only when a request failed', () => {
+    expect(failureCopy(new TypeError('Failed to fetch'))).toEqual({
+      title: "Could not load tonight's session.",
+      detail: 'Could not reach the server. Try again.',
+    });
+  });
+
+  it('uses neutral copy for a session in a status the page does not know (no error object)', () => {
+    const copy = failureCopy(null);
+    expect(copy.title).toBe("Tonight's session is in a state this page cannot show.");
+    expect(copy.detail).not.toMatch(/server/i);
   });
 });

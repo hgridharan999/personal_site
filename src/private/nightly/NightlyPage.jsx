@@ -8,7 +8,7 @@ import NightlyForm from './NightlyForm';
 import NightlyGraded from './NightlyGraded';
 import { LockedAnswers } from './NightlyAnswers';
 import { Empty, Failure, Generating, Grading, GradeFailed, Loading } from './NightlyStates';
-import { messageFor } from './view';
+import { failureCopy } from './view';
 import './nightly.css';
 
 // Read out by one live region that stays mounted, since each view replaces the one before it.
@@ -60,7 +60,10 @@ function Body({ nightly, storage }) {
 
   switch (view) {
     case 'loading': return <Loading />;
-    case 'error': return <Failure message="Could not load tonight's session." detail={messageFor(error)} onRetry={load} />;
+    case 'error': {
+      const { title, detail } = failureCopy(error);
+      return <Failure message={title} detail={detail} onRetry={load} />;
+    }
     case 'empty': return <Empty notice={noticeFor('generate')} onGenerate={runGenerate} />;
     case 'generating': return <Generating notice={noticeFor('generate')} onRetry={runGenerate} busy={flags.generating} />;
     case 'form':
