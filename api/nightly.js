@@ -56,7 +56,7 @@ async function generate(ctx) {
   try {
     result = await runGenerate({ sql, model, now: ctx.now, deadline: ctx.deadline() });
   } catch (err) {
-    console.error('nightly generate failed:', err instanceof ModelError ? err.code : err);
+    console.error('nightly generate failed:', err instanceof ModelError ? `${err.code}: ${err.message}` : err);
     const details = err instanceof ModelError ? { reason: err.code } : undefined;
     return sendError(res, 502, 'GENERATION_FAILED', 'The brief could not be generated', details);
   }
@@ -150,6 +150,7 @@ async function publish(ctx) {
 
 async function notes(ctx) {
   const rows = await q.listNotes(ctx.sql);
+  ctx.res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
   return ctx.res.status(200).json({ notes: rows.map(noteView) });
 }
 

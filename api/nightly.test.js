@@ -62,9 +62,9 @@ function fakeModel() {
 function setup(routes = [], { model = fakeModel(), ...opts } = {}) {
   const sql = db(routes);
   const handler = createNightlyHandler({ getSql: () => sql, auth: () => TEST_AUTH, model, now: () => NOW, ...opts });
-  const call = async (action, { method = ACTIONS[action]?.method ?? 'GET', body, authed = true } = {}) => {
+  const call = async (action, { method = ACTIONS[action]?.method ?? 'GET', body, authed = true, contentType } = {}) => {
     const res = mockRes();
-    await handler(authedReq({ method, body, query: { action }, authed }), res);
+    await handler(authedReq({ method, body, query: { action }, authed, ...(contentType !== undefined && { contentType }) }), res);
     return res;
   };
   return { sql, model, call };
@@ -116,6 +116,23 @@ describe('api/nightly: dispatch, auth and methods', () => {
     expect(q.text).toContain('date::text');
     expect(q.text).toMatch(/WHERE t\.published\b/);
     expect(q.text).not.toMatch(/model_take|follow_up/);
+  });
+
+  it('notes: is publicly cacheable, while authed actions stay no-store', async () => {
+    const notesRes = await setup([['FROM nightly_takes', []]]).call('notes', { authed: false });
+    expect(notesRes.headers['Cache-Control']).toBe('public, s-maxage=300, stale-while-revalidate=600');
+    const todayRes = await setup([['FROM nightly_sessions', []]]).call('today');
+    expect(todayRes.headers['Cache-Control']).toBe('no-store');
+  });
+
+  it('POST with a non-JSON Content-Type is 415 and runs no query', async () => {
+    const { sql, call } = setup([]);
+    for (const contentType of ['text/plain', 'application/x-www-form-urlencoded', '']) {
+      const res = await call('submit', { method: 'POST', body: {}, contentType });
+      expect(res.statusCode).toBe(415);
+      expect(res.body.code).toBe('UNSUPPORTED_MEDIA_TYPE');
+    }
+    expect(sql.queries).toHaveLength(0);
   });
 
   it('405 for the wrong method, with Allow', async () => {

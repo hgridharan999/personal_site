@@ -83,6 +83,16 @@ The private Zetamac and 80-in-8 trainers under `/me` store every game in Neon Po
 5. **Preview deployments.** Unless Neon's branch-per-preview integration is enabled, preview deployments write to the same database as production.
 6. **Signing out everyone.** Rotating `SESSION_SECRET` or changing `ADMIN_PASSWORD` signs everyone out.
 
+### Before you go live
+
+Make sure to update these placeholder items:
+
+1. **Hero Photo**: Replace placeholder in `src/components/Hero.jsx`
+2. **Resume PDF**: Add your actual resume to `/public/resume.pdf`
+3. **Personal Info**: Verify all links and contact information
+4. **Project Details**: Ensure all project data is accurate
+5. **Hiking Photos**: Add real photos to `/public` and update paths in `src/pages/ClimbingPage.jsx`
+
 ## Nightly
 
 The private `/nightly` page and the public `/notes` page run on two functions: `api/nightly.js` (the page actions) and `api/nightly-cron.js` (the evening brief). Do these before the first real session:
@@ -94,16 +104,6 @@ The private `/nightly` page and the public `/notes` page run on two functions: `
 2. **Migration.** `db/migrations/004_nightly.sql` adds the `nightly_*` tables. Run `npm run db:migrate` against the production database (and any preview branch database, as above). Previews share the production database unless Neon branching is on.
 3. **Cron.** `vercel.json` schedules `GET /api/nightly-cron` at `0 1 * * *` (01:00 UTC: 8pm EST in winter, 9pm EDT in summer, so the brief is ready by 9pm or 10pm Eastern). It always uses the Eastern night's date, never the UTC date. On Hobby it may fire anywhere in that hour, is never retried, and is occasionally delivered twice; the generation claim makes a second run a no-op. If it misses, the "Generate now" button on `/nightly` does the same job.
 4. **Fluid compute and the time limit.** Both nightly functions need up to 300 seconds (`"functions": { "api/nightly*.js": { "maxDuration": 300 } }` in `vercel.json`). That limit needs Fluid compute, so check it is on in the project's Functions settings, and confirm after the first deploy that the 300s limit applied.
-
-### Before you go live
-
-Make sure to update these placeholder items:
-
-1. **Hero Photo**: Replace placeholder in `src/components/Hero.jsx`
-2. **Resume PDF**: Add your actual resume to `/public/resume.pdf`
-3. **Personal Info**: Verify all links and contact information
-4. **Project Details**: Ensure all project data is accurate
-5. **Hiking Photos**: Add real photos to `/public` and update paths in `src/pages/ClimbingPage.jsx`
 
 ## Troubleshooting
 

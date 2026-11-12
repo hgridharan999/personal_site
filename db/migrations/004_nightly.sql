@@ -71,8 +71,9 @@ BEGIN
   IF NEW.answer IS DISTINCT FROM OLD.answer
      OR NEW.prompt IS DISTINCT FROM OLD.prompt
      OR NEW.question_type IS DISTINCT FROM OLD.question_type
-     OR NEW.idx IS DISTINCT FROM OLD.idx THEN
-    RAISE EXCEPTION 'nightly_answers: answer, prompt, question_type and idx are immutable';
+     OR NEW.idx IS DISTINCT FROM OLD.idx
+     OR NEW.session_id IS DISTINCT FROM OLD.session_id THEN
+    RAISE EXCEPTION 'nightly_answers: answer, prompt, question_type, idx and session_id are immutable';
   END IF;
   RETURN NEW;
 END;
@@ -88,8 +89,9 @@ BEGIN
     RAISE EXCEPTION 'nightly_takes: a published take cannot be updated';
   END IF;
   IF NEW.body IS DISTINCT FROM OLD.body
-     OR NEW.story_index IS DISTINCT FROM OLD.story_index THEN
-    RAISE EXCEPTION 'nightly_takes: body and story_index are immutable';
+     OR NEW.story_index IS DISTINCT FROM OLD.story_index
+     OR NEW.session_id IS DISTINCT FROM OLD.session_id THEN
+    RAISE EXCEPTION 'nightly_takes: body, story_index and session_id are immutable';
   END IF;
   RETURN NEW;
 END;
@@ -98,3 +100,36 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER nightly_takes_immutable
   BEFORE UPDATE ON nightly_takes
   FOR EACH ROW EXECUTE FUNCTION nightly_takes_immutable();
+
+-- Nothing Hari wrote is ever deleted. App code never deletes answers or takes; the only session delete
+-- (releaseClaim) removes a 'generating' session, which has no children, so the cascade never fires.
+CREATE FUNCTION nightly_no_delete() RETURNS trigger AS $$
+BEGIN
+  RAISE EXCEPTION '%: rows cannot be deleted', TG_TABLE_NAME;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER nightly_answers_no_delete
+  BEFORE DELETE ON nightly_answers
+  FOR EACH ROW EXECUTE FUNCTION nightly_no_delete();
+
+CREATE TRIGGER nightly_takes_no_delete
+  BEFORE DELETE ON nightly_takes
+  FOR EACH ROW EXECUTE FUNCTION nightly_no_delete();
+
+-- The brief is frozen once the night leaves 'generating'.
+CREATE FUNCTION nightly_sessions_brief_frozen() RETURNS trigger AS $$
+BEGIN
+  IF OLD.status <> 'generating'
+     AND (NEW.stories IS DISTINCT FROM OLD.stories
+          OR NEW.niche IS DISTINCT FROM OLD.niche
+          OR NEW.questions IS DISTINCT FROM OLD.questions) THEN
+    RAISE EXCEPTION 'nightly_sessions: stories, niche and questions are frozen once generated';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER nightly_sessions_brief_frozen
+  BEFORE UPDATE ON nightly_sessions
+  FOR EACH ROW EXECUTE FUNCTION nightly_sessions_brief_frozen();

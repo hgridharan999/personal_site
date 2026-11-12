@@ -36,7 +36,7 @@ export function createNightlyCronHandler({ getSql = defaultGetSql, model, now = 
         sessionId: result.session?.id ?? null,
       });
     } catch (err) {
-      console.error('nightly-cron failed:', err instanceof ModelError ? err.code : err);
+      console.error('nightly-cron failed:', err instanceof ModelError ? `${err.code}: ${err.message}` : err);
       const details = err instanceof ModelError ? { reason: err.code } : undefined;
       return sendError(res, 502, 'GENERATION_FAILED', 'The brief could not be generated', details);
     }

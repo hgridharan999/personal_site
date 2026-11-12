@@ -44,7 +44,39 @@ describe('db/migrations/004_nightly.sql', () => {
     expect(sqlText.match(/ON DELETE CASCADE/g)).toHaveLength(4);
   });
 
-  it('installs immutability triggers', () => {
-    expect(sqlText.match(/CREATE TRIGGER/g).length).toBeGreaterThanOrEqual(2);
+  it('installs the update, delete and freeze triggers', () => {
+    expect(sqlText.match(/CREATE TRIGGER/g)).toHaveLength(5);
+    for (const name of [
+      'nightly_answers_immutable BEFORE UPDATE ON nightly_answers',
+      'nightly_takes_immutable BEFORE UPDATE ON nightly_takes',
+      'nightly_answers_no_delete BEFORE DELETE ON nightly_answers',
+      'nightly_takes_no_delete BEFORE DELETE ON nightly_takes',
+      'nightly_sessions_brief_frozen BEFORE UPDATE ON nightly_sessions',
+    ]) {
+      expect(sqlText.replace(/\s+/g, ' ')).toContain(`CREATE TRIGGER ${name}`);
+    }
+  });
+
+  const body = (fn) => sqlText.match(new RegExp(String.raw`CREATE FUNCTION ${fn}\(\)[\s\S]*?\$\$ LANGUAGE`))[0];
+
+  it('answers and takes keep session_id immutable too', () => {
+    expect(body('nightly_answers_immutable')).toContain('NEW.session_id IS DISTINCT FROM OLD.session_id');
+    expect(body('nightly_takes_immutable')).toContain('NEW.session_id IS DISTINCT FROM OLD.session_id');
+    expect(body('nightly_takes_immutable')).toContain('IF OLD.published THEN');
+  });
+
+  it('refuses deletes of answers and takes unconditionally', () => {
+    const fn = body('nightly_no_delete');
+    expect(fn).toContain('RAISE EXCEPTION');
+    expect(fn).not.toContain('IF ');
+  });
+
+  it('freezes stories, niche and questions once the status leaves generating', () => {
+    const fn = body('nightly_sessions_brief_frozen');
+    expect(fn).toContain("OLD.status <> 'generating'");
+    for (const col of ['stories', 'niche', 'questions']) {
+      expect(fn).toContain(`NEW.${col} IS DISTINCT FROM OLD.${col}`);
+    }
+    expect(fn).toContain('RAISE EXCEPTION');
   });
 });

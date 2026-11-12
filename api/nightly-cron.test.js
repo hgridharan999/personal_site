@@ -49,7 +49,13 @@ describe('cronAuthorized', () => {
   it('is misconfigured when the secret is unset or under 16 characters', () => {
     expect(cronAuthorized(req('Bearer undefined'), undefined)).toBe('misconfigured');
     expect(cronAuthorized(req('Bearer '), '')).toBe('misconfigured');
+    expect(cronAuthorized(req('Bearer abc'), 'short')).toBe('misconfigured');
     expect(cronAuthorized(req(`Bearer ${'a'.repeat(15)}`), 'a'.repeat(15))).toBe('misconfigured');
+  });
+  it('denies a request with no bearer before reporting config', () => {
+    expect(cronAuthorized(req(), undefined)).toBe('denied');
+    expect(cronAuthorized(req(), 'short')).toBe('denied');
+    expect(cronAuthorized(req('Basic abc'), undefined)).toBe('denied');
   });
   it('denies a missing or wrong header and accepts the exact bearer token', () => {
     expect(cronAuthorized(req(), SECRET)).toBe('denied');
@@ -88,6 +94,15 @@ describe('api/nightly-cron', () => {
     const res = await call({ authorization: 'Bearer undefined' });
     expect(res.statusCode).toBe(500);
     expect(res.body.code).toBe('CRON_NOT_CONFIGURED');
+    expect(sql.queries).toHaveLength(0);
+  });
+
+  it('401, not 500, with no Authorization header even when CRON_SECRET is missing', async () => {
+    vi.stubEnv('CRON_SECRET', undefined);
+    const { sql, call } = setup(FRESH);
+    const res = await call();
+    expect(res.statusCode).toBe(401);
+    expect(res.body.code).toBe('UNAUTHORIZED');
     expect(sql.queries).toHaveLength(0);
   });
 

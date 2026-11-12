@@ -15,9 +15,9 @@ export function mockRes() {
   };
 }
 
-export function authedReq({ method = 'GET', body, query = {}, authed = true } = {}) {
+export function authedReq({ method = 'GET', body, query = {}, authed = true, contentType = 'application/json' } = {}) {
   const cookie = authed ? sessionCookie(TEST_AUTH).split(';')[0] : '';
-  return { method, body, query, headers: { cookie } };
+  return { method, body, query, headers: { cookie, ...(method === 'POST' && contentType ? { 'content-type': contentType } : {}) } };
 }
 
 export function mockSql(resultsOrResolver = []) {

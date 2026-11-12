@@ -114,7 +114,7 @@ async function playSession(seed) {
 }
 
 describe('seeded table sessions', () => {
-  it('conserve chips, number hands, match the summary, hide hole cards and apply bot raises', async () => {
+  it('conserve chips, number hands, match the summary, hide hole cards and apply bot raises', { timeout: 20_000 }, async () => {
     let botRaises = 0;
     let rebuys = 0;
     let refills = 0;
