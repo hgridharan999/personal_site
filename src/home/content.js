@@ -182,17 +182,18 @@ export const PROJECTS = {
     {
       co: 'First Signal',
       coHref: 'https://cvc-hackathon.vercel.app/',
-      loc: 'Deep-tech sourcing',
+      loc: 'CVC hackathon',
       when: nb('Nov 2026'),
       lead: 'Finds deep-tech founders',
       rest: ` before their first${_}round.`,
       body: [
-        'A sourcing tool for venture and corporate venture analysts. You type an investment thesis, and it returns researchers who haven’t started a company yet and early SBIR and STTR spinouts with no SEC Form D on record. Every lead links back to the public record it came from.',
-        'Claude turns the thesis into search terms. The tool then pulls papers from OpenAlex, grants from NIH RePORTER and NSF, and awards from SBIR.gov and USAspending, and matches them to patents and Form D filings, with a probability and the reasons for each match.',
-        'It can also score any of about 10,600 SBIR and STTR companies on the chance of a Form D filing within 24 months and of a Phase II award. The models were tested on years they weren’t trained on, and reach an AUC of about 0.73 to 0.75 for Form D and 0.76 for Phase II.',
+        'By the time a deep-tech company shows up in a venture database, the round is usually done. The early signals are already public: papers, federal grants, SBIR and STTR awards, patents and SEC Form D filings. First Signal links them. You type an investment thesis, and it returns researchers who haven’t started a company yet and early spinouts with no Form D on record, each one click from its source record.',
+        'Claude turns the thesis into search terms. The tool pulls matching papers, grants and awards from OpenAlex, NIH RePORTER, NSF, SBIR.gov and USAspending, then matches researchers to companies, patents and Form D filings, with a probability and the reasons for each match. It can draft a memo for each lead.',
+        'It also scores any of about 10,600 SBIR and STTR companies on the chance of a Form D filing within 24 months and of a Phase II award. On years the models weren’t trained on, they reach an AUC of about 0.73 to 0.75 for Form D and 0.76 for Phase II. Parts of the scorecard that didn’t predict anything are shown as description only.',
       ],
       meta: [
         'Python',
+        'FastAPI',
         'scikit-learn',
         'Next.js',
         { label: 'Demo', href: 'https://cvc-hackathon.vercel.app/app', sr: ' for First Signal' },
