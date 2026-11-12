@@ -187,9 +187,9 @@ export const PROJECTS = {
       lead: 'Finds deep-tech founders',
       rest: ` before their first${_}round.`,
       body: [
-        'By the time a deep-tech company shows up in a venture database, the round is usually done. The early signals are already public: papers, federal grants, SBIR and STTR awards, patents and SEC Form D filings. First Signal links them. You type an investment thesis, and it returns researchers who haven’t started a company yet and early spinouts with no Form D on record, each one click from its source record.',
-        'Claude turns the thesis into search terms. The tool pulls matching papers, grants and awards from OpenAlex, NIH RePORTER, NSF, SBIR.gov and USAspending, then matches researchers to companies, patents and Form D filings, with a probability and the reasons for each match. It can draft a memo for each lead.',
-        'It also scores any of about 10,600 SBIR and STTR companies on the chance of a Form D filing within 24 months and of a Phase II award. On years the models weren’t trained on, they reach an AUC of about 0.73 to 0.75 for Form D and 0.76 for Phase II. Parts of the scorecard that didn’t predict anything are shown as description only.',
+        'A sourcing tool that finds deep-tech founders and spinouts before their first venture round, using only public records. Built for a CVC hackathon.',
+        'You type an investment thesis, and it returns researchers who haven’t started a company yet and SBIR-funded spinouts with no SEC Form D on record. Every lead links back to the paper, grant or filing it came from.',
+        'It also scores about 10,600 SBIR and STTR companies on their chance of a private raise or a Phase II award, with models tested on years they weren’t trained on.',
       ],
       meta: [
         'Python',
