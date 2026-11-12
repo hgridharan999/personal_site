@@ -20,24 +20,40 @@ const LINTEL = 'M16.5 25Q24 21 31.5 25';
  */
 export default function KiliDoor() {
   const ref = useRef(null);
+  const pressedRef = useRef(false); // the current press began on the door
   const navigate = useNavigate();
   const [armedAt, setArmedAt] = useState(null);
 
+  // While armed: show the door drawn, and settle it on a tap elsewhere or when the wait runs out.
+  // `open` is toggled by hand, never through className: labels.js owns the `on` class, and a
+  // className React recomputed would wipe it out (and with it the door's pointer events).
   useEffect(() => {
-    if (armedAt === null) return undefined;
+    const el = ref.current;
+    if (armedAt === null || !el) return undefined;
     const disarm = () => setArmedAt(null);
     const onDown = (e) => {
-      if (!ref.current?.contains(e.target)) disarm();
+      if (!el.contains(e.target)) disarm();
     };
+    el.classList.add('open');
     const timer = setTimeout(disarm, ARM_MS);
     document.addEventListener('pointerdown', onDown);
     return () => {
+      el.classList.remove('open');
       clearTimeout(timer);
       document.removeEventListener('pointerdown', onDown);
     };
   }, [armedAt]);
 
+  const onPointerDown = () => {
+    pressedRef.current = true;
+  };
+  const onPointerLeave = () => {
+    pressedRef.current = false;
+  };
   const onPointerUp = (e) => {
+    const pressed = pressedRef.current;
+    pressedRef.current = false;
+    if (!pressed) return; // pressed somewhere else and released over the door
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     const next = doorTap({ armedAt }, { pointerType: e.pointerType, now: e.timeStamp });
     setArmedAt(next.state.armedAt);
@@ -45,7 +61,7 @@ export default function KiliDoor() {
   };
 
   return (
-    <div ref={ref} className={armedAt === null ? 'kili-door' : 'kili-door open'} data-kili="door" onPointerUp={onPointerUp}>
+    <div ref={ref} className="kili-door" data-kili="door" onPointerDown={onPointerDown} onPointerUp={onPointerUp} onPointerLeave={onPointerLeave}>
       <svg viewBox="0 0 48 48" width="48" height="48">
         <path className="kili-door-l" pathLength="1" stroke="currentColor" d={JAMB_L} />
         <path className="kili-door-l" pathLength="1" stroke="currentColor" d={JAMB_R} />

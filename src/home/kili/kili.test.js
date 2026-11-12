@@ -97,7 +97,13 @@ describe('kili.css', () => {
 
   it('lifts the door on hover only where there is a real hover, and when armed by a tap', () => {
     expect(css).toMatch(/@media \(hover: hover\) and \(pointer: fine\)\s*\{\s*\.hm \.kili-door\.on:hover \.kili-door-l \{ stroke-dashoffset: 0; \}/);
-    expect(declarationsOf('.hm .kili-door.open .kili-door-l')).toContain('stroke-dashoffset: 0');
+    expect(declarationsOf('.hm .kili-door.on.open .kili-door-l')).toContain('stroke-dashoffset: 0');
+  });
+
+  it('draws the armed door only while it is on, so a reset clears it at once', () => {
+    const openSelectors = selectors.filter((s) => /\.kili-door\S*\.open/.test(s));
+    expect(openSelectors.length).toBeGreaterThan(0);
+    expect(openSelectors.filter((s) => !s.includes('.kili-door.on.open'))).toEqual([]);
   });
 
   it('draws the door in only when motion is welcome: with reduced motion it is simply there', () => {
@@ -200,6 +206,20 @@ describe('the markup', () => {
     expect(door).toContain("navigate('/nightly')");
     expect(door).toContain('onPointerUp=');
     expect(door).toMatch(/addEventListener\('pointerdown'[\s\S]*removeEventListener\('pointerdown'/);
+  });
+
+  it('leaves the door\'s classes to labels.js: React renders a fixed class, and `open` is toggled by hand', () => {
+    // labels.js adds `on` with classList; a className that React recomputes would wipe it out
+    const door = read('KiliDoor.jsx');
+    expect(door).toMatch(/<div ref=\{ref\} className="kili-door" data-kili="door"/);
+    expect(door).not.toMatch(/className=\{/);
+    expect(door).toMatch(/classList\.add\('open'\)[\s\S]*classList\.remove\('open'\)/);
+  });
+
+  it('opens only on a press that began on the door', () => {
+    const door = read('KiliDoor.jsx');
+    expect(door).toContain('onPointerDown=');
+    expect(door).toMatch(/if \(!pressed\) return;/);
   });
 
   it('places the door on the front line at the stage edge, shows it with the legend and resets it', () => {
