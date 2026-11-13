@@ -1,0 +1,10 @@
+/* Sign-in form, in the public site's look. Tokens, .btn and .sp-input come from home.css and
+   site.css; every class here is lg-* and sits under .sp so nothing leaks to other pages. */
+
+.sp .lg-form { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; max-width: 360px; margin-top: 28px; }
+.sp .lg-label { font: 500 13px/1.5 var(--sans); letter-spacing: 0.01em; color: var(--muted); }
+.sp .lg-form .btn { margin-top: 8px; }
+.sp .lg-form .btn[disabled] { opacity: 0.45; }
+/* the same terracotta the climate page uses for a failure: 6:1 on white */
+.sp .lg-error { min-height: 1.5em; font-size: 14px; line-height: 1.5; color: #A4442B; }
+.sp .lg-center { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-top: 28px; }

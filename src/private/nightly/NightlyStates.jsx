@@ -7,7 +7,7 @@ import { useCatchFocus } from './focus';
 
 export function Loading() {
   return (
-    <p className="nt-state asc-mono">
+    <p className="nt-state">
       <span className="nt-pulse" aria-hidden="true" /> Loading tonight…
     </p>
   );
@@ -30,7 +30,7 @@ function TryAgain({ offer, busy, onRetry }) {
   if (offer && !offered) setOffered(true);
   if (!offer && !offered) return null;
   return (
-    <button type="button" className="nt-btn" aria-disabled={busy} onClick={busy ? undefined : onRetry}>
+    <button type="button" className="btn btn-line" aria-disabled={busy} onClick={busy ? undefined : onRetry}>
       Try again
     </button>
   );
@@ -38,10 +38,10 @@ function TryAgain({ offer, busy, onRetry }) {
 
 export function Failure({ message, detail, onRetry }) {
   return (
-    <section className="nt-panel" aria-labelledby="nt-fail-title">
+    <section className="nt-panel nt-panel--fail" aria-labelledby="nt-fail-title">
       <h2 id="nt-fail-title" className="nt-panel__title">{message}</h2>
-      {detail && <p className="nt-muted" role="alert">{detail}</p>}
-      <button type="button" className="nt-btn" onClick={onRetry}>Retry</button>
+      {detail && <p className="sp-text" role="alert">{detail}</p>}
+      <button type="button" className="btn btn-line" onClick={onRetry}>Retry</button>
     </section>
   );
 }
@@ -52,8 +52,8 @@ export function Empty({ notice, onGenerate }) {
   return (
     <section className="nt-panel" aria-labelledby="nt-empty-title">
       <h2 id="nt-empty-title" className="nt-panel__title">No brief yet</h2>
-      <p className="nt-muted">Tonight's brief arrives on its own in the evening. You can make it now instead.</p>
-      <button ref={buttonRef} type="button" className="nt-btn nt-btn--primary" onClick={onGenerate}>Generate now</button>
+      <p className="sp-text">Tonight's brief arrives on its own in the evening. You can make it now instead.</p>
+      <button ref={buttonRef} type="button" className="btn nt-primary" onClick={onGenerate}>Generate now</button>
       <Notice notice={notice} />
     </section>
   );
@@ -68,7 +68,7 @@ function Working({ id, title, children, notice, offer, onRetry, busy }) {
       <h2 id={id} className="nt-panel__title nt-state" ref={headingRef} tabIndex={-1}>
         <span className="nt-pulse" aria-hidden="true" /> {title}
       </h2>
-      <p className="nt-muted">{children}</p>
+      <p className="sp-text">{children}</p>
       <TryAgain offer={offer} busy={busy} onRetry={onRetry} />
       <Notice notice={notice} />
     </section>
@@ -95,10 +95,10 @@ export function GradeFailed({ notice, onRetry }) {
   const retryRef = useRef(null);
   useCatchFocus(retryRef, Boolean(notice)); // a retry that failed again lands back here
   return (
-    <section className="nt-panel" aria-labelledby="nt-failed-title">
+    <section className="nt-panel nt-panel--fail" aria-labelledby="nt-failed-title">
       <h2 id="nt-failed-title" className="nt-panel__title">Grading did not finish</h2>
-      <p className="nt-muted">Your answers are safe and still locked. Try the grade again.</p>
-      <button ref={retryRef} type="button" className="nt-btn nt-btn--primary" onClick={onRetry}>Retry</button>
+      <p className="sp-text">Your answers are safe and still locked. Try the grade again.</p>
+      <button ref={retryRef} type="button" className="btn nt-primary" onClick={onRetry}>Retry</button>
       <Notice notice={notice} />
     </section>
   );

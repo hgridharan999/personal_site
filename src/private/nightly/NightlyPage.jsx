@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import PrivateShell from '../PrivateShell';
+import SiteShell from '../../site/SiteShell';
 import { formatLongDate } from '../../site/format';
 import { browserStorage, useNightly } from './useNightly';
 import NightlyForm from './NightlyForm';
@@ -30,25 +29,16 @@ export default function NightlyPage() {
   const nightly = useNightly(storage);
   const { today, view } = nightly;
 
-  return (
-    <PrivateShell className="nt" customCursor={false}>
-      <div className="asc-topbar">
-        <Link to="/me" className="asc-back asc-mono">
-          <ArrowLeft size={14} aria-hidden="true" /> <span className="b-name">Base camp</span>
-        </Link>
-      </div>
+  const intro = today?.night ? <time dateTime={today.night}>{formatLongDate(today.night)}</time> : 'Tonight';
 
-      <main className="nt-main">
-        <header className="nt-head">
-          <p className="asc-mono nt-kicker">
-            {today?.night ? <time dateTime={today.night}>{formatLongDate(today.night)}</time> : 'Tonight'}
-          </p>
-          <h1 className="nt-title"><span className="asc-serif-it asc-amber">Nightly</span></h1>
-        </header>
-        <p className="nt-sr" role="status">{ANNOUNCE[view] ?? ''}</p>
-        <Body nightly={nightly} storage={storage} />
-      </main>
-    </PrivateShell>
+  return (
+    <SiteShell title="Nightly" intro={intro} noindex footer={false}>
+      <p className="nt-back">
+        <Link to="/me">Back to /me</Link>
+      </p>
+      <p className="sr-only" role="status">{ANNOUNCE[view] ?? ''}</p>
+      <Body nightly={nightly} storage={storage} />
+    </SiteShell>
   );
 }
 

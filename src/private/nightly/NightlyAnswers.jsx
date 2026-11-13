@@ -11,12 +11,12 @@ export function LockedAnswers({ session, title = 'Your answers' }) {
 
   return (
     <section className="nt-section" aria-labelledby="nt-locked-title">
-      <h2 id="nt-locked-title" className="nt-section__title">{title}</h2>
-      {answers.length === 0 && !take && <p className="nt-muted">Nothing was written this night.</p>}
+      <h2 id="nt-locked-title" className="head nt-section__title">{title}</h2>
+      {answers.length === 0 && !take && <p className="sp-text">Nothing was written this night.</p>}
       <ol className="nt-answers" role="list">
         {answers.map((a) => (
           <li key={a.idx} className="nt-answer">
-            <p className="asc-mono nt-type">{typeName(a.questionType)}</p>
+            <p className="nt-type">{typeName(a.questionType)}</p>
             <p className="nt-prompt">{a.prompt}</p>
             <p className="nt-prose nt-written">{a.answer}</p>
           </li>
@@ -24,7 +24,7 @@ export function LockedAnswers({ session, title = 'Your answers' }) {
       </ol>
       {take && (
         <div className="nt-answer">
-          <p className="asc-mono nt-type">Your take{story ? ` · on ${story.headline}` : ''}</p>
+          <p className="nt-type">Your take{story ? ` · on ${story.headline}` : ''}</p>
           <p className="nt-prose nt-written">{take.body}</p>
         </div>
       )}

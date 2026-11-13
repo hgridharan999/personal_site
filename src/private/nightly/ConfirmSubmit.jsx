@@ -16,8 +16,8 @@ export default function ConfirmSubmit({ onConfirm, onCancel }) {
     <div className="nt-confirm" role="group" aria-labelledby="nt-confirm-q" onKeyDown={onKeyDown}>
       <p id="nt-confirm-q" className="nt-confirm__q">This locks your answers. Submit?</p>
       <div className="nt-confirm__buttons">
-        <button ref={confirmRef} type="button" className="nt-btn nt-btn--primary" onClick={onConfirm}>Confirm</button>
-        <button type="button" className="nt-btn" onClick={onCancel}>Cancel</button>
+        <button ref={confirmRef} type="button" className="btn nt-primary" onClick={onConfirm}>Confirm</button>
+        <button type="button" className="btn btn-line" onClick={onCancel}>Cancel</button>
       </div>
     </div>
   );

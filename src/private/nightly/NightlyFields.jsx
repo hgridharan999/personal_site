@@ -19,10 +19,10 @@ export function Question({ i, question, story, value, onChange, disabled, proble
   return (
     <li className="nt-field">
       <label htmlFor={id} className="nt-q">
-        <span className="asc-mono nt-type">{i + 1} · {typeName(question.type)}</span>
+        <span className="nt-type">{i + 1} · {typeName(question.type)}</span>
         <span className="nt-prompt">{question.prompt}</span>
       </label>
-      {story && <p id={`${id}-on`} className="nt-muted nt-on">On: {story.headline}</p>}
+      {story && <p id={`${id}-on`} className="sp-text nt-on">On: {story.headline}</p>}
       <textarea
         id={id}
         className="nt-textarea"
@@ -44,9 +44,9 @@ export function TakeFields({ stories, draft, update, disabled, problemFor }) {
   const take = invalidProps('take', problemFor('take'));
   return (
     <section className="nt-section" aria-labelledby="nt-take-title">
-      <h2 id="nt-take-title" className="nt-section__title">Your take</h2>
+      <h2 id="nt-take-title" className="head nt-section__title">Your take</h2>
       <fieldset className="nt-picker" role="radiogroup" disabled={disabled} {...story}>
-        <legend className="asc-mono nt-type">Which story is it on?</legend>
+        <legend className="nt-type">Which story is it on?</legend>
         {stories.map((s, i) => (
           <label key={i} className="nt-choice">
             <input
@@ -61,8 +61,8 @@ export function TakeFields({ stories, draft, update, disabled, problemFor }) {
           </label>
         ))}
       </fieldset>
-      <label htmlFor={fieldId('take')} className="asc-mono nt-type nt-label">Your take</label>
-      <p id="nt-take-hint" className="nt-muted">3 to 5 sentences, starting from something you saw or did</p>
+      <label htmlFor={fieldId('take')} className="nt-type nt-label">Your take</label>
+      <p id="nt-take-hint" className="sp-text">3 to 5 sentences, starting from something you saw or did</p>
       <textarea
         id={fieldId('take')}
         className="nt-textarea nt-textarea--take"

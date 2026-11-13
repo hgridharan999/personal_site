@@ -89,7 +89,7 @@ export default function NightlyForm({ session, storage, submitting, notice, onSu
       <NightlyBrief stories={stories} niche={niche} />
       <form className="nt-form" onSubmit={ask} noValidate>
         <section className="nt-section" aria-labelledby="nt-q-title">
-          <h2 id="nt-q-title" className="nt-section__title">Three questions</h2>
+          <h2 id="nt-q-title" className="head nt-section__title">Three questions</h2>
           <ol className="nt-fields" role="list">
             {questions.map((q, i) => (
               <Question
@@ -113,7 +113,7 @@ export default function NightlyForm({ session, storage, submitting, notice, onSu
           {confirming ? (
             <ConfirmSubmit onConfirm={confirm} onCancel={back} />
           ) : (
-            <button ref={submitRef} type="submit" className="nt-btn nt-btn--primary" aria-disabled={locked}>
+            <button ref={submitRef} type="submit" className="btn nt-primary" aria-disabled={locked}>
               {submitting ? 'Submitting…' : 'Submit'}
             </button>
           )}
