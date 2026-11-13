@@ -290,6 +290,14 @@ of (night date, this week's question types), tested in isolation.
 Hari's words: "a little lift of a couple lines in the shape of a small door in the bottom left of the
 kilimanjaro animation."
 
+### Revised 2026-11-12 after Hari saw the first build
+
+Hari: "i want one of the actual lines from the drawing to open up to be the door". The door is no
+longer an SVG overlay. The canvas's own front plains line lifts into a small arched doorway. Its
+ground fill clears the lines behind it, so it reads as an opening. A separate hit area triggers it
+with a `kili:door` event, and `doorLine.js` holds the geometry. The subsections below describe the
+first build and are superseded where they conflict.
+
 ### What it looks like **[call, interpreting Hari's line]**
 
 - At rest: nothing.
