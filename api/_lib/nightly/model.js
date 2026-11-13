@@ -3,9 +3,9 @@
 // fallbacks; everything else is the plain Messages API.
 import Anthropic, { APIConnectionTimeoutError, APIUserAbortError } from '@anthropic-ai/sdk';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
-import { BlindTake, Brief, GradeResult } from './schemas.js';
+import { BlindTake, Brief, FlawDraft, GradeResult } from './schemas.js';
 import { TYPES } from './types.js';
-import { BLIND_TAKE_SYSTEM, BRIEF_SYSTEM, FORMAT_SYSTEM, GRADER_SYSTEM } from './prompts.js';
+import { BLIND_TAKE_SYSTEM, BRIEF_SYSTEM, FLAW_SYSTEM, FORMAT_SYSTEM, GRADER_SYSTEM } from './prompts.js';
 
 export const MODEL = 'claude-sonnet-5-5';
 
@@ -162,6 +162,16 @@ export function buildGradeRequest({ stories, questions, answers, take }) {
 export function buildBlindTakeRequest({ story }) {
   const user = `<story>\n${storyText(story)}\n</story>\n\nWrite your take on this story.`;
   return structuredRequest(BLIND_TAKE_SYSTEM, user, jsonFormat(BlindTake), 'medium');
+}
+
+/** The flaw puzzle: an argument that commits exactly the named flaw, in the given setting. */
+export function buildFlawRequest({ flaw, setting }) {
+  const user = [
+    `<flaw name="${flaw.name}">\n${flaw.definition}\n</flaw>`,
+    `<setting>\n${setting}\n</setting>`,
+    'Write the argument and the explanation.',
+  ].join('\n\n');
+  return structuredRequest(FLAW_SYSTEM, user, jsonFormat(FlawDraft), 'low');
 }
 
 // ---- URL checks -------------------------------------------------------------------------------
@@ -334,6 +344,17 @@ export function createModel({ client = new Anthropic({ maxRetries: 1, timeout: C
     async blindTake({ story, deadline }) {
       const out = await structuredCall(client, buildBlindTakeRequest({ story }), BlindTake, deadline, 'blind take');
       return out.take;
+    },
+
+    async writeFlaw({ flaw, setting, deadline }) {
+      const req = buildFlawRequest({ flaw, setting });
+      const attempt = () => structuredCall(client, req, FlawDraft, deadline, 'flaw draft');
+      try {
+        return await attempt();
+      } catch (err) {
+        if (!(err instanceof ModelError) || err.code !== 'INVALID_OUTPUT' || !deadline.canRetry()) throw err;
+        return attempt();
+      }
     },
   };
 }

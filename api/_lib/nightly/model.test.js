@@ -5,6 +5,7 @@ import {
   ModelError,
   buildBlindTakeRequest,
   buildBriefRequest,
+  buildFlawRequest,
   buildGradeRequest,
   collectSearchUrls,
   createDeadline,
@@ -369,5 +370,45 @@ describe('blindTake', () => {
     await expect(createModel({ client }).blindTake({ story: story(2), deadline: roomy() })).rejects.toMatchObject({
       code: 'INVALID_OUTPUT',
     });
+  });
+});
+
+describe('flaw call', () => {
+  const flaw = { key: 'survivorship', name: 'Survivorship bias', definition: 'Judging by the winners that remain.' };
+  const setting = 'a regional bakery chain deciding on expansion';
+  const draft = { argument: 'Every bakery we studied thrived. So expanding works.', explanation: 'It ignores closures. That is the flaw.' };
+  const args = (deadline) => ({ flaw, setting, deadline });
+
+  it('buildFlawRequest has no tools, low effort, a json_schema format, and names the flaw and setting', () => {
+    const req = buildFlawRequest({ flaw, setting });
+    expect(req.tools).toBeUndefined();
+    expect(req.output_config.effort).toBe('low');
+    expect(req.output_config.format.type).toBe('json_schema');
+    const user = req.messages[0].content;
+    expect(user).toContain(flaw.name);
+    expect(user).toContain(flaw.definition);
+    expect(user).toContain(setting);
+    expect(req.system).not.toContain(flaw.name);
+  });
+  it('writeFlaw returns the parsed draft', async () => {
+    const { client } = fakeClient(textReply(draft));
+    expect(await createModel({ client }).writeFlaw(args(roomy()))).toEqual(draft);
+  });
+  it('retries once on non-JSON when there is room', async () => {
+    const { client, calls } = fakeClient({ stop_reason: 'end_turn', content: [{ type: 'text', text: 'oops' }] }, textReply(draft));
+    expect(await createModel({ client }).writeFlaw(args(roomy()))).toEqual(draft);
+    expect(calls).toHaveLength(2);
+  });
+  it('does not retry when time is tight', async () => {
+    const { client, calls } = fakeClient({ stop_reason: 'end_turn', content: [{ type: 'text', text: 'oops' }] }, textReply(draft));
+    await expect(createModel({ client }).writeFlaw(args(tight()))).rejects.toMatchObject({ code: 'INVALID_OUTPUT' });
+    expect(calls).toHaveLength(1);
+  });
+  it('throws REFUSAL without retrying', async () => {
+    const { client, calls } = fakeClient(refusal(), textReply(draft));
+    const err = await createModel({ client }).writeFlaw(args(roomy())).catch((e) => e);
+    expect(err).toBeInstanceOf(ModelError);
+    expect(err.code).toBe('REFUSAL');
+    expect(calls).toHaveLength(1);
   });
 });
