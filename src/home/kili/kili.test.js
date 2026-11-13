@@ -82,9 +82,13 @@ describe('kili.css', () => {
   it('keeps the door invisible and out of the way until the drawing reveals it', () => {
     const door = declarationsOf('.hm .kili-door');
     expect(door).toContain('pointer-events: none');
-    expect(door).toContain('color: #AA9254');
     expect(door).toContain('translateY(-100%)');
-    expect(declarationsOf('.hm .kili-door-l')).toMatch(/stroke-width: 1;[\s\S]*fill: none;[\s\S]*stroke-dasharray: 1;[\s\S]*stroke-dashoffset: 1/);
+    expect(door).toMatch(/width: 48px; height: 48px/);
+  });
+
+  it('draws nothing for the door: the canvas lifts it out of the front line', () => {
+    expect(selectors.filter((s) => s.includes('kili-door'))).toEqual(['.hm .kili-door', '.hm .kili-door.on']);
+    expect(css).not.toMatch(/kili-door[^{]*\{[^}]*(stroke|transition)/);
   });
 
   it('lets the door, and only the door, take the pointer once it is on', () => {
@@ -95,21 +99,9 @@ describe('kili.css', () => {
     expect(takers).toEqual(['.hm .kili-door.on']);
   });
 
-  it('lifts the door on hover only where there is a real hover, and when armed by a tap', () => {
-    expect(css).toMatch(/@media \(hover: hover\) and \(pointer: fine\)\s*\{\s*\.hm \.kili-door\.on:hover \.kili-door-l \{ stroke-dashoffset: 0; \}/);
-    expect(declarationsOf('.hm .kili-door.on.open .kili-door-l')).toContain('stroke-dashoffset: 0');
-  });
-
-  it('draws the armed door only while it is on, so a reset clears it at once', () => {
-    const openSelectors = selectors.filter((s) => /\.kili-door\S*\.open/.test(s));
-    expect(openSelectors.length).toBeGreaterThan(0);
-    expect(openSelectors.filter((s) => !s.includes('.kili-door.on.open'))).toEqual([]);
-  });
-
-  it('draws the door in only when motion is welcome: with reduced motion it is simply there', () => {
+  it('keeps every transition inside the reduced-motion block at the end', () => {
     const at = css.indexOf('prefers-reduced-motion');
-    const block = css.match(/@media \(prefers-reduced-motion: no-preference\)\s*\{([\s\S]*)\}\s*$/)[1];
-    expect(block).toMatch(/\.hm \.kili-door-l \{[^}]*transition: stroke-dashoffset/);
+    expect(at).toBeGreaterThan(0);
     expect(css.slice(0, at)).not.toMatch(/transition/);
   });
 
@@ -198,7 +190,18 @@ describe('the markup', () => {
     const door = read('KiliDoor.jsx');
     expect(door).not.toMatch(/href|tabIndex|aria-label|role=/);
     expect(door).toContain('data-kili="door"');
-    expect(door.match(/<path [^>]*className="kili-door-l"[^>]*pathLength="1"/g)).toHaveLength(3);
+    expect(door).not.toMatch(/<svg|<path/); // only a hit area: the canvas draws the door
+  });
+
+  it('asks the drawing to lift the door with a kili:door event on the band, which draw.js listens for', () => {
+    const door = read('KiliDoor.jsx');
+    expect(door).toContain("closest('.kili-band')");
+    expect(door).toMatch(/dispatchEvent\(new CustomEvent\('kili:door', \{ detail: \{ open \} \}\)\)/);
+    expect(door).toContain('onPointerEnter=');
+    expect(door).toContain("if (e.pointerType === 'touch') return;"); // a touch has no hover: its taps arm the door
+    const draw = read('draw.js');
+    expect(draw).toContain("band.addEventListener?.('kili:door', onDoor)");
+    expect(draw).toContain("band.removeEventListener?.('kili:door', onDoor)");
   });
 
   it('opens /nightly through navigate() from a pointer up, and disarms on a tap elsewhere', () => {
@@ -208,12 +211,11 @@ describe('the markup', () => {
     expect(door).toMatch(/addEventListener\('pointerdown'[\s\S]*removeEventListener\('pointerdown'/);
   });
 
-  it('leaves the door\'s classes to labels.js: React renders a fixed class, and `open` is toggled by hand', () => {
+  it('leaves the door\'s classes to labels.js: React renders a fixed class and never touches it', () => {
     // labels.js adds `on` with classList; a className that React recomputes would wipe it out
     const door = read('KiliDoor.jsx');
     expect(door).toMatch(/<div ref=\{ref\} className="kili-door" data-kili="door"/);
-    expect(door).not.toMatch(/className=\{/);
-    expect(door).toMatch(/classList\.add\('open'\)[\s\S]*classList\.remove\('open'\)/);
+    expect(door).not.toMatch(/className=\{|classList/);
   });
 
   it('opens only on a press that began on the door', () => {
@@ -226,6 +228,7 @@ describe('the markup', () => {
     const labels = read('labels.js');
     expect(labels).toContain("one('door')");
     expect(labels).toContain('layout.lineBase[layout.N - 1]');
+    expect(labels).toContain('doorGeometry(layout)'); // centred on the doorway the canvas lifts
     expect(labels).toMatch(/Math\.max\(layout\.phone \? 16 : 32, layout\.sx0\)/);
     expect(labels).toMatch(/if \(lifeT >= 0\) \{?\s*show\(key\);\s*show\(door\);/);
     expect(labels).toMatch(/for \(const el of \[[^\]]*\bdoor\b[^\]]*\]\) el\?\.removeAttribute\('style'\)/);

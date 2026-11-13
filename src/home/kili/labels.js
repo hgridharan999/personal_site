@@ -1,10 +1,14 @@
+import { doorGeometry } from './doorLine.js';
 import { labelAnchors } from './route.js';
 
-// The HTML over the canvas: Uhuru Peak, Mawenzi, the two camp names, the legend and the door.
+// The HTML over the canvas: Uhuru Peak, Mawenzi, the two camp names, the legend and the door's
+// hit area (the door itself is drawn on the canvas: paint.js lifts it out of the front line).
 // KiliEnding renders them (so the words come from content.js); this file finds them by their
 // data attributes, puts them on the drawing and fades them in as the route reaches them. It
 // only touches `left`, `top`, `right`, one transform and the `on` class, and `reset` undoes all
 // of that, so a remount starts from the markup as rendered.
+
+const DOOR_BOX = 48; // px: the door's hit area, as in kili.css
 
 const place = (el, x, y) => {
   if (!el) return;
@@ -46,9 +50,10 @@ export function createLabels(band) {
       }
       for (const w of built.waypoints) place(waypoints.get(w.name), w.x, w.y);
       if (key) key.style.right = `${Math.max(layout.phone ? 16 : 32, layout.sx0).toFixed(0)}px`;
-      // the door mirrors the legend on the left, its foot on the front plains line (its CSS lifts
-      // it by its own height); a whole-pixel left keeps its jambs crisp
-      place(door, Math.round(Math.max(layout.phone ? 16 : 32, layout.sx0)), layout.lineBase[layout.N - 1]);
+      // the door's hit area: a box centred on the doorway, its foot on the front plains line (its
+      // CSS lifts it by its own height)
+      const dg = doorGeometry(layout);
+      place(door, dg.x0 + dg.w / 2 - DOOR_BOX / 2, layout.lineBase[layout.N - 1]);
     },
 
 

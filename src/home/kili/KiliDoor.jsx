@@ -2,31 +2,48 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ARM_MS, doorTap } from './door';
 
-// The door's three lines in a 48 by 48 box, about 15 wide and 25 tall. The box's bottom edge is
-// the foot: labels.js stands it on the front plains line. The jambs start at the foot, so they
-// draw upward; the lintel is a shallow arch from jamb to jamb. The half-pixel x keeps the jambs
-// crisp (labels.js puts the box on a whole pixel).
-const JAMB_L = 'M16.5 48V25';
-const JAMB_R = 'M31.5 48V25';
-const LINTEL = 'M16.5 25Q24 21 31.5 25';
-
 /**
- * A hidden way in to /nightly: nothing at rest, and on hover a small doorway lifts out of the
- * drawing's front line. A click opens it. On touch the first tap lifts it and a second tap
- * within a few seconds opens it; a tap anywhere else, or the wait running out, settles it back.
+ * A hidden way in to /nightly. This is only its hit area, an invisible 48 px box over the bottom
+ * left of the drawing (labels.js puts it there, and gives it the pointer once the drawing is up).
+ * The door itself is the drawing's front line: while it is open, the canvas lifts a small doorway
+ * out of that line (draw.js, told by a 'kili:door' event on the band).
+ *
+ * A mouse or pen hovering opens it, and a click goes through. On touch the first tap opens it and
+ * a second tap within a few seconds goes through; a tap anywhere else, or the wait running out,
+ * lets it back down.
  *
  * Deliberately no link, focus stop, role or name: it lives inside the band, which is
  * aria-hidden, and it is only found by someone who knows where to look.
  */
 export default function KiliDoor() {
   const ref = useRef(null);
+  const bandRef = useRef(null); // the band the drawing listens on, kept for the unmount
   const pressedRef = useRef(false); // the current press began on the door
+  const hoverRef = useRef(false); // a mouse or pen is over the door
+  const armedRef = useRef(false); // a first tap has opened it
+  const openRef = useRef(false); // what the drawing was last told
   const navigate = useNavigate();
   const [armedAt, setArmedAt] = useState(null);
 
-  // While armed: show the door drawn, and settle it on a tap elsewhere or when the wait runs out.
-  // `open` is toggled by hand, never through className: labels.js owns the `on` class, and a
-  // className React recomputed would wipe it out (and with it the door's pointer events).
+  /** Tell the drawing whether the door should be open, when that changes. */
+  const sync = () => {
+    const open = hoverRef.current || armedRef.current;
+    if (open === openRef.current) return;
+    openRef.current = open;
+    bandRef.current?.dispatchEvent(new CustomEvent('kili:door', { detail: { open } }));
+  };
+
+  // Find the band once; leaving the page with the door open lets it down.
+  useEffect(() => {
+    bandRef.current = ref.current?.closest('.kili-band') ?? null;
+    return () => {
+      hoverRef.current = false;
+      armedRef.current = false;
+      sync();
+    };
+  }, []);
+
+  // While armed: hold the door open, and let it down on a tap elsewhere or when the wait runs out.
   useEffect(() => {
     const el = ref.current;
     if (armedAt === null || !el) return undefined;
@@ -34,21 +51,31 @@ export default function KiliDoor() {
     const onDown = (e) => {
       if (!el.contains(e.target)) disarm();
     };
-    el.classList.add('open');
+    armedRef.current = true;
+    sync();
     const timer = setTimeout(disarm, ARM_MS);
     document.addEventListener('pointerdown', onDown);
     return () => {
-      el.classList.remove('open');
+      armedRef.current = false;
+      sync();
       clearTimeout(timer);
       document.removeEventListener('pointerdown', onDown);
     };
   }, [armedAt]);
 
+  // A touch has no hover: its enter and leave come with the tap itself, so they open nothing.
+  const onPointerEnter = (e) => {
+    if (e.pointerType === 'touch') return;
+    hoverRef.current = true;
+    sync();
+  };
   const onPointerDown = () => {
     pressedRef.current = true;
   };
   const onPointerLeave = () => {
     pressedRef.current = false;
+    hoverRef.current = false;
+    sync();
   };
   const onPointerUp = (e) => {
     const pressed = pressedRef.current;
@@ -61,12 +88,6 @@ export default function KiliDoor() {
   };
 
   return (
-    <div ref={ref} className="kili-door" data-kili="door" onPointerDown={onPointerDown} onPointerUp={onPointerUp} onPointerLeave={onPointerLeave}>
-      <svg viewBox="0 0 48 48" width="48" height="48">
-        <path className="kili-door-l" pathLength="1" stroke="currentColor" d={JAMB_L} />
-        <path className="kili-door-l" pathLength="1" stroke="currentColor" d={JAMB_R} />
-        <path className="kili-door-l" pathLength="1" stroke="currentColor" d={LINTEL} />
-      </svg>
-    </div>
+    <div ref={ref} className="kili-door" data-kili="door" onPointerEnter={onPointerEnter} onPointerDown={onPointerDown} onPointerUp={onPointerUp} onPointerLeave={onPointerLeave} />
   );
 }
