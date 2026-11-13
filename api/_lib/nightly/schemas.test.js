@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BlindTake, Brief, GradeResult, SessionIdBody, SubmitBody } from './schemas.js';
+import { BlindTake, Brief, FlawDraft, GradeResult, LogBody, SessionIdBody, SolveBody, SubmitBody } from './schemas.js';
 
 const story = (n) => ({ headline: `h${n}`, summary: `s${n}`, url: `https://example.com/${n}`, source: 'Example' });
 const brief = () => ({
@@ -84,5 +84,49 @@ describe('small schemas', () => {
   it('BlindTake needs text', () => {
     expect(BlindTake.safeParse({ take: '' }).success).toBe(false);
     expect(BlindTake.safeParse({ take: 'x' }).success).toBe(true);
+  });
+});
+
+describe('FlawDraft', () => {
+  it('needs argument and explanation', () => {
+    expect(FlawDraft.safeParse({ argument: 'a', explanation: 'b' }).success).toBe(true);
+    expect(FlawDraft.safeParse({ argument: 'a' }).success).toBe(false);
+  });
+});
+
+describe('LogBody', () => {
+  const night = '2026-11-13';
+  const ok = (game, score) => LogBody.safeParse({ night, game, score }).success;
+  it('accepts valid scores', () => {
+    expect(ok('krillion', 540)).toBe(true);
+    expect(ok('fermi', 1.94)).toBe(true);
+  });
+  it('rejects bad decimals, range, game and missing night', () => {
+    expect(ok('krillion', 540.5)).toBe(false);
+    expect(ok('krillion', 701)).toBe(false);
+    expect(ok('fermi', 0.5)).toBe(false);
+    expect(ok('fermi', 1.945)).toBe(false);
+    expect(ok('puzzle_sprint', 3)).toBe(false);
+    expect(ok('wordle', 3)).toBe(false);
+    expect(LogBody.safeParse({ game: 'krillion', score: 5 }).success).toBe(false);
+  });
+  it('puts score errors at path score', () => {
+    const r = LogBody.safeParse({ night, game: 'krillion', score: 701 });
+    expect(r.error.issues[0].path).toEqual(['score']);
+  });
+});
+
+describe('SolveBody', () => {
+  const night = '2026-11-13';
+  const sprint = (answers) => ({ puzzle: 'sprint', night, answer: { answers, seconds: 42 } });
+  it('accepts both branches, including null answers', () => {
+    expect(SolveBody.safeParse(sprint([1, 2, 3, 4, 5])).success).toBe(true);
+    expect(SolveBody.safeParse(sprint([1, null, 3, 4, 5])).success).toBe(true);
+    expect(SolveBody.safeParse({ puzzle: 'flaw', night, answer: { choice: 3 } }).success).toBe(true);
+  });
+  it('rejects bad shapes', () => {
+    expect(SolveBody.safeParse(sprint([1, 2, 3, 4])).success).toBe(false);
+    expect(SolveBody.safeParse({ puzzle: 'flaw', night, answer: { choice: 4 } }).success).toBe(false);
+    expect(SolveBody.safeParse({ puzzle: 'estimate', night, answer: {} }).success).toBe(false);
   });
 });

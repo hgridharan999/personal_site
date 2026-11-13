@@ -5,7 +5,7 @@ import { FIELDS } from './interests.js';
 const WEEKLY_CASE_REPS = 2;
 
 /** n distinct random members of items (partial Fisher-Yates). */
-function sample(items, n, rand) {
+export function sample(items, n, rand) {
   const pool = [...items];
   const out = [];
   for (let i = 0; i < n && pool.length; i++) {

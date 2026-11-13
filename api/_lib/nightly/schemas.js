@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { TYPE_KEYS } from './types.js';
+import { GAMES, gameByKey, hasAtMostDecimals } from './games.js';
 
 const text = z.string().min(1);
 const idx = z.int().min(0).max(2);
@@ -42,3 +43,40 @@ export const GradeResult = z.object({
 });
 
 export const BlindTake = z.object({ take: text });
+
+export const FlawDraft = z.object({ argument: text, explanation: text });
+
+const night = z.iso.date();
+
+export const SolveBody = z.discriminatedUnion('puzzle', [
+  z.object({
+    puzzle: z.literal('sprint'),
+    night,
+    answer: z.object({
+      answers: z.array(z.number().finite().nullable()).length(5),
+      seconds: z.number().min(0).max(3600),
+    }),
+  }),
+  z.object({
+    puzzle: z.literal('flaw'),
+    night,
+    answer: z.object({ choice: z.int().min(0).max(3) }),
+  }),
+]);
+
+export const LogBody = z
+  .object({
+    night,
+    game: z.enum(GAMES.map((g) => g.key)),
+    score: z.number().finite(),
+  })
+  .superRefine((b, ctx) => {
+    const g = gameByKey(b.game);
+    if (b.score < g.min || b.score > g.max || !hasAtMostDecimals(b.score, g.decimals)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['score'],
+        message: `score must be ${g.min} to ${g.max} with at most ${g.decimals} decimals`,
+      });
+    }
+  });
