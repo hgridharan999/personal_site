@@ -104,6 +104,13 @@ describe('messageFor', () => {
     expect(messageFor(err(409, 'NOT_SUBMITTED'))).toBe('Nothing to grade yet.');
   });
 
+  it('words the games failures', () => {
+    expect(messageFor(err(409, 'ALREADY_SOLVED'))).toBe('You already answered this one tonight.');
+    expect(messageFor(err(409, 'NO_PUZZLES'))).toBe("Tonight's flaw isn't made yet.");
+    const failed = Object.assign(err(502, 'PUZZLES_FAILED'), { details: { reason: 'REFUSAL' } });
+    expect(messageFor(failed)).toContain("Tonight's flaw did not come together (reason: REFUSAL)");
+  });
+
   it('says the model key is missing, rather than blaming the network', () => {
     expect(messageFor(err(500, 'MODEL_NOT_CONFIGURED'))).toBe('The model key is not set on the server.');
   });

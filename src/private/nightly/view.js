@@ -56,11 +56,14 @@ const MESSAGES = {
   NOT_OPEN: 'These answers were already sent.',
   NOT_PUBLISHABLE: 'This take cannot be published now.',
   NOT_SUBMITTED: 'Nothing to grade yet.',
+  ALREADY_SOLVED: 'You already answered this one tonight.',
+  NO_PUZZLES: "Tonight's flaw isn't made yet.",
 };
 /** The model failures name the step, and the server's reason code when it sent one. */
 const MODEL_FAILURES = {
   GENERATION_FAILED: 'The brief did not come together',
   GRADING_FAILED: 'Grading did not finish',
+  PUZZLES_FAILED: "Tonight's flaw did not come together",
 };
 const SERVER = 'The server hit an error. Try again.';
 const OFFLINE = 'Could not reach the server. Try again.';
