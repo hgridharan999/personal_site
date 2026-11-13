@@ -91,6 +91,10 @@ describe('api/nightly: dispatch, auth and methods', () => {
       grade: { method: 'POST', auth: true },
       publish: { method: 'POST', auth: true },
       notes: { method: 'GET', auth: false },
+      games: { method: 'GET', auth: true },
+      puzzles: { method: 'POST', auth: true },
+      solve: { method: 'POST', auth: true },
+      log: { method: 'POST', auth: true },
     });
   });
 

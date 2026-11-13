@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { getSql as defaultGetSql } from './_lib/db.js';
 import { authConfig } from './_lib/session.js';
 import { guard, sendError } from './_lib/http.js';
+import { GAMES_ACTIONS, GAMES_HANDLERS } from './_lib/nightly/gamesActions.js';
+import { parseBody } from './_lib/nightly/parse.js';
 import { nightDate } from './_lib/nightly/dates.js';
 import { isModelMissing, lazyModel, REQUEST_BUDGET_MS, runGenerate } from './_lib/nightly/generate.js';
 import { createDeadline, ModelError } from './_lib/nightly/model.js';
@@ -9,7 +11,8 @@ import * as q from './_lib/nightly/queries.js';
 import { Question, SessionIdBody, Story, SubmitBody } from './_lib/nightly/schemas.js';
 import { noteView, sessionView } from './_lib/nightly/views.js';
 
-// /api/nightly?action=  today (GET), generate, submit, grade, publish (POST), notes (GET, public).
+// /api/nightly?action=  today (GET), generate, submit, grade, publish (POST), notes (GET, public),
+// plus the games: games (GET), puzzles, solve, log (POST).
 // One action table decides method and auth for every action, so auth can't be skipped by accident.
 export const ACTIONS = {
   today: { method: 'GET', auth: true },
@@ -18,6 +21,7 @@ export const ACTIONS = {
   grade: { method: 'POST', auth: true },
   publish: { method: 'POST', auth: true },
   notes: { method: 'GET', auth: false },
+  ...GAMES_ACTIONS,
 };
 
 const StoredBrief = z.object({ stories: Story.array().length(3), questions: Question.array().length(3) });
@@ -28,13 +32,6 @@ async function viewOf(sql, row) {
   if (row.status === 'generating' || row.status === 'generated') return sessionView(row, [], null);
   const { answers, take } = await q.getAnswersAndTake(sql, row.id);
   return sessionView(row, answers, take);
-}
-
-function parseBody(schema, req, res) {
-  const parsed = schema.safeParse(req.body ?? {});
-  if (parsed.success) return parsed.data;
-  sendError(res, 400, 'VALIDATION_ERROR', 'Invalid request body', z.flattenError(parsed.error));
-  return null;
 }
 
 const errorText = (err) => {
@@ -154,9 +151,9 @@ async function notes(ctx) {
   return ctx.res.status(200).json({ notes: rows.map(noteView) });
 }
 
-const HANDLERS = { today, generate, submit, grade, publish, notes };
+const HANDLERS = { today, generate, submit, grade, publish, notes, ...GAMES_HANDLERS };
 
-const MODEL_ACTIONS = new Set(['generate', 'grade']);
+const MODEL_ACTIONS = new Set(['generate', 'grade', 'puzzles']);
 
 export function createNightlyHandler({ getSql = defaultGetSql, auth = authConfig, model, now = () => new Date() } = {}) {
   const getModel = lazyModel(model);
