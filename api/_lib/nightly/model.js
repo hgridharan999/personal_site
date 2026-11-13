@@ -164,13 +164,26 @@ export function buildBlindTakeRequest({ story }) {
   return structuredRequest(BLIND_TAKE_SYSTEM, user, jsonFormat(BlindTake), 'medium');
 }
 
-/** The flaw puzzle: an argument that commits exactly the named flaw, in the given setting. */
-export function buildFlawRequest({ flaw, setting }) {
+/** One flaw for the avoid list: its name and definition. */
+const avoidLine = (f) => `- ${f.name}: ${f.definition}`;
+
+/**
+ * The flaw puzzle: an argument that commits exactly the named flaw, in the given setting. `avoid`
+ * is the puzzle's wrong choices; the argument must not plausibly commit any of them.
+ */
+export function buildFlawRequest({ flaw, setting, avoid = [] }) {
+  const avoidBlock = avoid.length > 0 && [
+    '<avoid>',
+    'Hari will see these flaws as the wrong choices, so the argument must not plausibly commit any of them:',
+    ...avoid.map(avoidLine),
+    '</avoid>',
+  ].join('\n');
   const user = [
     `<flaw name="${flaw.name}">\n${flaw.definition}\n</flaw>`,
     `<setting>\n${setting}\n</setting>`,
+    avoidBlock,
     'Write the argument and the explanation.',
-  ].join('\n\n');
+  ].filter(Boolean).join('\n\n');
   return structuredRequest(FLAW_SYSTEM, user, jsonFormat(FlawDraft), 'low');
 }
 
@@ -346,8 +359,8 @@ export function createModel({ client = new Anthropic({ maxRetries: 1, timeout: C
       return out.take;
     },
 
-    async writeFlaw({ flaw, setting, deadline }) {
-      const req = buildFlawRequest({ flaw, setting });
+    async writeFlaw({ flaw, setting, avoid, deadline }) {
+      const req = buildFlawRequest({ flaw, setting, avoid });
       const attempt = () => structuredCall(client, req, FlawDraft, deadline, 'flaw draft');
       try {
         return await attempt();

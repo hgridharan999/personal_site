@@ -13,6 +13,18 @@ export const FLAWS = Object.freeze([
   { key: 'goodhart', name: "Goodhart's law", definition: 'Once a measure becomes a target, people optimize the measure and it stops tracking the thing it was meant to track.' },
 ].map((f) => Object.freeze(f)));
 
+// Flaws whose definitions nest: an argument committing one plausibly commits the others, so no
+// two from one group are ever offered together. Survivorship and a cherry-picked window are both
+// kinds of selection; a small sample's extreme result is what regresses to the mean; and crediting
+// an intervention for that drift is a causal claim from a co-movement.
+export const OVERLAPS = Object.freeze([
+  Object.freeze(['survivorship', 'selection_bias', 'cherry_picked_window']),
+  Object.freeze(['small_sample', 'regression_to_mean']),
+  Object.freeze(['regression_to_mean', 'correlation_causation']),
+]);
+
+export const overlaps = (a, b) => a === b || OVERLAPS.some((g) => g.includes(a) && g.includes(b));
+
 export const SETTINGS = Object.freeze([
   'a SaaS startup', 'a hospital system', 'a retail chain', 'a logistics company', 'a bank',
   'a school district', 'a manufacturing plant', 'a restaurant group', 'a city government', 'a game studio',
@@ -32,12 +44,20 @@ export function pickFlaw({ recentFlawKeys, rand = Math.random }) {
   return sample(open.length ? open : FLAWS, 1, rand)[0].key;
 }
 
-/** Four shuffled flaw names: the answer plus three distractors. */
+/**
+ * Four shuffled flaw names: the answer plus three distractors, no two of the four overlapping.
+ * `distractors` are the three wrong flaws, so the argument can be told to avoid them.
+ */
 export function flawChoices(key, rand = Math.random) {
-  const answer = flawByKey(key).name;
-  const distractors = sample(FLAWS.filter((f) => f.key !== key), 3, rand).map((f) => f.name);
-  const choices = sample([answer, ...distractors], 4, rand);
-  return { choices, answerIndex: choices.indexOf(answer) };
+  const answer = flawByKey(key);
+  const picked = [answer];
+  for (const f of sample(FLAWS, FLAWS.length, rand)) {
+    if (picked.length === 4) break;
+    if (!picked.some((p) => overlaps(p.key, f.key))) picked.push(f);
+  }
+  const distractors = picked.slice(1);
+  const choices = sample(picked.map((f) => f.name), 4, rand);
+  return { choices, answerIndex: choices.indexOf(answer.name), distractors };
 }
 
 export const pickOne = (list, rand = Math.random) => sample(list, 1, rand)[0];

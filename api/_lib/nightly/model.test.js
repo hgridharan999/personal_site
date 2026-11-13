@@ -377,7 +377,11 @@ describe('flaw call', () => {
   const flaw = { key: 'survivorship', name: 'Survivorship bias', definition: 'Judging by the winners that remain.' };
   const setting = 'a regional bakery chain deciding on expansion';
   const draft = { argument: 'Every bakery we studied thrived. So expanding works.', explanation: 'It ignores closures. That is the flaw.' };
-  const args = (deadline) => ({ flaw, setting, deadline });
+  const avoid = [
+    { key: 'sunk_cost', name: 'Sunk cost', definition: 'Continuing because of past spend.' },
+    { key: 'goodhart', name: "Goodhart's law", definition: 'Optimizing the measure, not the goal.' },
+  ];
+  const args = (deadline) => ({ flaw, setting, avoid, deadline });
 
   it('buildFlawRequest has no tools, low effort, a json_schema format, and names the flaw and setting', () => {
     const req = buildFlawRequest({ flaw, setting });
@@ -389,6 +393,23 @@ describe('flaw call', () => {
     expect(user).toContain(flaw.definition);
     expect(user).toContain(setting);
     expect(req.system).not.toContain(flaw.name);
+  });
+  it('buildFlawRequest tells the model to avoid the distractor flaws', () => {
+    const user = buildFlawRequest({ flaw, setting, avoid }).messages[0].content;
+    expect(user).toContain('<avoid>');
+    expect(user).toMatch(/must not plausibly commit/i);
+    avoid.forEach((a) => {
+      expect(user).toContain(a.name);
+      expect(user).toContain(a.definition);
+    });
+  });
+  it('buildFlawRequest leaves out the avoid block when there is nothing to avoid', () => {
+    expect(buildFlawRequest({ flaw, setting }).messages[0].content).not.toContain('<avoid>');
+  });
+  it('writeFlaw sends the avoid list', async () => {
+    const { client, calls } = fakeClient(textReply(draft));
+    await createModel({ client }).writeFlaw(args(roomy()));
+    expect(calls[0].req.messages[0].content).toContain("Goodhart's law");
   });
   it('writeFlaw returns the parsed draft', async () => {
     const { client } = fakeClient(textReply(draft));

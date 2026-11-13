@@ -46,6 +46,11 @@ describe('runPuzzles', () => {
     expect(inserted.choices[inserted.answer_index]).toBe(call.flaw.name);
     expect(inserted.flaw_key).toBe(call.flaw.key);
     expect(row.flaw).toEqual(inserted);
+    // the three wrong choices go to the model as flaws to avoid
+    expect(call.avoid).toHaveLength(3);
+    const wrong = inserted.choices.filter((_, i) => i !== inserted.answer_index);
+    expect(call.avoid.map((a) => a.name).sort()).toEqual([...wrong].sort());
+    call.avoid.forEach((a) => expect(Object.keys(a).sort()).toEqual(['definition', 'key', 'name']));
   });
 
   it('inserts nothing and rethrows when the model fails', async () => {

@@ -37,13 +37,13 @@ describe('gamesPayload', () => {
   it('leaks nothing about unsolved puzzles', () => {
     const p = gamesPayload({ night: NIGHT, puzzlesRow: PUZZLES_ROW, results: [], history: [] });
     const keys = deepKeys(p);
-    for (const k of ['answer_index', 'answerIndex', 'explanation', 'answers', 'flaw_key']) expect(keys).not.toContain(k);
+    for (const k of ['answer_index', 'answerIndex', 'explanation', 'answers', 'given', 'flaw_key', 'flawName']) expect(keys).not.toContain(k);
     expect(p.puzzles.flaw).toEqual({ setting: 'a bank', argument: FLAW.argument, choices: FLAW.choices, result: null });
   });
 
   it('reveals solved puzzles', () => {
     const results = [
-      { game: 'puzzle_sprint', score: '3', detail: { seconds: 90, correct: [true, true, true, false, false], answers: [9, 9, 9, 9, 9] } },
+      { game: 'puzzle_sprint', score: '3', detail: { seconds: 90, correct: [true, true, true, false, false], answers: [9, 9, 9, null, 9] } },
       { game: 'puzzle_flaw', score: '0', detail: { choice: 2 } },
     ];
     const p = gamesPayload({ night: NIGHT, puzzlesRow: PUZZLES_ROW, results, history: [] });
@@ -52,8 +52,22 @@ describe('gamesPayload', () => {
       seconds: 90,
       correct: [true, true, true, false, false],
       answers: sprintProblems(NIGHT).map((x) => x.answer),
+      given: [9, 9, 9, null, 9],
     });
     expect(p.puzzles.flaw.result).toEqual({ score: 0, choice: 2, answerIndex: 1, flawName: 'Sunk cost', explanation: 'It weighs past spend.' });
+  });
+
+  it('names the flaw from its choices, so an unknown flaw_key cannot throw', () => {
+    const row = { night: NIGHT, flaw: { ...FLAW, flaw_key: 'renamed_since' } };
+    const results = [{ game: 'puzzle_flaw', score: '1', detail: { choice: 1 } }];
+    const p = gamesPayload({ night: NIGHT, puzzlesRow: row, results, history: [] });
+    expect(p.puzzles.flaw.result.flawName).toBe('Sunk cost');
+  });
+
+  it('gives a null given when an old sprint row has no answers', () => {
+    const results = [{ game: 'puzzle_sprint', score: '0', detail: { seconds: 5, correct: [false, false, false, false, false] } }];
+    const p = gamesPayload({ night: NIGHT, puzzlesRow: null, results, history: [] });
+    expect(p.puzzles.sprint.result.given).toBeNull();
   });
 
   it('converts numeric strings and keeps puzzle rows out of logged', () => {

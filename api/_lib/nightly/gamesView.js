@@ -1,7 +1,6 @@
 // The games payload, built from an explicit allow-list so an unsolved puzzle never leaks its answer.
 import { GAMES, PUZZLE_GAMES } from './games.js';
 import { sprintProblems } from './sprint.js';
-import { flawByKey } from './flaws.js';
 
 const catalogEntry = ({ key, name, unit, min, max, decimals, lowerIsBetter, url }) =>
   ({ key, name, unit, min, max, decimals, lowerIsBetter, url });
@@ -15,6 +14,7 @@ function sprintView(night, result) {
       seconds: result.detail?.seconds,
       correct: result.detail?.correct,
       answers: problems.map((p) => p.answer),
+      given: result.detail?.answers ?? null, // what Hari typed; null where blank
     },
   };
 }
@@ -30,7 +30,7 @@ function flawView(puzzlesRow, result) {
       score: Number(result.score),
       choice: result.detail?.choice,
       answerIndex: f.answer_index,
-      flawName: flawByKey(f.flaw_key).name,
+      flawName: f.choices?.[f.answer_index], // stored with the row, so a renamed key cannot throw
       explanation: f.explanation,
     },
   };
