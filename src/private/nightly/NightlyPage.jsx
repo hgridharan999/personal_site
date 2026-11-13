@@ -8,6 +8,7 @@ import NightlyGraded from './NightlyGraded';
 import { LockedAnswers } from './NightlyAnswers';
 import { Empty, Failure, Generating, Grading, GradeFailed, Loading } from './NightlyStates';
 import { failureCopy } from './view';
+import GamesSection from './games/GamesSection';
 import './nightly.css';
 
 // Read out by one live region that stays mounted, since each view replaces the one before it.
@@ -38,6 +39,7 @@ export default function NightlyPage() {
       </p>
       <p className="sr-only" role="status">{ANNOUNCE[view] ?? ''}</p>
       <Body nightly={nightly} storage={storage} />
+      <GamesSection />
     </SiteShell>
   );
 }
