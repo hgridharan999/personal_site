@@ -17,11 +17,12 @@
 .sp .nt-games-card__title { font: 500 15px/1.5 var(--sans); color: var(--cream); }
 /* the card title takes focus from script once its button is gone; it is not a control */
 .sp .nt-games-card__title[tabindex="-1"]:focus { outline: none; }
-.sp .nt-games-problems { display: flex; flex-direction: column; padding-left: 1.2em; list-style: decimal; }
+/* each li is a flex column, which hides list markers, so the number is drawn as text (.nt-games-num) */
+.sp .nt-games-problems { display: flex; flex-direction: column; padding-left: 0; list-style: none; }
 .sp .nt-games-problem { display: flex; flex-direction: column; gap: 6px; padding: 12px 0; }
 .sp .nt-games-problem:first-child { padding-top: 0; }
 .sp .nt-games-problem + .nt-games-problem { border-top: 1px solid var(--rule); }
-.sp .nt-games-problem::marker { font-size: 14px; color: var(--muted); }
+.sp .nt-games-num { color: var(--muted); font-variant-numeric: tabular-nums; }
 .sp .nt-games-mark { font-weight: 600; color: var(--cream); }
 .sp .nt-games-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-top: 16px; }
 

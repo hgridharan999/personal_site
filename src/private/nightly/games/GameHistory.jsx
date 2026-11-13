@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react';
 import { formatScore, historyGrid } from './gamesLogic';
 
 // UTC, as in site/format.js: a night string is a calendar date, not a moment.
@@ -15,13 +16,21 @@ function Cell({ value, decimals }) {
   return <td>{formatScore(value, decimals)}</td>;
 }
 
-/** Every puzzle and game over the last 14 nights, oldest first. It scrolls sideways on a phone. */
+/**
+ * Every puzzle and game over the last 14 nights, oldest first. It scrolls sideways on a phone,
+ * and opens scrolled to the right end so tonight's column is in view.
+ */
 export default function GameHistory({ payload }) {
+  const scrollRef = useRef(null);
   const { nights, rows } = historyGrid(payload);
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollLeft = el.scrollWidth;
+  }, [payload.night]);
   const decimals = new Map((payload.catalog ?? []).map((g) => [g.key, g.decimals]));
   return (
     <div className="nt-games-sub">
-      <div className="nt-games-scroll" tabIndex={0} role="region" aria-label="Last 14 nights, scrolls sideways">
+      <div ref={scrollRef} className="nt-games-scroll" tabIndex={0} role="region" aria-label="Last 14 nights, scrolls sideways">
         <table className="nt-games-table">
           <caption className="head">Last 14 nights</caption>
           <thead>

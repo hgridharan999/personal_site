@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   parseAnswer, nightsBack, historyGrid, formatScore, formatSeconds, sprintSummary, logInputs, readLogInputs,
+  unreadableCount, unreadableNotice, changedEntries,
 } from './gamesLogic.js';
 
 const CATALOG = [
@@ -12,11 +13,41 @@ const CATALOG = [
 describe('parseAnswer', () => {
   it.each([
     ['2,400', 2400], ['$45', 45], ['15%', 15], ['1.94×', 1.94], ['1.94x', 1.94], [' 3.5 ', 3.5],
-    ['-30', -30], ['−30', -30],
+    ['-30', -30], ['−30', -30], ['103.5M', 103.5], ['103.5m', 103.5], ['$12k', 12], ['40 K', 40],
   ])('reads %s', (text, want) => expect(parseAnswer(text)).toBe(want));
 
-  it.each([[''], ['   '], ['abc'], [undefined]])('returns null for %s', (text) => {
+  it.each([[''], ['   '], ['abc'], [undefined], ['M'], ['5MM'], ['5km']])('returns null for %s', (text) => {
     expect(parseAnswer(text)).toBeNull();
+  });
+});
+
+describe('unreadableCount', () => {
+  it('counts blank and unparseable answers', () => {
+    expect(unreadableCount(['1', '', '  ', 'abc', '2.5M'])).toBe(3);
+    expect(unreadableCount(['1', '2', '3', '4', '5'])).toBe(0);
+  });
+});
+
+describe('unreadableNotice', () => {
+  it('says how many and asks for a second press', () => {
+    expect(unreadableNotice(1)).toBe('1 answer is blank or unreadable. Press Submit again to finish anyway.');
+    expect(unreadableNotice(2)).toBe('2 answers are blank or unreadable. Press Submit again to finish anyway.');
+  });
+});
+
+describe('changedEntries', () => {
+  it('drops entries equal to the logged score, comparing numerically', () => {
+    const entries = [{ game: 'fermi', score: 1.9 }, { game: 'krillion', score: 540 }, { game: 'farflung', score: 10 }];
+    expect(changedEntries(entries, { fermi: 1.90, krillion: 541 })).toEqual([
+      { game: 'krillion', score: 540 }, { game: 'farflung', score: 10 },
+    ]);
+  });
+  it('treats string and number forms of the same value as unchanged', () => {
+    expect(changedEntries([{ game: 'fermi', score: 1.9 }], { fermi: '1.90' })).toEqual([]);
+  });
+  it('keeps everything when nothing is logged', () => {
+    expect(changedEntries([{ game: 'fermi', score: 2 }], undefined)).toEqual([{ game: 'fermi', score: 2 }]);
+    expect(changedEntries([{ game: 'fermi', score: 2 }], { fermi: null })).toEqual([{ game: 'fermi', score: 2 }]);
   });
 });
 

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { httpUrl } from '../../../site/notes';
 import { Notice } from '../NightlyStates';
-import { logInputs, readLogInputs } from './gamesLogic';
+import { changedEntries, logInputs, readLogInputs } from './gamesLogic';
 
 const NOTHING = { message: 'Enter at least one score.' };
+const UNCHANGED = { message: 'Nothing changed.' };
 const inputId = (key) => `nt-log-${key}`;
 
 /** One game: its name links to the game, then the unit and which way is better. */
@@ -39,19 +40,20 @@ function LogField({ game, value, error, onChange }) {
 
 /**
  * Tonight's scores from Hari's own daily games, prefilled with what is already logged. A bad
- * entry is marked beside its field and nothing is sent; blanks are left alone.
+ * entry is marked beside its field and nothing is sent; blanks are left alone, and only scores
+ * that differ from the logged ones are posted.
  */
 export default function GameLog({ payload, busy, notice, onSave }) {
   const { catalog } = payload;
   const [inputs, setInputs] = useState(() => logInputs(catalog, payload.logged));
   const [errors, setErrors] = useState({});
-  const [nothing, setNothing] = useState(false);
+  const [hint, setHint] = useState(null); // NOTHING or UNCHANGED, from the last Save
   const [saved, setSaved] = useState(false);
 
   const change = (key, text) => {
     setInputs((v) => ({ ...v, [key]: text }));
     setErrors((e) => ({ ...e, [key]: undefined }));
-    setNothing(false);
+    setHint(null);
     setSaved(false);
   };
 
@@ -66,8 +68,11 @@ export default function GameLog({ payload, busy, notice, onSave }) {
       document.getElementById(inputId(bad.key))?.focus();
       return;
     }
-    setNothing(read.entries.length === 0);
-    if (read.entries.length > 0 && await onSave(read.entries)) setSaved(true);
+    const changed = changedEntries(read.entries, payload.logged);
+    if (read.entries.length === 0) setHint(NOTHING);
+    else if (changed.length === 0) setHint(UNCHANGED);
+    else setHint(null);
+    if (changed.length > 0 && await onSave(changed)) setSaved(true);
   };
 
   return (
@@ -80,9 +85,12 @@ export default function GameLog({ payload, busy, notice, onSave }) {
           ))}
         </div>
         <div className="nt-games-actions">
-          <button type="submit" className="btn nt-primary" aria-disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>
+          <button type="submit" className="btn nt-primary" aria-disabled={busy} aria-describedby="nt-log-hint">
+            {busy ? 'Saving…' : 'Save'}
+          </button>
+          <p id="nt-log-hint" className="nt-meta">Clearing a box keeps the saved score.</p>
           {saved && <p className="nt-meta">Saved</p>}
-          <Notice notice={notice ?? (nothing ? NOTHING : null)} />
+          <Notice notice={notice ?? hint} />
         </div>
       </form>
     </section>

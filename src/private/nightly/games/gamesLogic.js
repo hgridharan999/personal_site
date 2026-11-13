@@ -8,15 +8,33 @@ const PUZZLE_ROWS = [
   { key: 'puzzle_flaw', name: 'Spot the flaw', unit: 'of 1' },
 ];
 
-/** Reads a typed answer: strips spaces, commas, $, %, a x sign or trailing x. Keeps a leading minus. */
+/**
+ * Reads a typed answer: strips spaces, commas, $, %, a x sign, and one trailing x, M or k (kept as
+ * typed, not multiplied: the prompts already ask "in $M"). Keeps a leading minus.
+ */
 export function parseAnswer(text) {
   const cleaned = String(text ?? '')
     .replace(/[\s,$%×]/g, '')
-    .replace(/x$/i, '')
+    .replace(/[xmk]$/i, '')
     .replace(/^[−–]/, '-');
   if (!cleaned) return null;
   const n = Number(cleaned);
   return Number.isFinite(n) ? n : null;
+}
+
+/** How many sprint answers are blank or unreadable (would be sent as null). */
+export const unreadableCount = (texts) => texts.filter((t) => parseAnswer(t) === null).length;
+
+export const unreadableNotice = (count) => (
+  `${count} ${count === 1 ? 'answer is' : 'answers are'} blank or unreadable. Press Submit again to finish anyway.`
+);
+
+/** The log entries that differ from tonight's logged scores, compared as numbers (1.9 equals 1.90). */
+export function changedEntries(entries, logged) {
+  return entries.filter(({ game, score }) => {
+    const prev = logged?.[game];
+    return prev === undefined || prev === null || Number(prev) !== Number(score);
+  });
 }
 
 /** `n` night strings ending with `night`, oldest first. UTC arithmetic, so DST cannot shift a day. */
