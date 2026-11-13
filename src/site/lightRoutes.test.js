@@ -9,9 +9,9 @@ const read = (rel) => readFileSync(ROOT + rel, 'utf8');
 
 const LIGHT = [
   '/', '/hiking', '/hiking/', '/HIKING', '/writing', '/blog/tat-tvam-asi',
-  '/climate-search', '/privacy', '/terms', '/legal', '/notes', '/notes/',
+  '/climate-search', '/privacy', '/terms', '/legal', '/notes', '/notes/', '/login', '/login/', '/nightly', '/Nightly',
 ];
-const NOT_LIGHT = ['/login', '/me', '/me/poker', '/nightly', '/notes/x', '/notesx', '/blog', '/theses', '/blog/a/b', '/hikingx', '/x'];
+const NOT_LIGHT = ['/me', '/me/poker', '/nightly/x', '/loginx', '/notes/x', '/notesx', '/blog', '/theses', '/blog/a/b', '/hikingx', '/x'];
 
 const FONTS = ['/fonts/geist-latin.woff2', '/fonts/instrument-serif-italic-latin.woff2'];
 const PLATE = '/mountain-plate.webp';
@@ -78,16 +78,18 @@ describe('the pre-paint script in index.html', () => {
 describe('App.jsx routes', () => {
   const app = read('src/App.jsx');
   const paths = [...app.matchAll(/\bpath="([^"]+)"/g)].map((m) => m[1]);
+  // /login and /nightly are private but wear the light look; /me and the trainers stay dark
   const isPrivate = (path) => path === '*' || /^\/(login|me|nightly)(\/|$)/.test(path);
+  const isDark = (path) => path === '*' || /^\/me(\/|$)/.test(path);
 
   it('finds the public routes to check', () => {
     expect(paths.filter((path) => !isPrivate(path)).length).toBeGreaterThanOrEqual(8);
   });
 
-  it('wears the light look on every public route and the dark one on every private route', () => {
+  it('wears the light look on every public route and on /login and /nightly, and the dark one on /me and the trainers', () => {
     for (const path of paths.filter((p) => p !== '*')) {
       const sample = path.replace(/:[A-Za-z]+/g, 'sample');
-      expect(isLightPath(sample), path).toBe(!isPrivate(path));
+      expect(isLightPath(sample), path).toBe(!isDark(path));
     }
   });
 });

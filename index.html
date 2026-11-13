@@ -7,16 +7,16 @@
     <meta name="description" content="Cornell Dyson ’29 and Dyson Scholar, CEO and co-founder of Loadstone Labs. Seeking Summer 2027 internships in strategy, investing, business analysis and product." />
     <meta name="author" content="Hari Gridharan" />
     <meta name="theme-color" content="#0B0A0A" />
-    <!-- Pre-paint, light routes only ("/" and the pages it links to): style the
+    <!-- Pre-paint, light routes only ("/", the pages it links to, /login and /nightly): style the
          document white and preload the fonts before React mounts, so a hard load
          never flashes the dark site. The mountain download starts on "/" alone.
-         Other routes (/login, /me) keep the dark theme-color above. The route list
+         Other routes (/me and the trainers) keep the dark theme-color above. The route list
          repeats src/site/lightRoutes.js, and lightRoutes.test.js keeps the two in
          step. useHomeDocument() does the same on client-side navigation. -->
     <script>
       (function () {
         var home = location.pathname === '/';
-        var light = home || /^\/(hiking|writing|notes|climate-search|privacy|terms|legal|blog\/[^/]+)\/?$/i.test(location.pathname);
+        var light = home || /^\/(hiking|writing|notes|climate-search|privacy|terms|legal|login|nightly|blog\/[^/]+)\/?$/i.test(location.pathname);
         if (!light) return;
         document.documentElement.classList.add('hm-page');
         document.querySelector('meta[name="theme-color"]').setAttribute('content', '#FFFFFF');

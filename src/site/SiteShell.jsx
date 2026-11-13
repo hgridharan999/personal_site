@@ -4,6 +4,7 @@ import Mark from '../home/Mark';
 import { useHomeDocument } from '../home/useHomeDocument';
 import SiteFooter from './SiteFooter';
 import { useDocumentTitle } from './useDocumentTitle';
+import { useNoindex } from './useNoindex';
 // home.css carries the tokens and document rules this shell reuses; it ships with the homepage
 // already, so importing it here adds no download for a visitor who started on "/".
 import '../home/home.css';
@@ -17,11 +18,14 @@ import './site.css';
  *
  * `title` is the visible h1; `docTitle` is the browser tab title and defaults to it. A page with
  * no h1 of its own (a post sets its headline in Instrument Serif) passes only `docTitle`.
- * `wide` opens the column to 1040px for the two-column pages.
+ * `wide` opens the column to 1040px for the two-column pages. The private pages that share this
+ * look (/login, /nightly) pass `noindex` to stay out of search indexes and `footer={false}` to
+ * leave out the public contact footer.
  */
-export default function SiteShell({ title, docTitle = title, intro, wide = false, children }) {
+export default function SiteShell({ title, docTitle = title, intro, wide = false, noindex = false, footer = true, children }) {
   useHomeDocument();
   useDocumentTitle(docTitle);
+  useNoindex(noindex);
 
   return (
     <div className={`hm sp${wide ? ' sp-wide' : ''}`}>
@@ -37,7 +41,7 @@ export default function SiteShell({ title, docTitle = title, intro, wide = false
         {intro && <p className="sp-intro">{intro}</p>}
         {children}
       </main>
-      <SiteFooter />
+      {footer && <SiteFooter />}
     </div>
   );
 }
