@@ -40,7 +40,7 @@ In (PRD "Tonight" rows, plus the entrance Hari asked for in conversation):
 - The hidden entrance on the homepage (section 6). Hari asked for it now, ahead of the PRD's "Next"
   slot.
 
-Non-goals for this build (PRD "Next"/"Later"): daily games UI, missed-night marking and the public
+Non-goals for this build (PRD "Next"/"Later"): daily games UI (built separately, see `docs/superpowers/specs/2026-11-13-nightly-games-design.md`), missed-night marking and the public
 "Missed" entry, makeup questions, streaks, the door's dark state, forecast log and Brier score,
 history, weekly essay, editable niche-interest list, money stake. The data model is built ready for
 them (section 4).
