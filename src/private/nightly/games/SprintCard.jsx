@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Notice } from '../NightlyStates';
-import { formatScore, parseAnswer, sprintSummary, unreadableCount, unreadableNotice } from './gamesLogic';
+import { formatScore, parseSprintAnswer, sprintSummary, unreadableCount, unreadableNotice } from './gamesLogic';
 import { useFocusAfter } from './useFocusAfter';
 
 const MAX_SECONDS = 3600;
@@ -103,7 +103,7 @@ export default function SprintCard({ sprint, busy, notice, onSolve }) {
     setConfirming(false);
     const seconds = Math.min(MAX_SECONDS, Math.round((performance.now() - startedAt.current) / 1000));
     solved();
-    onSolve({ answers: values.map(parseAnswer), seconds });
+    onSolve({ answers: values.map(parseSprintAnswer), seconds });
   };
   const setValue = (i, text) => {
     setValues((v) => v.map((x, j) => (j === i ? text : x)));

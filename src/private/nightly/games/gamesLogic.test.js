@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   parseAnswer, nightsBack, historyGrid, formatScore, formatSeconds, sprintSummary, logInputs, readLogInputs,
-  unreadableCount, unreadableNotice, changedEntries,
+  unreadableCount, unreadableNotice, changedEntries, parseSprintAnswer,
 } from './gamesLogic.js';
 
 const CATALOG = [
@@ -13,16 +13,30 @@ const CATALOG = [
 describe('parseAnswer', () => {
   it.each([
     ['2,400', 2400], ['$45', 45], ['15%', 15], ['1.94×', 1.94], ['1.94x', 1.94], [' 3.5 ', 3.5],
-    ['-30', -30], ['−30', -30], ['103.5M', 103.5], ['103.5m', 103.5], ['$12k', 12], ['40 K', 40],
+    ['-30', -30], ['−30', -30],
   ])('reads %s', (text, want) => expect(parseAnswer(text)).toBe(want));
 
-  it.each([[''], ['   '], ['abc'], [undefined], ['M'], ['5MM'], ['5km']])('returns null for %s', (text) => {
+  it.each([[''], ['   '], ['abc'], [undefined], ['103.5M'], ['12k'], ['4K']])('returns null for %s', (text) => {
     expect(parseAnswer(text)).toBeNull();
+  });
+
+  describe('with units (the sprint)', () => {
+    it.each([
+      ['103.5M', 103.5], ['103.5m', 103.5], ['$12k', 12], ['40 K', 40], ['1.94x', 1.94], ['2,400', 2400],
+    ])('reads %s, keeping the number as typed', (text, want) => expect(parseAnswer(text, { units: true })).toBe(want));
+
+    it.each([[''], ['M'], ['5MM'], ['5km']])('returns null for %s', (text) => {
+      expect(parseAnswer(text, { units: true })).toBeNull();
+    });
+
+    it("parseSprintAnswer is the sprint path, and ignores map's index argument", () => {
+      expect(['103.5M', '12k', ''].map(parseSprintAnswer)).toEqual([103.5, 12, null]);
+    });
   });
 });
 
 describe('unreadableCount', () => {
-  it('counts blank and unparseable answers', () => {
+  it('counts blank and unparseable answers, reading unit suffixes as the sprint does', () => {
     expect(unreadableCount(['1', '', '  ', 'abc', '2.5M'])).toBe(3);
     expect(unreadableCount(['1', '2', '3', '4', '5'])).toBe(0);
   });
@@ -130,5 +144,15 @@ describe('readLogInputs', () => {
   });
   it('rejects text', () => {
     expect(readLogInputs(CATALOG, { krillion: 'abc' }).errors.krillion).toBe('Krillion: enter a number');
+  });
+  it('rejects a k or M suffix rather than saving the bare number', () => {
+    const farflung = readLogInputs(CATALOG, { farflung: '12k' });
+    expect(farflung.errors.farflung).toBe('Farflung: enter a number');
+    expect(farflung.entries).toEqual([]);
+    const chainle = { key: 'chainle', name: 'Chainle', unit: 'points', min: 0, max: 5000, decimals: 0, lowerIsBetter: false, url: 'c' };
+    const read = readLogInputs([chainle], { chainle: '4k' });
+    expect(read.errors.chainle).toBe('Chainle: enter a number');
+    expect(read.entries).toEqual([]);
+    expect(readLogInputs(CATALOG, { krillion: '540M' }).errors.krillion).toBe('Krillion: enter a number');
   });
 });

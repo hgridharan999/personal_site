@@ -9,21 +9,26 @@ const PUZZLE_ROWS = [
 ];
 
 /**
- * Reads a typed answer: strips spaces, commas, $, %, a x sign, and one trailing x, M or k (kept as
- * typed, not multiplied: the prompts already ask "in $M"). Keeps a leading minus.
+ * Reads a typed answer: strips spaces, commas, $, %, a x sign and one trailing x. Keeps a leading
+ * minus. With `units` (the sprint only) a trailing M or k is stripped too, the number kept as typed
+ * rather than multiplied, since the prompts already ask "in $M". The score log leaves it off, so
+ * "12k" there is an error, not a silent 12.
  */
-export function parseAnswer(text) {
+export function parseAnswer(text, { units = false } = {}) {
   const cleaned = String(text ?? '')
     .replace(/[\s,$%×]/g, '')
-    .replace(/[xmk]$/i, '')
+    .replace(units ? /[xmk]$/i : /x$/i, '')
     .replace(/^[−–]/, '-');
   if (!cleaned) return null;
   const n = Number(cleaned);
   return Number.isFinite(n) ? n : null;
 }
 
+/** A sprint answer: unit suffixes allowed. */
+export const parseSprintAnswer = (text) => parseAnswer(text, { units: true });
+
 /** How many sprint answers are blank or unreadable (would be sent as null). */
-export const unreadableCount = (texts) => texts.filter((t) => parseAnswer(t) === null).length;
+export const unreadableCount = (texts) => texts.filter((t) => parseSprintAnswer(t) === null).length;
 
 export const unreadableNotice = (count) => (
   `${count} ${count === 1 ? 'answer is' : 'answers are'} blank or unreadable. Press Submit again to finish anyway.`
