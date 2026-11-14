@@ -22,6 +22,8 @@ describe('Vercel function count', () => {
   it(`stays within the Hobby limit of ${HOBBY_FUNCTION_LIMIT}`, () => {
     const files = functionFiles(API_DIR).sort();
     expect(files).toContain('trainers/poker/stats.js');
+    expect(files).toContain('nightly.js');
+    expect(files).toContain('nightly-cron.js');
     expect(files.length, files.join(', ')).toBeLessThanOrEqual(HOBBY_FUNCTION_LIMIT);
   });
 });

@@ -21,6 +21,7 @@ const ROUTED = [
   join(SITE, 'WritingPage.jsx'),
   join(SITE, 'PostPage.jsx'),
   join(SITE, 'climate', 'ClimateSearchPage.jsx'),
+  join(SITE, 'NotesPage.jsx'),
   LEGAL,
 ];
 // everything that ships; tests are left out because they name the modules they forbid

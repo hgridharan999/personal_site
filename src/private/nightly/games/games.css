@@ -1,0 +1,53 @@
+/* ============================================================
+   NIGHTLY GAMES: the Games section under the brief. The same rules as nightly.css: every class
+   is nt-games-*, every rule sits under .sp, and only the site's tokens (and nightly.css's own
+   values) are used. Mobile first (375px); the two puzzle cards sit side by side from 768px.
+   ============================================================ */
+
+.sp .nt-games-sub { padding-top: 40px; }
+.sp .nt-games-sub > .head { margin-bottom: 6px; }
+
+/* ---- the puzzle cards: bordered like the graded takes ---- */
+.sp .nt-games-cards { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin-top: 8px; }
+.sp .nt-games-card {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0;
+  padding: 16px; border: 1px solid var(--rule-head); border-radius: 4px;
+}
+.sp .nt-games-card > :is(p, ol, form) { align-self: stretch; }
+.sp .nt-games-card__title { font: 500 15px/1.5 var(--sans); color: var(--cream); }
+/* the card title takes focus from script once its button is gone; it is not a control */
+.sp .nt-games-card__title[tabindex="-1"]:focus { outline: none; }
+/* each li is a flex column, which hides list markers, so the number is drawn as text (.nt-games-num) */
+.sp .nt-games-problems { display: flex; flex-direction: column; padding-left: 0; list-style: none; }
+.sp .nt-games-problem { display: flex; flex-direction: column; gap: 6px; padding: 12px 0; }
+.sp .nt-games-problem:first-child { padding-top: 0; }
+.sp .nt-games-problem + .nt-games-problem { border-top: 1px solid var(--rule); }
+.sp .nt-games-num { color: var(--muted); font-variant-numeric: tabular-nums; }
+.sp .nt-games-mark { font-weight: 600; color: var(--cream); }
+.sp .nt-games-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-top: 16px; }
+
+/* ---- your games ------------------------------------------ */
+.sp .nt-games-fields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin-top: 8px; }
+.sp .nt-games-field { display: flex; flex-direction: column; gap: 6px; }
+.sp .nt-games-label { font: 500 15px/1.5 var(--sans); color: var(--cream); }
+.sp .nt-games-label a { display: inline-block; padding: 4px 0; }
+
+/* ---- the last 14 nights: the game names stay put while the nights scroll ---- */
+/* position: relative contains the cells' absolutely positioned .sr-only labels, which otherwise
+   escape the scroller and widen the whole page on a phone. */
+.sp .nt-games-scroll { position: relative; overflow-x: auto; }
+.sp .nt-games-scroll:focus-visible { outline: 2px solid var(--tan); outline-offset: 2px; }
+.sp .nt-games-table { border-collapse: collapse; font-size: 14px; line-height: 1.5; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+.sp .nt-games-table caption { text-align: left; }
+.sp .nt-games-table :is(th, td) { padding: 6px 8px; border-bottom: 1px solid var(--rule); text-align: right; white-space: nowrap; color: var(--cream); }
+.sp .nt-games-table thead th { font: 500 13px/1.5 var(--sans); color: var(--muted); }
+.sp .nt-games-table th:first-child { position: sticky; left: 0; padding-left: 0; background: var(--bg); text-align: left; }
+.sp .nt-games-table tbody th { font-weight: 500; }
+.sp .nt-games-table .nt-games-empty { color: var(--muted); }
+.sp .nt-games-unit { font-size: 13px; font-weight: 400; color: var(--muted); }
+
+@media (min-width: 768px) {
+  .sp .nt-games-cards, .sp .nt-games-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sp .nt-games-actions { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .sp .nt-games-actions .nt-notice { flex-basis: 100%; }
+}

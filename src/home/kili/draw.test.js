@@ -465,3 +465,92 @@ describe('resizing and disposing', () => {
     ending.dispose();
   });
 });
+
+describe('the door', () => {
+  /** A band that takes event listeners, and a way to send it the door's 'kili:door' events. */
+  function withDoor(options = {}) {
+    const env = setup(options);
+    const listeners = new Map();
+    env.band.addEventListener = (type, fn) => listeners.set(type, fn);
+    env.band.removeEventListener = (type, fn) => { if (listeners.get(type) === fn) listeners.delete(type); };
+    const ending = createKiliBand({ band: env.band, terrainData, routeData, win: env.win });
+    const door = (open) => listeners.get('kili:door')?.({ detail: { open } });
+    return { env, ending, door, listeners };
+  }
+  const finish = (env) => {
+    env.see(0.5);
+    env.run(totalDraw(64) + 0.5);
+  };
+
+  it('ignores the door until the drawing is finished', () => {
+    const { env, ending, door } = withDoor();
+    door(true);
+    expect(ending.state()).toMatchObject({ door: 0, doorRaf: false });
+    env.see(0.5);
+    env.run(0.5);
+    door(true);
+    env.run(0.5);
+    expect(ending.state()).toMatchObject({ done: false, door: 0, doorRaf: false });
+  });
+
+  it('lifts it over about 280 ms on the finished drawing, repainting each frame, then stops', () => {
+    const { env, ending, door } = withDoor();
+    finish(env);
+    const painted = env.ctx.calls.clearRect;
+    door(true);
+    env.step(8);
+    const mid = ending.state().door;
+    expect(mid).toBeGreaterThan(0.5); // the site's ease: quick to start, slow to settle
+    expect(mid).toBeLessThan(1);
+    env.step(10);
+    expect(ending.state()).toMatchObject({ door: 1, doorRaf: false });
+    expect(env.ctx.calls.clearRect - painted).toBeGreaterThanOrEqual(16);
+    expect(env.queue.size).toBe(0);
+  });
+
+  it('lets it down on leave, and turns back from wherever it is', () => {
+    const { env, ending, door } = withDoor();
+    finish(env);
+    door(true);
+    env.step(4);
+    const part = ending.state().door;
+    door(false);
+    env.step(1);
+    expect(ending.state().door).toBeLessThan(part);
+    env.run(1);
+    expect(ending.state()).toMatchObject({ door: 0, doorRaf: false });
+  });
+
+  it('jumps with reduced motion: one repaint, no frames', () => {
+    const { env, ending, door } = withDoor({ reduced: true });
+    const painted = env.ctx.calls.clearRect;
+    door(true);
+    expect(ending.state()).toMatchObject({ door: 1, doorRaf: false });
+    expect(env.ctx.calls.clearRect - painted).toBe(1);
+    door(true);
+    expect(env.ctx.calls.clearRect - painted).toBe(1);
+    door(false);
+    expect(ending.state().door).toBe(0);
+    expect(env.queue.size).toBe(0);
+  });
+
+  it('keeps the lift through a resize', () => {
+    const { env, ending, door } = withDoor();
+    finish(env);
+    door(true);
+    env.run(1);
+    env.band.clientWidth = 900;
+    env.ro.cb();
+    expect(ending.state()).toMatchObject({ door: 1, width: 900 });
+  });
+
+  it('stops listening and drops its frame when disposed', () => {
+    const { env, ending, door, listeners } = withDoor();
+    finish(env);
+    door(true);
+    expect(env.queue.size).toBe(1);
+    ending.dispose();
+    expect(env.queue.size).toBe(0);
+    expect(listeners.has('kili:door')).toBe(false);
+  });
+});

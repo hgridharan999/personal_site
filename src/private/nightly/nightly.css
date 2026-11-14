@@ -1,0 +1,109 @@
+/* ============================================================
+   NIGHTLY: the private reading and writing room, in the public site look. Tokens, links, .head,
+   .btn and .sp-text come from home.css and site.css; this file lays out the nightly views. Every
+   class is nt-* and every rule sits under .sp (SiteShell root), so nothing leaks to other
+   pages. Mobile first (375px); the two takes sit side by side once the column is wide enough.
+   ============================================================ */
+
+.sp .nt-back { margin-top: 14px; font-size: 14px; line-height: 1.5; }
+.sp .nt-back a { display: inline-block; padding: 5px 0; color: var(--soft); }
+
+/* ---- type ------------------------------------------------ */
+.sp .nt-prose { font: 400 16px/1.7 var(--sans); letter-spacing: -0.2px; color: var(--cream); text-wrap: pretty; }
+.sp .nt-meta, .sp .nt-type { font: 500 13px/1.5 var(--sans); letter-spacing: 0.01em; color: var(--muted); }
+.sp .nt-prompt { font: 500 16px/1.5 var(--sans); letter-spacing: -0.2px; color: var(--cream); text-wrap: pretty; }
+.sp .nt-written { white-space: pre-wrap; }
+.sp .nt-on { margin-top: 4px; }
+
+/* ---- sections: space does the dividing, as on the public pages ------------- */
+.sp .nt-section { padding-top: 52px; }
+.sp .nt-section .head { margin-bottom: 6px; }
+.sp .nt-stories, .sp .nt-answers, .sp .nt-fields { display: flex; flex-direction: column; }
+
+/* ---- the brief ------------------------------------------- */
+.sp .nt-story { display: flex; flex-direction: column; gap: 6px; padding: 20px 0; }
+.sp .nt-story + .nt-story { border-top: 1px solid var(--rule); }
+.sp .nt-story:first-child { padding-top: 8px; }
+.sp .nt-story__headline { font: 500 17px/1.4 var(--sans); letter-spacing: -0.2px; color: var(--cream); text-wrap: balance; }
+.sp .nt-story .nt-prose { font-size: 15px; line-height: 1.6; color: var(--soft); }
+.sp .nt-source { align-self: flex-start; display: inline-block; padding: 4px 0; font-size: 14px; line-height: 1.5; }
+
+/* ---- form ------------------------------------------------ */
+.sp .nt-form { padding-top: 0; }
+.sp .nt-field { display: flex; flex-direction: column; gap: 4px; padding: 20px 0; }
+.sp .nt-field:first-child { padding-top: 8px; }
+.sp .nt-q { display: flex; flex-direction: column; gap: 4px; }
+.sp .nt-label { display: block; margin-top: 24px; }
+.sp .nt-textarea {
+  display: block; width: 100%; min-height: 7.5em; margin-top: 8px; padding: 10px 12px; resize: vertical;
+  border: 1px solid var(--outline); border-radius: 4px; background: var(--bg);
+  font: 400 15px/1.6 var(--sans); letter-spacing: -0.2px; color: var(--cream);
+}
+.sp .nt-textarea--take { min-height: 10em; }
+.sp .nt-textarea:focus { border-color: var(--tan); }
+.sp .nt-textarea:focus-visible { outline: 2px solid var(--tan); outline-offset: 2px; }
+.sp .nt-textarea:disabled { opacity: 0.6; }
+@media (pointer: coarse) { .sp .nt-textarea { font-size: 16px; } }
+
+.sp .nt-picker { display: flex; flex-direction: column; margin: 8px 0 0; padding: 0; border: 0; min-width: 0; }
+.sp .nt-picker legend { padding: 0; margin-bottom: 4px; }
+.sp .nt-choice { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; padding: 10px 0; font-size: 15px; line-height: 1.45; color: var(--cream); cursor: pointer; }
+.sp .nt-choice + .nt-choice { border-top: 1px solid var(--rule); }
+.sp .nt-choice input { flex: 0 0 auto; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--tan); }
+.sp .nt-choice:has(input:checked) { color: var(--tan); }
+
+/* ---- buttons, confirm, messages -------------------------- */
+.sp .nt-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-top: 32px; }
+.sp .btn { cursor: pointer; background: transparent; }
+.sp .nt-primary { background: var(--tan); border-color: var(--tan); color: var(--bg); }
+/* busy buttons are aria-disabled, not disabled, so they keep focus while the action runs */
+.sp .btn:is(:disabled, [aria-disabled="true"]) { opacity: 0.45; cursor: default; }
+.sp .nt-confirm { display: flex; flex-direction: column; gap: 12px; width: 100%; padding: 2px 0 2px 14px; border-left: 2px solid var(--tan); }
+.sp .nt-confirm__q { font: 500 15px/1.5 var(--sans); color: var(--cream); }
+.sp .nt-confirm__buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+/* the terracotta the climate page uses for a failure: 6:1 on white */
+.sp .nt-notice { min-height: 1.5em; font-size: 14px; line-height: 1.5; color: #A4442B; }
+.sp .nt-problems { padding-left: 1.2em; list-style: disc; font-size: 14px; line-height: 1.6; color: #A4442B; }
+
+/* ---- states: text on the page, no boxes ------------------ */
+.sp .nt-panel { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding-top: 52px; }
+.sp .nt-panel--fail { padding: 2px 0 2px 14px; border-left: 2px solid #A4442B; margin-top: 40px; }
+.sp .nt-panel__title { font: 500 15px/1.5 var(--sans); color: var(--cream); text-wrap: balance; }
+.sp .nt-panel .sp-text { max-width: 60ch; }
+.sp .nt-panel .btn { margin-top: 4px; }
+.sp .nt-state { display: inline-flex; align-items: center; gap: 10px; color: var(--muted); }
+.sp p.nt-state { margin-top: 40px; font-size: 14px; line-height: 1.5; }
+/* the Grading heading takes focus from script after submit; it is not a control, so no ring */
+.sp .nt-panel__title[tabindex="-1"]:focus, .sp .nt-section__title[tabindex="-1"]:focus { outline: none; }
+.sp .nt-pulse { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--tan); }
+
+/* ---- graded ---------------------------------------------- */
+.sp .nt-answer { display: flex; flex-direction: column; gap: 6px; padding: 20px 0; }
+.sp .nt-answer + .nt-answer { border-top: 1px solid var(--rule); }
+.sp .nt-answers > .nt-answer:first-child { padding-top: 8px; }
+.sp .nt-answer__top { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.sp .nt-score { font: 500 15px/1.5 var(--sans); color: var(--cream); font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+.sp .nt-feedback { padding-left: 12px; border-left: 2px solid var(--rule-head); font-size: 14px; line-height: 1.6; color: var(--soft); }
+.sp .nt-compare { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin-top: 16px; }
+.sp .nt-take { display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid var(--rule-head); border-radius: 4px; }
+.sp .nt-take--model { border-color: transparent; background: #F4F4F2; }
+.sp .nt-choice-done { min-height: 1.5em; }
+
+@media (min-width: 720px) {
+  .sp .nt-compare { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sp .nt-actions { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .sp .nt-actions .nt-problems, .sp .nt-actions .nt-notice, .sp .nt-actions .nt-confirm { flex-basis: 100%; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sp .btn.nt-primary:not(:disabled, [aria-disabled="true"]):hover { background: #0B6A93; border-color: #0B6A93; }
+  .sp .btn-line:not(.nt-primary, :disabled, [aria-disabled="true"]):hover { border-color: var(--tan); color: var(--tan); }
+  .sp .nt-back a:hover { color: var(--tan); text-decoration-color: var(--ul-tan); }
+  .sp .nt-choice:hover { color: var(--tan); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sp .btn, .sp .nt-textarea { transition: color 0.2s var(--ease), background-color 0.2s var(--ease), border-color 0.2s var(--ease); }
+  .sp .nt-pulse { animation: nt-pulse 1.6s ease-in-out infinite; }
+}
+@keyframes nt-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }

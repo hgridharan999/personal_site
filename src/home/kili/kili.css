@@ -56,6 +56,14 @@
 .hm .kili-wp--r { transform: translate(5px, -50%); }
 .hm .kili-wp--l { transform: translate(calc(-100% - 5px), -50%); }
 .hm .kili-wp.on { opacity: 1; }
+/* the door: a hidden way in to /nightly. This box is only its hit area, invisible; the doorway is
+   the canvas's front plains line lifting (draw.js). labels.js centres it on the doorway with its
+   foot on the line, and gives it `on` (and so the pointer) once the drawing is up. */
+.hm .kili-door {
+  position: absolute; left: 0; top: 0; width: 48px; height: 48px; transform: translateY(-100%);
+  pointer-events: none;
+}
+.hm .kili-door.on { pointer-events: auto; cursor: pointer; }
 /* the drawing could not load: no blank gap above the footer */
 .hm .kili-band[data-failed] { display: none; }
 

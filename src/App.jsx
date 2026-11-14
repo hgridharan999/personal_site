@@ -11,11 +11,13 @@ const PrivateShell = lazy(() => import('./private/PrivateShell'));
 const RequireAuth = lazy(() => import('./private/RequireAuth'));
 const HikingPage = lazy(() => import('./site/hiking/HikingPage'));
 const WritingPage = lazy(() => import('./site/WritingPage'));
+const NotesPage = lazy(() => import('./site/NotesPage'));
 const PostPage = lazy(() => import('./site/PostPage'));
 const ClimateSearchPage = lazy(() => import('./site/climate/ClimateSearchPage'));
 const LegalPage = lazy(() => import('./pages/LegalPage'));
 const LoginPage = lazy(() => import('./private/LoginPage'));
 const PrivateHome = lazy(() => import('./private/PrivateHome'));
+const NightlyPage = lazy(() => import('./private/nightly/NightlyPage'));
 
 // Trainer code is lazy-loaded: public visitors never download it.
 const TrainerPage = lazy(() => import('./private/trainers/TrainerPage'));
@@ -47,6 +49,7 @@ function AnimatedRoutes() {
       <Route path="/" element={<HomePage />} />
       <Route path="/hiking" element={<HikingPage />} />
       <Route path="/writing" element={<WritingPage />} />
+      <Route path="/notes" element={<NotesPage />} />
       <Route path="/blog/:slug" element={<PostPage />} />
 
       <Route path="/climate-search" element={<ClimateSearchPage />} />
@@ -57,6 +60,7 @@ function AnimatedRoutes() {
       {/* Private area: reachable by URL only (no public page links to it). */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/me" element={<RequireAuth>{({ logout }) => <PrivateHome onLogout={logout} />}</RequireAuth>} />
+      <Route path="/nightly" element={<RequireAuth>{() => <Suspense fallback={privateFallback}><NightlyPage /></Suspense>}</RequireAuth>} />
       {/* Poker has its own pages; these must come before the generic /me/:trainer route. */}
       <Route
         path="/me/poker"

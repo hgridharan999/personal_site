@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import './kili.css';
 import { NEXT_CLIMB } from '../content';
+import KiliDoor from './KiliDoor';
 import KiliFooter from './KiliFooter';
 import { useKiliBand } from './useKiliBand';
 
@@ -26,8 +27,9 @@ function Legend() {
  * `.hm` root: the styles are scoped to it.
  *
  * The band is decoration (the "Next climb" line above says it all in words), so all of it is
- * aria-hidden: the canvas, the labels and the legend. It holds its height from the first paint,
- * blank, and the drawing code and terrain are only fetched when the band is a screen away.
+ * aria-hidden: the canvas, the labels, the legend and the door. It holds its height from the
+ * first paint, blank, and the drawing code and terrain are only fetched when the band is a
+ * screen away.
  */
 export default function KiliEnding() {
   const bandRef = useRef(null);
@@ -48,6 +50,7 @@ export default function KiliEnding() {
         <div className="kili-wp kili-wp--l" data-kili="wp" data-wp={places.start}><span>{places.start}</span></div>
         <div className="kili-wp kili-wp--r" data-kili="wp" data-wp={places.camp}><span>{places.camp}</span></div>
         <Legend />
+        <KiliDoor />
       </div>
       <KiliFooter />
     </>

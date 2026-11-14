@@ -68,7 +68,7 @@ Vercel will automatically detect your Vite project and configure:
 4. Update your DNS settings as instructed
 
 ### Environment variables
-The public site needs none. The private trainers need `DATABASE_URL`, `ADMIN_PASSWORD` and `SESSION_SECRET`; see [Trainers database (Neon)](#trainers-database-neon).
+The public site needs none. The private trainers need `DATABASE_URL`, `ADMIN_PASSWORD` and `SESSION_SECRET`; see [Trainers database (Neon)](#trainers-database-neon). Nightly also needs `ANTHROPIC_API_KEY` and `CRON_SECRET`; see [Nightly](#nightly).
 
 ## Trainers database (Neon)
 
@@ -92,6 +92,19 @@ Make sure to update these placeholder items:
 3. **Personal Info**: Verify all links and contact information
 4. **Project Details**: Ensure all project data is accurate
 5. **Hiking Photos**: Add real photos to `/public` and update paths in `src/pages/ClimbingPage.jsx`
+
+## Nightly
+
+The private `/nightly` page and the public `/notes` page run on two functions: `api/nightly.js` (the page actions) and `api/nightly-cron.js` (the evening brief). Do these before the first real session:
+
+1. **Environment variables** (Vercel project settings, server-only, names listed in `.env.example`):
+   - `ANTHROPIC_API_KEY`: the Claude API key used for the brief, grading and the blind take. Without it, Generate and Grade answer `500 MODEL_NOT_CONFIGURED`; everything else still works.
+   - `CRON_SECRET`: 16+ characters. Vercel sends it to the cron as `Authorization: Bearer <secret>`. If it is missing or shorter than 16 characters, the cron answers `500 CRON_NOT_CONFIGURED` and generates nothing.
+   - The existing `DATABASE_URL`, `ADMIN_PASSWORD` and `SESSION_SECRET` are reused; `/nightly` signs in with the same session as `/me`.
+2. **Migration.** `db/migrations/004_nightly.sql` adds the `nightly_*` tables. Run `npm run db:migrate` against the production database (and any preview branch database, as above). Previews share the production database unless Neon branching is on.
+   `db/migrations/009_nightly_games.sql` (the Games section on `/nightly`: night-keyed game results and nightly puzzles) must also be applied with `npm run db:migrate`. It drops the old `nightly_game_results` table only if that table is empty, and refuses to run otherwise.
+3. **Cron.** `vercel.json` schedules `GET /api/nightly-cron` at `0 1 * * *` (01:00 UTC: 8pm EST in winter, 9pm EDT in summer, so the brief is ready by 9pm or 10pm Eastern). It always uses the Eastern night's date, never the UTC date. On Hobby it may fire anywhere in that hour, is never retried, and is occasionally delivered twice; the generation claim makes a second run a no-op. If it misses, the "Generate now" button on `/nightly` does the same job.
+4. **Fluid compute and the time limit.** Both nightly functions need up to 300 seconds (`"functions": { "api/nightly*.js": { "maxDuration": 300 } }` in `vercel.json`). That limit needs Fluid compute, so check it is on in the project's Functions settings, and confirm after the first deploy that the 300s limit applied.
 
 ## Troubleshooting
 

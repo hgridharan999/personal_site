@@ -1,3 +1,4 @@
+import { doorGeometry, liftLine } from './doorLine.js';
 import { ASCENT } from './route.js';
 import { lineProgress } from './timeline.js';
 import { binOf, E0, fillPalette, makePalette, NB } from './zones.js';
@@ -14,8 +15,9 @@ const ROUTE_BLUE_SOFT = 'rgba(15,125,170,0.6)';
  * A painter for one layout. Make a new one whenever the layout changes: the cached paths belong
  * to the sizes they were made for.
  *
- * `paint({ dpr, pixelW, pixelH, drawT, full, tideH, routeLen })`: `full` is true once every
- * line is down (then `drawT` no longer matters); the rest is the timeline's state for the frame.
+ * `paint({ dpr, pixelW, pixelH, drawT, full, tideH, routeLen, doorLift })`: `full` is true once
+ * every line is down (then `drawT` no longer matters); `doorLift` (0..1, finished frame only) lifts
+ * the hidden door out of the front line; the rest is the timeline's state for the frame.
  */
 export function createPainter(ctx, layout, built) {
   const { N, K, xs, yS, eS, lineBase, width: W, height: H, sx0 } = layout;
@@ -23,18 +25,21 @@ export function createPainter(ctx, layout, built) {
   let cache = null; // per line, once finished: { curve, poly, tipX }
   const binCache = []; // per line: its colour bins (the whole line, whatever has drawn)
   let routeCache = null; // per line: the finished route's paths
+  const door = doorGeometry(layout);
 
-  /** One path per elevation bin the line passes through. */
-  function binsFor(i) {
-    const row = i * K;
+  /**
+   * One path per elevation bin a line passes through. Point k is (`px[k]`, `py[off + k]`), with
+   * elevation `pe[off + k]`, for `n` points.
+   */
+  function binsOf(px, py, pe, off, n) {
     const list = new Array(NB).fill(null);
     let prev = -1;
-    for (let k = 1; k < K; k += 1) {
-      const b = binOf(0.5 * (eS[row + k - 1] + eS[row + k]));
+    for (let k = 1; k < n; k += 1) {
+      const b = binOf(0.5 * (pe[off + k - 1] + pe[off + k]));
       let p = list[b];
       if (!p) { p = new Path2D(); list[b] = p; }
-      if (b !== prev) p.moveTo(xs[k - 1], yS[row + k - 1]);
-      p.lineTo(xs[k], yS[row + k]);
+      if (b !== prev) p.moveTo(px[k - 1], py[off + k - 1]);
+      p.lineTo(px[k], py[off + k]);
       prev = b;
     }
     const idx = [];
@@ -142,20 +147,39 @@ export function createPainter(ctx, layout, built) {
     curve.moveTo(xs[0], yS[row]);
     for (let k = 1; k <= kLast; k += 1) curve.lineTo(xs[k], yS[row + k]);
     if (hasTip) curve.lineTo(tipX, tipY);
-    // the ground under a line hides whatever lies behind it: erase, so the page shows through
+    const shape = withGround(curve, i, tipX);
+    if (full) cache[i] = shape;
+    return shape;
+  }
+
+  /** The ground under a line hides whatever lies behind it: erase it, so the page shows through. */
+  function withGround(curve, i, tipX) {
     const poly = new Path2D(curve);
     const floorY = lineBase[i] + 4;
     poly.lineTo(tipX, floorY);
     poly.lineTo(-2, floorY);
     poly.closePath();
-    const shape = { curve, poly, tipX };
-    if (full) cache[i] = shape;
-    return shape;
+    return { curve, poly, tipX };
   }
 
-  function strokeZoned(shape, i, a0, w0) {
-    if (!binCache[i]) binCache[i] = binsFor(i);
-    const { idx, paths } = binCache[i];
+  /**
+   * The door line with its doorway lifted `lift` of the way out: its curve, its ground (which
+   * follows the doorway up, so the lines behind are cleared inside it) and its colour bins. Made
+   * fresh for every frame of the lift; at rest the line is the cached one.
+   */
+  function liftedDoor(lift) {
+    const row = door.line * K;
+    const d = liftLine(xs, yS.subarray(row, row + K), eS.subarray(row, row + K), door, lift);
+    const n = d.xs.length;
+    const curve = new Path2D();
+    curve.moveTo(d.xs[0], d.ys[0]);
+    for (let k = 1; k < n; k += 1) curve.lineTo(d.xs[k], d.ys[k]);
+    return { shape: withGround(curve, door.line, d.xs[n - 1]), bins: binsOf(d.xs, d.ys, d.es, 0, n) };
+  }
+
+  function strokeZoned(shape, i, a0, w0, bins) {
+    if (!bins && !binCache[i]) binCache[i] = binsOf(xs, yS, eS, i * K, K);
+    const { idx, paths } = bins ?? binCache[i];
     ctx.lineCap = 'butt';
     for (let n = 0; n < idx.length; n += 1) {
       const b = idx[n];
@@ -191,7 +215,7 @@ export function createPainter(ctx, layout, built) {
     ctx.globalCompositeOperation = 'source-over';
   }
 
-  return function paint({ dpr, pixelW, pixelH, drawT, full, tideH, routeLen }) {
+  return function paint({ dpr, pixelW, pixelH, drawT, full, tideH, routeLen, doorLift = 0 }) {
     // clear every device pixel (the last column can lie past W * dpr), then draw in CSS pixels
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, pixelW, pixelH);
@@ -206,7 +230,8 @@ export function createPainter(ctx, layout, built) {
       const p = full ? 1 : lineProgress(drawT, i);
       if (p <= 0) continue;
       const u = i / (N - 1);
-      const shape = shapeFor(i, p, full);
+      const lifted = full && doorLift > 0 && i === door.line ? liftedDoor(doorLift) : null;
+      const shape = lifted ? lifted.shape : shapeFor(i, p, full);
       ctx.globalCompositeOperation = 'destination-out';
       ctx.globalAlpha = 1;
       ctx.fillStyle = '#000';
@@ -223,7 +248,7 @@ export function createPainter(ctx, layout, built) {
         ctx.clip();
         strokeZoned(shape, i, a0, w0);
         ctx.restore();
-      } else if (zoned) strokeZoned(shape, i, a0, w0);
+      } else if (zoned) strokeZoned(shape, i, a0, w0, lifted?.bins);
       else {
         ctx.lineCap = 'round';
         ctx.globalAlpha = a0;

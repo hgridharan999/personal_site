@@ -22,6 +22,7 @@ export function createScene({ band, canvas, ctx, terrain, routeData, labels, hea
   let built = null;
   let paintFrame = null;
   let life = head.life(1);
+  let doorLift = 0; // how far the hidden door is lifted out of the front line, 0..1
 
   const screenDpr = () => Math.min(win.devicePixelRatio || 1, MAX_DPR);
   /** Size the canvas bitmap for the current density; this also clears it, so paint after. */
@@ -35,6 +36,12 @@ export function createScene({ band, canvas, ctx, terrain, routeData, labels, hea
     get lineCount() { return lines.N; },
     get width() { return W; },
     get height() { return H; },
+    get doorLift() { return doorLift; },
+
+    /** Lift the door this far (0..1) for the next paint; every repaint keeps it, a resize too. */
+    setDoorLift(next) {
+      doorLift = next;
+    },
 
     /** Measure the band and rebuild everything that depends on its size. */
     layout() {
@@ -66,7 +73,7 @@ export function createScene({ band, canvas, ctx, terrain, routeData, labels, hea
     },
 
     paint() {
-      paintFrame({ dpr, pixelW: canvas.width, pixelH: canvas.height, drawT: head.drawT, full: head.done, ...life });
+      paintFrame({ dpr, pixelW: canvas.width, pixelH: canvas.height, drawT: head.drawT, full: head.done, ...life, doorLift });
     },
 
     clear() {

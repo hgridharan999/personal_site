@@ -10,7 +10,7 @@ const read = (rel) => readFileSync(ROOT + rel, 'utf8');
 
 const SITE = 'https://www.harigridharan.com';
 const REMOVED = ['/work', '/projects', '/thesis', '/trailsense', '/ascent', '/climbing', '/blog', '/theses'];
-const KEPT = ['/', '/hiking', '/writing', '/blog/:slug', '/climate-search', '/privacy', '/terms', '/legal', '/login', '/me'];
+const KEPT = ['/', '/hiking', '/writing', '/blog/:slug', '/climate-search', '/privacy', '/terms', '/legal', '/login', '/me', '/nightly', '/notes'];
 // Public pages a sitemap may list (/login and /me are disallowed in robots.txt).
 const PUBLIC_STATIC = new Set(['/', '/hiking', '/writing', '/climate-search', '/privacy', '/terms', '/legal']);
 
@@ -81,6 +81,7 @@ describe('App.jsx routes', () => {
       PostPage: './site/PostPage',
       ClimateSearchPage: './site/climate/ClimateSearchPage',
       LegalPage: './pages/LegalPage',
+      NotesPage: './site/NotesPage',
     };
     for (const [name, file] of Object.entries(pages)) {
       expect(app, name).toContain(`const ${name} = lazy(() => import('${file}'));`);

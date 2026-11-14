@@ -79,6 +79,32 @@ describe('kili.css', () => {
     expect(css.slice(0, css.indexOf('prefers-reduced-motion'))).not.toMatch(/transition:\s*opacity/);
   });
 
+  it('keeps the door invisible and out of the way until the drawing reveals it', () => {
+    const door = declarationsOf('.hm .kili-door');
+    expect(door).toContain('pointer-events: none');
+    expect(door).toContain('translateY(-100%)');
+    expect(door).toMatch(/width: 48px; height: 48px/);
+  });
+
+  it('draws nothing for the door: the canvas lifts it out of the front line', () => {
+    expect(selectors.filter((s) => s.includes('kili-door'))).toEqual(['.hm .kili-door', '.hm .kili-door.on']);
+    expect(css).not.toMatch(/kili-door[^{]*\{[^}]*(stroke|transition)/);
+  });
+
+  it('lets the door, and only the door, take the pointer once it is on', () => {
+    const on = declarationsOf('.hm .kili-door.on');
+    expect(on).toContain('pointer-events: auto');
+    expect(on).toContain('cursor: pointer');
+    const takers = selectors.filter((s) => declarationsOf(s)?.includes('pointer-events: auto'));
+    expect(takers).toEqual(['.hm .kili-door.on']);
+  });
+
+  it('keeps every transition inside the reduced-motion block at the end', () => {
+    const at = css.indexOf('prefers-reduced-motion');
+    expect(at).toBeGreaterThan(0);
+    expect(css.slice(0, at)).not.toMatch(/transition/);
+  });
+
   it('keeps the toggle clear of the site-wide motion- class rule in index.css', () => {
     for (const file of files.filter((f) => f.endsWith('.jsx') || f.endsWith('.css'))) expect(read(file), file).not.toMatch(/motion-/);
   });
@@ -153,6 +179,59 @@ describe('the markup', () => {
     expect(ending).toMatch(/<div className="kili-band" ref=\{bandRef\} aria-hidden="true"/);
     expect(ending.indexOf('<canvas />')).toBeGreaterThan(ending.indexOf('aria-hidden="true"'));
     expect(ending).toContain('<Legend />');
+  });
+
+  it('puts the door in the band, after the legend', () => {
+    expect(ending).toContain("import KiliDoor from './KiliDoor';");
+    expect(ending).toMatch(/<Legend \/>\s*<KiliDoor \/>\s*<\/div>\s*<KiliFooter \/>/);
+  });
+
+  it('keeps the door hidden: no link, no focus stop, no role, no name', () => {
+    const door = read('KiliDoor.jsx');
+    expect(door).not.toMatch(/href|tabIndex|aria-label|role=/);
+    expect(door).toContain('data-kili="door"');
+    expect(door).not.toMatch(/<svg|<path/); // only a hit area: the canvas draws the door
+  });
+
+  it('asks the drawing to lift the door with a kili:door event on the band, which draw.js listens for', () => {
+    const door = read('KiliDoor.jsx');
+    expect(door).toContain("closest('.kili-band')");
+    expect(door).toMatch(/dispatchEvent\(new CustomEvent\('kili:door', \{ detail: \{ open \} \}\)\)/);
+    expect(door).toContain('onPointerEnter=');
+    expect(door).toContain("if (e.pointerType === 'touch') return;"); // a touch has no hover: its taps arm the door
+    const draw = read('draw.js');
+    expect(draw).toContain("band.addEventListener?.('kili:door', onDoor)");
+    expect(draw).toContain("band.removeEventListener?.('kili:door', onDoor)");
+  });
+
+  it('opens /nightly through navigate() from a pointer up, and disarms on a tap elsewhere', () => {
+    const door = read('KiliDoor.jsx');
+    expect(door).toContain("navigate('/nightly')");
+    expect(door).toContain('onPointerUp=');
+    expect(door).toMatch(/addEventListener\('pointerdown'[\s\S]*removeEventListener\('pointerdown'/);
+  });
+
+  it('leaves the door\'s classes to labels.js: React renders a fixed class and never touches it', () => {
+    // labels.js adds `on` with classList; a className that React recomputes would wipe it out
+    const door = read('KiliDoor.jsx');
+    expect(door).toMatch(/<div ref=\{ref\} className="kili-door" data-kili="door"/);
+    expect(door).not.toMatch(/className=\{|classList/);
+  });
+
+  it('opens only on a press that began on the door', () => {
+    const door = read('KiliDoor.jsx');
+    expect(door).toContain('onPointerDown=');
+    expect(door).toMatch(/if \(!pressed\) return;/);
+  });
+
+  it('places the door on the front line at the stage edge, shows it with the legend and resets it', () => {
+    const labels = read('labels.js');
+    expect(labels).toContain("one('door')");
+    expect(labels).toContain('layout.lineBase[layout.N - 1]');
+    expect(labels).toContain('doorGeometry(layout)'); // centred on the doorway the canvas lifts
+    expect(labels).toMatch(/Math\.max\(layout\.phone \? 16 : 32, layout\.sx0\)/);
+    expect(labels).toMatch(/if \(lifeT >= 0\) \{?\s*show\(key\);\s*show\(door\);/);
+    expect(labels).toMatch(/for \(const el of \[[^\]]*\bdoor\b[^\]]*\]\) el\?\.removeAttribute\('style'\)/);
   });
 
   it('takes every word from content.js', () => {

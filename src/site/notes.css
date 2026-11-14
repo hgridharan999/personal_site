@@ -1,0 +1,20 @@
+/* Notes: the public feed of short takes. Tokens, links, .head, .btn and .sp-text come from home.css
+   and site.css; this file only lays out the list. Every class is sp-note* and lives here alone. */
+
+.sp .sp-notes { margin: 0; padding: 0; list-style: none; }
+.sp .sp-note { padding: 24px 0; }
+.sp .sp-notes > li + li .sp-note { border-top: 1px solid var(--rule); }
+.sp .sp-note-date { display: block; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.sp .sp-note-body {
+  margin-top: 8px; font: 400 16px/1.7 var(--sans); letter-spacing: -0.2px; color: var(--cream);
+  white-space: pre-wrap; text-wrap: pretty;
+}
+.sp .sp-note-on { margin-top: 10px; font-size: 14px; line-height: 1.55; color: var(--soft); }
+/* a 24px-plus target for the source link (WCAG 2.5.8) */
+.sp .sp-note-on a { display: inline-block; padding: 3px 0; }
+
+.sp .sp-notes-state { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .sp .sp-note-on a:hover { color: var(--tan); text-decoration-color: var(--ul-tan); }
+}

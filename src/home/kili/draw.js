@@ -1,4 +1,5 @@
 import { createLabels } from './labels.js';
+import { bezier } from './math.js';
 import { createScene } from './scene.js';
 import { parseTerrain } from './terrain.js';
 import { createPlayhead } from './timeline.js';
@@ -12,9 +13,17 @@ import { watchBand } from './watch.js';
 // the loop stops for good: no requestAnimationFrame is queued again, and the drawing is a still
 // picture. Nothing runs while the band is off screen, the tab is hidden, the page is scrolling,
 // or the visitor asked for reduced motion (who gets the finished frame straight away).
+//
+// The one exception is the hidden door: once the drawing is finished, a 'kili:door' event on the
+// band ({ detail: { open } }, sent by KiliDoor) lifts a doorway out of the front line, or lets it
+// back down. That runs a short loop of its own, repainting the still picture until the door
+// settles, and then stops again. With reduced motion the door just jumps, in one repaint.
 
 const START_AT = 0.3; // draw in once this much of the band is on screen
 const COSTS_KEPT = 240;
+const DOOR_MS = 280; // the door's whole lift; a part of it takes that part of the time
+const FRAME_MS = 1000 / 60;
+const easeDoor = bezier(0.16, 1, 0.3, 1); // the site's --ease
 
 /**
  * Starts the ending inside `band`. `terrainData` and `routeData` are the fetched JSON files
@@ -45,7 +54,10 @@ export function createKiliBand({ band, terrainData, routeData, onMotion = () => 
   const canRun = () => visible() && !reduced() && !paused && !scrolling;
   // nothing to draw before the draw-in begins, or once the final frame is up
   const hasWork = () => head.started && !head.still;
-
+  let doorRaf = 0;
+  let doorTarget = 0; // where the door is heading, 0 (down) or 1 (lifted)
+  let doorFrom = 0; // where it was when it set off
+  let doorAt = -1; // the frame time it set off, once its first frame has come
 
   function kick() {
     if (raf || !hasWork() || !canRun()) return;
@@ -70,6 +82,41 @@ export function createKiliBand({ band, terrainData, routeData, onMotion = () => 
     if (costs.length > COSTS_KEPT) costs.shift();
     if (!settling) raf = win.requestAnimationFrame(frame); // settled: the drawing is a still picture now
   }
+
+  function doorFrame(now) {
+    doorRaf = 0;
+    if (disposed) return;
+    if (doorAt < 0) doorAt = now - FRAME_MS; // the request came about a frame ago
+    const span = Math.abs(doorTarget - doorFrom);
+    const t = Math.min(1, Math.max(0, (now - doorAt) / (DOOR_MS * span)));
+    scene.setDoorLift(doorFrom + (doorTarget - doorFrom) * easeDoor(t));
+    scene.paint();
+    if (t < 1) doorRaf = win.requestAnimationFrame(doorFrame);
+  }
+
+  /** Stop the door where it is heading, without a paint (the caller paints). */
+  function settleDoor() {
+    if (doorRaf) win.cancelAnimationFrame(doorRaf);
+    doorRaf = 0;
+    scene.setDoorLift(doorTarget);
+  }
+
+  /** Lift the door (`open`) or let it down: only on the finished drawing, from wherever it is now. */
+  function setDoor(open) {
+    if (disposed || !head.done) return;
+    const target = open ? 1 : 0;
+    if (target === doorTarget && (doorRaf || scene.doorLift === target)) return;
+    doorTarget = target;
+    if (reduced()) {
+      settleDoor();
+      scene.paint();
+      return;
+    }
+    doorFrom = scene.doorLift;
+    doorAt = -1;
+    if (!doorRaf) doorRaf = win.requestAnimationFrame(doorFrame);
+  }
+  const onDoor = (e) => setDoor(!!e.detail?.open);
 
   function showFinished() {
     head.freeze(scene.lineCount);
@@ -134,11 +181,15 @@ export function createKiliBand({ band, terrainData, routeData, onMotion = () => 
     },
     onPreference() {
       onMotion(!reduced());
-      if (reduced()) showFinished();
+      if (reduced()) {
+        settleDoor();
+        showFinished();
+      }
       else kick();
       kick();
     },
   });
+  band.addEventListener?.('kili:door', onDoor);
   try {
     onMotion(!reduced());
     if (reduced()) showFinished();
@@ -152,6 +203,9 @@ export function createKiliBand({ band, terrainData, routeData, onMotion = () => 
     disposed = true;
     if (raf) win.cancelAnimationFrame(raf);
     raf = 0;
+    if (doorRaf) win.cancelAnimationFrame(doorRaf);
+    doorRaf = 0;
+    band.removeEventListener?.('kili:door', onDoor);
     stopWatching();
     labels.reset();
     scene.clear();
@@ -179,6 +233,7 @@ export function createKiliBand({ band, terrainData, routeData, onMotion = () => 
     state: () => ({
       raf: !!raf, onScreen, paused, started: head.started, done: head.done, still: head.still,
       drawT: +head.drawT.toFixed(2), lines: scene.lineCount, width: scene.width, height: scene.height,
+      door: +scene.doorLift.toFixed(3), doorRaf: !!doorRaf,
     }),
   };
   if (import.meta.env?.DEV) win.__kili = api;
