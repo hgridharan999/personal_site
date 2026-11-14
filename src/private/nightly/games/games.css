@@ -33,7 +33,9 @@
 .sp .nt-games-label a { display: inline-block; padding: 4px 0; }
 
 /* ---- the last 14 nights: the game names stay put while the nights scroll ---- */
-.sp .nt-games-scroll { overflow-x: auto; }
+/* position: relative contains the cells' absolutely positioned .sr-only labels, which otherwise
+   escape the scroller and widen the whole page on a phone. */
+.sp .nt-games-scroll { position: relative; overflow-x: auto; }
 .sp .nt-games-scroll:focus-visible { outline: 2px solid var(--tan); outline-offset: 2px; }
 .sp .nt-games-table { border-collapse: collapse; font-size: 14px; line-height: 1.5; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
 .sp .nt-games-table caption { text-align: left; }
