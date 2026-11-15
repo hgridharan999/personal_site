@@ -180,6 +180,26 @@ export const PROJECTS = {
   title: 'Projects & research',
   rows: [
     {
+      co: 'Siriously',
+      coHref: 'https://siriously-landing.vercel.app/',
+      loc: 'Cornell Local AI Hackathon',
+      when: nb('Nov 2026'),
+      lead: 'Mac voice control',
+      rest: ` that works with the wifi${_}off.`,
+      body: [
+        'You say what you want in plain words, like “open Slack and say the build is up,” and it works your apps for you. It isn’t tied to one app, it only listens to your voice, and nothing you say leaves the Mac. Built by a team of two at the Cornell Local AI Hackathon.',
+        'Argmax handles the speech: it transcribes as you talk, knows who is speaking and talks back. A Bonsai 4B model running on the Mac decides what to do with what it heard, and a captions page shows the words live with who said them, so you can see why it did something.',
+        'Built the brain: the Bonsai planner, a fast path that runs simple commands without calling the model at all, and the eval. It gets 74 of 77 test commands right.',
+      ],
+      meta: [
+        'Python',
+        'Swift',
+        'Bonsai 2',
+        { label: 'Demo', href: 'https://www.youtube.com/watch?v=ZjN_ducezP0', sr: ' for Siriously' },
+        { label: 'Repo', href: 'https://github.com/Henrik66/siriously', sr: ' for Siriously' },
+      ],
+    },
+    {
       co: 'First Signal',
       coHref: 'https://cvc-hackathon.vercel.app/',
       loc: 'CVC hackathon',
