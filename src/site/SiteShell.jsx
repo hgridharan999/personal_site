@@ -20,9 +20,10 @@ import './site.css';
  * no h1 of its own (a post sets its headline in Instrument Serif) passes only `docTitle`.
  * `wide` opens the column to 1040px for the two-column pages. The private pages that share this
  * look (/login, /nightly) pass `noindex` to stay out of search indexes and `footer={false}` to
- * leave out the public contact footer.
+ * leave out the public contact footer. Essays pass `pitch={false}` to keep the footer's contact
+ * links but drop its internship line.
  */
-export default function SiteShell({ title, docTitle = title, intro, wide = false, noindex = false, footer = true, children }) {
+export default function SiteShell({ title, docTitle = title, intro, wide = false, noindex = false, footer = true, pitch = true, children }) {
   useHomeDocument();
   useDocumentTitle(docTitle);
   useNoindex(noindex);
@@ -41,7 +42,7 @@ export default function SiteShell({ title, docTitle = title, intro, wide = false
         {intro && <p className="sp-intro">{intro}</p>}
         {children}
       </main>
-      {footer && <SiteFooter />}
+      {footer && <SiteFooter pitch={pitch} />}
     </div>
   );
 }

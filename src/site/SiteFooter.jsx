@@ -7,12 +7,13 @@ import { SmartLink } from '../home/rows';
 /**
  * The homepage's footer without the mountain: how to reach Hari, then the legal page and the date
  * the site was last updated. Copy and links come from home/content.js so both stay in step.
+ * `pitch={false}` leaves out the internship line (essays don't carry it).
  */
-export default function SiteFooter() {
+export default function SiteFooter({ pitch = true }) {
   const { open, updated } = FOOTER;
   return (
     <footer className="wrap sp-end">
-      <p className="sp-end-open">{open}</p>
+      {pitch && <p className="sp-end-open">{open}</p>}
       <p className="sp-end-links">
         {CONTACT_LINKS.map(({ label, href, arrow, sr }, index) => (
           <Fragment key={href}>

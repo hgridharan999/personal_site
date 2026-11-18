@@ -60,11 +60,11 @@ export default function PostPage() {
   }, [slug]);
 
   if (loaded.slug !== slug) {
-    return <SiteShell docTitle="Writing"><p className="sp-status" role="status">Loading…</p></SiteShell>;
+    return <SiteShell docTitle="Writing" pitch={false}><p className="sp-status" role="status">Loading…</p></SiteShell>;
   }
   if (!loaded.post) {
     return (
-      <SiteShell title="Post not found" intro="There is no post at this address.">
+      <SiteShell title="Post not found" intro="There is no post at this address." pitch={false}>
         <p className="sp-text sp-lost"><SmartLink href="/writing" arrow>See the essays</SmartLink></p>
       </SiteShell>
     );
@@ -72,7 +72,7 @@ export default function PostPage() {
 
   const { frontmatter, content } = loaded.post;
   return (
-    <SiteShell docTitle={frontmatter.title}>
+    <SiteShell docTitle={frontmatter.title} pitch={false}>
       <article>
         <time className="sp-date" dateTime={String(frontmatter.date)}>{formatLongDate(frontmatter.date)}</time>
         <h1 className="sp-title sp-title--essay">{frontmatter.title}</h1>
