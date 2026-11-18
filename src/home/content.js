@@ -187,9 +187,9 @@ export const PROJECTS = {
       lead: 'Mac voice control',
       rest: ` that works with the wifi${_}off.`,
       body: [
-        'You say what you want in plain words, like “open Slack and say the build is up,” and it works your apps for you. It isn’t tied to one app, it only listens to your voice, and nothing you say leaves the Mac. Built by a team of two at the Cornell Local AI Hackathon.',
-        'Argmax handles the speech: it transcribes as you talk, knows who is speaking and talks back. A Bonsai 4B model running on the Mac decides what to do with what it heard, and a captions page shows the words live with who said them, so you can see why it did something.',
-        'Built the brain: the Bonsai planner, a fast path that runs simple commands without calling the model at all, and the eval. It gets 74 of 77 test commands right.',
+        'Voice control for the Mac that runs entirely on the machine. You say the whole request, like “open Slack and say the build is up,” and it does the steps itself, in any app. Apple’s Voice Control makes you name each button one at a time. Built by a team of two at the Cornell Local AI Hackathon.',
+        'Argmax’s WhisperKit transcribes as you talk, and SpeakerKit locks it to your voice, so it ignores anyone else. Simple commands run straight away without calling the model. Everything else goes to Bonsai 2 4B, a small model running locally, which plans the steps. It presses menus, shortcuts and buttons, so it never has to guess where to click on the screen. A live captions page shows what it heard and who said it.',
+        'Built the planner, the fast path that keeps simple commands from ever reaching the model, and the eval. It gets 74 of 77 test commands right, including 29 of 32 it was never tuned on.',
       ],
       meta: [
         'Python',
@@ -207,9 +207,9 @@ export const PROJECTS = {
       lead: 'Finds deep-tech founders',
       rest: ` before their first${_}round.`,
       body: [
-        'A sourcing tool that finds deep-tech founders and spinouts before their first venture round, using only public records. Built for a CVC hackathon.',
-        'You type an investment thesis, and it returns researchers who haven’t started a company yet and SBIR-funded spinouts with no SEC Form D on record. Every lead links back to the paper, grant or filing it came from.',
-        'It also scores about 10,600 SBIR and STTR companies on their chance of a private raise or a Phase II award, with models tested on years they weren’t trained on.',
+        'A sourcing tool that finds deep-tech researchers and SBIR-funded spinouts before they raise, using only public records. Built for the CVC hackathon.',
+        'You type an investment thesis, and it turns that into the terms researchers actually use. Then it pulls matching papers from OpenAlex, grants from NIH and NSF, and 207,000 SBIR and STTR awards. It checks about 610,000 SEC Form D filings to drop anyone who has already raised. Every lead links back to the paper, grant or filing it came from.',
+        'Built the scoring model, which rates about 10,600 SBIR-stage companies on their odds of a first private raise. On years it wasn’t trained on, the companies it ranks in the top 10% go on to raise 2.85 times as often as average.',
       ],
       meta: [
         'Python',
