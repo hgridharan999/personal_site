@@ -1,0 +1,14 @@
+/* ---------- A figure inside a post: no boxes, no gridlines, one baseline per panel ---------- */
+.sp figure.sp-fig { margin: 2em 0; }
+.sp .sp-fig-panel { display: block; max-width: 100%; height: auto; overflow: visible; }
+.sp .sp-fig-panel + .sp-fig-panel { margin-top: 14px; }
+.sp .sp-fig-label { font: 600 13px var(--sans); fill: var(--cream); }
+.sp .sp-fig-note { font: 400 13px var(--sans); fill: var(--muted); }
+.sp .sp-fig-base { stroke: var(--rule-head); stroke-width: 1; }
+.sp .sp-fig-half { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 4; }
+.sp .sp-fig-bar { stroke: none; }
+.sp .sp-fig-bar--before { fill: var(--muted); fill-opacity: 0.55; }
+.sp .sp-fig-bar--ghost { fill: var(--muted); fill-opacity: 0.2; }
+.sp .sp-fig-bar--after { fill: var(--tan); }
+.sp .sp-fig-curve { fill: none; stroke: var(--cream); stroke-width: 2; stroke-linejoin: round; }
+.sp .sp-fig-caption { margin-top: 14px; font-size: 13px; line-height: 1.5; color: var(--muted); }

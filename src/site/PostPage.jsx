@@ -8,14 +8,22 @@ import { SmartLink } from '../home/rows';
 import { EssayRow } from '../home/WritingSection';
 import SiteShell from './SiteShell';
 import { formatLongDate } from './format';
+import { FIGURES } from './figures/index.js';
+import { resolveFigure } from './figures/resolveFigure.js';
 import './writing.css';
 
 /** Markdown links go through the same component as every other link, so https: ones open a new tab. */
 function ProseLink({ href, children }) {
   return href ? <SmartLink href={href}>{children}</SmartLink> : <>{children}</>;
 }
+/** A ```figure block places a figure; any other fenced block stays ordinary code. */
+function ProsePre({ children, node, ...rest }) {
+  const found = resolveFigure(children, FIGURES);
+  if (found.kind === 'code') return <pre {...rest}>{children}</pre>;
+  return found.kind === 'figure' ? <found.Component /> : null;
+}
 // Module level, so the object keeps its identity and the markdown tree is not rebuilt on every render.
-const MARKDOWN_COMPONENTS = { a: ProseLink };
+const MARKDOWN_COMPONENTS = { a: ProseLink, pre: ProsePre };
 
 /** The other essays, then the way back to the ten bullet points. */
 function MoreWriting({ slug }) {

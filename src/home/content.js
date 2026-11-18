@@ -296,6 +296,7 @@ export const WRITING = {
   memos: { label: 'Investment memos', items: [] }, // shown once there is a memo to list
   essaysLabel: 'Essays',
   essays: [
+    { slug: 'satisfaction-and-peace', title: 'Satisfaction and Peace', date: '2026-11-18', when: nb('Nov 2026') },
     { slug: 'tat-tvam-asi', title: 'Tat Tvam Asi and Conviction', date: '2026-10-06', when: nb('Oct 2026') },
     {
       slug: 'solipsism-take-every-risk',
