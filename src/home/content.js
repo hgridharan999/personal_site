@@ -157,8 +157,21 @@ export const ON_CAMPUS = {
       co: `Cornell Venture${_}Capital`,
       coHref: 'https://cornellvc.com/',
       when: nb('Sep 2026 – now'),
-      lead: 'Sourced 10 startups',
-      rest: [' for ', { text: `G20${_}Ventures`, href: 'https://www.g20vc.com/' }, '.'],
+      lead: 'Biotech M&A diligence',
+      rest: ` for RA${_}Capital.`,
+      body: [
+        [
+          'Lead the Biotech Market Conditions & Asset Prioritization workstream on CVC’s ',
+          { text: `RA${_}Capital`, href: 'https://www.racap.com/' },
+          ' engagement, assessing pharma pipeline fit and M&A targets for a biotech crossover fund.',
+        ],
+        [
+          'Built an agent-driven sourcing pipeline for ',
+          { text: `G20${_}Ventures`, href: 'https://www.g20vc.com/' },
+          ' and wrote the investment memo on my top pick.',
+        ],
+      ],
+      meta: ['Ithaca, NY'],
     },
     {
       role: 'Builder',

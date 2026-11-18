@@ -291,4 +291,10 @@ describe('components: structure the CSS depends on', () => {
     expect(writing).toMatch(/<h3 className="kicker kicker--sub">\{memos\.label\}<\/h3>/);
     expect(writing).toMatch(/<h3 className="kicker kicker--sub">\{essaysLabel\}<\/h3>/);
   });
+
+  it('shows the month and year on essay rows, not the year-only yearsOf form', () => {
+    const writing = source('WritingSection.jsx');
+    expect(writing).toMatch(/<time dateTime=\{essay\.date\}>\{essay\.when\}<\/time>/);
+    expect(writing).not.toMatch(/yearsOf/);
+  });
 });

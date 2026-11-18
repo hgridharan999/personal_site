@@ -15,11 +15,11 @@ So not only does your overall level of happiness matter, but the amount of perce
 
 I had a conversation with a friend about something similar. He said that he's began approaching every day one at a time, and his actions during the day decide whether that day was a win or not, and his goal is to win every day, which is a strategy that has been working for him. I think this is somewhat effective when combined with a slight twist. While the sentiment of winning each day is a noble one, life essentially prevents every day from being a win. Maybe one day you're sick or there's an emergency. There's too much entropy in life to be able to win every day. Even as I'm writing this, I'm losing my voice due to some sickness brought on by the Ithaca cold. So there's no concrete way to win each day if you measure the quality or the relative goodness of each day by either winning or losing. Not every day is black and white. It is therefore some kind of spectrum of how good a day it was, but regardless of where it falls on the spectrum, you should be able to feel satisfaction and appreciation for that day.
 
+This feels best explained by some kind of histogram, spanning the worst day possible to the best day possible. Most of your days will cluster somewhere around the middle. You realistically want every day to fall on the upper half of your days. To achieve this, we add some kind of base level of gratitude to every data point that I'll call the g-condition. The g-condition is a hyperbolic condition, so that the worst days get the most added, and the best days get the least added. This method pushes each day over the halfway mark on the range from worst days to best days. Claude has kindly generated a graph of this as well.
+
 ```figure
 g-condition
 ```
-
-This feels best explained by some kind of histogram, spanning the worst day possible to the best day possible. Most of your days will cluster somewhere around the middle. You realistically want every day to fall on the upper half of your days. To achieve this, we add some kind of base level of gratitude to every data point that I'll call the g-condition. The g-condition is a hyperbolic condition, so that the worst days get the most added, and the best days get the least added. This method pushes each day over the halfway mark on the range from worst days to best days. Claude has kindly generated a graph of this as well.
 
 So what is the takeaway of all of this?
 
