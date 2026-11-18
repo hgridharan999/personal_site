@@ -11,4 +11,5 @@
 .sp .sp-fig-bar--ghost { fill: var(--muted); fill-opacity: 0.2; }
 .sp .sp-fig-bar--after { fill: var(--tan); }
 .sp .sp-fig-curve { fill: none; stroke: var(--cream); stroke-width: 2; stroke-linejoin: round; }
-.sp .sp-fig-caption { margin-top: 14px; font-size: 13px; line-height: 1.5; color: var(--muted); }
+/* the figure's title sits above the panels, a step up from their 13px labels */
+.sp .sp-fig-title { margin-bottom: 18px; font: 600 15px/1.4 var(--sans); color: var(--cream); }

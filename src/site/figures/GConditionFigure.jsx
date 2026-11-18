@@ -28,12 +28,10 @@ export default function GConditionFigure() {
   const [ref, w] = useWidth();
   return (
     <figure className="sp-fig" ref={ref}>
+      <figcaption className="sp-fig-title">Days before and after the g-condition</figcaption>
       <BeforePanel w={w} data={DATA} />
       <CurvePanel w={w} />
       <AfterPanel w={w} data={DATA} />
-      <figcaption className="sp-fig-caption">
-        Days before and after the g-condition. Worst days get the most added, best days the least, and every day ends up past the halfway mark.
-      </figcaption>
     </figure>
   );
 }
