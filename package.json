@@ -21,6 +21,7 @@
     "@anthropic-ai/sdk": "^1.8.0",
     "@gsap/react": "^2.1.2",
     "@neondatabase/serverless": "^1.1.0",
+    "@vercel/analytics": "^2.0.1",
     "animejs": "^4.5.0",
     "buffer": "^6.0.3",
     "framer-motion": "^11.15.0",

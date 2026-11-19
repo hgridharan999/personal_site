@@ -16,7 +16,7 @@ const sections = [
     id: 'cookies',
     title: 'Cookies and tracking',
     body: [
-      'This site sets no cookies and uses no advertising, behavioral tracking, or third-party analytics.',
+      'This site sets no cookies and uses no advertising or behavioral tracking. It uses Vercel Web Analytics to count page views, which works without cookies and does not identify you.',
       'The climate startup search keeps a random id for the current tab in your browser’s session storage, so it can count which results get clicked. It is not linked to you and is gone when you close the tab.',
     ],
   },
